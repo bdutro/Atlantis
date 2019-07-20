@@ -1,1 +1,10 @@
 .DS_Store
+*.gch
+obj/
+*/obj/
+fracas/fracas
+basic/basic
+standard/standard
+arcadia/arcadia
+kingdoms/kingdoms
+havilah/havilah
