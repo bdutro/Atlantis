@@ -30,16 +30,16 @@
 
 Formation::Formation()
 {
-	reserve = 0;
-	flank = 0;
-	concealed = 0;
-	bonus = 0;
-	tempbonus = 0;
-	nummen = 0;
+    reserve = 0;
+    flank = 0;
+    concealed = 0;
+    bonus = 0;
+    tempbonus = 0;
+    nummen = 0;
     size = 0;
-	lastkilled = 0;
+    lastkilled = 0;
     type = FORM_FOOT;
-    behind = 0;	
+    behind = 0;    
     canattack = 0;
 }
 
@@ -322,27 +322,27 @@ void Formation::Regenerate(Battle * b) const
     for(int i=0; i<nummen; i++) {
         Soldier *s = pSoldiers[i];
         int diff = s->maxhits - s->hits;
-		if (diff > 0) {
-			AString aName = s->name;
+        if (diff > 0) {
+            AString aName = s->name;
 
-			if (s->damage != 0) {
-				b->AddLine(aName + " takes " + s->damage +
-						" hits bringing it to " + s->hits + "/" +
-						s->maxhits + ".");
-				s->damage = 0;
-			} else {
-				b->AddLine(aName + " takes no hits leaving it at " +
-						s->hits + "/" + s->maxhits + ".");
-			}
-			if (s->regen) {
-				int regen = s->regen;
-				if (regen > diff) regen = diff;
-				s->hits += regen;
-				b->AddLine(aName + " regenerates " + regen +
-						" hits bringing it to " + s->hits + "/" +
-						s->maxhits + ".");
-			}
-		}
+            if (s->damage != 0) {
+                b->AddLine(aName + " takes " + s->damage +
+                        " hits bringing it to " + s->hits + "/" +
+                        s->maxhits + ".");
+                s->damage = 0;
+            } else {
+                b->AddLine(aName + " takes no hits leaving it at " +
+                        s->hits + "/" + s->maxhits + ".");
+            }
+            if (s->regen) {
+                int regen = s->regen;
+                if (regen > diff) regen = diff;
+                s->hits += regen;
+                b->AddLine(aName + " regenerates " + regen +
+                        " hits bringing it to " + s->hits + "/" +
+                        s->maxhits + ".");
+            }
+        }
     }        
 }
 
@@ -418,12 +418,12 @@ int Formation::NumRangedAttacks() const
             SpecialType *sp = FindSpecial(pSoldiers[i]->special);
             int damage = 0;
             for(int j = 0; j < 4; j++) {
-		        if(sp->damage[j].type == -1) continue;
-		        int times = sp->damage[j].value;
-				if(sp->effectflags & SpecialType::FX_USE_LEV) times *= pSoldiers[j]->slevel;
-				if(sp->damage[j].effect == NULL) times *= 2; //ie if it is a killing spell *2, else *1 for fear/storm.
-				attacks += times;
-				damage = 1;
+                if(sp->damage[j].type == -1) continue;
+                int times = sp->damage[j].value;
+                if(sp->effectflags & SpecialType::FX_USE_LEV) times *= pSoldiers[j]->slevel;
+                if(sp->damage[j].effect == NULL) times *= 2; //ie if it is a killing spell *2, else *1 for fear/storm.
+                attacks += times;
+                damage = 1;
             }
             if(!damage) attacks += pSoldiers[i]->slevel * 20; //some bonus for other spells,
                                                           //eg shields, concealment, etc.
@@ -432,8 +432,8 @@ int Formation::NumRangedAttacks() const
             attacks += 1;          //increased value for leaders
         }
         if(pSoldiers[i]->unit->type == U_MAGE) {
-			forlist(&pSoldiers[i]->unit->skills) {
-			    Skill *sk = (Skill *)elem;
+            forlist(&pSoldiers[i]->unit->skills) {
+                Skill *sk = (Skill *)elem;
                 attacks += (sk->days + sk->experience) / 30;     //increased value for heroes
             }
             heroes++;

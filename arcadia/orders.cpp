@@ -25,103 +25,103 @@
 #include "orders.h"
 
 char *od[] = {
-	"#atlantis",
-	"#end",
-	"unit",
-	"address",
-	"advance",
-	"all",
-	"armour",
-	"assassinate",
-	"attack",
-	"autotax",
-	"avoid",
-	"bank",
-	"behind",
-	"build",
-	"buildhexside",
-	"buy",
-	"cast",
-	"claim",
-	"combat",
-	"command",
-	"consume",
-	"declare",
-	"describe",
-	"destroy",
-	"disable",
-	"distribute",
-	"end",
-	"endall",
-	"endtemplate",
-	"endturn",
-	"enter",
-	"entertain",
-	"evict",
-	"exchange",
-	"faction",
-	"fightas",
-	"find",
-	"follow",
-	"forget",
-	"form",
-	"give",
-	"guard",
-	"hold",
-	"idle",
-	"label",
-	"leave",
-	"master",
-	"move",
-	"name",
-	"noaid",
-	"nocross",
-	"nospoils",
-	"option",
-	"password",
-	"pillage",
-	"pool",
-	"prepare",
-	"produce",
-	"promote",
-	"quit",
-	"restart",
-	"reveal",
-	"sail",
-	"sell",
-	"send",
-	"share",
-	"show",
-	"spoils",
-	"steal",
-	"study",
-	"tactics",
-	"tax",
-	"teach",
-	"template",
-	"transport",
-	"turn",
-	"type",
-	"weapon",
-	"wishdraw",
-	"wishskill",
-	"withdraw",
-	"work",
+    "#atlantis",
+    "#end",
+    "unit",
+    "address",
+    "advance",
+    "all",
+    "armour",
+    "assassinate",
+    "attack",
+    "autotax",
+    "avoid",
+    "bank",
+    "behind",
+    "build",
+    "buildhexside",
+    "buy",
+    "cast",
+    "claim",
+    "combat",
+    "command",
+    "consume",
+    "declare",
+    "describe",
+    "destroy",
+    "disable",
+    "distribute",
+    "end",
+    "endall",
+    "endtemplate",
+    "endturn",
+    "enter",
+    "entertain",
+    "evict",
+    "exchange",
+    "faction",
+    "fightas",
+    "find",
+    "follow",
+    "forget",
+    "form",
+    "give",
+    "guard",
+    "hold",
+    "idle",
+    "label",
+    "leave",
+    "master",
+    "move",
+    "name",
+    "noaid",
+    "nocross",
+    "nospoils",
+    "option",
+    "password",
+    "pillage",
+    "pool",
+    "prepare",
+    "produce",
+    "promote",
+    "quit",
+    "restart",
+    "reveal",
+    "sail",
+    "sell",
+    "send",
+    "share",
+    "show",
+    "spoils",
+    "steal",
+    "study",
+    "tactics",
+    "tax",
+    "teach",
+    "template",
+    "transport",
+    "turn",
+    "type",
+    "weapon",
+    "wishdraw",
+    "wishskill",
+    "withdraw",
+    "work",
 };
 
 char **OrderStrs = od;
 
 int Parse1Order(AString *token)
 {
-	for (int i=0; i<NORDERS; i++)
-		if (*token == OrderStrs[i]) return i;
-	return -1;
+    for (int i=0; i<NORDERS; i++)
+        if (*token == OrderStrs[i]) return i;
+    return -1;
 }
 
 Order::Order()
 {
-	type = NORDERS;
-	quiet = 0;
+    type = NORDERS;
+    quiet = 0;
 }
 
 Order::~Order() {
@@ -129,19 +129,19 @@ Order::~Order() {
 
 ExchangeOrder::ExchangeOrder()
 {
-	type = O_EXCHANGE;
-	exchangeStatus = -1;
+    type = O_EXCHANGE;
+    exchangeStatus = -1;
 }
 
 ExchangeOrder::~ExchangeOrder()
 {
-	if(target) delete target;
+    if(target) delete target;
 }
 
 TurnOrder::TurnOrder()
 {
-	type = O_TURN;
-	repeating = 0;
+    type = O_TURN;
+    repeating = 0;
 }
 
 TurnOrder::~TurnOrder()
@@ -150,7 +150,7 @@ TurnOrder::~TurnOrder()
 
 MoveOrder::MoveOrder()
 {
-	type = O_MOVE;
+    type = O_MOVE;
 }
 
 MoveOrder::~MoveOrder()
@@ -159,7 +159,7 @@ MoveOrder::~MoveOrder()
 
 PoolOrder::PoolOrder()
 {
-	type = O_POOL;
+    type = O_POOL;
 }
 
 PoolOrder::~PoolOrder()
@@ -168,7 +168,7 @@ PoolOrder::~PoolOrder()
 
 ForgetOrder::ForgetOrder()
 {
-	type = O_FORGET;
+    type = O_FORGET;
 }
 
 ForgetOrder::~ForgetOrder()
@@ -177,7 +177,7 @@ ForgetOrder::~ForgetOrder()
 
 WithdrawOrder::WithdrawOrder()
 {
-	type = O_WITHDRAW;
+    type = O_WITHDRAW;
 }
 
 WithdrawOrder::~WithdrawOrder()
@@ -186,7 +186,7 @@ WithdrawOrder::~WithdrawOrder()
 
 WishdrawOrder::WishdrawOrder()
 {
-	type = O_WISHDRAW;
+    type = O_WISHDRAW;
 }
 
 WishdrawOrder::~WishdrawOrder()
@@ -195,7 +195,7 @@ WishdrawOrder::~WishdrawOrder()
 
 WishskillOrder::WishskillOrder()
 {
-	type = O_WISHSKILL;
+    type = O_WISHSKILL;
 }
 
 WishskillOrder::~WishskillOrder()
@@ -226,30 +226,30 @@ FollowOrder::~FollowOrder()
 
 GiveOrder::GiveOrder()
 {
-	type = O_GIVE;
+    type = O_GIVE;
 }
 
 GiveOrder::~GiveOrder()
 {
-	if(target) delete target;
+    if(target) delete target;
 }
 
 SendOrder::SendOrder()
 {
-	type = O_SEND;
-	target = NULL;
-	via = NULL;
+    type = O_SEND;
+    target = NULL;
+    via = NULL;
 }
 
 SendOrder::~SendOrder()
 {
-	if(target) delete target;
-	if(via) delete via;
+    if(target) delete target;
+    if(via) delete via;
 }
 
 StudyOrder::StudyOrder()
 {
-	type = O_STUDY;
+    type = O_STUDY;
 }
 
 StudyOrder::~StudyOrder()
@@ -258,7 +258,7 @@ StudyOrder::~StudyOrder()
 
 TeachOrder::TeachOrder()
 {
-	type = O_TEACH;
+    type = O_TEACH;
 }
 
 TeachOrder::~TeachOrder()
@@ -267,7 +267,7 @@ TeachOrder::~TeachOrder()
 
 ProduceOrder::ProduceOrder()
 {
-	type = O_PRODUCE;
+    type = O_PRODUCE;
 }
 
 ProduceOrder::~ProduceOrder()
@@ -276,7 +276,7 @@ ProduceOrder::~ProduceOrder()
 
 BuyOrder::BuyOrder()
 {
-	type = O_BUY;
+    type = O_BUY;
 }
 
 BuyOrder::~BuyOrder()
@@ -285,7 +285,7 @@ BuyOrder::~BuyOrder()
 
 SellOrder::SellOrder()
 {
-	type = O_SELL;
+    type = O_SELL;
 }
 
 SellOrder::~SellOrder()
@@ -294,8 +294,8 @@ SellOrder::~SellOrder()
 
 AttackOrder::AttackOrder()
 {
-	type = O_ATTACK;
-	quiet = 1;
+    type = O_ATTACK;
+    quiet = 1;
 }
 
 AttackOrder::~AttackOrder()
@@ -304,17 +304,17 @@ AttackOrder::~AttackOrder()
 
 BuildOrder::BuildOrder()
 {
-	type = O_BUILD;
+    type = O_BUILD;
 }
 
 BuildOrder::~BuildOrder()
 {
-	if(target) delete target;
+    if(target) delete target;
 }
 
 BuildHexsideOrder::BuildHexsideOrder()
 {
-	type = O_BUILDHEXSIDE;
+    type = O_BUILDHEXSIDE;
 }
 
 BuildHexsideOrder::~BuildHexsideOrder()
@@ -324,7 +324,7 @@ BuildHexsideOrder::~BuildHexsideOrder()
 
 SailOrder::SailOrder()
 {
-	type = O_SAIL;
+    type = O_SAIL;
 }
 
 SailOrder::~SailOrder()
@@ -333,7 +333,7 @@ SailOrder::~SailOrder()
 
 FindOrder::FindOrder()
 {
-	type = O_FIND;
+    type = O_FIND;
 }
 
 FindOrder::~FindOrder()
@@ -342,28 +342,28 @@ FindOrder::~FindOrder()
 
 StealOrder::StealOrder()
 {
-	type = O_STEAL;
+    type = O_STEAL;
 }
 
 StealOrder::~StealOrder()
 {
-	if (target) delete target;
+    if (target) delete target;
 }
 
 AssassinateOrder::AssassinateOrder()
 {
-	type = O_ASSASSINATE;
+    type = O_ASSASSINATE;
 }
 
 AssassinateOrder::~AssassinateOrder()
 {
-	if (target) delete target;
+    if (target) delete target;
 }
 
 CastOrder::CastOrder()
 {
-	type = O_CAST;
-	extracost = 0;
+    type = O_CAST;
+    extracost = 0;
 }
 
 CastOrder::~CastOrder()
@@ -372,12 +372,12 @@ CastOrder::~CastOrder()
 
 CastMindOrder::CastMindOrder()
 {
-	id = 0;
+    id = 0;
 }
 
 CastMindOrder::~CastMindOrder()
 {
-	delete id;
+    delete id;
 }
 
 TeleportOrder::TeleportOrder()
@@ -438,18 +438,18 @@ CastMenOrder::~CastMenOrder()
 
 CastHypnosisOrder::CastHypnosisOrder()
 {
-		monthorder = 0;
-		taxing = TAX_NONE;
+        monthorder = 0;
+        taxing = TAX_NONE;
 }
 
 CastHypnosisOrder::~CastHypnosisOrder()
 {
-		if(monthorder) delete monthorder;
+        if(monthorder) delete monthorder;
 }
 
 EvictOrder::EvictOrder()
 {
-	type = O_EVICT;
+    type = O_EVICT;
 }
 
 EvictOrder::~EvictOrder()
@@ -467,7 +467,7 @@ BankOrder::~BankOrder()
 
 IdleOrder::IdleOrder()
 {
-	type = O_IDLE;
+    type = O_IDLE;
 }
 
 IdleOrder::~IdleOrder()
@@ -476,14 +476,14 @@ IdleOrder::~IdleOrder()
 
 TransportOrder::TransportOrder()
 {
-	type = O_TRANSPORT;
-	item = -1;
-	amount = 0;
-	except = 0;
-	target = NULL;
+    type = O_TRANSPORT;
+    item = -1;
+    amount = 0;
+    except = 0;
+    target = NULL;
 }
 
 TransportOrder::~TransportOrder()
 {
-	if(target) delete target;
+    if(target) delete target;
 }

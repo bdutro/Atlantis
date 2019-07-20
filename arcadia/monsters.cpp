@@ -32,37 +32,37 @@
 
 void Game::CreateVMons()
 {
-	if(!Globals->LAIR_MONSTERS_EXIST) return;
+    if(!Globals->LAIR_MONSTERS_EXIST) return;
 
-	forlist(&regions) {
-		ARegion * r = (ARegion *) elem;
-		forlist(&r->objects) {
-			Object * obj = (Object *) elem;
-			if(obj->type != O_BKEEP) continue;
-			Faction *monfac = GetFaction( &factions, 2 );
-			Unit *u = GetNewUnit( monfac, 0 );
-			u->MakeWMon( "Arch Dragons", I_DRAGON, 6);
-			u->MoveUnit(obj);
-		}
-	}
+    forlist(&regions) {
+        ARegion * r = (ARegion *) elem;
+        forlist(&r->objects) {
+            Object * obj = (Object *) elem;
+            if(obj->type != O_BKEEP) continue;
+            Faction *monfac = GetFaction( &factions, 2 );
+            Unit *u = GetNewUnit( monfac, 0 );
+            u->MakeWMon( "Arch Dragons", I_DRAGON, 6);
+            u->MoveUnit(obj);
+        }
+    }
 }
 
 void Game::GrowVMons()
 {
-	if(!Globals->LAIR_MONSTERS_EXIST) return;
+    if(!Globals->LAIR_MONSTERS_EXIST) return;
 
-	forlist(&regions) {
-		ARegion *r = (ARegion *)elem;
-		forlist(&r->objects) {
-			Object *obj = (Object *)elem;
-			if(obj->type != O_BKEEP) continue;
-			forlist(&obj->units) {
-				Unit *u = (Unit *)elem;
-				int men = u->GetMen(I_DRAGON);
-				if(men > 0) men += 2;
-				if(men > 4) men = 4;
-				u->items.SetNum(I_DRAGON, men);
-			}
-		}
-	}
+    forlist(&regions) {
+        ARegion *r = (ARegion *)elem;
+        forlist(&r->objects) {
+            Object *obj = (Object *)elem;
+            if(obj->type != O_BKEEP) continue;
+            forlist(&obj->units) {
+                Unit *u = (Unit *)elem;
+                int men = u->GetMen(I_DRAGON);
+                if(men > 0) men += 2;
+                if(men > 4) men = 4;
+                u->items.SetNum(I_DRAGON, men);
+            }
+        }
+    }
 }

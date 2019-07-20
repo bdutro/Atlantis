@@ -41,121 +41,121 @@ Army::Army(Unit * ldr,AList * locs,int regtype,int ass)
 #ifdef DEBUG 
 Awrite("Making an army");
 #endif
-	Unit * tactician = ldr;
+    Unit * tactician = ldr;
 
-	round = 0;
-	tac = ldr->GetAttribute("seniority");
-	count = 0;
-	hitstotal = 0;
-	sortedformations = 0; // Formations get sorted in first battle round after fog/darkness is cast.
+    round = 0;
+    tac = ldr->GetAttribute("seniority");
+    count = 0;
+    hitstotal = 0;
+    sortedformations = 0; // Formations get sorted in first battle round after fog/darkness is cast.
     concealment = 0;
     nonillusioncount = 0;
-	canride = (TerrainDefs[regtype].flags & TerrainType::RIDINGMOUNTS);
+    canride = (TerrainDefs[regtype].flags & TerrainType::RIDINGMOUNTS);
 
-	if(TerrainDefs[regtype].flags & TerrainType::RESTRICTEDRANGED) {
-	     rangedbonus = -1;
+    if(TerrainDefs[regtype].flags & TerrainType::RESTRICTEDRANGED) {
+         rangedbonus = -1;
     } else if(TerrainDefs[regtype].flags & TerrainType::ENHANCEDRANGED) {
          rangedbonus = 1;
     } else rangedbonus = 0;
 
-	
-	if (ass) {
-		count = 1;
-		nonillusioncount = 1;
-		ldr->losses = 0;
-		pLeader = ldr;
-	} else {
-		forlist(locs) {
-			Unit * u = ((Location *) elem)->unit;
-			count += u->GetSoldiers();
-			nonillusioncount += u->GetRealSoldiers();
-			u->losses = 0;
-			int temp = u->GetSeniority();
-			if (temp > tac) {
-				tac = temp;
-				tactician = u;
-			}
-		}
-		pLeader = tactician;
-	}
+    
+    if (ass) {
+        count = 1;
+        nonillusioncount = 1;
+        ldr->losses = 0;
+        pLeader = ldr;
+    } else {
+        forlist(locs) {
+            Unit * u = ((Location *) elem)->unit;
+            count += u->GetSoldiers();
+            nonillusioncount += u->GetRealSoldiers();
+            u->losses = 0;
+            int temp = u->GetSeniority();
+            if (temp > tac) {
+                tac = temp;
+                tactician = u;
+            }
+        }
+        pLeader = tactician;
+    }
 
     taccontrol = 100;
-	
-	// If TACTICS_NEEDS_WAR is enabled, we don't want to push leaders 
-	// from tact-4 to tact-5! Also check that we have skills, otherwise
-	// we get a nasty core dump ;)
-	if(!(SkillDefs[S_TACTICS].flags & SkillType::DISABLED)) {
-    	if (Globals->TACTICS_NEEDS_WAR && (tactician->skills.Num() != 0)) {
-    		int currskill = tactician->skills.GetDays(S_TACTICS)/tactician->GetMen();
-    		if (currskill < 450 - Globals->SKILL_PRACTICE_AMOUNT) {
-    			tactician->PracticeAttribute("tactics");
-    		}
-    	} else { // Only Globals->TACTICS_NEEDS_WAR == 0
-    		tactician->PracticeAttribute("tactics");
-    	}
-	}
-	// This looks wrong, but isn't, as the (NUMFORMS+1)th formation contains all the dead soldiers.
-	for(int i=0; i<NUMFORMS+1; i++) {
-	    formations[i].SetupFormation(i, count);	
-	}
-	
-	for(int i=0; i<NUMFORMS; i++) {
-	    for(int j=0; j<NUMFORMS; j++) {
-	        engagements[i][j] = ENGAGED_NONE;
+    
+    // If TACTICS_NEEDS_WAR is enabled, we don't want to push leaders 
+    // from tact-4 to tact-5! Also check that we have skills, otherwise
+    // we get a nasty core dump ;)
+    if(!(SkillDefs[S_TACTICS].flags & SkillType::DISABLED)) {
+        if (Globals->TACTICS_NEEDS_WAR && (tactician->skills.Num() != 0)) {
+            int currskill = tactician->skills.GetDays(S_TACTICS)/tactician->GetMen();
+            if (currskill < 450 - Globals->SKILL_PRACTICE_AMOUNT) {
+                tactician->PracticeAttribute("tactics");
+            }
+        } else { // Only Globals->TACTICS_NEEDS_WAR == 0
+            tactician->PracticeAttribute("tactics");
+        }
+    }
+    // This looks wrong, but isn't, as the (NUMFORMS+1)th formation contains all the dead soldiers.
+    for(int i=0; i<NUMFORMS+1; i++) {
+        formations[i].SetupFormation(i, count);    
+    }
+    
+    for(int i=0; i<NUMFORMS; i++) {
+        for(int j=0; j<NUMFORMS; j++) {
+            engagements[i][j] = ENGAGED_NONE;
         }
     }
 #ifdef DEBUG 
 Awrite("Adding soldiers");
 #endif
-	int x = 0;
-	forlist(locs) {
-		Unit * u = ((Location *) elem)->unit;
-		Object * obj = ((Location *) elem)->obj;
+    int x = 0;
+    forlist(locs) {
+        Unit * u = ((Location *) elem)->unit;
+        Object * obj = ((Location *) elem)->obj;
 #ifdef DEBUG2
 cout << *u->name << endl;
 #endif
-		if (ass) {
-			forlist(&u->items) {
-				Item * it = (Item *) elem;
-				if (it) {
-					if(ItemDefs[ it->type ].type & IT_MAN) {
-							Soldier *temp = new Soldier(u, obj, regtype,
-									it->type, ass);
-							formations[0].AddSoldier(temp);
-							hitstotal = temp->hits;  //used only for rout conditions
-							temp = 0;
-							++x;
-							goto finished_army;
+        if (ass) {
+            forlist(&u->items) {
+                Item * it = (Item *) elem;
+                if (it) {
+                    if(ItemDefs[ it->type ].type & IT_MAN) {
+                            Soldier *temp = new Soldier(u, obj, regtype,
+                                    it->type, ass);
+                            formations[0].AddSoldier(temp);
+                            hitstotal = temp->hits;  //used only for rout conditions
+                            temp = 0;
+                            ++x;
+                            goto finished_army;
 
-					}
-				}
-			}
-		} else {
-			Item *it = (Item *) u->items.First();
-			do {
-				if(IsSoldier(it->type)) {
+                    }
+                }
+            }
+        } else {
+            Item *it = (Item *) u->items.First();
+            do {
+                if(IsSoldier(it->type)) {
 #ifdef DEBUG2
 cout << ItemDefs[it->type].abr;
 #endif
-					for(int i = 0; i < it->num; i++) {
+                    for(int i = 0; i < it->num; i++) {
 #ifdef DEBUG2
 cout << ".";
 #endif
-						Soldier *temp = new Soldier(u, obj, regtype,
-								it->type);
+                        Soldier *temp = new Soldier(u, obj, regtype,
+                                it->type);
 #ifdef DEBUG2
 cout << "|";
 #endif
-						formations[0].AddSoldier(temp);
-						if(!temp->illusion) hitstotal += temp->hits;    //used only for rout conditions, hence does not include illusions
-						temp = 0;
-						++x;
-					}
-				}
-				it = (Item *) u->items.Next(it);
-			} while(it);
-		}
-	}
+                        formations[0].AddSoldier(temp);
+                        if(!temp->illusion) hitstotal += temp->hits;    //used only for rout conditions, hence does not include illusions
+                        temp = 0;
+                        ++x;
+                    }
+                }
+                it = (Item *) u->items.Next(it);
+            } while(it);
+        }
+    }
 
 finished_army:
 Awrite("Finished Army Construction");
@@ -207,15 +207,15 @@ Soldier * Army::GetSoldier(int soldiernum) const
 
 int Army::Broken()
 {
-	if(Globals->ARMY_ROUT == GameDefs::ARMY_ROUT_FIGURES) {
-		if(NumAlive() * 2 < count) return 1;
-	} else { //one of the gamedef options effectively disabled here
+    if(Globals->ARMY_ROUT == GameDefs::ARMY_ROUT_FIGURES) {
+        if(NumAlive() * 2 < count) return 1;
+    } else { //one of the gamedef options effectively disabled here
         int hitsalive = 0;
         for(int i=0; i<NUMFORMS; i++) hitsalive += formations[i].GetNonIllusionSize();
         if(hitsalive * 2 < hitstotal) return 1;
         if(!NumAlive()) return 1; //if everyone is dead, since if all illusions the previous line will be if(0<0), ie false.
-	}
-	return 0;
+    }
+    return 0;
 }
 
 void Army::Reset()
@@ -273,423 +273,423 @@ int Army::GetTarget(Army *attackers, int attackerform, int attackType, int *targ
 {
     int tarnum = -1;
     #ifdef DEBUG2
-	cout << "getting new target";
-	#endif
-	
-	SpecialType *sp = FindSpecial(special);
-	if (sp && sp->targflags) {
-	#ifdef DEBUG2
-	cout << " special attack" << endl;
-	#endif
-	//this is a special which only hits certain people (other specials, which hit anyone, 
+    cout << "getting new target";
+    #endif
+    
+    SpecialType *sp = FindSpecial(special);
+    if (sp && sp->targflags) {
+    #ifdef DEBUG2
+    cout << " special attack" << endl;
+    #endif
+    //this is a special which only hits certain people (other specials, which hit anyone, 
     //are dealt with as normal attacks)
-		int validtargs = 0;
-		if(attackers != this) {  //ie attacking enemy, so check formation stuff.
-    		// Search Engaged Formations
-    		for(int i=0; i<NUMFORMS; i++) {
-    		    if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
-    		        for(int j=0; j<formations[i].GetNumMen(); j++) {
-    		            if (formations[i].CheckSpecialTarget(special, j)) validtargs++;
-    		        }
-                }
-    		}
-//cout << "engaged: " << validtargs << endl;	 //testing line for effects stuff	
-    		if(validtargs) {
-    		    tarnum = getrandom(validtargs);
-    		    for(int i=0; i<NUMFORMS; i++) {
-    		        if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
-    		            for(int j=0; j<formations[i].GetNumMen(); j++) {
-    		                if (formations[i].CheckSpecialTarget(special, j)) {
-           		                if(tarnum == 0) {
-    		                        *targetform = i;
-    		                        return j;
-    	                        } else tarnum--;
-                            }
-    		            }
+        int validtargs = 0;
+        if(attackers != this) {  //ie attacking enemy, so check formation stuff.
+            // Search Engaged Formations
+            for(int i=0; i<NUMFORMS; i++) {
+                if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
+                    for(int j=0; j<formations[i].GetNumMen(); j++) {
+                        if (formations[i].CheckSpecialTarget(special, j)) validtargs++;
                     }
-    		    }
+                }
+            }
+//cout << "engaged: " << validtargs << endl;     //testing line for effects stuff    
+            if(validtargs) {
+                tarnum = getrandom(validtargs);
+                for(int i=0; i<NUMFORMS; i++) {
+                    if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
+                        for(int j=0; j<formations[i].GetNumMen(); j++) {
+                            if (formations[i].CheckSpecialTarget(special, j)) {
+                                   if(tarnum == 0) {
+                                    *targetform = i;
+                                    return j;
+                                } else tarnum--;
+                            }
+                        }
+                    }
+                }
             }
             //No valid targets in engaged formations. However, there may be enemies 
             //still in the engaged formations, so we do not want to engage again 
             //for the sake of one mage. Since this has an effect, it is 
             //a ranged attack. Search TryAttack formations
             validtargs = 0; //Should be anyway, but just in case
-    		for(int i=0; i<NUMFORMS; i++) {
-    		    if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
-    		        for(int j=0; j<formations[i].GetNumMen(); j++) {
-    		            if (formations[i].CheckSpecialTarget(special, j)) validtargs++;
-    		        }
-                }
-    		}
-    //cout << "tries: " << validtargs << endl;	 //testing line for effects stuff	
-    		if(validtargs) {
-    		    tarnum = getrandom(validtargs);
-    		    for(int i=0; i<NUMFORMS; i++) {
-    		        if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
-    		            for(int j=0; j<formations[i].GetNumMen(); j++) {
-    		                if (formations[i].CheckSpecialTarget(special, j)) {
-           		                if(tarnum == 0) {
-    		                        *targetform = i;
-    		                        return j;
-    	                        } else tarnum--;
-                            }
-    		            }
+            for(int i=0; i<NUMFORMS; i++) {
+                if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
+                    for(int j=0; j<formations[i].GetNumMen(); j++) {
+                        if (formations[i].CheckSpecialTarget(special, j)) validtargs++;
                     }
-    		    }
+                }
             }
-	    }
+    //cout << "tries: " << validtargs << endl;     //testing line for effects stuff    
+            if(validtargs) {
+                tarnum = getrandom(validtargs);
+                for(int i=0; i<NUMFORMS; i++) {
+                    if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
+                        for(int j=0; j<formations[i].GetNumMen(); j++) {
+                            if (formations[i].CheckSpecialTarget(special, j)) {
+                                   if(tarnum == 0) {
+                                    *targetform = i;
+                                    return j;
+                                } else tarnum--;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         //Hit a random soldier
         validtargs = 0; //should be zero anyway if we get here, but just in case!
-		for(int i=0; i<NUMFORMS; i++) {
-	        for(int j=0; j<formations[i].GetNumMen(); j++) {
-	            if (formations[i].CheckSpecialTarget(special, j)) validtargs++;
+        for(int i=0; i<NUMFORMS; i++) {
+            for(int j=0; j<formations[i].GetNumMen(); j++) {
+                if (formations[i].CheckSpecialTarget(special, j)) validtargs++;
             }
-		}
-//cout << "randoms: " << validtargs << endl;	 //testing line for effects stuff	
-		if(validtargs) {
-		    tarnum = getrandom(validtargs);
-		    for(int i=0; i<NUMFORMS; i++) {
-	            for(int j=0; j<formations[i].GetNumMen(); j++) {
-	                if (formations[i].CheckSpecialTarget(special, j)) {
-   		                if(tarnum == 0) {
-	                        *targetform = i;
-	                        return j;
+        }
+//cout << "randoms: " << validtargs << endl;     //testing line for effects stuff    
+        if(validtargs) {
+            tarnum = getrandom(validtargs);
+            for(int i=0; i<NUMFORMS; i++) {
+                for(int j=0; j<formations[i].GetNumMen(); j++) {
+                    if (formations[i].CheckSpecialTarget(special, j)) {
+                           if(tarnum == 0) {
+                            *targetform = i;
+                            return j;
                         } else tarnum--;
                     }
-	            }
-		    }
+                }
+            }
         }
         
         //should get here only if there are no valid targets anywhere.
         return -1;
-	} else if (attackers != this) {  //ie as long as it's not an attack or spell hitting a unit's own army.
-		int tars = 0;
-		int engaged = 0;
-		// Search Engaged Formations
-		for(int i=0; i<NUMFORMS; i++) {
-		    if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
-		        engaged = 1;
-		        tars += formations[i].GetNumMen();
+    } else if (attackers != this) {  //ie as long as it's not an attack or spell hitting a unit's own army.
+        int tars = 0;
+        int engaged = 0;
+        // Search Engaged Formations
+        for(int i=0; i<NUMFORMS; i++) {
+            if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
+                engaged = 1;
+                tars += formations[i].GetNumMen();
             }
-		}
-		if(tars) {
-		    tarnum = getrandom(tars);
-		    for(int i=0; i<NUMFORMS; i++) {
-		        if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
-		            if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
-		            else {
-		                *targetform = i;
+        }
+        if(tars) {
+            tarnum = getrandom(tars);
+            for(int i=0; i<NUMFORMS; i++) {
+                if(attackers->engagements[attackerform][i] == ENGAGED_ENGAGED) {
+                    if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
+                    else {
+                        *targetform = i;
                         return tarnum;
                     }
-		        }
-		    }
-		} else if(engaged) {
-		//engaged with an empty formation. Clear the engagement.
-		    for(int i=0; i<NUMFORMS; i++) {
-		        if(formations[i].GetNumMen() == 0) attackers->engagements[attackerform][i] = ENGAGED_NONE;
+                }
             }
-		}
-		//if this soldier is melee, see if we can engage a new enemy formation.
-		//if we are behind 1 this will return with no target.
-		if(attackType == ATTACK_COMBAT || attackType == ATTACK_RIDING) {
-    		int newtarget = attackers->GetMidRoundTarget(attackerform,this, b);
-    		#ifdef DEBUG
-    		cout << "New target: " << newtarget << endl;
-    		#endif
+        } else if(engaged) {
+        //engaged with an empty formation. Clear the engagement.
+            for(int i=0; i<NUMFORMS; i++) {
+                if(formations[i].GetNumMen() == 0) attackers->engagements[attackerform][i] = ENGAGED_NONE;
+            }
+        }
+        //if this soldier is melee, see if we can engage a new enemy formation.
+        //if we are behind 1 this will return with no target.
+        if(attackType == ATTACK_COMBAT || attackType == ATTACK_RIDING) {
+            int newtarget = attackers->GetMidRoundTarget(attackerform,this, b);
+            #ifdef DEBUG
+            cout << "New target: " << newtarget << endl;
+            #endif
 
-    		if(newtarget > -1) {
+            if(newtarget > -1) {
                 if(formations[newtarget].GetNumMen()) {
-        		    *targetform = newtarget;
-        		    tars = formations[newtarget].GetNumMen();
-        		    return getrandom(tars);
-		        } else {
-		            //we shouldn't really get to here :(
-		            #ifdef DEBUG
-		            cout << "New target is empty" << endl;
-		            system("pause");
-		            #endif
-		            return -1;
-		        }
-    		}
-		//this is a melee soldier and we could not engage a target (perhaps we are behind).
-        //Return with no target.
-		    return newtarget; //this is either -1 (no target found) or -2 (soldier has been moved out). Either way, quit the attack sequence.
-
-		    //The order here could be changed to make GetMidRoundTarget only called if deleting old
-		    //engagements
-		}
-
-		//This soldier is ranged, and not engaged with anyone. It wants to hit someone it
-		//is trying to attack.
-		tars = 0; //just in case
-		engaged = 0;
-		for(int i=0; i<NUMFORMS; i++) {
-		    if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
-		        engaged = 1;
-		        tars += formations[i].GetNumMen();
+                    *targetform = newtarget;
+                    tars = formations[newtarget].GetNumMen();
+                    return getrandom(tars);
+                } else {
+                    //we shouldn't really get to here :(
+                    #ifdef DEBUG
+                    cout << "New target is empty" << endl;
+                    system("pause");
+                    #endif
+                    return -1;
+                }
             }
-		}
-		if(tars) {
-		    tarnum = getrandom(tars);
-		    for(int i=0; i<NUMFORMS; i++) {
-		        if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
-		            if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
-		            else {
-		                *targetform = i;
+        //this is a melee soldier and we could not engage a target (perhaps we are behind).
+        //Return with no target.
+            return newtarget; //this is either -1 (no target found) or -2 (soldier has been moved out). Either way, quit the attack sequence.
+
+            //The order here could be changed to make GetMidRoundTarget only called if deleting old
+            //engagements
+        }
+
+        //This soldier is ranged, and not engaged with anyone. It wants to hit someone it
+        //is trying to attack.
+        tars = 0; //just in case
+        engaged = 0;
+        for(int i=0; i<NUMFORMS; i++) {
+            if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
+                engaged = 1;
+                tars += formations[i].GetNumMen();
+            }
+        }
+        if(tars) {
+            tarnum = getrandom(tars);
+            for(int i=0; i<NUMFORMS; i++) {
+                if(attackers->engagements[attackerform][i] == ENGAGED_TRYATTACK) {
+                    if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
+                    else {
+                        *targetform = i;
                         return tarnum;
                     }
-		        }
-		    }
-		} else if(engaged) {
-		//tryattacking empty formations only. Clear engagements with empty enemy formations.
-		    for(int i=0; i<NUMFORMS; i++) {
-		        if(formations[i].GetNumMen() == 0) attackers->engagements[attackerform][i] = ENGAGED_NONE;
+                }
+            }
+        } else if(engaged) {
+        //tryattacking empty formations only. Clear engagements with empty enemy formations.
+            for(int i=0; i<NUMFORMS; i++) {
+                if(formations[i].GetNumMen() == 0) attackers->engagements[attackerform][i] = ENGAGED_NONE;
             }
         //our old tryattack targets are empty. Get new ones. If we are a behind 0 formation will get none.
-    		int newtarget = attackers->GetMidRoundRangedTarget(attackerform,this);
-    		if(newtarget>-1 && formations[newtarget].GetNumMen()) {
-    		    *targetform = newtarget;
-    		    tars = formations[newtarget].GetNumMen();
-    		    return getrandom(tars);
-    		}
+            int newtarget = attackers->GetMidRoundRangedTarget(attackerform,this);
+            if(newtarget>-1 && formations[newtarget].GetNumMen()) {
+                *targetform = newtarget;
+                tars = formations[newtarget].GetNumMen();
+                return getrandom(tars);
+            }
         
-		}
-		
-		//This soldier is ranged, and has no-one it wants to attack. As a last resort, 
-		//hit a random enemy. This will only be called when we are down to enemy reserves & behind formations
-		tars = NumAlive();
-		tarnum = getrandom(tars);
-		for(int i=0; i<NUMFORMS; i++) {
-		    if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
-		    else {
-		        *targetform = i;
-		        return tarnum;
+        }
+        
+        //This soldier is ranged, and has no-one it wants to attack. As a last resort, 
+        //hit a random enemy. This will only be called when we are down to enemy reserves & behind formations
+        tars = NumAlive();
+        tarnum = getrandom(tars);
+        for(int i=0; i<NUMFORMS; i++) {
+            if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
+            else {
+                *targetform = i;
+                return tarnum;
             }
         }
     } else {
         //hitting one's own army. Get a random soldier.
-		tarnum = getrandom( NumAlive() );
-		for(int i=0; i<NUMFORMS; i++) {
-		    if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
-		    else {
-		        *targetform = i;
-		        return tarnum;
+        tarnum = getrandom( NumAlive() );
+        for(int i=0; i<NUMFORMS; i++) {
+            if(tarnum >= formations[i].GetNumMen() ) tarnum -= formations[i].GetNumMen();
+            else {
+                *targetform = i;
+                return tarnum;
             }
         }
     }
     #ifdef DEBUG
     Awrite("Fell through Target Selection");
     #endif
-	return -1; // This should never get called - unless perhaps a multi-attack soldiers kills the last enemy?
+    return -1; // This should never get called - unless perhaps a multi-attack soldiers kills the last enemy?
 }
 
 //needed for DoAnAttack below.
 int pow(int b,int p)
 {
-	int b2 = b;
-	for(int i=1; i<p; i++) {
-		b2 *= b;
-	}
-	return b2;
+    int b2 = b;
+    for(int i=1; i<p; i++) {
+        b2 *= b;
+    }
+    return b2;
 }
 
 int Hits(int a,int d)
 {
-	int tohit = 1,tomiss = 1;
-	if (a>d) {
-		tohit = pow(2,a-d);
-	} else if (d>a) {
-		tomiss = pow(2,d-a);
-	}
-	if (getrandom(tohit+tomiss) < tohit) return 1;
-	return 0;
+    int tohit = 1,tomiss = 1;
+    if (a>d) {
+        tohit = pow(2,a-d);
+    } else if (d>a) {
+        tomiss = pow(2,d-a);
+    }
+    if (getrandom(tohit+tomiss) < tohit) return 1;
+    return 0;
 }
 
 int Army::DoAnAttack(char *special, int numAttacks, int race, int attackType, int attackLev, 
                   int flags, int weaponClass, char *effect, int mountBonus, Army *attackers, int attackerform, Battle *b, int strength)
-		/* The army in question is the army DEFENDING!
-		   */
+        /* The army in question is the army DEFENDING!
+           */
 
 {
 #ifdef DEBUG2
 cout << "doing an attack" << endl;
 #endif
-	/* 1. Check against Global effects (not sure how yet). BS: What does this even mean? */
-	
-	/* 2. Attack shield */
-	Shield *hi;
-	int combat = 0;
-	int canShield = 0;
-	switch(attackType) {
-		case ATTACK_RANGED:
-			canShield = 1;
-			// fall through
-		case ATTACK_COMBAT:
-		case ATTACK_RIDING:
-			combat = 1;
-			break;
-		case ATTACK_ENERGY:
-		case ATTACK_WEATHER:
-		case ATTACK_SPIRIT:
-			canShield = 1;
-			break;
-	}
-	if(canShield) {
-		int shieldType = attackType;
+    /* 1. Check against Global effects (not sure how yet). BS: What does this even mean? */
+    
+    /* 2. Attack shield */
+    Shield *hi;
+    int combat = 0;
+    int canShield = 0;
+    switch(attackType) {
+        case ATTACK_RANGED:
+            canShield = 1;
+            // fall through
+        case ATTACK_COMBAT:
+        case ATTACK_RIDING:
+            combat = 1;
+            break;
+        case ATTACK_ENERGY:
+        case ATTACK_WEATHER:
+        case ATTACK_SPIRIT:
+            canShield = 1;
+            break;
+    }
+    if(canShield) {
+        int shieldType = attackType;
 
-		hi = shields.GetHighShield(shieldType);
-		if (hi) {
+        hi = shields.GetHighShield(shieldType);
+        if (hi) {
 #ifdef DEBUG
 cout << "Passing shield strength " << hi->shieldskill << endl;
 b->AddLine(AString("Testing shield strength ") + hi->shieldskill);
 #endif
-			/* Check if we get through shield */
-			if(!Hits(attackLev, hi->shieldskill)) {
-				return -1;
-			}
+            /* Check if we get through shield */
+            if(!Hits(attackLev, hi->shieldskill)) {
+                return -1;
+            }
 #ifdef DEBUG
 b->AddLine("Through");
 #endif
-			if(effect == NULL && !combat) {
-				/* We got through shield... if killing spell, downgrade shield */
-				DowngradeShield(hi);
-			}
-			if(combat && !getrandom(80/numAttacks) ) {
-				/* Damaging shot, downgrade shield */
-				DowngradeShield(hi);
+            if(effect == NULL && !combat) {
+                /* We got through shield... if killing spell, downgrade shield */
+                DowngradeShield(hi);
+            }
+            if(combat && !getrandom(80/numAttacks) ) {
+                /* Damaging shot, downgrade shield */
+                DowngradeShield(hi);
 #ifdef DEBUG
 b->AddLine(AString("Damaged Shield ") + hi->shieldskill);
 #endif
-			}
-		}
-	}
+            }
+        }
+    }
 
-	// Now, loop through and do attacks
-	//
-	int ret = 0; //number of successful attacks!
-	for(int i = 0; i < numAttacks; i++) {
-	    //initialise variables
-	    int attackLevel = attackLev;
-	
-	
-		/* 3. Get the target */
-		int formhit = -1;
-		int tarnum = GetTarget(attackers,attackerform,attackType,&formhit, special, b);
-		if(tarnum<0) return ret; //This is needed whenever no target is found 
+    // Now, loop through and do attacks
+    //
+    int ret = 0; //number of successful attacks!
+    for(int i = 0; i < numAttacks; i++) {
+        //initialise variables
+        int attackLevel = attackLev;
+    
+    
+        /* 3. Get the target */
+        int formhit = -1;
+        int tarnum = GetTarget(attackers,attackerform,attackType,&formhit, special, b);
+        if(tarnum<0) return ret; //This is needed whenever no target is found 
                       //(all enemies dead, or no valid target for that attacker,
                       //or that attacker moved to a new formation).
 
-		#ifdef DEBUG
-		if(formhit<0) {
-		    cout << "Invalid target formation! " << formhit << " with tarnum " << tarnum << endl;
-		    system("pause");
-		    return ret;
-  		}
-  		#endif
-		
-		Soldier *tar = formations[formhit].GetSoldier(tarnum);
-		
-		#ifdef DEBUG
-		if(!tar) {
-		    Awrite("Invalid target!");
-		    system("pause");
-		    return ret;
-		}
-		#endif
-		
-		int tarFlags = 0;
-		if(tar->weapon != -1) {
-			WeaponType *pw = FindWeapon(ItemDefs[tar->weapon].abr);
-			tarFlags = pw->flags;
-		}
+        #ifdef DEBUG
+        if(formhit<0) {
+            cout << "Invalid target formation! " << formhit << " with tarnum " << tarnum << endl;
+            system("pause");
+            return ret;
+          }
+          #endif
+        
+        Soldier *tar = formations[formhit].GetSoldier(tarnum);
+        
+        #ifdef DEBUG
+        if(!tar) {
+            Awrite("Invalid target!");
+            system("pause");
+            return ret;
+        }
+        #endif
+        
+        int tarFlags = 0;
+        if(tar->weapon != -1) {
+            WeaponType *pw = FindWeapon(ItemDefs[tar->weapon].abr);
+            tarFlags = pw->flags;
+        }
 
 
-		/* 4. Add in any effects, if applicable */
-		int tlev = 0; //target's defence skill
-		if(attackType != NUM_ATTACK_TYPES)
-			tlev = tar->dskill[ attackType ];
-		if(special != NULL) {
-			SpecialType *sp = FindSpecial(special);
-			if((sp->effectflags & SpecialType::FX_NOBUILDING) && tar->building)
-				tlev -= 2; //this assumes building defence bonus is 2! Not always right.
-		}
+        /* 4. Add in any effects, if applicable */
+        int tlev = 0; //target's defence skill
+        if(attackType != NUM_ATTACK_TYPES)
+            tlev = tar->dskill[ attackType ];
+        if(special != NULL) {
+            SpecialType *sp = FindSpecial(special);
+            if((sp->effectflags & SpecialType::FX_NOBUILDING) && tar->building)
+                tlev -= 2; //this assumes building defence bonus is 2! Not always right.
+        }
 
-		/* 4.1 Check whether defense is allowed against this weapon */
-		if((flags & WeaponType::NODEFENSE) && (tlev > 0)) tlev = 0;
+        /* 4.1 Check whether defense is allowed against this weapon */
+        if((flags & WeaponType::NODEFENSE) && (tlev > 0)) tlev = 0;
 
-		if(!(flags & WeaponType::RANGED)) {
-			/* 4.2 Check relative weapon length */
-			int attLen = 1;
-			int defLen = 1;
-			if(flags & WeaponType::LONG) attLen = 2;
-			else if(flags & WeaponType::SHORT) attLen = 0;
-			if(tarFlags & WeaponType::LONG) defLen = 2;
-			else if(tarFlags & WeaponType::SHORT) defLen = 0;
-			if(attLen > defLen) attackLevel++;
-			else if(defLen > attLen) tlev++;
-			
-			//Arcadia lines only:
-			if(attLen != 1 || defLen != 1) b->AddLine("Length weapon detected. Please contact your GM!"); //Arcadia only!
-		}
+        if(!(flags & WeaponType::RANGED)) {
+            /* 4.2 Check relative weapon length */
+            int attLen = 1;
+            int defLen = 1;
+            if(flags & WeaponType::LONG) attLen = 2;
+            else if(flags & WeaponType::SHORT) attLen = 0;
+            if(tarFlags & WeaponType::LONG) defLen = 2;
+            else if(tarFlags & WeaponType::SHORT) defLen = 0;
+            if(attLen > defLen) attackLevel++;
+            else if(defLen > attLen) tlev++;
+            
+            //Arcadia lines only:
+            if(attLen != 1 || defLen != 1) b->AddLine("Length weapon detected. Please contact your GM!"); //Arcadia only!
+        }
 
-		//Check whether the formation has a combat bonus/penalty
-		//This also gives a bonus/penalty to %chance to attack below.
-		int attackbonus = 0;
-		attackbonus += attackers->formations[attackerform].bonus;
-		if((attackType != ATTACK_COMBAT) && (attackType != ATTACK_RIDING)) {
-		    ManType *mt = FindRace(ItemDefs[race].abr);
-		    if(attackers->rangedbonus < 0) {
-		    //elves don't get ranged penalties //?for archers?
-		        if(!mt || mt->ethnicity != RA_ELF /*|| attackType != ATTACK_RANGED*/) attackbonus += attackers->rangedbonus;
+        //Check whether the formation has a combat bonus/penalty
+        //This also gives a bonus/penalty to %chance to attack below.
+        int attackbonus = 0;
+        attackbonus += attackers->formations[attackerform].bonus;
+        if((attackType != ATTACK_COMBAT) && (attackType != ATTACK_RIDING)) {
+            ManType *mt = FindRace(ItemDefs[race].abr);
+            if(attackers->rangedbonus < 0) {
+            //elves don't get ranged penalties //?for archers?
+                if(!mt || mt->ethnicity != RA_ELF /*|| attackType != ATTACK_RANGED*/) attackbonus += attackers->rangedbonus;
             //non-elves only get ranged bonuses for magic
             } else if( (mt && mt->ethnicity == RA_ELF) || attackType != ATTACK_RANGED) {
                 attackbonus += attackers->rangedbonus; //we know this bonus is >= 0 now!
             }
-		}
+        }
 
-		attackLevel += attackbonus; //adding here since protection values aren't supposed to be added
+        attackLevel += attackbonus; //adding here since protection values aren't supposed to be added
 
-		/* 4.3 Add bonuses versus mounted */
-		if(tar->riding != -1) attackLevel += mountBonus; // this and the previous line will mess up multi-attacks.
+        /* 4.3 Add bonuses versus mounted */
+        if(tar->riding != -1) attackLevel += mountBonus; // this and the previous line will mess up multi-attacks.
 
-		/* 5. Attack soldier */
-		if(!(flags & WeaponType::ALWAYSREADY)) {
-			if(Globals->ADVANCED_FORTS) {
-				attackbonus -= (tar->protection[attackType]+1)/2;
-			}
+        /* 5. Attack soldier */
+        if(!(flags & WeaponType::ALWAYSREADY)) {
+            if(Globals->ADVANCED_FORTS) {
+                attackbonus -= (tar->protection[attackType]+1)/2;
+            }
 
-			//if bonus==0, 50%. if bonus = 1, 67%. if bonus = -1, 33%
-			//if bonus = 2, 75%
-			//getrandom(tohit+tofail) < tohit
-			//eg gr(2) < 1 = 50%.  gr(3) < 1/2 = 33%/67%
-			
-			//this is to get a chance to attack, not the actual attack.
-			int tohit = 1+attackbonus;
-			int tomiss = 1-attackbonus;
-			if(tohit<1) tohit = 1;
-			if(tomiss<1) tomiss = 1;
-			if(getrandom(tohit+tomiss) < tomiss) {
-				continue;
-			}
-		}
+            //if bonus==0, 50%. if bonus = 1, 67%. if bonus = -1, 33%
+            //if bonus = 2, 75%
+            //getrandom(tohit+tofail) < tohit
+            //eg gr(2) < 1 = 50%.  gr(3) < 1/2 = 33%/67%
+            
+            //this is to get a chance to attack, not the actual attack.
+            int tohit = 1+attackbonus;
+            int tomiss = 1-attackbonus;
+            if(tohit<1) tohit = 1;
+            if(tomiss<1) tomiss = 1;
+            if(getrandom(tohit+tomiss) < tomiss) {
+                continue;
+            }
+        }
 
 #ifdef DEBUG
 b->AddLine(AString("TargetFac: ") + tar->unit->faction->num + " Attack: " + attackLevel + " Defence: " + tlev);
 #endif
 
-		if (attackType != NUM_ATTACK_TYPES) { //this excludes dispel illusions, anti-demons, etc.
-    		if (!Hits(attackLevel,tlev)) {
-    			continue;
-    		}
-		}
-		/* 6. If attack got through, apply effect, or kill */
-		if (effect == NULL) {
-			/* 7. Last chance... Check armor */
-			if (tar->ArmorProtect(weaponClass)) {
-				continue;
-			}
-			//toughness gets a 1:level chance to dodge ranged/magic attacks:
-			if(attackType != ATTACK_COMBAT && attackType != ATTACK_RIDING && getrandom(tar->unit->GetSkill(S_TOUGHNESS)+1) ) {
+        if (attackType != NUM_ATTACK_TYPES) { //this excludes dispel illusions, anti-demons, etc.
+            if (!Hits(attackLevel,tlev)) {
+                continue;
+            }
+        }
+        /* 6. If attack got through, apply effect, or kill */
+        if (effect == NULL) {
+            /* 7. Last chance... Check armor */
+            if (tar->ArmorProtect(weaponClass)) {
+                continue;
+            }
+            //toughness gets a 1:level chance to dodge ranged/magic attacks:
+            if(attackType != ATTACK_COMBAT && attackType != ATTACK_RIDING && getrandom(tar->unit->GetSkill(S_TOUGHNESS)+1) ) {
                 continue;
             }
 
@@ -700,18 +700,18 @@ b->AddLine(AString("TargetFac: ") + tar->unit->faction->num + " Attack: " + atta
 #ifdef DEBUG
 b->AddLine(AString("Kill!"));
 #endif
-			/* 8. Seeya! */
-			formations[formhit].Kill(tarnum, this, strength);
-			ret++;
-		} else {
-			if (tar->HasEffect(effect)) {
-				continue;
-			}
-			tar->SetEffect(effect, formhit, this);
-			ret++;
-		}
-	}
-	return ret;
+            /* 8. Seeya! */
+            formations[formhit].Kill(tarnum, this, strength);
+            ret++;
+        } else {
+            if (tar->HasEffect(effect)) {
+                continue;
+            }
+            tar->SetEffect(effect, formhit, this);
+            ret++;
+        }
+    }
+    return ret;
 }
 
 void Army::AddLine(const AString & s)
@@ -721,34 +721,34 @@ void Army::AddLine(const AString & s)
 }
 
 void Army::WriteLosses(Battle * b) {
-	b->AddLine(*(pLeader->name) + " loses " + (count - NumAlive()) + ".");
-	b->casualties += count - NumAlive();
+    b->AddLine(*(pLeader->name) + " loses " + (count - NumAlive()) + ".");
+    b->casualties += count - NumAlive();
 
-	if (NumAlive() != count) {
-		AList units;
-		for (int i=NumAlive(); i<count; i++) {
-			if (!GetUnitList(&units,GetSoldier(i)->unit)) {
-				UnitPtr *u = new UnitPtr;
-				u->ptr = GetSoldier(i)->unit;
-				units.Add(u);
-			}
-		}
+    if (NumAlive() != count) {
+        AList units;
+        for (int i=NumAlive(); i<count; i++) {
+            if (!GetUnitList(&units,GetSoldier(i)->unit)) {
+                UnitPtr *u = new UnitPtr;
+                u->ptr = GetSoldier(i)->unit;
+                units.Add(u);
+            }
+        }
 
-		int comma = 0;
-		AString damaged;
-		forlist (&units) {
-			UnitPtr *u = (UnitPtr *) elem;
-			if (comma) {
-				damaged += AString(", ") + AString(u->ptr->num);
-			} else {
-				damaged = AString("Damaged units: ") + AString(u->ptr->num);
-				comma = 1;
-			}
-		}
+        int comma = 0;
+        AString damaged;
+        forlist (&units) {
+            UnitPtr *u = (UnitPtr *) elem;
+            if (comma) {
+                damaged += AString(", ") + AString(u->ptr->num);
+            } else {
+                damaged = AString("Damaged units: ") + AString(u->ptr->num);
+                comma = 1;
+            }
+        }
 
-		units.DeleteAll();
-		b->AddLine(damaged + ".");
-	}
+        units.DeleteAll();
+        b->AddLine(damaged + ".");
+    }
 }
 
 int Army::Lose(Battle *b,ItemList *spoils, int ass)
@@ -756,52 +756,52 @@ int Army::Lose(Battle *b,ItemList *spoils, int ass)
 {
     int numdead = 0;
     DoExperience();
-	WriteLosses(b);
-	if(ass && Globals->ARCADIA_MAGIC) AssassinationResurrect();
-	for (int i=0; i<count; i++) {
-		Soldier * s = GetSoldier(i);
-		if (!s->isdead) {
-			s->Alive(LOSS);
-		} else {
-			if ((s->unit->type==U_WMON) && (ItemDefs[s->race].type&IT_MONSTER))
-				GetMonSpoils(spoils,s->race,s->unit->free);
-			if(!s->illusion) numdead++;
-			s->Dead();
-		}
-		delete s;
-	}
-	return numdead;
+    WriteLosses(b);
+    if(ass && Globals->ARCADIA_MAGIC) AssassinationResurrect();
+    for (int i=0; i<count; i++) {
+        Soldier * s = GetSoldier(i);
+        if (!s->isdead) {
+            s->Alive(LOSS);
+        } else {
+            if ((s->unit->type==U_WMON) && (ItemDefs[s->race].type&IT_MONSTER))
+                GetMonSpoils(spoils,s->race,s->unit->free);
+            if(!s->illusion) numdead++;
+            s->Dead();
+        }
+        delete s;
+    }
+    return numdead;
 }
 
 void Army::Tie(Battle * b)
 {
     DoExperience();
-	WriteLosses(b);
-	for(int x=0; x<count; x++) {
-		Soldier * s = GetSoldier(x);
-		if (!s->isdead) {
-			if(round > 1) s->Alive(WIN_NO_MOVE);
-			else s->Alive(WIN_MOVE);  //if only one round, can still move.
-		} else {
-			s->Dead();
-		}
-		delete s;
-	}
+    WriteLosses(b);
+    for(int x=0; x<count; x++) {
+        Soldier * s = GetSoldier(x);
+        if (!s->isdead) {
+            if(round > 1) s->Alive(WIN_NO_MOVE);
+            else s->Alive(WIN_MOVE);  //if only one round, can still move.
+        } else {
+            s->Dead();
+        }
+        delete s;
+    }
 }
 
 void Army::Win(Battle * b,ItemList * spoils, int enemydead)
 {
-	int wintype;
-	DoExperience(enemydead);
-	DoHeal(b, enemydead);
-	WriteLosses(b);
-	int na = NumNonIllusionsAlive();
+    int wintype;
+    DoExperience(enemydead);
+    DoHeal(b, enemydead);
+    WriteLosses(b);
+    int na = NumNonIllusionsAlive();
 
-	if (nonillusioncount != na && round > 1) {
+    if (nonillusioncount != na && round > 1) {
         wintype = WIN_NO_MOVE;  //if only one round OR no casualties, can still move!
         b->AddLine("");
         b->AddLine("The victor's units are forbidden from further movement this month.");
-	} else {
+    } else {
         wintype = WIN_MOVE;
         b->AddLine("");
         b->AddLine("All surviving units remain able to move");
@@ -816,165 +816,165 @@ void Army::Win(Battle * b,ItemList * spoils, int enemydead)
 
     //Distribute the Spoils
     na = NumAlive();
-	AList units;
-	forlist(spoils) {
-		Item *i = (Item *) elem;
-		if(i && na) {
-			Unit *u;
-			UnitPtr *up;
-			
+    AList units;
+    forlist(spoils) {
+        Item *i = (Item *) elem;
+        if(i && na) {
+            Unit *u;
+            UnitPtr *up;
+            
             //reset marker for every new spoil
-			for(int x = 0; x < na; x++) {
-				GetSoldier(x)->unit->marker = 0;
-			}
+            for(int x = 0; x < na; x++) {
+                GetSoldier(x)->unit->marker = 0;
+            }
 
             int numsol = 0;
 
-			// Make a list of units who can get this type of spoil
-			for(int x = 0; x < na; x++) {
-				u = GetSoldier(x)->unit;
-				if(u->CanGetSpoil(i)) {
+            // Make a list of units who can get this type of spoil
+            for(int x = 0; x < na; x++) {
+                u = GetSoldier(x)->unit;
+                if(u->CanGetSpoil(i)) {
                     numsol++;                  //total number of soldiers collecting this spoil
                     if(!u->marker) { //this is the first time we've visited this unit; add it to the list
-    					up = new UnitPtr;
-    					up->ptr = u;
-    					units.Add(up);
+                        up = new UnitPtr;
+                        up->ptr = u;
+                        units.Add(up);
                     }
-				}
+                }
                 u->marker++;          //marks number of spoil-claiming soldiers in the unit.
-			}
+            }
             //first pass through, we are as fair as possible
             
-			int numunits = units.Num();
-			if(numunits > 0) {              //we have some units claiming spoils
-			    int initialnum = i->num;    //initial number of spoils
-			    
-				forlist(&units) {
-					up = (UnitPtr *)elem;
-					int num = up->ptr->marker * initialnum / numsol;     //soldiers in unit * num items / total soldiers. Rounded down
-					int num2 = up->ptr->CanGetSpoil(i);      //total number of spoil unit is allowed to take
-					if(num2 < num) num = num2;
-					up->ptr->items.SetNum(i->type,
-							up->ptr->items.GetNum(i->type) + num);
-					i->num -= num;
-					up->ptr->faction->DiscoverItem(i->type, 0, 1);
-				}
+            int numunits = units.Num();
+            if(numunits > 0) {              //we have some units claiming spoils
+                int initialnum = i->num;    //initial number of spoils
+                
+                forlist(&units) {
+                    up = (UnitPtr *)elem;
+                    int num = up->ptr->marker * initialnum / numsol;     //soldiers in unit * num items / total soldiers. Rounded down
+                    int num2 = up->ptr->CanGetSpoil(i);      //total number of spoil unit is allowed to take
+                    if(num2 < num) num = num2;
+                    up->ptr->items.SetNum(i->type,
+                            up->ptr->items.GetNum(i->type) + num);
+                    i->num -= num;
+                    up->ptr->faction->DiscoverItem(i->type, 0, 1);
+                }
                 #ifdef DEBUG
                 if(i->num < 0) Awrite("Item distribution is whacked!");
                 #endif
                 //i->num spoils remain to be divided. Some of the units may no longer be able to accept spoils
-				while((i->num > 0) && units.Num()) {
+                while((i->num > 0) && units.Num()) {
                     //We are no longer caring about being fair, just give the items away ok!
                     int luckyunit = getrandom(units.Num());                       
-					up = (UnitPtr *)units.First();
-					while(luckyunit > 0) {
-						up = (UnitPtr *)units.Next(up);
-						luckyunit--;
-					}
-					int num = up->ptr->CanGetSpoil(i);      //total number of spoil unit is allowed to take
+                    up = (UnitPtr *)units.First();
+                    while(luckyunit > 0) {
+                        up = (UnitPtr *)units.Next(up);
+                        luckyunit--;
+                    }
+                    int num = up->ptr->CanGetSpoil(i);      //total number of spoil unit is allowed to take
                     if(num > i->num) num = i->num;
-					up->ptr->items.SetNum(i->type, up->ptr->items.GetNum(i->type)+num);
-					i->num -= num;
-					up->ptr->faction->DiscoverItem(i->type, 0, 1);
+                    up->ptr->items.SetNum(i->type, up->ptr->items.GetNum(i->type)+num);
+                    i->num -= num;
+                    up->ptr->faction->DiscoverItem(i->type, 0, 1);
                     units.Remove(up);  //we have given up all it can take, so remove it from the list
-				}
-				//we have given away all we can :)
-			}
-			units.DeleteAll();
-		}
-	}
+                }
+                //we have given away all we can :)
+            }
+            units.DeleteAll();
+        }
+    }
 
-	for(int x = 0; x < count; x++) {
-		Soldier * s = GetSoldier(x);
-		if (!s->isdead) s->Alive(wintype);
-		else s->Dead();
-		delete s;
-	}
+    for(int x = 0; x < count; x++) {
+        Soldier * s = GetSoldier(x);
+        if (!s->isdead) s->Alive(wintype);
+        else s->Dead();
+        delete s;
+    }
 }
 
 int Army::CanBeHealed()
 {
-	for (int i=NumAlive(); i<count; i++) {
-		Soldier * temp = GetSoldier(i);
-		if (temp->canbehealed) return 1;
-	}
-	return 0;
+    for (int i=NumAlive(); i<count; i++) {
+        Soldier * temp = GetSoldier(i);
+        if (temp->canbehealed) return 1;
+    }
+    return 0;
 }
 
 void Army::DoHeal(Battle * b, int enemydead)
 {
-	// Do magical healing
-	for(int i = 6; i > 0; --i)
-		DoHealLevel(b, i, 0);
-	// Do Normal healing
-	DoHealLevel(b, 1, 1);
-	// Do resurrection
+    // Do magical healing
+    for(int i = 6; i > 0; --i)
+        DoHealLevel(b, i, 0);
+    // Do Normal healing
+    DoHealLevel(b, 1, 1);
+    // Do resurrection
     formations[NUMFORMS].ResetHeal(); //resets dead to be able to be healed again.
-	DoResurrect(b);
-	DoNecromancy(b, enemydead);
+    DoResurrect(b);
+    DoNecromancy(b, enemydead);
 }
 
 void Army::DoHealLevel(Battle *b, int type, int useItems)
 {
 //This is also cloned below as DoResurrectLevel()
 //NB: There is no healing of illusions!
-	int rate = HealDefs[type].rate;
+    int rate = HealDefs[type].rate;
 
-	for (int i=0; i<NumAlive(); i++) {
-		Soldier * s = GetSoldier(i);
-		int healed = 0;
-		int failed = 0;
-		if (!CanBeHealed()) break;
-		if(s->healtype <= 0) continue;
-		// This should be here.. Use the best healing first
-		if(s->healtype != type) continue;
-		if(!s->healing) continue;
-		if(useItems) {
-			if(s->healitem == -1) continue;
-			if (s->healitem != I_HEALPOTION) s->unit->Practice(S_HEALING);
-		} else {
-			if(s->healitem != -1) continue;
-			s->unit->Practice(S_MAGICAL_HEALING);
-    		int mevent = s->unit->MysticEvent();
-    		if(mevent) {
-    	        b->AddLine( *(s->unit->name) + " tries to heal, but his spells fizzle.");
-    	        continue;
-    		}
-			int max = ( 120 * s->unit->GetEnergy() )/ s->unit->GetCombatCost(S_MAGICAL_HEALING, 1);  //cost is per 120 corpses
-			if(max < 1) continue;
-			if(max < s->healing) s->healing = max;
-		}
+    for (int i=0; i<NumAlive(); i++) {
+        Soldier * s = GetSoldier(i);
+        int healed = 0;
+        int failed = 0;
+        if (!CanBeHealed()) break;
+        if(s->healtype <= 0) continue;
+        // This should be here.. Use the best healing first
+        if(s->healtype != type) continue;
+        if(!s->healing) continue;
+        if(useItems) {
+            if(s->healitem == -1) continue;
+            if (s->healitem != I_HEALPOTION) s->unit->Practice(S_HEALING);
+        } else {
+            if(s->healitem != -1) continue;
+            s->unit->Practice(S_MAGICAL_HEALING);
+            int mevent = s->unit->MysticEvent();
+            if(mevent) {
+                b->AddLine( *(s->unit->name) + " tries to heal, but his spells fizzle.");
+                continue;
+            }
+            int max = ( 120 * s->unit->GetEnergy() )/ s->unit->GetCombatCost(S_MAGICAL_HEALING, 1);  //cost is per 120 corpses
+            if(max < 1) continue;
+            if(max < s->healing) s->healing = max;
+        }
 
-		while (s->healing) {
-			if (!CanBeHealed()) break;
-			int j = getrandom(count - NumAlive()) + NumAlive();
-			Soldier * temp = GetSoldier(j);
-			if (temp->canbehealed) { //this scales as n*n so could take a long time!
-				s->healing--;
-				if (getrandom(100) < rate) {
-					healed++;
-					//return soldier to life!
-					temp->isdead = 0;
-					formations[NUMFORMS].TransferSoldier((j-NumAlive()), &formations[NUMFORMS-1]);
-				} else {
-					temp->canbehealed = 0;
-					failed++;
-				}
-			}
-		}
-		if(useItems == 0) {
-		    //magical healing
-    		int cost = s->unit->GetCombatCost(S_MAGICAL_HEALING, failed+healed);
-    		cost = (cost+119)/120;
-        	s->unit->energy -= cost;
-        	int exper = (30*failed) / HealDefs[type].num;
-        	if(exper > 15) exper = 15;
-        	s->unit->Experience(S_MAGICAL_HEALING, exper);
-		} else if(s->healitem != I_HEALPOTION) s->unit->Experience(S_HEALING,healed+failed,0);
+        while (s->healing) {
+            if (!CanBeHealed()) break;
+            int j = getrandom(count - NumAlive()) + NumAlive();
+            Soldier * temp = GetSoldier(j);
+            if (temp->canbehealed) { //this scales as n*n so could take a long time!
+                s->healing--;
+                if (getrandom(100) < rate) {
+                    healed++;
+                    //return soldier to life!
+                    temp->isdead = 0;
+                    formations[NUMFORMS].TransferSoldier((j-NumAlive()), &formations[NUMFORMS-1]);
+                } else {
+                    temp->canbehealed = 0;
+                    failed++;
+                }
+            }
+        }
+        if(useItems == 0) {
+            //magical healing
+            int cost = s->unit->GetCombatCost(S_MAGICAL_HEALING, failed+healed);
+            cost = (cost+119)/120;
+            s->unit->energy -= cost;
+            int exper = (30*failed) / HealDefs[type].num;
+            if(exper > 15) exper = 15;
+            s->unit->Experience(S_MAGICAL_HEALING, exper);
+        } else if(s->healitem != I_HEALPOTION) s->unit->Experience(S_HEALING,healed+failed,0);
 
-		b->AddLine(*(s->unit->name) + " heals " + healed + ".");
-		
-	}
+        b->AddLine(*(s->unit->name) + " heals " + healed + ".");
+        
+    }
 }
 
 void Army::DoResurrect(Battle *b)
@@ -982,16 +982,16 @@ void Army::DoResurrect(Battle *b)
     //self-resurrection
     int undead_return = 0;
     
-   	for (int i=NumAlive(); i<count; i++) {
-		Soldier * s = GetSoldier(i);
-		if(ItemDefs[s->race].type & IT_UNDEAD && 
+       for (int i=NumAlive(); i<count; i++) {
+        Soldier * s = GetSoldier(i);
+        if(ItemDefs[s->race].type & IT_UNDEAD && 
           s->unit->type == U_MAGE &&
           getrandom(100) < Globals->MAGE_UNDEAD_INVINCIBLE &&
           !s->restinpeace) {
             undead_return++;
             s->isdead = 0;
             formations[NUMFORMS].TransferSoldier((i-NumAlive()), &formations[NUMFORMS-1]);
-		}
+        }
         if(s->unit->type == U_MAGE && (ItemDefs[s->race].type & IT_MAN) && s->unit->GetSkill(S_RESURRECTION) >= 5 && 
               s->unit->GetEnergy() >= s->unit->GetCastCost(S_RESURRECTION, 4)) {
              //unit can resurrect himself.
@@ -1012,58 +1012,58 @@ void Army::DoResurrect(Battle *b)
     }
 
     //resurrection of others. NB no resurrection of illusions.
-	int rate = 50;
+    int rate = 50;
 
-	for (int i=0; i<NumAlive(); i++) {
-		Soldier * s = GetSoldier(i);
-		int raised = 0;
-		int failed = 0;
-		if (!CanBeHealed()) break;
-		if(s->unit->type != U_MAGE || !(ItemDefs[s->race].type & IT_MAN)) continue;
-		int level = s->unit->GetSkill(S_RESURRECTION);
-		if(!level) continue;
-		int mevent = s->unit->MysticEvent();
-		if(mevent) {
-	        b->AddLine( *(s->unit->name) + " tries to resurrect, but the spell fizzles.");
-	        continue;
-		}
-		
-		int max = 4 * level * level; // 4 at level 1, 144 at level 6
-		int max2 = ( 3 * s->unit->GetEnergy() )/ s->unit->GetCombatCost(S_RESURRECTION, 1);  //cost is per 3 corpses
-		if(max2 < max) max = max2;
-		s->unit->Practice(S_RESURRECTION);
-		
-		while (max) {
-			if (!CanBeHealed()) break;
-			int j = getrandom(count - NumAlive()) + NumAlive();
-			Soldier * temp = GetSoldier(j);
-			if (temp->canbehealed) {
-				max--;
-				if (getrandom(100) < rate) {
-					raised++;
-					//return soldier to life!
-					temp->isdead = 0;
-					formations[NUMFORMS].TransferSoldier((j-NumAlive()), &formations[NUMFORMS-1]);
-					if(temp->unit->type == U_MAGE) {
+    for (int i=0; i<NumAlive(); i++) {
+        Soldier * s = GetSoldier(i);
+        int raised = 0;
+        int failed = 0;
+        if (!CanBeHealed()) break;
+        if(s->unit->type != U_MAGE || !(ItemDefs[s->race].type & IT_MAN)) continue;
+        int level = s->unit->GetSkill(S_RESURRECTION);
+        if(!level) continue;
+        int mevent = s->unit->MysticEvent();
+        if(mevent) {
+            b->AddLine( *(s->unit->name) + " tries to resurrect, but the spell fizzles.");
+            continue;
+        }
+        
+        int max = 4 * level * level; // 4 at level 1, 144 at level 6
+        int max2 = ( 3 * s->unit->GetEnergy() )/ s->unit->GetCombatCost(S_RESURRECTION, 1);  //cost is per 3 corpses
+        if(max2 < max) max = max2;
+        s->unit->Practice(S_RESURRECTION);
+        
+        while (max) {
+            if (!CanBeHealed()) break;
+            int j = getrandom(count - NumAlive()) + NumAlive();
+            Soldier * temp = GetSoldier(j);
+            if (temp->canbehealed) {
+                max--;
+                if (getrandom(100) < rate) {
+                    raised++;
+                    //return soldier to life!
+                    temp->isdead = 0;
+                    formations[NUMFORMS].TransferSoldier((j-NumAlive()), &formations[NUMFORMS-1]);
+                    if(temp->unit->type == U_MAGE) {
                         temp->unit->resurrects++;
                         temp->unit->energy -= temp->unit->GetEnergy();  //resurrected mages are exhausted
                     }
-				} else {
-					temp->canbehealed = 0;
-					failed++;
-				}
-			}
-		}
+                } else {
+                    temp->canbehealed = 0;
+                    failed++;
+                }
+            }
+        }
 
-		int cost = s->unit->GetCombatCost(S_RESURRECTION, failed+raised);
-		cost = (cost+2)/3;
-    	s->unit->energy -= cost;
-		
-		if(raised) b->AddLine(*(s->unit->name) + " resurrects " + raised + ".");
-		int exper = (failed*40)/(4*level*level);
-		if(exper>20) exper = 20;
-		s->unit->Experience(S_RESURRECTION,exper,0);
-	}
+        int cost = s->unit->GetCombatCost(S_RESURRECTION, failed+raised);
+        cost = (cost+2)/3;
+        s->unit->energy -= cost;
+        
+        if(raised) b->AddLine(*(s->unit->name) + " resurrects " + raised + ".");
+        int exper = (failed*40)/(4*level*level);
+        if(exper>20) exper = 20;
+        s->unit->Experience(S_RESURRECTION,exper,0);
+    }
 }
 
 void Army::AssassinationResurrect()
@@ -1122,57 +1122,57 @@ void Army::AssassinationResurrect()
         s->unit->resurrects++;
         s->unit->energy -= s->unit->GetEnergy();
     }
-	s->isdead = 0;
+    s->isdead = 0;
     formations[NUMFORMS].TransferSoldier(0, &formations[NUMFORMS-1]);
 }
 
 void Army::DoNecromancy(Battle *b, int enemydead)
 {
 //NB: There is no necromancy on illusions!
-	int deadmen = enemydead;
-	for(int i = NumAlive(); i < count; i++) {
-	    Soldier * temp = GetSoldier(i);
-	    if(!temp->illusion) deadmen++;
-	}
-	for(int l = 6; l > 0; --l) {
-	    int rate = 30 + 10*l;
-    	if(!deadmen) break;
-    	for (int i=0; i<NumAlive(); i++) {
-    	    if(!deadmen) break;
-    		Soldier * s = GetSoldier(i);
-		    if(s->unit->type != U_MAGE || !(ItemDefs[s->race].type & IT_MAN)) continue;
-    		int max = s->unit->GetSkill(S_NECROMANCY);
-    		if(max != l) continue;
-    		int mevent = s->unit->MysticEvent();
-    		if(mevent) {
-    	        b->AddLine( *(s->unit->name) + " tries to raise skeletons, but the spell fizzles.");
-    	        continue;
-    		}
-    		
-    		max = ( 120 * s->unit->GetEnergy() )/ s->unit->GetCombatCost(S_NECROMANCY, 1);   //cost of 120 corpses.
-    		s->unit->Practice(S_NECROMANCY);
-    		int raised = 0;
-    		int failed = 0;
-    		
-    		while(max && deadmen) {
-    		    max--;
-    		    deadmen--;
-    		    if (getrandom(100) < rate) raised++;
-    		    else failed++;
-    		}
+    int deadmen = enemydead;
+    for(int i = NumAlive(); i < count; i++) {
+        Soldier * temp = GetSoldier(i);
+        if(!temp->illusion) deadmen++;
+    }
+    for(int l = 6; l > 0; --l) {
+        int rate = 30 + 10*l;
+        if(!deadmen) break;
+        for (int i=0; i<NumAlive(); i++) {
+            if(!deadmen) break;
+            Soldier * s = GetSoldier(i);
+            if(s->unit->type != U_MAGE || !(ItemDefs[s->race].type & IT_MAN)) continue;
+            int max = s->unit->GetSkill(S_NECROMANCY);
+            if(max != l) continue;
+            int mevent = s->unit->MysticEvent();
+            if(mevent) {
+                b->AddLine( *(s->unit->name) + " tries to raise skeletons, but the spell fizzles.");
+                continue;
+            }
+            
+            max = ( 120 * s->unit->GetEnergy() )/ s->unit->GetCombatCost(S_NECROMANCY, 1);   //cost of 120 corpses.
+            s->unit->Practice(S_NECROMANCY);
+            int raised = 0;
+            int failed = 0;
+            
+            while(max && deadmen) {
+                max--;
+                deadmen--;
+                if (getrandom(100) < rate) raised++;
+                else failed++;
+            }
 
-    		int cost = s->unit->GetCombatCost(S_NECROMANCY, failed+raised);
-    		cost = (cost+119)/120;
-    		s->unit->energy -= cost;
+            int cost = s->unit->GetCombatCost(S_NECROMANCY, failed+raised);
+            cost = (cost+119)/120;
+            s->unit->energy -= cost;
 
-    		//give n skeletons
-    		s->unit->items.SetNum(I_SKELETON, s->unit->items.GetNum(I_SKELETON) + raised);
-    		b->AddLine(*(s->unit->name) + " raises " + raised + " skeletons.");
+            //give n skeletons
+            s->unit->items.SetNum(I_SKELETON, s->unit->items.GetNum(I_SKELETON) + raised);
+            b->AddLine(*(s->unit->name) + " raises " + raised + " skeletons.");
 
-    		failed = (failed + 1)/2;
-    		if(failed > 25) failed = 25;
+            failed = (failed + 1)/2;
+            if(failed > 25) failed = 25;
             s->unit->Experience(S_NECROMANCY,failed,0);
-    	}
+        }
     }
 }
 
@@ -1185,66 +1185,66 @@ void Army::Regenerate(Battle *b)
 
 void Army::GetMonSpoils(ItemList *spoils,int monitem, int free)
 {
-	if((Globals->MONSTER_NO_SPOILS > 0) &&
-			(free >= Globals->MONSTER_SPOILS_RECOVERY)) {
-		// This monster is in it's period of absolutely no spoils.
-		return;
-	}
+    if((Globals->MONSTER_NO_SPOILS > 0) &&
+            (free >= Globals->MONSTER_SPOILS_RECOVERY)) {
+        // This monster is in it's period of absolutely no spoils.
+        return;
+    }
 
-	/* First, silver */
-	MonType *mp = FindMonster(ItemDefs[monitem].abr,
-			(ItemDefs[monitem].type & IT_ILLUSION));
-	int silv = mp->silver;
-	if((Globals->MONSTER_NO_SPOILS > 0) && (free > 0)) {
-		// Adjust the spoils for length of freedom.
-		silv *= (Globals->MONSTER_SPOILS_RECOVERY-free);
-		silv /= Globals->MONSTER_SPOILS_RECOVERY;
-	}
-	spoils->SetNum(I_SILVER,spoils->GetNum(I_SILVER) + getrandom(silv));
+    /* First, silver */
+    MonType *mp = FindMonster(ItemDefs[monitem].abr,
+            (ItemDefs[monitem].type & IT_ILLUSION));
+    int silv = mp->silver;
+    if((Globals->MONSTER_NO_SPOILS > 0) && (free > 0)) {
+        // Adjust the spoils for length of freedom.
+        silv *= (Globals->MONSTER_SPOILS_RECOVERY-free);
+        silv /= Globals->MONSTER_SPOILS_RECOVERY;
+    }
+    spoils->SetNum(I_SILVER,spoils->GetNum(I_SILVER) + getrandom(silv));
 
-	int thespoil = mp->spoiltype;
+    int thespoil = mp->spoiltype;
 
-	if (thespoil == -1) return;
-	if (thespoil == IT_NORMAL && getrandom(2) && silv >= 60) thespoil = IT_TRADE;             //note that silver is a "normal" item, so can be generated here too!
-	                                                      // silv >= 60 used because otherwise no trade items are selected.
-	int count = 0;
-	int i;
-	for (i=0; i<NITEMS; i++) {
-		if ((ItemDefs[i].type & thespoil) &&
-				!(ItemDefs[i].type & IT_SPECIAL) &&
-				!(ItemDefs[i].flags & ItemType::DISABLED) &&
+    if (thespoil == -1) return;
+    if (thespoil == IT_NORMAL && getrandom(2) && silv >= 60) thespoil = IT_TRADE;             //note that silver is a "normal" item, so can be generated here too!
+                                                          // silv >= 60 used because otherwise no trade items are selected.
+    int count = 0;
+    int i;
+    for (i=0; i<NITEMS; i++) {
+        if ((ItemDefs[i].type & thespoil) &&
+                !(ItemDefs[i].type & IT_SPECIAL) &&
+                !(ItemDefs[i].flags & ItemType::DISABLED) &&
                 (ItemDefs[i].baseprice <= silv) ) { //BS mod to prevent very valuable items being dropped - eg STALs. Non-Arcadians may not want this behaviour. Note that monsters with silver value less than 30 will only drop food, and less than 60 will never drop trade (eliminating half usual spoils).
-			count ++;
-		}
-	}
-	
-	if(count == 0) return; //can occur if, eg, spoil value is less than 60 and trade items are selected - this fixed, but could still eg have normal item and monster spoil value < 20, etc.
-	count = getrandom(count) + 1;
+            count ++;
+        }
+    }
+    
+    if(count == 0) return; //can occur if, eg, spoil value is less than 60 and trade items are selected - this fixed, but could still eg have normal item and monster spoil value < 20, etc.
+    count = getrandom(count) + 1;
 
-	for (i=0; i<NITEMS; i++) {
-		if ((ItemDefs[i].type & thespoil) &&
-				!(ItemDefs[i].type & IT_SPECIAL) &&
-				!(ItemDefs[i].flags & ItemType::DISABLED) &&
+    for (i=0; i<NITEMS; i++) {
+        if ((ItemDefs[i].type & thespoil) &&
+                !(ItemDefs[i].type & IT_SPECIAL) &&
+                !(ItemDefs[i].flags & ItemType::DISABLED) &&
                 (ItemDefs[i].baseprice <= silv) ) {                //Second half of BS mod above.
-			count--;
-			if (count == 0) {
-				thespoil = i;
-				break;
-			}
-		}
-	}
+            count--;
+            if (count == 0) {
+                thespoil = i;
+                break;
+            }
+        }
+    }
 
-	int val = getrandom(mp->silver * 2);
-	if((Globals->MONSTER_NO_SPOILS > 0) && (free > 0)) {
-		// Adjust for length of monster freedom.
-		val *= (Globals->MONSTER_SPOILS_RECOVERY-free);
-		val /= Globals->MONSTER_SPOILS_RECOVERY;
-	}
+    int val = getrandom(mp->silver * 2);
+    if((Globals->MONSTER_NO_SPOILS > 0) && (free > 0)) {
+        // Adjust for length of monster freedom.
+        val *= (Globals->MONSTER_SPOILS_RECOVERY-free);
+        val /= Globals->MONSTER_SPOILS_RECOVERY;
+    }
 
-	spoils->SetNum(thespoil,spoils->GetNum(thespoil) +
-			(val + getrandom(ItemDefs[thespoil].baseprice)) /
-			ItemDefs[thespoil].baseprice);
-	//The above gives val/baseprice + rand(0,1), rounded down. This makes sense in all situations I can think of.
+    spoils->SetNum(thespoil,spoils->GetNum(thespoil) +
+            (val + getrandom(ItemDefs[thespoil].baseprice)) /
+            ItemDefs[thespoil].baseprice);
+    //The above gives val/baseprice + rand(0,1), rounded down. This makes sense in all situations I can think of.
 }
 
 void Army::CombineEngagements(int formfrom, int formto, Army *enemy)
@@ -2440,25 +2440,25 @@ void Army::DoExperience(int enemydead)
     }
     exp += (float) exp2/divisor;
 
-	for(int x = 0; x < count; x++) {
-		Soldier * s = GetSoldier(x);
-		if(!(ItemDefs[s->race].type & IT_MAN)) continue;
-		int exper = (int) exp;
-		//if riding leader, give 2/3 of normal bonus to riding skill & normal skill
+    for(int x = 0; x < count; x++) {
+        Soldier * s = GetSoldier(x);
+        if(!(ItemDefs[s->race].type & IT_MAN)) continue;
+        int exper = (int) exp;
+        //if riding leader, give 2/3 of normal bonus to riding skill & normal skill
 
         if(s->unit->GetSkill(S_FRENZY)) s->unit->Experience(S_FRENZY,(2*exper/3),0);
         if(s->unit->GetSkill(S_BASE_BATTLETRAINING)) s->unit->Experience(S_BASE_BATTLETRAINING,(2*exper/3),0);
 
-		if(s->riding != -1) {
-		    //has riding skill.
+        if(s->riding != -1) {
+            //has riding skill.
             if(s->unit->GetSkill(S_SWIFTNESS)) s->unit->Experience(S_SWIFTNESS,(exper/3),0);
-		    if(!s->unit->IsNormal()) {
-		        exper = (int) (2*exp/3);
-		        s->unit->Experience(S_RIDING,exper,0);
-		    } else s->unit->Experience(S_RIDING,exper,0);
-		}
+            if(!s->unit->IsNormal()) {
+                exper = (int) (2*exp/3);
+                s->unit->Experience(S_RIDING,exper,0);
+            } else s->unit->Experience(S_RIDING,exper,0);
+        }
 
-		if(s->weapon != -1) {
+        if(s->weapon != -1) {
             WeaponType *pWep = FindWeapon(ItemDefs[s->weapon].abr);
             AString skname;
             skname = pWep->baseSkill;
@@ -2482,7 +2482,7 @@ void Army::DoExperience(int enemydead)
                 s->unit->Experience(s->unit->combat,(int) (exp/3), 0);
             }
         }
-	}
+    }
 }
 
 #ifdef DEBUG

@@ -26,17 +26,17 @@
 
 Shield * ShieldList::GetHighShield(int type)
 {
-	Shield * hi = 0;
-	forlist(this) {
-		Shield * sh = (Shield *) elem;
-		if (sh->shieldtype == type) {
-			if (!hi) {
-				hi = sh;
-			} else {
-				if (sh->shieldskill > hi->shieldskill)
-					hi = sh;
-			}
-		}
-	}
-	return hi;
+    Shield * hi = 0;
+    forlist(this) {
+        Shield * sh = (Shield *) elem;
+        if (sh->shieldtype == type) {
+            if (!hi) {
+                hi = sh;
+            } else {
+                if (sh->shieldskill > hi->shieldskill)
+                    hi = sh;
+            }
+        }
+    }
+    return hi;
 }

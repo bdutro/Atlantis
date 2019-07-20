@@ -44,85 +44,85 @@ class Soldier;
 #endif
 
 enum {
-	WIN_MOVE,
-	WIN_NO_MOVE,
-	LOSS
+    WIN_MOVE,
+    WIN_NO_MOVE,
+    LOSS
 };
 
 class Soldier
 {
-	public:
-		Soldier(Unit *unit, Object *object, int regType, int race, int ass=0);
-		~Soldier();
+    public:
+        Soldier(Unit *unit, Object *object, int regType, int race, int ass=0);
+        ~Soldier();
 
-		void SetupSpell();
-		void SetupCombatItems();
+        void SetupSpell();
+        void SetupCombatItems();
 
-		//
-		// SetupHealing is actually game-specific, and appears in specials.cpp
-		//
-		void SetupHealing();
+        //
+        // SetupHealing is actually game-specific, and appears in specials.cpp
+        //
+        void SetupHealing();
 
-		int ArmorProtect(int weaponClass );
+        int ArmorProtect(int weaponClass );
 
-		void RestoreItems();
-		void Alive(int);
-		void Dead();
+        void RestoreItems();
+        void Alive(int);
+        void Dead();
 
-		int HasEffect(char *);
-		void SetEffect(char *, int form, Army *army);
-		void ClearEffect(char *);
-		void ClearOneTimeEffects(void);
-		
-		int DoSpellCost(int round, Battle *b);
-		void DoSpellCheck(int round, Battle *b);
-		
-		/* Unit info */
-		AString name;
-		Unit * unit;
-		int race;
-		int riding;
-		int ridingbonus;
-		int building;
+        int HasEffect(char *);
+        void SetEffect(char *, int form, Army *army);
+        void ClearEffect(char *);
+        void ClearOneTimeEffects(void);
+        
+        int DoSpellCost(int round, Battle *b);
+        void DoSpellCheck(int round, Battle *b);
+        
+        /* Unit info */
+        AString name;
+        Unit * unit;
+        int race;
+        int riding;
+        int ridingbonus;
+        int building;
 
-		/* Healing information */
-		int healing;
-		int healtype;
-		int healitem;
-		int canbehealed;
-		int restinpeace;
-		int regen;
-		
-		/* Attack info */
-		int weapon;
-		int attacktype;
-		int askill;
-		int attacks;
-		char *special;
-		int slevel;
-		int exhausted;
-		int candragontalk;
+        /* Healing information */
+        int healing;
+        int healtype;
+        int healitem;
+        int canbehealed;
+        int restinpeace;
+        int regen;
+        
+        /* Attack info */
+        int weapon;
+        int attacktype;
+        int askill;
+        int attacks;
+        char *special;
+        int slevel;
+        int exhausted;
+        int candragontalk;
 
-		/* Defense info */
-		int dskill[NUM_ATTACK_TYPES];
-		int protection[NUM_ATTACK_TYPES];
-		int armor;
-		int hits;
-		int maxhits;
-		int damage;
-		int illusion;
+        /* Defense info */
+        int dskill[NUM_ATTACK_TYPES];
+        int protection[NUM_ATTACK_TYPES];
+        int armor;
+        int hits;
+        int maxhits;
+        int damage;
+        int illusion;
 
-		int isdead;
-		
-		/* Formation info */
-		int inform;
-		int defaultform;
-		
-		BITFIELD battleItems;
-		int amuletofi;
+        int isdead;
+        
+        /* Formation info */
+        int inform;
+        int defaultform;
+        
+        BITFIELD battleItems;
+        int amuletofi;
 
-		/* Effects */
-//		map< char *, int > effects;
+        /* Effects */
+//        map< char *, int > effects;
         int effects[5];
 };
 

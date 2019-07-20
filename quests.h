@@ -37,43 +37,43 @@
 
 class Quest : public AListElem
 {
-	public:
-		Quest();
-		~Quest();
+    public:
+        Quest();
+        ~Quest();
 
-		enum {
-			SLAY,
-			HARVEST,
-			BUILD,
-			VISIT,
-			DELIVER,
-			DEMOLISH
-		};
-		int	type;
-		int	target;
-		Item	objective;
-		int	building;
-		int	regionnum;
-		AString	regionname;
-		set<string> destinations;
-		AList	rewards;
+        enum {
+            SLAY,
+            HARVEST,
+            BUILD,
+            VISIT,
+            DELIVER,
+            DEMOLISH
+        };
+        int    type;
+        int    target;
+        Item    objective;
+        int    building;
+        int    regionnum;
+        AString    regionname;
+        set<string> destinations;
+        AList    rewards;
 };
 
 class QuestList : public AList
 {
-	public:
-		int ReadQuests(Ainfile *f);
-		void WriteQuests(Aoutfile *f);
+    public:
+        int ReadQuests(Ainfile *f);
+        void WriteQuests(Aoutfile *f);
 
-		int CheckQuestKillTarget(Unit *u, ItemList *reward);
-		int CheckQuestHarvestTarget(ARegion *r,
-				int item, int harvested, int max,
-				Unit *u);
-		int CheckQuestBuildTarget(ARegion *r, int building,
-				Unit *u);
-		int CheckQuestVisitTarget(ARegion *r, Unit *u);
-		int CheckQuestDemolishTarget(ARegion *r, int building,
-				Unit *u);
+        int CheckQuestKillTarget(Unit *u, ItemList *reward);
+        int CheckQuestHarvestTarget(ARegion *r,
+                int item, int harvested, int max,
+                Unit *u);
+        int CheckQuestBuildTarget(ARegion *r, int building,
+                Unit *u);
+        int CheckQuestVisitTarget(ARegion *r, Unit *u);
+        int CheckQuestDemolishTarget(ARegion *r, int building,
+                Unit *u);
 };
 
 extern QuestList quests;

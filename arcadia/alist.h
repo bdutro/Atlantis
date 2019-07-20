@@ -34,65 +34,65 @@ AListElem is a virtual class, which will be set to whatever the right type is.
 It has a 'next' variable, and all the rest of the usual list stuff.
 */
 class AListElem {
-	public:
-		virtual ~AListElem();
+    public:
+        virtual ~AListElem();
 
-		AListElem * next;	///< The next element in the list
+        AListElem * next;    ///< The next element in the list
 };
 
 /// A standard list
 class AList {
-	public:
-		AList();
-		~AList();
+    public:
+        AList();
+        ~AList();
 
-		void DeleteAll();
-		void Empty(); /* Clears the list without deleting members */
-		AListElem * Get(AListElem *);
-		char Remove(AListElem *);
-		void Insert(AListElem *); /* into the front */
-		void Add(AListElem *); /* to the back */
-		AListElem * Next(AListElem *);
-		AListElem * First();
-		int Num();
+        void DeleteAll();
+        void Empty(); /* Clears the list without deleting members */
+        AListElem * Get(AListElem *);
+        char Remove(AListElem *);
+        void Insert(AListElem *); /* into the front */
+        void Add(AListElem *); /* to the back */
+        AListElem * Next(AListElem *);
+        AListElem * First();
+        int Num();
 
-		/* Helper function for forlist_safe */
-		int NextLive(AListElem **copy, int size, int pos);
+        /* Helper function for forlist_safe */
+        int NextLive(AListElem **copy, int size, int pos);
 
-	private:
-		AListElem *list;		///< The first element of the list
-		AListElem *lastelem;	///< The last element of the list
-		int num;
+    private:
+        AListElem *list;        ///< The first element of the list
+        AListElem *lastelem;    ///< The last element of the list
+        int num;
 };
 
 /// Iterate over a list
 #define forlist(l) \
-	AListElem * elem, * _elem2; \
-	for (elem=(l)->First(), \
-			_elem2 = (elem ? (l)->Next(elem) : 0); \
-			elem; \
-			elem = _elem2, \
-			_elem2 = (_elem2 ? ((l)->Next(_elem2)) : 0))
+    AListElem * elem, * _elem2; \
+    for (elem=(l)->First(), \
+            _elem2 = (elem ? (l)->Next(elem) : 0); \
+            elem; \
+            elem = _elem2, \
+            _elem2 = (_elem2 ? ((l)->Next(_elem2)) : 0))
 
 /// Iterate over a list, if we've already done so.
 #define forlist_reuse(l) \
-	for (elem=(l)->First(), \
-			_elem2 = (elem ? (l)->Next(elem) : 0); \
-			elem; \
-			elem = _elem2, \
-			_elem2 = (_elem2 ? ((l)->Next(_elem2)) : 0))
+    for (elem=(l)->First(), \
+            _elem2 = (elem ? (l)->Next(elem) : 0); \
+            elem; \
+            elem = _elem2, \
+            _elem2 = (_elem2 ? ((l)->Next(_elem2)) : 0))
 
 /// Iterate over a list (without messing it up?)
 #define forlist_safe(l) \
-	int size = (l)->Num(); \
-	AListElem **copy = new AListElem*[size]; \
-	AListElem *elem; \
-	int pos; \
-	for (pos = 0, elem = (l)->First(); elem; elem = elem->next, pos++) { \
-		copy[pos] = elem; \
-	} \
-	for (pos = 0; \
-			pos < size ? (elem = copy[pos], 1) : (delete [] copy, 0); \
-			pos = (l)->NextLive(copy, size, pos))
+    int size = (l)->Num(); \
+    AListElem **copy = new AListElem*[size]; \
+    AListElem *elem; \
+    int pos; \
+    for (pos = 0, elem = (l)->First(); elem; elem = elem->next, pos++) { \
+        copy[pos] = elem; \
+    } \
+    for (pos = 0; \
+            pos < size ? (elem = copy[pos], 1) : (delete [] copy, 0); \
+            pos = (l)->NextLive(copy, size, pos))
 
 #endif

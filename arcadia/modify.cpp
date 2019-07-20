@@ -43,8 +43,8 @@
 */
 void Game::EnableSkill(int sk)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	SkillDefs[sk].flags &= ~SkillType::DISABLED;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    SkillDefs[sk].flags &= ~SkillType::DISABLED;
 }
 
 /// Enable a skill
@@ -55,8 +55,8 @@ tree, and to generally make sure that the skill tree isn't messed up.
 */
 void Game::DisableSkill(int sk)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	SkillDefs[sk].flags |= SkillType::DISABLED;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    SkillDefs[sk].flags |= SkillType::DISABLED;
 }
 
 /// Change the dependency for a skill.
@@ -68,19 +68,19 @@ void Game::DisableSkill(int sk)
 */
 void Game::ModifySkillDependancy(int sk, int i, char *dep, int lev)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	if(i < 0 || i >= (int)(sizeof(SkillDefs[sk].depends)/sizeof(SkillDepend)))
-		return;
-	if (dep && (FindSkill(dep) == NULL)) return;
-	if(lev < 0) return;
-	SkillDefs[sk].depends[i].skill = dep;
-	SkillDefs[sk].depends[i].level = lev;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    if(i < 0 || i >= (int)(sizeof(SkillDefs[sk].depends)/sizeof(SkillDepend)))
+        return;
+    if (dep && (FindSkill(dep) == NULL)) return;
+    if(lev < 0) return;
+    SkillDefs[sk].depends[i].skill = dep;
+    SkillDefs[sk].depends[i].level = lev;
 }
 
 void Game::ModifyBaseSkills(int base, int sk1, int sk2, int sk3, int sk4, int sk5)
 {
-	if(base < 0 || base > (NSKILLS-1)) return;
-	if(SkillDefs[base].baseskill != base) return;
+    if(base < 0 || base > (NSKILLS-1)) return;
+    if(SkillDefs[base].baseskill != base) return;
     if(sk1 > -1 && sk1 < NSKILLS) SkillDefs[sk1].baseskill = base;
     if(sk2 > -1 && sk2 < NSKILLS) SkillDefs[sk2].baseskill = base;
     if(sk3 > -1 && sk3 < NSKILLS) SkillDefs[sk3].baseskill = base;
@@ -99,8 +99,8 @@ for the full list.
 */
 void Game::ModifySkillFlags(int sk, int flags)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	SkillDefs[sk].flags = flags;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    SkillDefs[sk].flags = flags;
 }
 
 /// Modify the cost (in silver) to study a skill for a month.
@@ -110,9 +110,9 @@ void Game::ModifySkillFlags(int sk, int flags)
 */
 void Game::ModifySkillCost(int sk, int cost)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	if(cost < 0) return;
-	SkillDefs[sk].cost = cost;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    if(cost < 0) return;
+    SkillDefs[sk].cost = cost;
 }
 
 /// Modify the special effects associated with skills.
@@ -122,9 +122,9 @@ void Game::ModifySkillCost(int sk, int cost)
 */
 void Game::ModifySkillSpecial(int sk, char *special)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	if (special && (FindSpecial(special) == NULL)) return;
-	SkillDefs[sk].special = special;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    if (special && (FindSpecial(special) == NULL)) return;
+    SkillDefs[sk].special = special;
 }
 
 /// Modify the range of a skill.
@@ -135,16 +135,16 @@ See skills.h for the full list.
 */
 void Game::ModifySkillRange(int sk, char *range)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	if (range && (FindRange(range) == NULL)) return;
-	SkillDefs[sk].range = range;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    if (range && (FindRange(range) == NULL)) return;
+    SkillDefs[sk].range = range;
 }
 
 void Game::ModifySkillName(int sk, char *name, char *abbr)
 {
-	if(sk < 0 || sk > (NSKILLS-1)) return;
-	SkillDefs[sk].name = name;
-	SkillDefs[sk].abbr = abbr;
+    if(sk < 0 || sk > (NSKILLS-1)) return;
+    SkillDefs[sk].name = name;
+    SkillDefs[sk].abbr = abbr;
 }
 
 
@@ -156,8 +156,8 @@ void Game::ModifySkillName(int sk, char *name, char *abbr)
 */
 void Game::EnableItem(int item)
 {
-	if(item < 0 || item > (NITEMS-1)) return;
-	ItemDefs[item].flags &= ~ItemType::DISABLED;
+    if(item < 0 || item > (NITEMS-1)) return;
+    ItemDefs[item].flags &= ~ItemType::DISABLED;
 }
 
 /// Switch an item off so it cannot be used in-game.
@@ -166,8 +166,8 @@ void Game::EnableItem(int item)
 */
 void Game::DisableItem(int item)
 {
-	if(item < 0 || item > (NITEMS-1)) return;
-	ItemDefs[item].flags |= ItemType::DISABLED;
+    if(item < 0 || item > (NITEMS-1)) return;
+    ItemDefs[item].flags |= ItemType::DISABLED;
 }
 
 /// Modify some of the flags that affect an item's behavior.
@@ -177,8 +177,8 @@ void Game::DisableItem(int item)
 */
 void Game::ModifyItemFlags(int it, int flags)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	ItemDefs[it].flags = flags;
+    if(it < 0 || it > (NITEMS-1)) return;
+    ItemDefs[it].flags = flags;
 }
 
 /// Set what type of Item this is.
@@ -189,8 +189,8 @@ See the enum at line 46 of items.h for more details.
 */
 void Game::ModifyItemType(int it, int type)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	ItemDefs[it].type = type;
+    if(it < 0 || it > (NITEMS-1)) return;
+    ItemDefs[it].type = type;
 }
 
 /// Change the weight of an item
@@ -201,9 +201,9 @@ FRACTIONAL_WEIGHT gamedef in rules.cpp
 */
 void Game::ModifyItemWeight(int it, int weight)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(weight < 0) weight = 0;
-	ItemDefs[it].weight = weight;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(weight < 0) weight = 0;
+    ItemDefs[it].weight = weight;
 }
 
 /// Change the base price of an item
@@ -215,17 +215,17 @@ Prices tend to go up in cities, and down in the boonies.
 
 void Game::ModifyItemName(int it, char *name, char *names, char *abr)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	ItemDefs[it].name = name;
-	ItemDefs[it].names = names;
-	ItemDefs[it].abr = abr;
+    if(it < 0 || it > (NITEMS-1)) return;
+    ItemDefs[it].name = name;
+    ItemDefs[it].names = names;
+    ItemDefs[it].abr = abr;
 }
 
 void Game::ModifyItemBasePrice(int it, int price)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(price < 0) price = 0;
-	ItemDefs[it].baseprice = price;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(price < 0) price = 0;
+    ItemDefs[it].baseprice = price;
 }
 
 /// Change how much an item will let a unit carry
@@ -240,15 +240,15 @@ all of its weight
 */
 void Game::ModifyItemCapacities(int it, int wlk, int rid, int fly, int swm)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(wlk < 0) wlk = 0;
-	if(rid < 0) rid = 0;
-	if(fly < 0) fly = 0;
-	if(swm < 0) swm = 0;
-	ItemDefs[it].walk = wlk;
-	ItemDefs[it].ride = rid;
-	ItemDefs[it].fly = fly;
-	ItemDefs[it].swim = swm;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(wlk < 0) wlk = 0;
+    if(rid < 0) rid = 0;
+    if(fly < 0) fly = 0;
+    if(swm < 0) swm = 0;
+    ItemDefs[it].walk = wlk;
+    ItemDefs[it].ride = rid;
+    ItemDefs[it].fly = fly;
+    ItemDefs[it].swim = swm;
 }
 
 /// Change the item that gives you a bonus when producing this item
@@ -259,10 +259,10 @@ void Game::ModifyItemCapacities(int it, int wlk, int rid, int fly, int swm)
 */
 void Game::ModifyItemProductionBooster(int it, int item, int bonus)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(item < -1 || item > (NITEMS-1)) return;
-	ItemDefs[it].mult_item = item;
-	ItemDefs[it].mult_val = bonus;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(item < -1 || item > (NITEMS-1)) return;
+    ItemDefs[it].mult_item = item;
+    ItemDefs[it].mult_val = bonus;
 }
 
 /// Change the item that can be hitched to this item to pull it along
@@ -274,11 +274,11 @@ unless of course you have enough horses to carry it.
 */
 void Game::ModifyItemHitch(int it, int item, int capacity)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(item < -1 || item > (NITEMS-1)) return;
-	if(capacity < 0) return;
-	ItemDefs[it].hitchItem = item;
-	ItemDefs[it].hitchwalk = capacity;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(item < -1 || item > (NITEMS-1)) return;
+    if(capacity < 0) return;
+    ItemDefs[it].hitchItem = item;
+    ItemDefs[it].hitchwalk = capacity;
 }
 
 /// Change the skill required to produce this item
@@ -291,10 +291,10 @@ Set this to NULL if the item cannot be produced through normal means.
 */
 void Game::ModifyItemProductionSkill(int it, char *sk, int lev)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if (sk && (FindSkill(sk) == NULL)) return;
-	ItemDefs[it].pSkill = sk;
-	ItemDefs[it].pLevel = lev;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if (sk && (FindSkill(sk) == NULL)) return;
+    ItemDefs[it].pSkill = sk;
+    ItemDefs[it].pLevel = lev;
 }
 
 /// Change the number of man hours required to produce 1 item
@@ -307,11 +307,11 @@ so a skill-3 unit will produce 3 times as much as this number.
 */
 void Game::ModifyItemProductionOutput(int it, int months, int count)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(count < 0) count = 0;
-	if(months < 0) months = 0;
-	ItemDefs[it].pMonths = months;
-	ItemDefs[it].pOut = count;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(count < 0) count = 0;
+    if(months < 0) months = 0;
+    ItemDefs[it].pMonths = months;
+    ItemDefs[it].pOut = count;
 }
 
 /// Change the raw materials required to produce 1 item
@@ -325,13 +325,13 @@ Set the variable 'it' to -1 to require no item.
 */
 void Game::ModifyItemProductionInput(int it, int i, int input, int amount)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(i < 0 || i >= (int)(sizeof(ItemDefs[it].pInput)/sizeof(Materials)))
-		return;
-	if(input < -1 || input > (NITEMS-1)) return;
-	if(amount < 0) amount = 0;
-	ItemDefs[it].pInput[i].item = input;
-	ItemDefs[it].pInput[i].amt = amount;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(i < 0 || i >= (int)(sizeof(ItemDefs[it].pInput)/sizeof(Materials)))
+        return;
+    if(input < -1 || input > (NITEMS-1)) return;
+    if(amount < 0) amount = 0;
+    ItemDefs[it].pInput[i].item = input;
+    ItemDefs[it].pInput[i].amt = amount;
 }
 
 /// Change the magical skill required to produce this item
@@ -345,10 +345,10 @@ no magical skill can produce this item.
 */
 void Game::ModifyItemMagicSkill(int it, char *sk, int lev)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if (sk && (FindSkill(sk) == NULL)) return;
-	ItemDefs[it].mSkill = sk;
-	ItemDefs[it].mLevel = lev;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if (sk && (FindSkill(sk) == NULL)) return;
+    ItemDefs[it].mSkill = sk;
+    ItemDefs[it].mLevel = lev;
 }
 
 /// Change the number of items produced per spell
@@ -359,9 +359,9 @@ around to mundane items.
 */
 void Game::ModifyItemMagicOutput(int it, int count)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(count < 0) count = 0;
-	ItemDefs[it].mOut = count;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(count < 0) count = 0;
+    ItemDefs[it].mOut = count;
 }
 
 /// Change the raw materials required to produce 1 item via magical means
@@ -375,21 +375,21 @@ Set the variable 'it' to -1 to require no item.
 */
 void Game::ModifyItemMagicInput(int it, int i, int input, int amount)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if(i < 0 || i >= (int)(sizeof(ItemDefs[it].mInput)/sizeof(Materials)))
-		return;
-	if(input < -1 || input > (NITEMS-1)) return;
-	if(amount < 0) amount = 0;
-	ItemDefs[it].mInput[i].item = input;
-	ItemDefs[it].mInput[i].amt = amount;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if(i < 0 || i >= (int)(sizeof(ItemDefs[it].mInput)/sizeof(Materials)))
+        return;
+    if(input < -1 || input > (NITEMS-1)) return;
+    if(amount < 0) amount = 0;
+    ItemDefs[it].mInput[i].item = input;
+    ItemDefs[it].mInput[i].amt = amount;
 }
 
 void Game::ModifyItemEscapeSkill(int it, char *sk, int val)
 {
-	if(it < 0 || it > (NITEMS-1)) return;
-	if (sk && (FindSkill(sk) == NULL)) return;
-	ItemDefs[it].esc_skill = sk;
-	ItemDefs[it].esc_val = val;
+    if(it < 0 || it > (NITEMS-1)) return;
+    if (sk && (FindSkill(sk) == NULL)) return;
+    ItemDefs[it].esc_skill = sk;
+    ItemDefs[it].esc_val = val;
 }
 
 
@@ -403,12 +403,12 @@ For orcs, it's 4 and 1; for leaders it's 5 and 5 (although it could be 0 and 5)
 */
 void Game::ModifyRaceSkillLevels(char *r, int spec, int def)
 {
-	ManType *mt = FindRace(r);
-	if (mt == NULL) return;
-	if(spec < 0) spec = 0;
-	if(def < 0) def = 0;
-	mt->speciallevel = spec;
-	mt->defaultlevel = def;
+    ManType *mt = FindRace(r);
+    if (mt == NULL) return;
+    if(spec < 0) spec = 0;
+    if(def < 0) def = 0;
+    mt->speciallevel = spec;
+    mt->defaultlevel = def;
 }
 
 /// Change the number of hits it takes to kill a race in combat.
@@ -419,10 +419,10 @@ void Game::ModifyRaceSkillLevels(char *r, int spec, int def)
 void Game::ModifyRaceHits(char *r, int num)
 /* BS 030825 Multiple Hit Men */
 {
-	ManType *mt = FindRace(r);
-	if (mt == NULL) return;
-	if(num < 1) num = 1;
-	mt->hits = num;
+    ManType *mt = FindRace(r);
+    if (mt == NULL) return;
+    if(num < 1) num = 1;
+    mt->hits = num;
 }
 
 /// Change the specialised skills that a race knows.
@@ -433,29 +433,29 @@ void Game::ModifyRaceHits(char *r, int num)
 */
 void Game::ModifyRaceSkills(char *r, int i, char *sk)
 {
-	ManType *mt = FindRace(r);
-	if (mt == NULL) return;
-	if(i < 0 || i >= (int)(sizeof(mt->skills) / sizeof(mt->skills[0]))) return;
-	if (sk && (FindSkill(sk) == NULL)) return;
-	mt->skills[i] = sk;
+    ManType *mt = FindRace(r);
+    if (mt == NULL) return;
+    if(i < 0 || i >= (int)(sizeof(mt->skills) / sizeof(mt->skills[0]))) return;
+    if (sk && (FindSkill(sk) == NULL)) return;
+    mt->skills[i] = sk;
 }
 
 void Game::ModifyRaceSkills(char *r, char *sk1, char *sk2, char *sk3, char *sk4, char *sk5, char *sk6)
 {
-	ManType *mt = FindRace(r);
-	if (mt == NULL) return;
-	if (sk1 && (FindSkill(sk1) == NULL)) sk1 = NULL;
-	if (sk2 && (FindSkill(sk1) == NULL)) sk2 = NULL;
-	if (sk3 && (FindSkill(sk1) == NULL)) sk3 = NULL;
-	if (sk4 && (FindSkill(sk1) == NULL)) sk4 = NULL;
-	if (sk5 && (FindSkill(sk1) == NULL)) sk5 = NULL;
-	if (sk6 && (FindSkill(sk1) == NULL)) sk6 = NULL;
-	mt->skills[0] = sk1;
-	mt->skills[1] = sk2;
-	mt->skills[2] = sk3;
-	mt->skills[3] = sk4;
-	mt->skills[4] = sk5;
-	mt->skills[5] = sk6;
+    ManType *mt = FindRace(r);
+    if (mt == NULL) return;
+    if (sk1 && (FindSkill(sk1) == NULL)) sk1 = NULL;
+    if (sk2 && (FindSkill(sk1) == NULL)) sk2 = NULL;
+    if (sk3 && (FindSkill(sk1) == NULL)) sk3 = NULL;
+    if (sk4 && (FindSkill(sk1) == NULL)) sk4 = NULL;
+    if (sk5 && (FindSkill(sk1) == NULL)) sk5 = NULL;
+    if (sk6 && (FindSkill(sk1) == NULL)) sk6 = NULL;
+    mt->skills[0] = sk1;
+    mt->skills[1] = sk2;
+    mt->skills[2] = sk3;
+    mt->skills[3] = sk4;
+    mt->skills[4] = sk5;
+    mt->skills[5] = sk6;
 }
 
 /// Change the attacking skill level for a monster (ie it's COMB skill)
@@ -465,10 +465,10 @@ void Game::ModifyRaceSkills(char *r, char *sk1, char *sk2, char *sk3, char *sk4,
 */
 void Game::ModifyMonsterAttackLevel(char *mon, int lev)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-//	if(lev < 0) return;   //disabled by BS so that illusions could be modified.
-	pM->attackLevel = lev;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+//    if(lev < 0) return;   //disabled by BS so that illusions could be modified.
+    pM->attackLevel = lev;
 }
 
 /// Change the defensive level for a monster
@@ -479,10 +479,10 @@ void Game::ModifyMonsterAttackLevel(char *mon, int lev)
 */
 void Game::ModifyMonsterDefense(char *mon, int defenseType, int level)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-	if(defenseType < 0 || defenseType > (NUM_ATTACK_TYPES -1)) return;
-	pM->defense[defenseType] = level;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+    if(defenseType < 0 || defenseType > (NUM_ATTACK_TYPES -1)) return;
+    pM->defense[defenseType] = level;
 }
 
 /// Change a monster's number of attacks, number of hits, and rate of regeneration
@@ -494,14 +494,14 @@ void Game::ModifyMonsterDefense(char *mon, int defenseType, int level)
 */
 void Game::ModifyMonsterAttacksAndHits(char *mon, int num, int hits, int regen)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-	if(num < 0) return;
-	if(hits < 0) return;
-	if(regen < 0) return;
-	pM->numAttacks = num;
-	pM->hits = hits;
-	pM->regen = regen;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+    if(num < 0) return;
+    if(hits < 0) return;
+    if(regen < 0) return;
+    pM->numAttacks = num;
+    pM->hits = hits;
+    pM->regen = regen;
 }
 
 /// Change the offensive skills that a monster knows
@@ -514,14 +514,14 @@ cumulative with the unit's current score.
 */
 void Game::ModifyMonsterSkills(char *mon, int tact, int stealth, int obs)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-	if(tact < 0) return;
-	if(stealth < 0) return;
-	if(obs < 0) return;
-	pM->tactics = tact;
-	pM->stealth = stealth;
-	pM->obs = obs;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+    if(tact < 0) return;
+    if(stealth < 0) return;
+    if(obs < 0) return;
+    pM->tactics = tact;
+    pM->stealth = stealth;
+    pM->obs = obs;
 }
 
 /// Change the type or effectiveness of a monster's special attack
@@ -532,12 +532,12 @@ void Game::ModifyMonsterSkills(char *mon, int tact, int stealth, int obs)
 */
 void Game::ModifyMonsterSpecial(char *mon, char *special, int lev)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-	if (special && (FindSpecial(special) == NULL)) return;
-	if(lev < 0) return;
-	pM->special = special;
-	pM->specialLevel = lev;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+    if (special && (FindSpecial(special) == NULL)) return;
+    if(lev < 0) return;
+    pM->special = special;
+    pM->specialLevel = lev;
 }
 
 /// Change the type or amount of spoils that a monster gives out
@@ -549,12 +549,12 @@ Set the item type to -1 if you don't want items given out.
 */
 void Game::ModifyMonsterSpoils(char *mon, int silver, int spoilType)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-	if(spoilType < -1) return;
-	if(silver < 0) return;
-	pM->silver = silver;
-	pM->spoiltype = spoilType;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+    if(spoilType < -1) return;
+    if(silver < 0) return;
+    pM->silver = silver;
+    pM->spoiltype = spoilType;
 }
 
 /// Change how likely the monster is to beat things up, and how many will appear
@@ -565,12 +565,12 @@ void Game::ModifyMonsterSpoils(char *mon, int silver, int spoilType)
 */
 void Game::ModifyMonsterThreat(char *mon, int num, int hostileChance)
 {
-	MonType *pM = FindMonster(mon, 0);
-	if (pM == NULL) return;
-	if(num < 0) return;
-	if(hostileChance < 0 || hostileChance > 100) return;
-	pM->hostile = hostileChance;
-	pM->number = num;
+    MonType *pM = FindMonster(mon, 0);
+    if (pM == NULL) return;
+    if(num < 0) return;
+    if(hostileChance < 0 || hostileChance > 100) return;
+    pM->hostile = hostileChance;
+    pM->number = num;
 }
 
 /// Modify the skills required to wield a weapon
@@ -582,12 +582,12 @@ wield it if you have either of them.
 */
 void Game::ModifyWeaponSkills(char *weap, char *baseSkill, char *orSkill)
 {
-	WeaponType *pw = FindWeapon(weap);
-	if (pw == NULL) return;
-	if (baseSkill && (FindSkill(baseSkill) == NULL)) return;
-	if (orSkill && (FindSkill(orSkill) == NULL)) return;
-	pw->baseSkill = baseSkill;
-	pw->orSkill = orSkill;
+    WeaponType *pw = FindWeapon(weap);
+    if (pw == NULL) return;
+    if (baseSkill && (FindSkill(baseSkill) == NULL)) return;
+    if (orSkill && (FindSkill(orSkill) == NULL)) return;
+    pw->baseSkill = baseSkill;
+    pw->orSkill = orSkill;
 }
 
 /// Modify the flags that alter a weapon's behavior
@@ -599,9 +599,9 @@ There's a full list in items.h, line 200 on
 */
 void Game::ModifyWeaponFlags(char *weap, int flags)
 {
-	WeaponType *pw = FindWeapon(weap);
-	if (pw == NULL) return;
-	pw->flags = flags;
+    WeaponType *pw = FindWeapon(weap);
+    if (pw == NULL) return;
+    pw->flags = flags;
 }
 
 /// Modify the class and type of a weapon's attack
@@ -611,15 +611,15 @@ void Game::ModifyWeaponFlags(char *weap, int flags)
 \arg \c attackType The type of attack, eg. ATTACK_RANGED, ATTACK_COMBAT
 */
 void Game::ModifyWeaponAttack(char *weap, int wclass, int attackType,
-		int numAtt)
+        int numAtt)
 {
-	WeaponType *pw = FindWeapon(weap);
-	if (pw == NULL) return;
-	if(wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1)) return;
-	if(attackType < 0 || attackType > (NUM_ATTACK_TYPES - 1)) return;
-	pw->weapClass = wclass;
-	pw->attackType = attackType;
-	pw->numAttacks = numAtt;
+    WeaponType *pw = FindWeapon(weap);
+    if (pw == NULL) return;
+    if(wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1)) return;
+    if(attackType < 0 || attackType > (NUM_ATTACK_TYPES - 1)) return;
+    pw->weapClass = wclass;
+    pw->attackType = attackType;
+    pw->numAttacks = numAtt;
 }
 
 /// Modify the bonus that a weapon gets in attack, defense and 
@@ -632,11 +632,11 @@ void Game::ModifyWeaponAttack(char *weap, int wclass, int attackType,
 */
 void Game::ModifyWeaponBonuses(char *weap, int attack, int defense, int vsMount)
 {
-	WeaponType *pw = FindWeapon(weap);
-	if (pw == NULL) return;
-	pw->attackBonus = attack;
-	pw->defenseBonus = defense;
-	pw->mountBonus = vsMount;
+    WeaponType *pw = FindWeapon(weap);
+    if (pw == NULL) return;
+    pw->attackBonus = attack;
+    pw->defenseBonus = defense;
+    pw->mountBonus = vsMount;
 }
 
 /// Modify the flags that govern an armor's behavior
@@ -646,9 +646,9 @@ void Game::ModifyWeaponBonuses(char *weap, int attack, int defense, int vsMount)
 */
 void Game::ModifyArmorFlags(char *armor, int flags)
 {
-	ArmorType *pa = FindArmor(armor);
-	if (pa == NULL) return;
-	pa->flags = flags;
+    ArmorType *pa = FindArmor(armor);
+    if (pa == NULL) return;
+    pa->flags = flags;
 }
 
 /// Modify the divisor for the save chances in ModifyArmorSaveValue
@@ -659,10 +659,10 @@ has 100 in 300 chances of protecting it's wearer vs. COMBAT attacks.
 */
 void Game::ModifyArmorSaveFrom(char *armor, int from)
 {
-	ArmorType *pa = FindArmor(armor);
-	if (pa == NULL) return;
-	if(from < 0) return;
-	pa->from = from;
+    ArmorType *pa = FindArmor(armor);
+    if (pa == NULL) return;
+    if(from < 0) return;
+    pa->from = from;
 }
 
 /// Modify the numerator for the armor's save chances
@@ -674,28 +674,28 @@ has 100 in 300 chances of protecting it's wearer vs. COMBAT attacks.
 */
 void Game::ModifyArmorSaveValue(char *armor, int wclass, int val)
 {
-	ArmorType *pa = FindArmor(armor);
-	if (pa == NULL) return;
-	if(wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1)) return;
-	if(val < 0 || val > pa->from) return;
-	pa->saves[wclass] = val;
+    ArmorType *pa = FindArmor(armor);
+    if (pa == NULL) return;
+    if(wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1)) return;
+    if(val < 0 || val > pa->from) return;
+    pa->saves[wclass] = val;
 }
 
 
 void Game::ModifyArmorSaveAll(char *armor, int from, int melee, int armourpiercing, int magic)
 {
-	ArmorType *pa = FindArmor(armor);
-	if (pa == NULL) return;
-	if(from < 0 || melee < 0 || armourpiercing < 0 || magic < 0) return;
-	pa->from = from;
-	pa->saves[SLASHING] = melee;
-	pa->saves[CRUSHING] = melee;
-	pa->saves[CLEAVING] = melee;
-	pa->saves[PIERCING] = melee;
-	pa->saves[ARMORPIERCING] = armourpiercing;
-	pa->saves[MAGIC_ENERGY] = magic;
-	pa->saves[MAGIC_SPIRIT] = magic;
-	pa->saves[MAGIC_WEATHER] = magic;
+    ArmorType *pa = FindArmor(armor);
+    if (pa == NULL) return;
+    if(from < 0 || melee < 0 || armourpiercing < 0 || magic < 0) return;
+    pa->from = from;
+    pa->saves[SLASHING] = melee;
+    pa->saves[CRUSHING] = melee;
+    pa->saves[CLEAVING] = melee;
+    pa->saves[PIERCING] = melee;
+    pa->saves[ARMORPIERCING] = armourpiercing;
+    pa->saves[MAGIC_ENERGY] = magic;
+    pa->saves[MAGIC_SPIRIT] = magic;
+    pa->saves[MAGIC_WEATHER] = magic;
 }
 
 /// Modify the skill required to ride a mount
@@ -705,10 +705,10 @@ void Game::ModifyArmorSaveAll(char *armor, int from, int melee, int armourpierci
 */
 void Game::ModifyMountSkill(char *mount, char *skill)
 {
-	MountType *pm = FindMount(mount);
-	if (pm == NULL) return;
-	if (skill && (FindSkill(skill) == NULL)) return;
-	pm->skill = skill;
+    MountType *pm = FindMount(mount);
+    if (pm == NULL) return;
+    if (skill && (FindSkill(skill) == NULL)) return;
+    pm->skill = skill;
 }
 
 /// Modify the bonuses given when mounts are ridden into combat
@@ -717,395 +717,395 @@ void Game::ModifyMountSkill(char *mount, char *skill)
 \arg \c min The minimum bonus given
 \arg \c max The maximum bonus given
 \arg \c hampered The bonus given when a mount is hampered 
-								(eg. WING horses underground/in tunnels?)
+                                (eg. WING horses underground/in tunnels?)
 */
 void Game::ModifyMountBonuses(char *mount, int min, int max, int hampered)
 {
-	MountType *pm = FindMount(mount);
-	if (pm == NULL) return;
-	if(min < 0) return;
-	if(max < 0) return;
-//	if(hampered < min) return;
-	pm->minBonus = min;
-	pm->maxBonus = max;
-	pm->maxHamperedBonus = hampered;
+    MountType *pm = FindMount(mount);
+    if (pm == NULL) return;
+    if(min < 0) return;
+    if(max < 0) return;
+//    if(hampered < min) return;
+    pm->minBonus = min;
+    pm->maxBonus = max;
+    pm->maxHamperedBonus = hampered;
 }
 
 /// Modify the special attacks that a mount has
 /** The only mount this is used for atm is the fear attacks 
-		vs. mounted troops that camels get
+        vs. mounted troops that camels get
 \arg \c *mount The mount name, eg. "HORS"
 \arg \c *special The special attack (eg. "spook_horses")
 \arg \c level The level of the attack
 */
 void Game::ModifyMountSpecial(char *mount, char *special, int level)
 {
-	MountType *pm = FindMount(mount);
-	if (pm == NULL) return;
-	if (special && (FindSpecial(special) == NULL)) return;
-	if(level < 0) return;
-	pm->mountSpecial = special;
-	pm->specialLev = level;
+    MountType *pm = FindMount(mount);
+    if (pm == NULL) return;
+    if (special && (FindSpecial(special) == NULL)) return;
+    if(level < 0) return;
+    pm->mountSpecial = special;
+    pm->specialLev = level;
 }
 
 void Game::EnableObject(int obj)
 {
-	if(obj < 0 || obj > (NOBJECTS-1)) return;
-	ObjectDefs[obj].flags &= ~ObjectType::DISABLED;
+    if(obj < 0 || obj > (NOBJECTS-1)) return;
+    ObjectDefs[obj].flags &= ~ObjectType::DISABLED;
 }
 
 void Game::EnableHexside(int hex)
 {
-	if(hex < 0 || hex > (NHEXSIDES-1)) return;
-	HexsideDefs[hex].flags &= ~HexsideType::DISABLED;
+    if(hex < 0 || hex > (NHEXSIDES-1)) return;
+    HexsideDefs[hex].flags &= ~HexsideType::DISABLED;
 }
 
 void Game::DisableObject(int obj)
 {
-	if(obj < 0 || obj > (NOBJECTS-1)) return;
-	ObjectDefs[obj].flags |= ObjectType::DISABLED;
+    if(obj < 0 || obj > (NOBJECTS-1)) return;
+    ObjectDefs[obj].flags |= ObjectType::DISABLED;
 }
 
 void Game::ModifyObjectFlags(int ob, int flags)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	ObjectDefs[ob].flags = flags;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    ObjectDefs[ob].flags = flags;
 }
 
 void Game::ModifyObjectDecay(int ob, int maxMaint, int maxMonthDecay, int mFact)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	if(maxMonthDecay > maxMaint) return;
-	if(maxMaint < 0) return;
-	if(maxMonthDecay < 0) return;
-	if(mFact < 0) return;
-	ObjectDefs[ob].maxMaintenance = maxMaint;
-	ObjectDefs[ob].maxMonthlyDecay = maxMonthDecay;
-	ObjectDefs[ob].maintFactor = mFact;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    if(maxMonthDecay > maxMaint) return;
+    if(maxMaint < 0) return;
+    if(maxMonthDecay < 0) return;
+    if(mFact < 0) return;
+    ObjectDefs[ob].maxMaintenance = maxMaint;
+    ObjectDefs[ob].maxMonthlyDecay = maxMonthDecay;
+    ObjectDefs[ob].maintFactor = mFact;
 }
 
 void Game::ModifyObjectProduction(int ob, int it)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	if(it < -1 || it > (NITEMS -1)) return;
-	ObjectDefs[ob].productionAided = it;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    if(it < -1 || it > (NITEMS -1)) return;
+    ObjectDefs[ob].productionAided = it;
 }
 
 void Game::ModifyObjectMonster(int ob, int monster)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	if(monster < -1 || monster > (NITEMS -1)) return;
-	ObjectDefs[ob].monster = monster;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    if(monster < -1 || monster > (NITEMS -1)) return;
+    ObjectDefs[ob].monster = monster;
 }
 
 void Game::ModifyObjectConstruction(int ob, int it, int num, char *sk, int lev)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	if((it < -1 && it != I_WOOD_OR_STONE) || it > (NITEMS -1))
-		return;
-	if(num < 0) return;
-	if (sk && FindSkill(sk) == NULL) return;
-	if(lev < 0) return;
-	ObjectDefs[ob].item = it;
-	ObjectDefs[ob].cost = num;
-	ObjectDefs[ob].skill = sk;
-	ObjectDefs[ob].level = lev;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    if((it < -1 && it != I_WOOD_OR_STONE) || it > (NITEMS -1))
+        return;
+    if(num < 0) return;
+    if (sk && FindSkill(sk) == NULL) return;
+    if(lev < 0) return;
+    ObjectDefs[ob].item = it;
+    ObjectDefs[ob].cost = num;
+    ObjectDefs[ob].skill = sk;
+    ObjectDefs[ob].level = lev;
 }
 
 void Game::ModifyObjectManpower(int ob, int prot, int cap, int sail, int mages)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	if(prot < 0) return;
-	if(cap < 0) return;
-	if(sail < 0) return;
-	if(mages < 0) return;
-	ObjectDefs[ob].protect = prot;
-	ObjectDefs[ob].capacity = cap;
-	ObjectDefs[ob].sailors = sail;
-	ObjectDefs[ob].maxMages = mages;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    if(prot < 0) return;
+    if(cap < 0) return;
+    if(sail < 0) return;
+    if(mages < 0) return;
+    ObjectDefs[ob].protect = prot;
+    ObjectDefs[ob].capacity = cap;
+    ObjectDefs[ob].sailors = sail;
+    ObjectDefs[ob].maxMages = mages;
 }
 
 void Game::ModifyObjectDefence(int ob, int co, int en, int sp, int we, int ri, int ra)
 {
-	if(ob < 0 || ob > (NOBJECTS-1)) return;
-	//if(val < 0) return;	// we could conceivably have a negative value 
-								// associated with a structure
-	ObjectDefs[ob].defenceArray[0] = co;
-	ObjectDefs[ob].defenceArray[1] = en;
-	ObjectDefs[ob].defenceArray[2] = sp;
-	ObjectDefs[ob].defenceArray[3] = we;
-	ObjectDefs[ob].defenceArray[4] = ri;
-	ObjectDefs[ob].defenceArray[5] = ra;
+    if(ob < 0 || ob > (NOBJECTS-1)) return;
+    //if(val < 0) return;    // we could conceivably have a negative value 
+                                // associated with a structure
+    ObjectDefs[ob].defenceArray[0] = co;
+    ObjectDefs[ob].defenceArray[1] = en;
+    ObjectDefs[ob].defenceArray[2] = sp;
+    ObjectDefs[ob].defenceArray[3] = we;
+    ObjectDefs[ob].defenceArray[4] = ri;
+    ObjectDefs[ob].defenceArray[5] = ra;
 }
 
 void Game::ClearTerrainRaces(int t)
 {
-	if(t < 0 || t > R_NUM-1) return;
-	unsigned int c;
-	for(c = 0; c < sizeof(TerrainDefs[t].races)/sizeof(int); c++) {
-		TerrainDefs[t].races[c] = -1;
-	}
-	for(c = 0; c < sizeof(TerrainDefs[t].coastal_races)/sizeof(int); c++) {
-		TerrainDefs[t].coastal_races[c] = -1;
-	}
+    if(t < 0 || t > R_NUM-1) return;
+    unsigned int c;
+    for(c = 0; c < sizeof(TerrainDefs[t].races)/sizeof(int); c++) {
+        TerrainDefs[t].races[c] = -1;
+    }
+    for(c = 0; c < sizeof(TerrainDefs[t].coastal_races)/sizeof(int); c++) {
+        TerrainDefs[t].coastal_races[c] = -1;
+    }
 }
 
 void Game::ModifyTerrainRace(int t, int i, int r)
 {
-	if(t < 0 || t > (R_NUM -1)) return;
-	if(i < 0 || i >= (int)(sizeof(TerrainDefs[t].races)/sizeof(int))) return;
-	if(r < -1 || r > NITEMS-1) r = -1;
-	if(r != -1 && !(ItemDefs[r].type & IT_MAN)) r = -1;
-	TerrainDefs[t].races[i] = r;
+    if(t < 0 || t > (R_NUM -1)) return;
+    if(i < 0 || i >= (int)(sizeof(TerrainDefs[t].races)/sizeof(int))) return;
+    if(r < -1 || r > NITEMS-1) r = -1;
+    if(r != -1 && !(ItemDefs[r].type & IT_MAN)) r = -1;
+    TerrainDefs[t].races[i] = r;
 }
 
 void Game::ModifyTerrainCoastRace(int t, int i, int r)
 {
-	if(t < 0 || t > (R_NUM -1)) return;
-	if(i < 0 || i >= (int)(sizeof(TerrainDefs[t].coastal_races)/sizeof(int)))
-		return;
-	if(r < -1 || r > NITEMS-1) r = -1;
-	if(r != -1 && !(ItemDefs[r].type & IT_MAN)) r = -1;
-	TerrainDefs[t].coastal_races[i] = r;
+    if(t < 0 || t > (R_NUM -1)) return;
+    if(i < 0 || i >= (int)(sizeof(TerrainDefs[t].coastal_races)/sizeof(int)))
+        return;
+    if(r < -1 || r > NITEMS-1) r = -1;
+    if(r != -1 && !(ItemDefs[r].type & IT_MAN)) r = -1;
+    TerrainDefs[t].coastal_races[i] = r;
 }
 
 void Game::ClearTerrainItems(int terrain)
 {
-	if(terrain < 0 || terrain > R_NUM-1) return;
+    if(terrain < 0 || terrain > R_NUM-1) return;
 
-	for(unsigned int c = 0;
-			c < sizeof(TerrainDefs[terrain].prods)/sizeof(Product);
-			c++) {
-		TerrainDefs[terrain].prods[c].product = -1;
-		TerrainDefs[terrain].prods[c].chance = 0;
-		TerrainDefs[terrain].prods[c].amount = 0;
-	}
+    for(unsigned int c = 0;
+            c < sizeof(TerrainDefs[terrain].prods)/sizeof(Product);
+            c++) {
+        TerrainDefs[terrain].prods[c].product = -1;
+        TerrainDefs[terrain].prods[c].chance = 0;
+        TerrainDefs[terrain].prods[c].amount = 0;
+    }
 }
 
 void Game::ModifyTerrainItems(int terrain, int i, int p, int c, int a)
 {
-	if(terrain < 0 || terrain > (R_NUM -1)) return;
-	if(i < 0 || i >= (int)(sizeof(TerrainDefs[terrain].prods)/sizeof(Product)))
-		return;
-	if(p < -1 || p > NITEMS-1) p = -1;
-	if(c < 0 || c > 100) c = 0;
-	if(a < 0) a = 0;
-	TerrainDefs[terrain].prods[i].product = p;
-	TerrainDefs[terrain].prods[i].chance = c;
-	TerrainDefs[terrain].prods[i].amount = a;
+    if(terrain < 0 || terrain > (R_NUM -1)) return;
+    if(i < 0 || i >= (int)(sizeof(TerrainDefs[terrain].prods)/sizeof(Product)))
+        return;
+    if(p < -1 || p > NITEMS-1) p = -1;
+    if(c < 0 || c > 100) c = 0;
+    if(a < 0) a = 0;
+    TerrainDefs[terrain].prods[i].product = p;
+    TerrainDefs[terrain].prods[i].chance = c;
+    TerrainDefs[terrain].prods[i].amount = a;
 }
 
 void Game::ModifyTerrainWMons(int t, int freq, int smon, int bigmon, int hum)
 {
-	if(t < 0 || t > (R_NUM -1)) return;
-	if(freq < 0) freq = 0;
-	if(smon < -1 || smon > NITEMS-1) smon = -1;
-	if(bigmon < -1 || bigmon > NITEMS-1) bigmon = -1;
-	if(hum < -1 || hum > NITEMS-1) hum = -1;
-	TerrainDefs[t].wmonfreq = freq;
-	TerrainDefs[t].smallmon = smon;
-	TerrainDefs[t].bigmon = bigmon;
-	TerrainDefs[t].humanoid = hum;
+    if(t < 0 || t > (R_NUM -1)) return;
+    if(freq < 0) freq = 0;
+    if(smon < -1 || smon > NITEMS-1) smon = -1;
+    if(bigmon < -1 || bigmon > NITEMS-1) bigmon = -1;
+    if(hum < -1 || hum > NITEMS-1) hum = -1;
+    TerrainDefs[t].wmonfreq = freq;
+    TerrainDefs[t].smallmon = smon;
+    TerrainDefs[t].bigmon = bigmon;
+    TerrainDefs[t].humanoid = hum;
 }
 
 void Game::ModifyTerrainLairChance(int t, int chance)
 {
-	if(t < 0 || t > (R_NUM -1)) return;
-	if(chance < 0 || chance > 100) chance = 0;
-	// Chance is percent out of 100 that should have some lair
-	TerrainDefs[t].lairChance = chance;
+    if(t < 0 || t > (R_NUM -1)) return;
+    if(chance < 0 || chance > 100) chance = 0;
+    // Chance is percent out of 100 that should have some lair
+    TerrainDefs[t].lairChance = chance;
 }
 
 void Game::ModifyTerrainLair(int t, int i, int l)
 {
-	if(t < 0 || t > (R_NUM -1)) return;
-	if(i < 0 || i >= (int)(sizeof(TerrainDefs[t].lairs)/sizeof(int))) return;
-	if(l < -1 || l > NOBJECTS-1) l = -1;
-	TerrainDefs[t].lairs[i] = l;
+    if(t < 0 || t > (R_NUM -1)) return;
+    if(i < 0 || i >= (int)(sizeof(TerrainDefs[t].lairs)/sizeof(int))) return;
+    if(l < -1 || l > NOBJECTS-1) l = -1;
+    TerrainDefs[t].lairs[i] = l;
 }
 
 void Game::ModifyTerrainEconomy(int t, int pop, int wages, int econ, int move)
 {
-	if(t < 0 || t > (R_NUM -1)) return;
-	if(pop < 0) pop = 0;
-	if(wages < 0) wages = 0;
-	if(econ < 0) econ = 0;
-	if(move < 1) move = 1;
-	TerrainDefs[t].pop = pop;
-	TerrainDefs[t].wages = wages;
-	TerrainDefs[t].economy = econ;
-	TerrainDefs[t].movepoints = move;
+    if(t < 0 || t > (R_NUM -1)) return;
+    if(pop < 0) pop = 0;
+    if(wages < 0) wages = 0;
+    if(econ < 0) econ = 0;
+    if(move < 1) move = 1;
+    TerrainDefs[t].pop = pop;
+    TerrainDefs[t].wages = wages;
+    TerrainDefs[t].economy = econ;
+    TerrainDefs[t].movepoints = move;
 }
 
 void Game::ModifyBattleItemFlags(char *item, int flags)
 {
-	BattleItemType *pb = FindBattleItem(item);
-	if (pb == NULL) return;
-	pb->flags = flags;
+    BattleItemType *pb = FindBattleItem(item);
+    if (pb == NULL) return;
+    pb->flags = flags;
 }
 
 void Game::ModifyBattleItemSpecial(char *item, char *special, int level)
 {
-	BattleItemType *pb = FindBattleItem(item);
-	if (pb == NULL) return;
-	if (special && (FindSpecial(special) == NULL)) return;
-	if(level < 0) return;
-	pb->special = special;
-	pb->skillLevel = level;
+    BattleItemType *pb = FindBattleItem(item);
+    if (pb == NULL) return;
+    if (special && (FindSpecial(special) == NULL)) return;
+    if(level < 0) return;
+    pb->special = special;
+    pb->skillLevel = level;
 }
 
 void Game::ModifySpecialTargetFlags(char *special, int targetflags)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	sp->targflags = targetflags;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    sp->targflags = targetflags;
 }
 
 void Game::ModifySpecialTargetObjects(char *special, int index, int obj)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	if(index < 0 || index > 3) return;
-	if((obj != -1 && obj < 1) || (obj > (NOBJECTS-1))) return;
-	sp->buildings[index] = obj;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    if(index < 0 || index > 3) return;
+    if((obj != -1 && obj < 1) || (obj > (NOBJECTS-1))) return;
+    sp->buildings[index] = obj;
 }
 
 void Game::ModifySpecialTargetItems(char *special, int index, int item)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	if(index < 0 || index > 7) return;
-	if(item < -1 || item > (NITEMS-1)) return;
-	sp->targets[index] = item;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    if(index < 0 || index > 7) return;
+    if(item < -1 || item > (NITEMS-1)) return;
+    sp->targets[index] = item;
 }
 
 void Game::ModifySpecialTargetEffects(char *special, int index, char *effect)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	if(index < 0 || index > 3) return;
-	if (effect && (FindEffect(effect) == NULL)) return;
-	sp->effects[index] = effect;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    if(index < 0 || index > 3) return;
+    if (effect && (FindEffect(effect) == NULL)) return;
+    sp->effects[index] = effect;
 }
 
 void Game::ModifySpecialEffectFlags(char *special, int effectflags)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	sp->effectflags = effectflags;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    sp->effectflags = effectflags;
 }
 
 void Game::ModifySpecialShields(char *special, int index, int type)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	if(index < 0 || index > 4) return;
-	if(type < -1 || type > (NUM_ATTACK_TYPES)) return;
-	sp->shield[index] = type;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    if(index < 0 || index > 4) return;
+    if(type < -1 || type > (NUM_ATTACK_TYPES)) return;
+    sp->shield[index] = type;
 }
 
 void Game::ModifySpecialDefenseMods(char *special, int index, int type, int val)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	if(index < 0 || index > 4) return;
-	if(type < -1 || type > (NUM_ATTACK_TYPES)) return;
-	sp->defs[index].type = type;
-	sp->defs[index].val = val;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    if(index < 0 || index > 4) return;
+    if(type < -1 || type > (NUM_ATTACK_TYPES)) return;
+    sp->defs[index].type = type;
+    sp->defs[index].val = val;
 }
 
 void Game::ModifySpecialDamage(char *special, int index, int type, int min,
-		int val, int flags, int cls, char *effect)
+        int val, int flags, int cls, char *effect)
 {
-	SpecialType *sp = FindSpecial(special);
-	if (sp == NULL) return;
-	if(index < 0 || index > 4) return;
-	if (effect && (FindEffect(effect) == NULL)) return;
-	if(type < -1 || type > NUM_ATTACK_TYPES) return;
-	if(cls < -1 || cls > (NUM_WEAPON_CLASSES)) return;   //NUM_WEAPON_CLASSES is allowed for courage, which ignores armour completely
-	if(min < 0) return;
-	sp->damage[index].type = type;
-	sp->damage[index].minnum = min;
-	sp->damage[index].value = val;
-	sp->damage[index].flags = flags;
-	sp->damage[index].dclass = cls;
-	sp->damage[index].effect = effect;
+    SpecialType *sp = FindSpecial(special);
+    if (sp == NULL) return;
+    if(index < 0 || index > 4) return;
+    if (effect && (FindEffect(effect) == NULL)) return;
+    if(type < -1 || type > NUM_ATTACK_TYPES) return;
+    if(cls < -1 || cls > (NUM_WEAPON_CLASSES)) return;   //NUM_WEAPON_CLASSES is allowed for courage, which ignores armour completely
+    if(min < 0) return;
+    sp->damage[index].type = type;
+    sp->damage[index].minnum = min;
+    sp->damage[index].value = val;
+    sp->damage[index].flags = flags;
+    sp->damage[index].dclass = cls;
+    sp->damage[index].effect = effect;
 }
 
 void Game::ModifyEffectFlags(char *effect, int flags)
 {
-	EffectType *ep = FindEffect(effect);
-	if (ep == NULL) return;
-	ep->flags = flags;
+    EffectType *ep = FindEffect(effect);
+    if (ep == NULL) return;
+    ep->flags = flags;
 }
 
 void Game::ModifyEffectAttackMod(char *effect, int val)
 {
-	EffectType *ep = FindEffect(effect);
-	if (ep == NULL) return;
-	ep->attackVal = val;
+    EffectType *ep = FindEffect(effect);
+    if (ep == NULL) return;
+    ep->attackVal = val;
 }
 
 void Game::ModifyEffectDefenseMod(char *effect, int index, int type, int val)
 {
-	EffectType *ep = FindEffect(effect);
-	if (ep == NULL) return;
-	if(type < 0 || type > NUM_ATTACK_TYPES) return;
-	if(index < 0 || index > 4) return;
-	ep->defMods[index].type = type;
-	ep->defMods[index].val = val;
+    EffectType *ep = FindEffect(effect);
+    if (ep == NULL) return;
+    if(type < 0 || type > NUM_ATTACK_TYPES) return;
+    if(index < 0 || index > 4) return;
+    ep->defMods[index].type = type;
+    ep->defMods[index].val = val;
 }
 
 void Game::ModifyEffectCancelEffect(char *effect, char *uneffect)
 {
-	EffectType *ep = FindEffect(effect);
-	if (ep == NULL) return;
-	if (uneffect && (FindEffect(uneffect) == NULL)) return;
-	ep->cancelEffect = uneffect;
+    EffectType *ep = FindEffect(effect);
+    if (ep == NULL) return;
+    if (uneffect && (FindEffect(uneffect) == NULL)) return;
+    ep->cancelEffect = uneffect;
 }
 
 void Game::ModifyRangeFlags(char *range, int flags)
 {
-	RangeType *rp = FindRange(range);
-	if (rp == NULL) return;
-	rp->flags = flags;
+    RangeType *rp = FindRange(range);
+    if (rp == NULL) return;
+    rp->flags = flags;
 }
 
 void Game::ModifyRangeClass(char *range, int rclass)
 {
-	RangeType *rp = FindRange(range);
-	if (rp == NULL) return;
-	if(rclass < 0 || rclass > (RangeType::NUMRANGECLASSES-1)) return;
-	rp->rangeClass = rclass;
+    RangeType *rp = FindRange(range);
+    if (rp == NULL) return;
+    if(rclass < 0 || rclass > (RangeType::NUMRANGECLASSES-1)) return;
+    rp->rangeClass = rclass;
 }
 
 void Game::ModifyRangeMultiplier(char *range, int mult)
 {
-	RangeType *rp = FindRange(range);
-	if (rp == NULL) return;
-	if(mult < 1) return;
-	rp->rangeMult = mult;
+    RangeType *rp = FindRange(range);
+    if (rp == NULL) return;
+    if(mult < 1) return;
+    rp->rangeMult = mult;
 }
 
 void Game::ModifyRangeLevelPenalty(char *range, int pen)
 {
-	RangeType *rp = FindRange(range);
-	if (rp == NULL) return;
-	if(pen < 0) return;
-	rp->crossLevelPenalty = pen;
+    RangeType *rp = FindRange(range);
+    if (rp == NULL) return;
+    if(pen < 0) return;
+    rp->crossLevelPenalty = pen;
 }
 
 void Game::ModifyAttribMod(char *mod, int index, int flags, char *ident,
-		int type, int val)
+        int type, int val)
 {
-	AttribModType *mp = FindAttrib(mod);
-	if (mp == NULL) return;
-	if (index < 0 || index > 5) return;
-	if (!ident) return;
-	if (type < 0 || type > AttribModItem::NUMMODTYPE-1) return;
+    AttribModType *mp = FindAttrib(mod);
+    if (mp == NULL) return;
+    if (index < 0 || index > 5) return;
+    if (!ident) return;
+    if (type < 0 || type > AttribModItem::NUMMODTYPE-1) return;
 
-	mp->mods[index].flags = flags;
-	mp->mods[index].ident = ident;
-	mp->mods[index].modtype = type;
-	mp->mods[index].val = val;
+    mp->mods[index].flags = flags;
+    mp->mods[index].ident = ident;
+    mp->mods[index].modtype = type;
+    mp->mods[index].val = val;
 }

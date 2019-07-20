@@ -234,36 +234,36 @@ int Unit::MysticEvent()
 
 void Game::RechargeMages()
 {
-	forlist(&regions) {
-		ARegion *r = (ARegion *) elem;
-		forlist(&r->objects) {
-			Object *o = (Object *) elem;
-			forlist(&o->units) {
-				Unit *u = (Unit *) elem;
-				if(u->type == U_MAGE) {
+    forlist(&regions) {
+        ARegion *r = (ARegion *) elem;
+        forlist(&r->objects) {
+            Object *o = (Object *) elem;
+            forlist(&o->units) {
+                Unit *u = (Unit *) elem;
+                if(u->type == U_MAGE) {
                     u->energy += u->EnergyRecharge();
                     int maxenergy = u->MaxEnergy();
                     if (u->energy > maxenergy) u->energy = maxenergy;
                 }    
-			}
-		}
-	}
+            }
+        }
+    }
 }
 
 void Game::SinkLandRegions()
 {
-	forlist((&regions)) {
-		ARegion *r = (ARegion *) elem;
-		if (r->willsink) {
-		    r->willsink--;
+    forlist((&regions)) {
+        ARegion *r = (ARegion *) elem;
+        if (r->willsink) {
+            r->willsink--;
             if(!r->willsink) {
                 AString temp = r->ShortPrint(&regions) + " has sunk beneath the ocean.";
                 SpecialError(r, temp);
                 r->Event("All land sunk beneath the ocean.");
                 r->SinkRegion(&regions);
             }
-		}
-	}
+        }
+    }
 }
 
 void Game::DistributeFog()
@@ -271,41 +271,41 @@ void Game::DistributeFog()
 //no allowance is made to check which of two casters of fog has higher level, as long as both are higher than the clearskies
 //level of the region. This only needs to change if ever level 1 fog has an effect different to level 2 fog.
 
-	forlist((&regions)) {
-		ARegion *r = (ARegion *) elem;
-		forlist((&r->objects)) {
-			Object *obj = (Object *) elem;
-			forlist((&obj->units)) {
-				Unit *u = (Unit *) elem;
-				if(u->foggy) {
-				    int fogskill = u->GetSkill(S_FOG);
-				    if(fogskill == 0) fogskill = 1; //eg if backfire makes it follow someone else.
-				    if(fogskill > r->clearskies) r->fog = fogskill - r->clearskies;
+    forlist((&regions)) {
+        ARegion *r = (ARegion *) elem;
+        forlist((&r->objects)) {
+            Object *obj = (Object *) elem;
+            forlist((&obj->units)) {
+                Unit *u = (Unit *) elem;
+                if(u->foggy) {
+                    int fogskill = u->GetSkill(S_FOG);
+                    if(fogskill == 0) fogskill = 1; //eg if backfire makes it follow someone else.
+                    if(fogskill > r->clearskies) r->fog = fogskill - r->clearskies;
     
-				    if(u->foggy>1) {
-				        //large casting
-				        if(u->foggy > 2 && r->neighbors[u->foggy-3]) {
-				            //centred on neighbouring region
-				            if(fogskill > r->neighbors[u->foggy-3]->clearskies)
-				                r->neighbors[u->foggy-3]->fog = fogskill - r->neighbors[u->foggy-3]->clearskies;
-				            for(int k=0; k<6; k++) {
-				                if(!r->neighbors[u->foggy-3]->neighbors[k]) continue;
-				                if(fogskill > r->neighbors[u->foggy-3]->neighbors[k]->clearskies)
-				                    r->neighbors[u->foggy-3]->neighbors[k]->fog = fogskill - r->neighbors[u->foggy-3]->neighbors[k]->clearskies;
-				            }
-				        } else {
-				            //centred on this region
-				            for(int k=0; k<6; k++) {
-				                if(!r->neighbors[k]) continue;
-				                if(fogskill > r->neighbors[k]->clearskies)
-				                    r->neighbors[k]->fog = fogskill - r->neighbors[k]->clearskies;
-				            }
-				        }
-				    }
-				}
-			}
-		}
-	}
+                    if(u->foggy>1) {
+                        //large casting
+                        if(u->foggy > 2 && r->neighbors[u->foggy-3]) {
+                            //centred on neighbouring region
+                            if(fogskill > r->neighbors[u->foggy-3]->clearskies)
+                                r->neighbors[u->foggy-3]->fog = fogskill - r->neighbors[u->foggy-3]->clearskies;
+                            for(int k=0; k<6; k++) {
+                                if(!r->neighbors[u->foggy-3]->neighbors[k]) continue;
+                                if(fogskill > r->neighbors[u->foggy-3]->neighbors[k]->clearskies)
+                                    r->neighbors[u->foggy-3]->neighbors[k]->fog = fogskill - r->neighbors[u->foggy-3]->neighbors[k]->clearskies;
+                            }
+                        } else {
+                            //centred on this region
+                            for(int k=0; k<6; k++) {
+                                if(!r->neighbors[k]) continue;
+                                if(fogskill > r->neighbors[k]->clearskies)
+                                    r->neighbors[k]->fog = fogskill - r->neighbors[k]->clearskies;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 int Unit::GetCastCost(int skill, int extracost, int multiplier, int levelpenalty)
@@ -399,13 +399,13 @@ void Game::GenerateVolcanic(ARegion *r)
     r->SetupProds();
                 
     r->markets.DeleteAll();
-	
+    
     r->population = 0;
-	r->basepopulation = 0;
-	r->wages = 0;
-	r->maxwages = 0;
-	r->money = 0;
-	r->willsink = 1 + getrandom(3);
+    r->basepopulation = 0;
+    r->wages = 0;
+    r->maxwages = 0;
+    r->money = 0;
+    r->willsink = 1 + getrandom(3);
 }
 
 
@@ -538,15 +538,15 @@ void Game::UpdateFactionAffiliations()
         f->ethnicity = RA_NA; //in "chaos"
     }
     
-	forlist_reuse(&regions) {
-		ARegion *reg = (ARegion *)elem;
-		forlist(&reg->objects) {
-			Object *obj = (Object *)elem;
-			forlist(&obj->units) {
-				Unit *u = (Unit *)elem;
-				if(u->flags & FLAG_COMMANDER) {
-				    if(u->faction->ethnicity == RA_NA) u->faction->ethnicity = u->GetEthnicity();
-				    else u->SetFlag(FLAG_COMMANDER,0);
+    forlist_reuse(&regions) {
+        ARegion *reg = (ARegion *)elem;
+        forlist(&reg->objects) {
+            Object *obj = (Object *)elem;
+            forlist(&obj->units) {
+                Unit *u = (Unit *)elem;
+                if(u->flags & FLAG_COMMANDER) {
+                    if(u->faction->ethnicity == RA_NA) u->faction->ethnicity = u->GetEthnicity();
+                    else u->SetFlag(FLAG_COMMANDER,0);
                 }
             }
         }
@@ -556,7 +556,7 @@ void Game::UpdateFactionAffiliations()
         Faction *f = (Faction *) elem;
         if(f->IsNPC()) continue;
         if(f->ethnicity == RA_NA) { //in "chaos"
-		    WorldEvent *event = new WorldEvent;
+            WorldEvent *event = new WorldEvent;
             event->type = WorldEvent::CONVERSION;
             event->fact1 = f->num;
             event->fact2 = f->ethnicity;
@@ -612,18 +612,18 @@ void ARegionList::AddQuestLevel(int xSize, int ySize, char *name, int type)
     pRegionArrays = pRegionArraysNew; //memory loss here, how do I clear up the old one?
     
     
-	MakeRegions(level, xSize, ySize);
+    MakeRegions(level, xSize, ySize);
 
-	pRegionArrays[level]->SetName(name);
-	pRegionArrays[level]->levelType = ARegionArray::LEVEL_QUEST;
+    pRegionArrays[level]->SetName(name);
+    pRegionArrays[level]->levelType = ARegionArray::LEVEL_QUEST;
 
-	SetRegTypes(pRegionArrays[level], type);
+    SetRegTypes(pRegionArrays[level], type);
 
-	MakeUWMaze(pRegionArrays[level]);
+    MakeUWMaze(pRegionArrays[level]);
 
-	AddHexsides(pRegionArrays[level]);
-//	if (Globals->HEXSIDE_TERRAIN) AddBeaches(pRegionArrays[level]);
+    AddHexsides(pRegionArrays[level]);
+//    if (Globals->HEXSIDE_TERRAIN) AddBeaches(pRegionArrays[level]);
 
-	CheckHexsides(pRegionArrays[level]);	
+    CheckHexsides(pRegionArrays[level]);    
     FinalSetup(pRegionArrays[level]);   
 }

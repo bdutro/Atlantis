@@ -42,102 +42,102 @@ class Army;
 
 class Army
 {
-	public:
-		Army(Unit *,AList *,int,int = 0);
-		~Army();
+    public:
+        Army(Unit *,AList *,int,int = 0);
+        ~Army();
 
-		int NumAlive();  //includes illusions
-		int NumNonIllusionsAlive();
-		Soldier * GetSoldier(int soldiernum) const; //soldiernum should be from 0 to count-1.
-		
-		int Broken();
-		void Reset();
-		void ResetEngagements();
-		int NumSpoilers() const;
+        int NumAlive();  //includes illusions
+        int NumNonIllusionsAlive();
+        Soldier * GetSoldier(int soldiernum) const; //soldiernum should be from 0 to count-1.
+        
+        int Broken();
+        void Reset();
+        void ResetEngagements();
+        int NumSpoilers() const;
 
-		int CanAttack();
-		Soldier * GetAttacker(int attackernum); //attackernum should be from 0 to CanAttack()-1. 
+        int CanAttack();
+        Soldier * GetAttacker(int attackernum); //attackernum should be from 0 to CanAttack()-1. 
                                       //For some reason this can't be set constant - may want to check this if problems.
         
         int ShieldIsUseful(char *special) const;
         int IsSpecialTarget(char *special) const;
         int GetTarget(Army *attackers, int formation, int attackType, int *targetform, char* special, Battle *b);                                      
-		int DoAnAttack(char *special, int numAttacks, int race, int attackType, int attackLevel, 
+        int DoAnAttack(char *special, int numAttacks, int race, int attackType, int attackLevel, 
                   int flags, int weaponClass, char *effect, int mountBonus, Army *attackers, int formation, Battle *b,
                   int strength = 1);
 
         AList armytext;
-		void AddLine(const AString &);
+        void AddLine(const AString &);
 
-		void WriteLosses(Battle *);
-		int Lose(Battle *,ItemList *, int ass = 0);
-		void Tie(Battle *);
-		void Win(Battle *,ItemList *, int enemydead);
-		int CanBeHealed();
-		void DoHeal(Battle *, int enemydead);
-		void DoHealLevel(Battle *,int,int useItems );
-		void DoResurrect(Battle *);
-		void AssassinationResurrect();
+        void WriteLosses(Battle *);
+        int Lose(Battle *,ItemList *, int ass = 0);
+        void Tie(Battle *);
+        void Win(Battle *,ItemList *, int enemydead);
+        int CanBeHealed();
+        void DoHeal(Battle *, int enemydead);
+        void DoHealLevel(Battle *,int,int useItems );
+        void DoResurrect(Battle *);
+        void AssassinationResurrect();
         void DoNecromancy(Battle *, int enemydead);
-		void Regenerate(Battle *);
-		void DoExperience(int enemydead = 0);
+        void Regenerate(Battle *);
+        void DoExperience(int enemydead = 0);
 
-		void GetMonSpoils(ItemList *,int, int);
+        void GetMonSpoils(ItemList *,int, int);
 
         void DowngradeShield(Shield *hi); //This is in shields.cpp
         void DoBindingAttack(Soldier *pAtt, Battle *b); //This is in specials.cpp
         void DoDragonBindingAttack(Soldier *pAtt, Battle *b, Army *atts);
 
-		//Formation Engagement Details
-		void CombineEngagements(int formfrom, int formto, Army *enemy);
-		int GetMidRoundTarget(int formation, Army *enemy, Battle *b); ///returns formnumber of newly engaged enemy formation, or -1 if none.
-		int GetMidRoundRangedTarget(int formation, Army *enemy); //returns formnumber of a randomg newly tryattacked enemy formation, or -1 if none.
+        //Formation Engagement Details
+        void CombineEngagements(int formfrom, int formto, Army *enemy);
+        int GetMidRoundTarget(int formation, Army *enemy, Battle *b); ///returns formnumber of newly engaged enemy formation, or -1 if none.
+        int GetMidRoundRangedTarget(int formation, Army *enemy); //returns formnumber of a randomg newly tryattacked enemy formation, or -1 if none.
 
-		//Formation Phase
-		void PenaltyToHit(int penalty);
-		void SortFormations(Battle *b, int regtype);
-		void MirrorEngagements(Army *enemy);
-		void FlankFlankers(Battle *b, Army *enemy);
-		void AssignFrontTargets(Battle *b, Army *enemy, int ass = 0);
-		void SplitOverwhelmingFrontFormations(Battle *b, Army *enemy);
-		void SplitOverwhelmingFlankingFormations(Battle *b, Army *enemy, int regtype);
-		void SetCanAttack(Army *enemy);
-		void ReservesIntercept(Army *enemy);
-		void AssignRangedTargets(Army *enemy);
+        //Formation Phase
+        void PenaltyToHit(int penalty);
+        void SortFormations(Battle *b, int regtype);
+        void MirrorEngagements(Army *enemy);
+        void FlankFlankers(Battle *b, Army *enemy);
+        void AssignFrontTargets(Battle *b, Army *enemy, int ass = 0);
+        void SplitOverwhelmingFrontFormations(Battle *b, Army *enemy);
+        void SplitOverwhelmingFlankingFormations(Battle *b, Army *enemy, int regtype);
+        void SetCanAttack(Army *enemy);
+        void ReservesIntercept(Army *enemy);
+        void AssignRangedTargets(Army *enemy);
 
-		int SizeFrontFliers();
-		int SizeFrontRiders();
-		int SizeBehind();
+        int SizeFrontFliers();
+        int SizeFrontRiders();
+        int SizeBehind();
 
-		float KillChance(float attack, float defence);
-		void FlyingReservesMayFlank(Battle *b, Army *enemy);
-		void RidingReservesMayFlank(Battle *b, Army *enemy);
-		int GetFlankedTarget(Battle *b, Army *enemy, int formnum);
-		void FlankersEngage(Battle *b, Army *enemy);
-		
-		void ClearEmptyEngagements();
-		void SetTemporaryBonuses(Army *enemy);
-		void DoEthnicMoraleEffects(Battle *b);
-  		
-		Unit * pLeader;
-		ShieldList shields;
-		int round;
-		int tac;
-		int taccontrol;
-		int misassigned;
-        int canride;	
-		int count;
-		int nonillusioncount; //used in win conditions
-		int rangedbonus; //as for bonus in formations, but only affects ranged attacks made by army.
-		int concealment;
+        float KillChance(float attack, float defence);
+        void FlyingReservesMayFlank(Battle *b, Army *enemy);
+        void RidingReservesMayFlank(Battle *b, Army *enemy);
+        int GetFlankedTarget(Battle *b, Army *enemy, int formnum);
+        void FlankersEngage(Battle *b, Army *enemy);
+        
+        void ClearEmptyEngagements();
+        void SetTemporaryBonuses(Army *enemy);
+        void DoEthnicMoraleEffects(Battle *b);
+          
+        Unit * pLeader;
+        ShieldList shields;
+        int round;
+        int tac;
+        int taccontrol;
+        int misassigned;
+        int canride;    
+        int count;
+        int nonillusioncount; //used in win conditions
+        int rangedbonus; //as for bonus in formations, but only affects ranged attacks made by army.
+        int concealment;
 
-		int hitstotal; // Number of hits at start of battle, excluding illusions.
+        int hitstotal; // Number of hits at start of battle, excluding illusions.
 
-	
-		/* Formations Stuff */
-		#define NUMFORMS 18
-		Formation formations[NUMFORMS+1];
-		int engagements[NUMFORMS][NUMFORMS];
+    
+        /* Formations Stuff */
+        #define NUMFORMS 18
+        Formation formations[NUMFORMS+1];
+        int engagements[NUMFORMS][NUMFORMS];
         int sortedformations;
         
         #ifdef DEBUG

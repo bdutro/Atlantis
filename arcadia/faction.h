@@ -177,7 +177,7 @@ public:
     
     int CanCatch(ARegion *,Unit *);
     int CanCatchAtSea(ARegion *,Unit *);
-	/* Return 1 if can see, 2 if can see faction */
+    /* Return 1 if can see, 2 if can see faction */
     int CanSee(ARegion *,Unit *, int practice = 0);
     
     void DefaultOrders();
@@ -186,7 +186,7 @@ public:
     void SetNPC();
     int IsNPC();
 
-	void DiscoverItem(int item, int force, int full);
+    void DiscoverItem(int item, int force, int full);
 
     int num;
 
@@ -200,8 +200,8 @@ public:
     int lastchange;
     int lastorders;
     int unclaimed;
-	int bankaccount;
-	int interest; // not written to game.out
+    int bankaccount;
+    int interest; // not written to game.out
     AString * name;
     AString * address;
     AString * password;
@@ -213,17 +213,17 @@ public:
     int numshows;
     
     int nummages;
-	int numapprentices;
-	int numqms;
-	int numtacts;
-	Statistic guardedcities;
-	Statistic totalsilver;
-	Statistic itemnetworth;
-	Statistic skillnetworth;
-	Statistic totalnetworth;
-	Statistic nummen;
-	Statistic magepower;
-	int labryinth; // Arcadia only, "labryinth counter". Needs to be saved in the gamefile.
+    int numapprentices;
+    int numqms;
+    int numtacts;
+    Statistic guardedcities;
+    Statistic totalsilver;
+    Statistic itemnetworth;
+    Statistic skillnetworth;
+    Statistic totalnetworth;
+    Statistic nummen;
+    Statistic magepower;
+    int labryinth; // Arcadia only, "labryinth counter". Needs to be saved in the gamefile.
     AList war_regions;
     AList trade_regions;
 
@@ -233,11 +233,11 @@ public:
     int defaultattitude;
     AList attitudes;
     SkillList skills;
-	ItemList items;
-	//List of templates
-	AList formtemplates; //FORM_TEMPLATES
-	AList labeltemplates; //FORM_TEMPLATES
-	
+    ItemList items;
+    //List of templates
+    AList formtemplates; //FORM_TEMPLATES
+    AList labeltemplates; //FORM_TEMPLATES
+    
     //
     // Both are lists of AStrings
     //
@@ -248,15 +248,15 @@ public:
     AList battles;
     AList shows;
     AList itemshows;
-	AList objectshows;
-	AList terrainshows;
+    AList objectshows;
+    AList terrainshows;
 
-	// These are used for 'granting' units to a faction via the players.in
-	// file
-	ARegion *pReg;
-	ARegion *pStartLoc;
-	int start;
-	int noStartLeader;
+    // These are used for 'granting' units to a faction via the players.in
+    // file
+    ARegion *pReg;
+    ARegion *pStartLoc;
+    int start;
+    int noStartLeader;
 };
 
 Faction * GetFaction(AList *,int);

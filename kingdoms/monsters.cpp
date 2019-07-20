@@ -32,12 +32,12 @@
 
 void Game::CreateVMons()
 {
-	// No victory monsters in this game
-	return;
+    // No victory monsters in this game
+    return;
 }
 
 void Game::GrowVMons()
 {
-	// No victory monsters in this game
-	return;
+    // No victory monsters in this game
+    return;
 }

@@ -38,27 +38,27 @@ class Object;
 #define I_WOOD_OR_STONE -2
 
 class HexsideType {
-	public:
-		char *name;
-		enum {
-			DISABLED	= 0x001,
-			CANMODIFY	= 0x020
-		};
-		int flags;
+    public:
+        char *name;
+        enum {
+            DISABLED    = 0x001,
+            CANMODIFY    = 0x020
+        };
+        int flags;
 
-		int item;
-		int cost;
-		char *skill;
-		int level;	
+        int item;
+        int cost;
+        char *skill;
+        int level;    
 
-		int sailable;
-		int movementmultiplier;
-		int blockeffect;
-		int stealthpen;
-		int advancepen;
-		
-		int exclusive;
-};		
+        int sailable;
+        int movementmultiplier;
+        int blockeffect;
+        int stealthpen;
+        int advancepen;
+        
+        int exclusive;
+};        
 
 extern HexsideType *HexsideDefs;
 
@@ -69,59 +69,59 @@ int ParseHexside(AString *);
 
 class Hexside
 {
-	public:
-		Hexside();
-		~Hexside();
+    public:
+        Hexside();
+        ~Hexside();
 
-		void Readin(Ainfile *f);
-		void Writeout(Aoutfile *f);
+        void Readin(Ainfile *f);
+        void Writeout(Aoutfile *f);
 
-		int type;   //exclusive types, cannot be built. Value indicates type which is present.
-		int bridge; //non-exclusive types. Value of -1 indicates finished, 0 not present, positive value is amount needed to finish.
-		int road;   //non-exclusive types.
-		int harbour; //exclusive type, so if harbour gets completed, then is reset to zero and type = harbour. can only be built on a beach.
+        int type;   //exclusive types, cannot be built. Value indicates type which is present.
+        int bridge; //non-exclusive types. Value of -1 indicates finished, 0 not present, positive value is amount needed to finish.
+        int road;   //non-exclusive types.
+        int harbour; //exclusive type, so if harbour gets completed, then is reset to zero and type = harbour. can only be built on a beach.
 //currently the program is not writing out / reading in harbours.
 };
 
 
 class ObjectType {
-	public:
-		char *name;
-		enum {
-			DISABLED	= 0x001,
-			NOMONSTERGROWTH	= 0x002,
-			NEVERDECAY	= 0x004,
-			CANENTER	= 0x008,
-			CANMODIFY	= 0x020,
-			TRANSPORT	= 0x040,
-			OCEANBUILD  = 0x080,
-			SAILOVERLAND = 0x100
-		};
-		int flags;
+    public:
+        char *name;
+        enum {
+            DISABLED    = 0x001,
+            NOMONSTERGROWTH    = 0x002,
+            NEVERDECAY    = 0x004,
+            CANENTER    = 0x008,
+            CANMODIFY    = 0x020,
+            TRANSPORT    = 0x040,
+            OCEANBUILD  = 0x080,
+            SAILOVERLAND = 0x100
+        };
+        int flags;
 
-		int protect;
-		int capacity;
-		int sailors;
-		int maxMages;
-		int speed;
+        int protect;
+        int capacity;
+        int sailors;
+        int maxMages;
+        int speed;
 
-		int item;
-		int cost;
-		char *skill;
-		int level;
+        int item;
+        int cost;
+        char *skill;
+        int level;
 
-		int maxMaintenance;
-		int maxMonthlyDecay;
-		int maintFactor;
+        int maxMaintenance;
+        int maxMonthlyDecay;
+        int maintFactor;
 
-		int monster;
+        int monster;
 
-		int productionAided;
-		int defenceArray[NUM_ATTACK_TYPES];
-		
-		int hexside;
-		int sailable;
-		int oceanbonus;
+        int productionAided;
+        int defenceArray[NUM_ATTACK_TYPES];
+        
+        int hexside;
+        int sailable;
+        int oceanbonus;
 };
 
 extern ObjectType *ObjectDefs;
@@ -134,53 +134,53 @@ int ObjectIsShip(int);
 
 class Object : public AListElem
 {
-	public:
-		Object(ARegion *region);
-		~Object();
+    public:
+        Object(ARegion *region);
+        ~Object();
 
-		void Readin(Ainfile *f, AList *, ATL_VER v);
-		void Writeout(Aoutfile *f);
-		void Report(Areport *, Faction *, int, int, int, int, int, int, int, int);
+        void Readin(Ainfile *f, AList *, ATL_VER v);
+        void Writeout(Aoutfile *f);
+        void Report(Areport *, Faction *, int, int, int, int, int, int, int, int);
 
-		void SetName(AString *);
-		void SetDescribe(AString *);
+        void SetName(AString *);
+        void SetDescribe(AString *);
 
-		Unit *GetUnit(int);
-		Unit *GetUnitAlias(int, int); /* alias, faction number */
-		Unit *GetUnitId(UnitId *, int);
+        Unit *GetUnit(int);
+        Unit *GetUnitAlias(int, int); /* alias, faction number */
+        Unit *GetUnitId(UnitId *, int);
 
-		// AS
-		int IsRoad();
+        // AS
+        int IsRoad();
 
-		int IsBoat();
-		int IsBuilding();
-		int CanModify();
-		int CanEnter(ARegion *, Unit *);
-		int GetPopulation();
-		int Weight();
-		Unit *ForbiddenBy(ARegion *, Unit *);
-		Unit *GetOwner();
+        int IsBoat();
+        int IsBuilding();
+        int CanModify();
+        int CanEnter(ARegion *, Unit *);
+        int GetPopulation();
+        int Weight();
+        Unit *ForbiddenBy(ARegion *, Unit *);
+        Unit *GetOwner();
 
-		void SetPrevDir(int);
-		void MoveObject(ARegion *toreg);
+        void SetPrevDir(int);
+        void MoveObject(ARegion *toreg);
 
-		AString *name;
-		AString *describe;
-		ARegion *region;
-		int inner;
-		int num;
-		int type;
-		int incomplete;
-		int capacity;
-		int runes;
-		int hexside;
-		int prevdir;
-		int mages;
-		/* The following are needed only for arcadia portals */
-		int mageowner; //needs to be saved
-		int speedbonus;
-		
-		AList units;
+        AString *name;
+        AString *describe;
+        ARegion *region;
+        int inner;
+        int num;
+        int type;
+        int incomplete;
+        int capacity;
+        int runes;
+        int hexside;
+        int prevdir;
+        int mages;
+        /* The following are needed only for arcadia portals */
+        int mageowner; //needs to be saved
+        int speedbonus;
+        
+        AList units;
 };
 
 #endif

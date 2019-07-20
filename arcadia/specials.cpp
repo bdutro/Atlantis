@@ -33,35 +33,35 @@ void Soldier::SetupHealing()
 {
     if (unit->type == U_MAGE) {
         healtype = unit->GetSkill(S_MAGICAL_HEALING);
-		if (healtype > 6) healtype = 6;
-		if (healtype > 0) {
-			healing = HealDefs[healtype].num;
+        if (healtype > 6) healtype = 6;
+        if (healtype > 0) {
+            healing = HealDefs[healtype].num;
             healitem = -1;
             return;
         }
     }
 
-	if(unit->items.GetNum(I_HEALPOTION)) {
-		healtype = 1;
-		unit->items.SetNum(I_HEALPOTION, unit->items.GetNum(I_HEALPOTION)-1);
-		healing = Globals->HEALS_PER_MAN; // Previously 10, too powerful.
-		healitem = I_HEALPOTION;
-	} else {
-		healing = unit->GetSkill(S_HEALING) * Globals->HEALS_PER_MAN;
-		if (healing) {
-			healtype = 1;
-			int herbs = unit->items.GetNum(I_HERBS);
-			if (herbs < healing) healing = herbs;
-			unit->items.SetNum(I_HERBS,herbs - healing);
-			healitem = I_HERBS;
-		}
+    if(unit->items.GetNum(I_HEALPOTION)) {
+        healtype = 1;
+        unit->items.SetNum(I_HEALPOTION, unit->items.GetNum(I_HEALPOTION)-1);
+        healing = Globals->HEALS_PER_MAN; // Previously 10, too powerful.
+        healitem = I_HEALPOTION;
+    } else {
+        healing = unit->GetSkill(S_HEALING) * Globals->HEALS_PER_MAN;
+        if (healing) {
+            healtype = 1;
+            int herbs = unit->items.GetNum(I_HERBS);
+            if (herbs < healing) healing = herbs;
+            unit->items.SetNum(I_HERBS,herbs - healing);
+            healitem = I_HERBS;
+        }
     }
 }
 
 int Army::IsSpecialTarget(char *special) const
 {
-	// Search All Formations
-	for(int i=0; i<NUMFORMS; i++) {
+    // Search All Formations
+    for(int i=0; i<NUMFORMS; i++) {
         for(int j=0; j<formations[i].GetNumMen(); j++) {
             if (formations[i].CheckSpecialTarget(special, j)) return 1;
         }
@@ -71,131 +71,131 @@ int Army::IsSpecialTarget(char *special) const
 
 int Formation::CheckSpecialTarget(char *special, int soldiernum) const
 {
-	SpecialType *spd = FindSpecial(special);
-	int i;
-	int match = 0;
+    SpecialType *spd = FindSpecial(special);
+    int i;
+    int match = 0;
 
-	if(spd->targflags & SpecialType::HIT_BUILDINGIF) {
-		match = 0;
-		if(!pSoldiers[soldiernum]->building) return 0;
-		for(i = 0; i < 3; i++) {
-			if (pSoldiers[soldiernum]->building &&
-					(spd->buildings[i] == pSoldiers[soldiernum]->building)) match = 1;
-		}
-		if(!match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_BUILDINGIF) {
+        match = 0;
+        if(!pSoldiers[soldiernum]->building) return 0;
+        for(i = 0; i < 3; i++) {
+            if (pSoldiers[soldiernum]->building &&
+                    (spd->buildings[i] == pSoldiers[soldiernum]->building)) match = 1;
+        }
+        if(!match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_BUILDINGEXCEPT) {
-		match = 0;
-		if(!pSoldiers[soldiernum]->building) return 0;
-		for(i = 0; i < 3; i++) {
-			if (pSoldiers[soldiernum]->building &&
-					(spd->buildings[i] == pSoldiers[soldiernum]->building)) match = 1;
-		}
-		if(match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_BUILDINGEXCEPT) {
+        match = 0;
+        if(!pSoldiers[soldiernum]->building) return 0;
+        for(i = 0; i < 3; i++) {
+            if (pSoldiers[soldiernum]->building &&
+                    (spd->buildings[i] == pSoldiers[soldiernum]->building)) match = 1;
+        }
+        if(match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_SOLDIERIF) {
-		match = 0;
-		if (pSoldiers[soldiernum]->race == -1) return 0;
-		for(i = 0; i < 7; i++) {
-			if(pSoldiers[soldiernum]->race == spd->targets[i]) match = 1;
-		}
-		if(!match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_SOLDIERIF) {
+        match = 0;
+        if (pSoldiers[soldiernum]->race == -1) return 0;
+        for(i = 0; i < 7; i++) {
+            if(pSoldiers[soldiernum]->race == spd->targets[i]) match = 1;
+        }
+        if(!match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_SOLDIEREXCEPT) {
-		match = 0;
-		if (pSoldiers[soldiernum]->race == -1) return 0;
-		for(i = 0; i < 7; i++) {
-			if(pSoldiers[soldiernum]->race == spd->targets[i]) match = 1;
-		}
-		if(match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_SOLDIEREXCEPT) {
+        match = 0;
+        if (pSoldiers[soldiernum]->race == -1) return 0;
+        for(i = 0; i < 7; i++) {
+            if(pSoldiers[soldiernum]->race == spd->targets[i]) match = 1;
+        }
+        if(match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_EFFECTIF) {
-		match = 0;
-		for(i = 0; i < 3; i++) {
-			if(pSoldiers[soldiernum]->HasEffect(spd->effects[i])) match = 1;
-		}
-		if(!match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_EFFECTIF) {
+        match = 0;
+        for(i = 0; i < 3; i++) {
+            if(pSoldiers[soldiernum]->HasEffect(spd->effects[i])) match = 1;
+        }
+        if(!match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_EFFECTEXCEPT) {
-		for(i = 0; i < 3; i++) {
-			if(pSoldiers[soldiernum]->HasEffect(spd->effects[i])) return 0;
-		}
-	}
+    if(spd->targflags & SpecialType::HIT_EFFECTEXCEPT) {
+        for(i = 0; i < 3; i++) {
+            if(pSoldiers[soldiernum]->HasEffect(spd->effects[i])) return 0;
+        }
+    }
 
-	if(spd->targflags & SpecialType::HIT_MOUNTIF) {
-		match = 0;
-		if (pSoldiers[soldiernum]->riding == -1) return 0;
-		for(i = 0; i < 7; i++) {
-			if(pSoldiers[soldiernum]->riding == spd->targets[i]) match = 1;
-		}
-		if(!match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_MOUNTIF) {
+        match = 0;
+        if (pSoldiers[soldiernum]->riding == -1) return 0;
+        for(i = 0; i < 7; i++) {
+            if(pSoldiers[soldiernum]->riding == spd->targets[i]) match = 1;
+        }
+        if(!match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_MOUNTEXCEPT) {
-		match = 0;
-		if (pSoldiers[soldiernum]->riding == -1) return 0;
-		for(i = 0; i < 7; i++) {
-			if(pSoldiers[soldiernum]->riding == spd->targets[i]) match = 1;
-		}
-		if(match) return 0;
-	}
+    if(spd->targflags & SpecialType::HIT_MOUNTEXCEPT) {
+        match = 0;
+        if (pSoldiers[soldiernum]->riding == -1) return 0;
+        for(i = 0; i < 7; i++) {
+            if(pSoldiers[soldiernum]->riding == spd->targets[i]) match = 1;
+        }
+        if(match) return 0;
+    }
 
-	if(spd->targflags & SpecialType::HIT_ILLUSION) {
-		// All illusions are of type monster, so lets make sure we get it
-		// right.  If we ever have other types of illusions, we can change
-		// this.
-		if(!(ItemDefs[pSoldiers[soldiernum]->race].type & IT_MONSTER))
-			return 0;
-		if(!(ItemDefs[pSoldiers[soldiernum]->race].type & IT_ILLUSION))
-			return 0;
-	}
-	
-	if(spd->targflags & SpecialType::HIT_NOILLUSION) {
-		if(ItemDefs[pSoldiers[soldiernum]->race].type & IT_ILLUSION) return 0;
-	}
-	
-	if(spd->targflags & SpecialType::HIT_NOMONSTER) {
-		if(ItemDefs[pSoldiers[soldiernum]->race].type & IT_MONSTER)
-			return 0;
-	}
-	
-	if(spd->targflags & SpecialType::HIT_MONSTEREXCEPT) {
-		if (!(ItemDefs[pSoldiers[soldiernum]->race].type & IT_MONSTER)) return 0; //only hits monsters
-		for(i = 0; i < 7; i++) {
-			if(pSoldiers[soldiernum]->race == spd->targets[i]) return 0; //a match - so can't hit
-		}
-	}
-	
+    if(spd->targflags & SpecialType::HIT_ILLUSION) {
+        // All illusions are of type monster, so lets make sure we get it
+        // right.  If we ever have other types of illusions, we can change
+        // this.
+        if(!(ItemDefs[pSoldiers[soldiernum]->race].type & IT_MONSTER))
+            return 0;
+        if(!(ItemDefs[pSoldiers[soldiernum]->race].type & IT_ILLUSION))
+            return 0;
+    }
+    
+    if(spd->targflags & SpecialType::HIT_NOILLUSION) {
+        if(ItemDefs[pSoldiers[soldiernum]->race].type & IT_ILLUSION) return 0;
+    }
+    
+    if(spd->targflags & SpecialType::HIT_NOMONSTER) {
+        if(ItemDefs[pSoldiers[soldiernum]->race].type & IT_MONSTER)
+            return 0;
+    }
+    
+    if(spd->targflags & SpecialType::HIT_MONSTEREXCEPT) {
+        if (!(ItemDefs[pSoldiers[soldiernum]->race].type & IT_MONSTER)) return 0; //only hits monsters
+        for(i = 0; i < 7; i++) {
+            if(pSoldiers[soldiernum]->race == spd->targets[i]) return 0; //a match - so can't hit
+        }
+    }
+    
     return 1;
 }
 
 int Army::ShieldIsUseful(char *special) const
 {
-	SpecialType *shi;
-	shi = FindSpecial(special);
+    SpecialType *shi;
+    shi = FindSpecial(special);
 
-	// Search All Formations
-	for(int i=0; i<NUMFORMS; i++) {
+    // Search All Formations
+    for(int i=0; i<NUMFORMS; i++) {
         for(int j=0; j<formations[i].GetNumMen(); j++) {
             Soldier *pSold = formations[i].GetSoldier(j);
             if(pSold->attacks > 0 || (pSold->attacks != 0 && (round % ( -1 * pSold->attacks ) == 1)) ) {
-    			for(int shtype = 0; shtype < 4; shtype++) {
-    				if(shi->shield[shtype] == pSold->attacktype) return 1;
-    			}
+                for(int shtype = 0; shtype < 4; shtype++) {
+                    if(shi->shield[shtype] == pSold->attacktype) return 1;
+                }
             }
             if(pSold->special) {
             //limitations: doesn't check the spell has a target, doesn't check the caster has energy.
-            	SpecialType *spd = FindSpecial(pSold->special);
+                SpecialType *spd = FindSpecial(pSold->special);
                 if(spd->effectflags & SpecialType::FX_DAMAGE) {
-                	for(i = 0; i < 4; i++) {
-            			for(int shtype = 0; shtype < 4; shtype++) {
-            				if(shi->shield[shtype] == spd->damage[i].type) return 1;
-            			}
+                    for(i = 0; i < 4; i++) {
+                        for(int shtype = 0; shtype < 4; shtype++) {
+                            if(shi->shield[shtype] == spd->damage[i].type) return 1;
+                        }
                     }
                 }
             }
@@ -207,50 +207,50 @@ int Army::ShieldIsUseful(char *special) const
 
 void Battle::UpdateShields(Army *a, Army *enemy)
 {
-	for (int i=0; i<a->NumAlive(); i++) {
-		int shtype = -1;
-		SpecialType *spd;
+    for (int i=0; i<a->NumAlive(); i++) {
+        int shtype = -1;
+        SpecialType *spd;
 
-		if(a->GetSoldier(i)->special == NULL) continue;
-		Soldier *pSold = a->GetSoldier(i);
-		spd = FindSpecial(pSold->special);
+        if(a->GetSoldier(i)->special == NULL) continue;
+        Soldier *pSold = a->GetSoldier(i);
+        spd = FindSpecial(pSold->special);
 
-		if(!(spd->effectflags & SpecialType::FX_SHIELD) &&
-				!(spd->effectflags & SpecialType::FX_DEFBONUS)) continue;
+        if(!(spd->effectflags & SpecialType::FX_SHIELD) &&
+                !(spd->effectflags & SpecialType::FX_DEFBONUS)) continue;
 
         if(!enemy->ShieldIsUseful(pSold->special)) {
-    		AddLine(*(pSold->unit->name) + " chooses not to cast a shield.");
+            AddLine(*(pSold->unit->name) + " chooses not to cast a shield.");
             continue; //should shields be cast when not useful?
         }
 
-    	//energy cost for mages using their combat spell only
-    	if(!pSold->DoSpellCost(a->round, this)) continue;
+        //energy cost for mages using their combat spell only
+        if(!pSold->DoSpellCost(a->round, this)) continue;
 
-		if(spd->effectflags & SpecialType::FX_SHIELD) {
-			for(shtype = 0; shtype < 4; shtype++) {
-				if(spd->shield[shtype] == -1) continue;
-				Shield *sh = new Shield;
-				sh->shieldtype = spd->shield[shtype];
-				sh->shieldskill = pSold->slevel;
-				if(Globals->ARCADIA_MAGIC && sh->shieldtype != ATTACK_RANGED) sh->shieldskill++; //+1 bonus to shield strength
-				sh->pCaster = pSold;
-				a->shields.Add(sh);
-			}
-		}
+        if(spd->effectflags & SpecialType::FX_SHIELD) {
+            for(shtype = 0; shtype < 4; shtype++) {
+                if(spd->shield[shtype] == -1) continue;
+                Shield *sh = new Shield;
+                sh->shieldtype = spd->shield[shtype];
+                sh->shieldskill = pSold->slevel;
+                if(Globals->ARCADIA_MAGIC && sh->shieldtype != ATTACK_RANGED) sh->shieldskill++; //+1 bonus to shield strength
+                sh->pCaster = pSold;
+                a->shields.Add(sh);
+            }
+        }
 
-		if(spd->effectflags & SpecialType::FX_DEFBONUS && a->round == 1) {  //first round is round 1, not 0.
-			for(shtype = 0; shtype < 4; shtype++) {
-				if(spd->defs[shtype].type == -1) continue;
-				int bonus = spd->defs[shtype].val;
-				if(spd->effectflags & SpecialType::FX_USE_LEV)
-					bonus *= pSold->slevel;
-				pSold->dskill[spd->defs[shtype].type] += bonus;
-			}
-		}
+        if(spd->effectflags & SpecialType::FX_DEFBONUS && a->round == 1) {  //first round is round 1, not 0.
+            for(shtype = 0; shtype < 4; shtype++) {
+                if(spd->defs[shtype].type == -1) continue;
+                int bonus = spd->defs[shtype].val;
+                if(spd->effectflags & SpecialType::FX_USE_LEV)
+                    bonus *= pSold->slevel;
+                pSold->dskill[spd->defs[shtype].type] += bonus;
+            }
+        }
 
-		AddLine(*(pSold->unit->name) + " casts " +
-				spd->shielddesc + ".");
-	}
+        AddLine(*(pSold->unit->name) + " casts " +
+                spd->shielddesc + ".");
+    }
 }
 
 void Battle::DoBinding(Army *atts, Army *defs)
@@ -259,12 +259,12 @@ void Battle::DoBinding(Army *atts, Army *defs)
     //get max spell level in this army
     for(int i=0; i<na; i++) {
         Soldier *pSold = atts->GetSoldier(i);
-	    if(pSold->special == NULL) continue;
-	    if(pSold->special == SkillDefs[S_BINDING].special) {
-	        if(pSold->slevel) defs->DoBindingAttack(pSold, this);
-	    } else if(pSold->special == SkillDefs[S_DRAGON_TALK].special) {
-	        if(pSold->slevel) defs->DoDragonBindingAttack(pSold, this, atts);
-	    }
+        if(pSold->special == NULL) continue;
+        if(pSold->special == SkillDefs[S_BINDING].special) {
+            if(pSold->slevel) defs->DoBindingAttack(pSold, this);
+        } else if(pSold->special == SkillDefs[S_DRAGON_TALK].special) {
+            if(pSold->slevel) defs->DoDragonBindingAttack(pSold, this, atts);
+        }
     }
 }
 
@@ -485,42 +485,42 @@ int Battle::GetRoundSpellLevel(Army *armya, Army *armyb, int type, int spell, in
     //get max spell level in this army
     for(int i=0; i<na; i++) {
         Soldier *pSold = armya->GetSoldier(i);
-	    if(pSold->special == NULL) continue;
-	    if(pSold->special == SkillDefs[spell].special) {
-	        pSold->DoSpellCheck(armya->round, this); //this checks if the mage should become exhausted
-	        if(pSold->slevel > spelllevel) {
+        if(pSold->special == NULL) continue;
+        if(pSold->special == SkillDefs[spell].special) {
+            pSold->DoSpellCheck(armya->round, this); //this checks if the mage should become exhausted
+            if(pSold->slevel > spelllevel) {
                 spelllevel = pSold->slevel;
                 caster = pSold;
             }
-	    }
-	    if((type == 2) && pSold->special == SkillDefs[antispell].special) {
-	        pSold->DoSpellCheck(armya->round, this); //this checks if the mage should become exhausted
-	        if(pSold->slevel > antispelllevel) {
+        }
+        if((type == 2) && pSold->special == SkillDefs[antispell].special) {
+            pSold->DoSpellCheck(armya->round, this); //this checks if the mage should become exhausted
+            if(pSold->slevel > antispelllevel) {
                 antispelllevel = pSold->slevel;
                 anticaster = pSold;
             }
-	    }
+        }
     }
 
     na = armyb->NumAlive();
     for(int i=0; i<na; i++) {
         Soldier *pSold = armyb->GetSoldier(i);
-	    if(pSold->special == NULL) continue;
+        if(pSold->special == NULL) continue;
 
-	    if((type == 2) && pSold->special == SkillDefs[spell].special) {
-	    	pSold->DoSpellCheck(armyb->round, this); //this checks if the mage should become exhausted
-	        if(pSold->slevel > spelllevel) {
+        if((type == 2) && pSold->special == SkillDefs[spell].special) {
+            pSold->DoSpellCheck(armyb->round, this); //this checks if the mage should become exhausted
+            if(pSold->slevel > spelllevel) {
                 spelllevel = pSold->slevel;
                 caster = pSold;
             }
-	    }
-	    if(pSold->special == SkillDefs[antispell].special) {
-	        pSold->DoSpellCheck(armyb->round, this); //this checks if the mage should become exhausted
-	        if(pSold->slevel > antispelllevel) {
+        }
+        if(pSold->special == SkillDefs[antispell].special) {
+            pSold->DoSpellCheck(armyb->round, this); //this checks if the mage should become exhausted
+            if(pSold->slevel > antispelllevel) {
                 antispelllevel = pSold->slevel;
                 anticaster = pSold;
             }
-	    }
+        }
     }
 
     if(spelllevel == 0) return 0;
@@ -548,90 +548,90 @@ int Battle::GetRoundSpellLevel(Army *armya, Army *armyb, int type, int spell, in
 
 void Battle::DoSpecialAttack(int round, Soldier *a, Army *attackers, Army *def)
 {
-	SpecialType *spd;
-	int i, num, tot = -1;
-	AString results[4];
-	int dam = 0;
+    SpecialType *spd;
+    int i, num, tot = -1;
+    AString results[4];
+    int dam = 0;
 
-	if(a->special == NULL) return;
-	spd = FindSpecial(a->special);
+    if(a->special == NULL) return;
+    spd = FindSpecial(a->special);
 #ifdef DEBUG
 cout << spd->key;
 #endif
-	if(!(spd->effectflags & SpecialType::FX_DAMAGE)) return;
+    if(!(spd->effectflags & SpecialType::FX_DAMAGE)) return;
 
-	int hitself = 0;
-	if(spd->targflags & SpecialType::HIT_OWN_ARMY) hitself = 1;
+    int hitself = 0;
+    if(spd->targflags & SpecialType::HIT_OWN_ARMY) hitself = 1;
 
-	if(spd->targflags && ( (!hitself && (def->IsSpecialTarget(a->special) < 1)) || 
+    if(spd->targflags && ( (!hitself && (def->IsSpecialTarget(a->special) < 1)) || 
           (hitself && (attackers->IsSpecialTarget(a->special) < 1)) ) ) {
-	    if(a->unit->type == U_MAGE) {
-	        AddLine(a->name + " cannot find a spell target, and saves his energy.");
-	    }
+        if(a->unit->type == U_MAGE) {
+            AddLine(a->name + " cannot find a spell target, and saves his energy.");
+        }
         return; //no targets to hit.
     }
 
 #ifdef DEBUG2
 cout << "-";
 #endif
-	//energy cost for mages using their combat spell only (ie not for monsters, battle items etc)
-	int cancast = a->DoSpellCost(round, this); //this also includes fizzle chance.
-	if(!cancast) return;
-	if(cancast == 2) {
-	    hitself = (hitself+1)%2; //swop army to hit.
-	}
+    //energy cost for mages using their combat spell only (ie not for monsters, battle items etc)
+    int cancast = a->DoSpellCost(round, this); //this also includes fizzle chance.
+    if(!cancast) return;
+    if(cancast == 2) {
+        hitself = (hitself+1)%2; //swop army to hit.
+    }
 #ifdef DEBUG2
 cout << "-";
 #endif
 
-	for(i = 0; i < 4; i++) {
+    for(i = 0; i < 4; i++) {
 #ifdef DEBUG2
 cout << "!";
 #endif
-		if(spd->damage[i].type == -1) continue;
-		int times = spd->damage[i].value;
-		if(spd->effectflags & SpecialType::FX_USE_LEV)
-			times *= a->slevel;
-		int realtimes = spd->damage[i].minnum + getrandom(times) +
-			getrandom(times);
+        if(spd->damage[i].type == -1) continue;
+        int times = spd->damage[i].value;
+        if(spd->effectflags & SpecialType::FX_USE_LEV)
+            times *= a->slevel;
+        int realtimes = spd->damage[i].minnum + getrandom(times) +
+            getrandom(times);
         if(!hitself) num = def->DoAnAttack(a->special, realtimes, a->race,
-				spd->damage[i].type, a->slevel,
-				spd->damage[i].flags, spd->damage[i].dclass,
-				spd->damage[i].effect, 0, attackers, a->inform, this);
-		else num = attackers->DoAnAttack(a->special, realtimes, a->race,        //hitting own army
-				spd->damage[i].type, a->slevel,
-				spd->damage[i].flags, spd->damage[i].dclass,
-				spd->damage[i].effect, 0, attackers, a->inform, this); //'attackers' are still attackers; this is used to trigger random target selection rather than formation-specific.
+                spd->damage[i].type, a->slevel,
+                spd->damage[i].flags, spd->damage[i].dclass,
+                spd->damage[i].effect, 0, attackers, a->inform, this);
+        else num = attackers->DoAnAttack(a->special, realtimes, a->race,        //hitting own army
+                spd->damage[i].type, a->slevel,
+                spd->damage[i].flags, spd->damage[i].dclass,
+                spd->damage[i].effect, 0, attackers, a->inform, this); //'attackers' are still attackers; this is used to trigger random target selection rather than formation-specific.
 
-		if(spd->effectflags & SpecialType::FX_DONT_COMBINE && num != -1) {
-			if(spd->damage[i].effect == NULL) {
-				results[dam] = AString("killing ") + num;
-				dam++;
-			} else {
-				results[dam] = AString(spd->spelldesc2) + num;
-			}
-		}
-		if(num != -1) {
-			if(tot == -1) tot = num;
-			else tot += num;
-		}
-	}
-	if(tot == -1) {
-		AddLine(a->name + " " + spd->spelldesc + ", but it is deflected.");
-	} else {
-		if(spd->effectflags & SpecialType::FX_DONT_COMBINE) {
-			AString temp = a->name + " " + spd->spelldesc;
-			for(i = 0; i < dam; i++) {
-				if(i) temp += ", ";
-				if(i == dam-1) temp += " and ";
-				temp += results[dam];
-			}
-			temp += AString(spd->spelltarget) + ".";
-			AddLine(temp);
-		} else {
-			AddLine(a->name + " " + spd->spelldesc + ", " + spd->spelldesc2 +
-					tot + spd->spelltarget + ".");
-		}
-	}
+        if(spd->effectflags & SpecialType::FX_DONT_COMBINE && num != -1) {
+            if(spd->damage[i].effect == NULL) {
+                results[dam] = AString("killing ") + num;
+                dam++;
+            } else {
+                results[dam] = AString(spd->spelldesc2) + num;
+            }
+        }
+        if(num != -1) {
+            if(tot == -1) tot = num;
+            else tot += num;
+        }
+    }
+    if(tot == -1) {
+        AddLine(a->name + " " + spd->spelldesc + ", but it is deflected.");
+    } else {
+        if(spd->effectflags & SpecialType::FX_DONT_COMBINE) {
+            AString temp = a->name + " " + spd->spelldesc;
+            for(i = 0; i < dam; i++) {
+                if(i) temp += ", ";
+                if(i == dam-1) temp += " and ";
+                temp += results[dam];
+            }
+            temp += AString(spd->spelltarget) + ".";
+            AddLine(temp);
+        } else {
+            AddLine(a->name + " " + spd->spelldesc + ", " + spd->spelldesc2 +
+                    tot + spd->spelltarget + ".");
+        }
+    }
 }
 

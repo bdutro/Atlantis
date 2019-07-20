@@ -38,37 +38,37 @@ class Object;
 #define I_WOOD_OR_STONE -2
 
 class ObjectType {
-	public:
-		char const *name;
-		enum {
-			DISABLED	= 0x001,
-			NOMONSTERGROWTH	= 0x002,
-			NEVERDECAY	= 0x004,
-			CANENTER	= 0x008,
-			CANMODIFY	= 0x020,
-			TRANSPORT	= 0x040,
-			GROUP		= 0x080
-		};
-		int flags;
+    public:
+        char const *name;
+        enum {
+            DISABLED    = 0x001,
+            NOMONSTERGROWTH    = 0x002,
+            NEVERDECAY    = 0x004,
+            CANENTER    = 0x008,
+            CANMODIFY    = 0x020,
+            TRANSPORT    = 0x040,
+            GROUP        = 0x080
+        };
+        int flags;
 
-		int protect;
-		int capacity;
-		int sailors;
-		int maxMages;
+        int protect;
+        int capacity;
+        int sailors;
+        int maxMages;
 
-		int item;
-		int cost;
-		char const *skill;
-		int level;
+        int item;
+        int cost;
+        char const *skill;
+        int level;
 
-		int maxMaintenance;
-		int maxMonthlyDecay;
-		int maintFactor;
+        int maxMaintenance;
+        int maxMonthlyDecay;
+        int maintFactor;
 
-		int monster;
+        int monster;
 
-		int productionAided;
-		int defenceArray[NUM_ATTACK_TYPES];
+        int productionAided;
+        int defenceArray[NUM_ATTACK_TYPES];
 };
 
 extern ObjectType *ObjectDefs;
@@ -83,65 +83,65 @@ int ObjectIsShip(int);
 
 class Object : public AListElem
 {
-	public:
-		Object(ARegion *region);
-		~Object();
+    public:
+        Object(ARegion *region);
+        ~Object();
 
-		void Readin(Ainfile *f, AList *, ATL_VER v);
-		void Writeout(Aoutfile *f);
-		void Report(Areport *, Faction *, int, int, int, int, int, int, int);
+        void Readin(Ainfile *f, AList *, ATL_VER v);
+        void Writeout(Aoutfile *f);
+        void Report(Areport *, Faction *, int, int, int, int, int, int, int);
 
-		void SetName(AString *);
-		void SetDescribe(AString *);
+        void SetName(AString *);
+        void SetDescribe(AString *);
 
-		Unit *GetUnit(int);
-		Unit *GetUnitAlias(int, int); /* alias, faction number */
-		Unit *GetUnitId(UnitId *, int);
+        Unit *GetUnit(int);
+        Unit *GetUnitAlias(int, int); /* alias, faction number */
+        Unit *GetUnitId(UnitId *, int);
 
-		// AS
-		int IsRoad();
+        // AS
+        int IsRoad();
 
-		int IsFleet();
-		int IsBuilding();
-		int CanModify();
-		int CanEnter(ARegion *, Unit *);
-		Unit *ForbiddenBy(ARegion *, Unit *);
-		Unit *GetOwner();
+        int IsFleet();
+        int IsBuilding();
+        int CanModify();
+        int CanEnter(ARegion *, Unit *);
+        Unit *ForbiddenBy(ARegion *, Unit *);
+        Unit *GetOwner();
 
-		void SetPrevDir(int);
-		void MoveObject(ARegion *toreg);
-		
-		// Fleets
-		void ReadinFleet(Ainfile *f);
-		void WriteoutFleet(Aoutfile *f);
-		int CheckShip(int);
-		int GetNumShips(int);
-		void SetNumShips(int, int);
-		void AddShip(int);
-		AString FleetDefinition();
-		int FleetCapacity();
-		int FleetLoad();
-		int FleetSailingSkill(int);
-		int GetFleetSize();
-		int GetFleetSpeed(int);
-		
-		AString *name;
-		AString *describe;
-		ARegion *region;
-		int inner;
-		int num;
-		int type;
-		int incomplete;
-		int capacity;
-		int flying;
-		int load;
-		int runes;
-		int prevdir;
-		int mages;
-		int shipno;
-		int movepoints;
-		AList units;
-		AList ships;
+        void SetPrevDir(int);
+        void MoveObject(ARegion *toreg);
+        
+        // Fleets
+        void ReadinFleet(Ainfile *f);
+        void WriteoutFleet(Aoutfile *f);
+        int CheckShip(int);
+        int GetNumShips(int);
+        void SetNumShips(int, int);
+        void AddShip(int);
+        AString FleetDefinition();
+        int FleetCapacity();
+        int FleetLoad();
+        int FleetSailingSkill(int);
+        int GetFleetSize();
+        int GetFleetSpeed(int);
+        
+        AString *name;
+        AString *describe;
+        ARegion *region;
+        int inner;
+        int num;
+        int type;
+        int incomplete;
+        int capacity;
+        int flying;
+        int load;
+        int runes;
+        int prevdir;
+        int mages;
+        int shipno;
+        int movepoints;
+        AList units;
+        AList ships;
 };
 
 #endif

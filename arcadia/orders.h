@@ -61,97 +61,97 @@ class TransportOrder;
 #include "alist.h"
 
 enum {
-	O_ATLANTIS,
-	O_END,
-	O_UNIT,
-	O_ADDRESS,
-	O_ADVANCE,
-	O_ALL,
-	O_ARMOR,
-	O_ASSASSINATE,
-	O_ATTACK,
-	O_AUTOTAX,
-	O_AVOID,
-	O_BANK,
-	O_BEHIND,
-	O_BUILD,
-	O_BUILDHEXSIDE,
-	O_BUY,
-	O_CAST,
-	O_CLAIM,
-	O_COMBAT,
-	O_COMMAND,
-	O_CONSUME,
-	O_DECLARE,
-	O_DESCRIBE,
-	O_DESTROY,
-	O_DISABLE,
-	O_DISTRIBUTE,
-	O_ENDFORM,
-	O_ENDALL,
-	O_ENDTEMPLATE,
-	O_ENDTURN,
-	O_ENTER,
-	O_ENTERTAIN,
-	O_EVICT,
-	O_EXCHANGE,
-	O_FACTION,
-	O_FIGHTAS,
-	O_FIND,
-	O_FOLLOW,
-	O_FORGET,
-	O_FORM,
-	O_GIVE,
-	O_GUARD,
-	O_HOLD,
-	O_IDLE,
-	O_LABEL,
-	O_LEAVE,
-	O_MASTER,
-	O_MOVE,
-	O_NAME,
-	O_NOAID,
-	O_NOCROSS,
-	O_NOSPOILS,
-	O_OPTION,
-	O_PASSWORD,
-	O_PILLAGE,
-	O_POOL,
-	O_PREPARE,
-	O_PRODUCE,
-	O_PROMOTE,
-	O_QUIT,
-	O_RESTART,
-	O_REVEAL,
-	O_SAIL,
-	O_SELL,
-	O_SEND,
-	O_SHARE,
-	O_SHOW,
-	O_SPOILS,
-	O_STEAL,
-	O_STUDY,
-	O_TACTICS,
-	O_TAX,
-	O_TEACH,
-	O_TEMPLATE,
-	O_TRANSPORT,
-	O_TURN,
-	O_TYPE,
-	O_WEAPON,
-	O_WISHDRAW,
-	O_WISHSKILL,
-	O_WITHDRAW,
-	O_WORK,
-	NORDERS
+    O_ATLANTIS,
+    O_END,
+    O_UNIT,
+    O_ADDRESS,
+    O_ADVANCE,
+    O_ALL,
+    O_ARMOR,
+    O_ASSASSINATE,
+    O_ATTACK,
+    O_AUTOTAX,
+    O_AVOID,
+    O_BANK,
+    O_BEHIND,
+    O_BUILD,
+    O_BUILDHEXSIDE,
+    O_BUY,
+    O_CAST,
+    O_CLAIM,
+    O_COMBAT,
+    O_COMMAND,
+    O_CONSUME,
+    O_DECLARE,
+    O_DESCRIBE,
+    O_DESTROY,
+    O_DISABLE,
+    O_DISTRIBUTE,
+    O_ENDFORM,
+    O_ENDALL,
+    O_ENDTEMPLATE,
+    O_ENDTURN,
+    O_ENTER,
+    O_ENTERTAIN,
+    O_EVICT,
+    O_EXCHANGE,
+    O_FACTION,
+    O_FIGHTAS,
+    O_FIND,
+    O_FOLLOW,
+    O_FORGET,
+    O_FORM,
+    O_GIVE,
+    O_GUARD,
+    O_HOLD,
+    O_IDLE,
+    O_LABEL,
+    O_LEAVE,
+    O_MASTER,
+    O_MOVE,
+    O_NAME,
+    O_NOAID,
+    O_NOCROSS,
+    O_NOSPOILS,
+    O_OPTION,
+    O_PASSWORD,
+    O_PILLAGE,
+    O_POOL,
+    O_PREPARE,
+    O_PRODUCE,
+    O_PROMOTE,
+    O_QUIT,
+    O_RESTART,
+    O_REVEAL,
+    O_SAIL,
+    O_SELL,
+    O_SEND,
+    O_SHARE,
+    O_SHOW,
+    O_SPOILS,
+    O_STEAL,
+    O_STUDY,
+    O_TACTICS,
+    O_TAX,
+    O_TEACH,
+    O_TEMPLATE,
+    O_TRANSPORT,
+    O_TURN,
+    O_TYPE,
+    O_WEAPON,
+    O_WISHDRAW,
+    O_WISHSKILL,
+    O_WITHDRAW,
+    O_WORK,
+    NORDERS
 };
 
 enum {
-	M_NONE,
-	M_WALK,
-	M_RIDE,
-	M_FLY,
-	M_SAIL
+    M_NONE,
+    M_WALK,
+    M_RIDE,
+    M_FLY,
+    M_SAIL
 };
 
 #define MOVE_IN 98
@@ -164,62 +164,62 @@ extern char ** OrderStrs;
 int Parse1Order(AString *);
 
 class Order : public AListElem {
-	public:
-		Order();
-		virtual ~Order();
+    public:
+        Order();
+        virtual ~Order();
 
-		int type;
-		int quiet;
+        int type;
+        int quiet;
 };
 
 class MoveDir : public AListElem {
-	public:
-		int dir;
+    public:
+        int dir;
 };
 
 class MoveOrder : public Order {
-	public:
-		MoveOrder();
-		~MoveOrder();
+    public:
+        MoveOrder();
+        ~MoveOrder();
 
-		int advancing;
-		AList dirs;
+        int advancing;
+        AList dirs;
 };
 
 class PoolOrder : public Order {
-	public:
-		PoolOrder();
-		~PoolOrder();
+    public:
+        PoolOrder();
+        ~PoolOrder();
 
-		int item;
+        int item;
 };
 
 class WithdrawOrder : public Order {
-	public:
-		WithdrawOrder();
-		~WithdrawOrder();
+    public:
+        WithdrawOrder();
+        ~WithdrawOrder();
 
-		int item;
-		int amount;
+        int item;
+        int amount;
 };
 
 class WishdrawOrder : public Order {
-	public:
-		WishdrawOrder();
-		~WishdrawOrder();
+    public:
+        WishdrawOrder();
+        ~WishdrawOrder();
 
-		int item;
-		int amount;
+        int item;
+        int amount;
 };
 
 class WishskillOrder : public Order {
-	public:
-		WishskillOrder();
-		~WishskillOrder();
+    public:
+        WishskillOrder();
+        ~WishskillOrder();
 
-		int skill;
-		int knowledge;
-		int experience;
+        int skill;
+        int knowledge;
+        int experience;
 };
 
 class MasterOrder : public Order {
@@ -229,251 +229,251 @@ class MasterOrder : public Order {
 };
 
 class FollowOrder : public Order {
-	public:
-		FollowOrder();
-		~FollowOrder();
+    public:
+        FollowOrder();
+        ~FollowOrder();
 
-		int ship;
-		UnitId *targetid;
-		
-		Unit *target;
-		int dir;
-		int advancing;
+        int ship;
+        UnitId *targetid;
+        
+        Unit *target;
+        int dir;
+        int advancing;
 };
 
 class GiveOrder : public Order {
-	public:
-		GiveOrder();
-		~GiveOrder();
+    public:
+        GiveOrder();
+        ~GiveOrder();
 
-		int item;
-		/* if amount == -1, transfer whole unit, -2 means all of item */
-		int amount;
-		int except;
+        int item;
+        /* if amount == -1, transfer whole unit, -2 means all of item */
+        int amount;
+        int except;
 
-		UnitId *target;
+        UnitId *target;
 };
 
 class SendOrder : public Order {
-	public:
-		SendOrder();
-		~SendOrder();
+    public:
+        SendOrder();
+        ~SendOrder();
 
-		int item;
-		/* if amount == -2, send all of item */
-		int amount;
-		int except;
-		int direction;
+        int item;
+        /* if amount == -2, send all of item */
+        int amount;
+        int except;
+        int direction;
 
-		UnitId *target;
-		UnitId *via;
+        UnitId *target;
+        UnitId *via;
 };
 
 class StudyOrder : public Order {
-	public:
-		StudyOrder();
-		~StudyOrder();
+    public:
+        StudyOrder();
+        ~StudyOrder();
 
-		int skill;
-		int days;
-		int level;  //STUDY order mod
+        int skill;
+        int days;
+        int level;  //STUDY order mod
 };
 
 class TeachOrder : public Order {
-	public:
-		TeachOrder();
-		~TeachOrder();
+    public:
+        TeachOrder();
+        ~TeachOrder();
 
-		AList targets;
+        AList targets;
 };
 
 class ProduceOrder : public Order {
-	public:
-		ProduceOrder();
-		~ProduceOrder();
+    public:
+        ProduceOrder();
+        ~ProduceOrder();
 
-		int item;
-		int skill; /* -1 for none */
-		int productivity;
+        int item;
+        int skill; /* -1 for none */
+        int productivity;
 };
 
 class BuyOrder : public Order {
-	public:
-		BuyOrder();
-		~BuyOrder();
+    public:
+        BuyOrder();
+        ~BuyOrder();
 
-		int item;
-		int num;
+        int item;
+        int num;
 };
 
 class SellOrder : public Order {
-	public:
-		SellOrder();
-		~SellOrder();
+    public:
+        SellOrder();
+        ~SellOrder();
 
-		int item;
-		int num;
+        int item;
+        int num;
 };
 
 class AttackOrder : public Order {
-	public:
-		AttackOrder();
-		~AttackOrder();
+    public:
+        AttackOrder();
+        ~AttackOrder();
 
-		AList targets;
+        AList targets;
 };
 
 class BuildOrder : public Order {
-	public:
-		BuildOrder();
-		~BuildOrder();
+    public:
+        BuildOrder();
+        ~BuildOrder();
 
-		UnitId * target;
+        UnitId * target;
 };
 
 class BuildHexsideOrder : public Order {
-	public:
-		BuildHexsideOrder();
-		~BuildHexsideOrder();
+    public:
+        BuildHexsideOrder();
+        ~BuildHexsideOrder();
 
-		int terrain;
-		int direction;
+        int terrain;
+        int direction;
 };
 
 class SailOrder : public Order {
-	public:
-		SailOrder();
-		~SailOrder();
+    public:
+        SailOrder();
+        ~SailOrder();
 
-		AList dirs;
+        AList dirs;
 };
 
 class FindOrder : public Order {
-	public:
-		FindOrder();
-		~FindOrder();
+    public:
+        FindOrder();
+        ~FindOrder();
 
-		int find;
+        int find;
 };
 
 class StealOrder : public Order {
-	public:
-		StealOrder();
-		~StealOrder();
+    public:
+        StealOrder();
+        ~StealOrder();
 
-		UnitId *target;
-		int item;
+        UnitId *target;
+        int item;
 };
 
 class AssassinateOrder : public Order {
-	public:
-		AssassinateOrder();
-		~AssassinateOrder();
+    public:
+        AssassinateOrder();
+        ~AssassinateOrder();
 
-		UnitId *target;
+        UnitId *target;
 };
 
 class ForgetOrder : public Order {
-	public:
-		ForgetOrder();
-		~ForgetOrder();
+    public:
+        ForgetOrder();
+        ~ForgetOrder();
 
-		int skill;
+        int skill;
 };
 
 // Add class for exchange
 class ExchangeOrder : public Order {
-	public:
-		ExchangeOrder();
-		~ExchangeOrder();
+    public:
+        ExchangeOrder();
+        ~ExchangeOrder();
 
-		int giveItem;
-		int giveAmount;
-		int expectItem;
-		int expectAmount;
+        int giveItem;
+        int giveAmount;
+        int expectItem;
+        int expectAmount;
 
-		int exchangeStatus;
+        int exchangeStatus;
 
-		UnitId *target;
+        UnitId *target;
 };
 
 class TurnOrder : public Order {
-	public:
-		TurnOrder();
-		~TurnOrder();
-		int repeating;
-		AList turnOrders;
+    public:
+        TurnOrder();
+        ~TurnOrder();
+        int repeating;
+        AList turnOrders;
 };
 
 class CastOrder : public Order {
-	public:
-		CastOrder();
-		~CastOrder();
+    public:
+        CastOrder();
+        ~CastOrder();
 
-		int spell;
-		int level;
-		int extracost; //first spell is 0, second is 1, third is 2.
+        int spell;
+        int level;
+        int extracost; //first spell is 0, second is 1, third is 2.
 };
 
 class CastMindOrder : public CastOrder {
-	public:
-		CastMindOrder();
-		~CastMindOrder();
+    public:
+        CastMindOrder();
+        ~CastMindOrder();
 
-		UnitId *id;
+        UnitId *id;
 };
 
 class CastRegionOrder : public CastOrder {
-	public:
-		CastRegionOrder();
-		~CastRegionOrder();
+    public:
+        CastRegionOrder();
+        ~CastRegionOrder();
 
-		int xloc, yloc, zloc;
+        int xloc, yloc, zloc;
 };
 
 class TeleportOrder : public CastRegionOrder {
-	public:
-		TeleportOrder();
-		~TeleportOrder();
+    public:
+        TeleportOrder();
+        ~TeleportOrder();
 
-		int gate;
-		AList units;
+        int gate;
+        AList units;
 };
 
 class CastIntOrder : public CastOrder {
-	public:
-		CastIntOrder();
-		~CastIntOrder();
+    public:
+        CastIntOrder();
+        ~CastIntOrder();
 
-		int target;
+        int target;
 };
 
 class CastUnitsOrder : public CastOrder {
-	public:
-		CastUnitsOrder();
-		~CastUnitsOrder();
+    public:
+        CastUnitsOrder();
+        ~CastUnitsOrder();
 
-		AList units;
+        AList units;
 };
 
 class CastChangeOrder : public CastOrder {
-	public:
-		CastChangeOrder();
-		~CastChangeOrder();
+    public:
+        CastChangeOrder();
+        ~CastChangeOrder();
 
-		int fromitem;
-		int toitem;
-		AList units;
+        int fromitem;
+        int toitem;
+        AList units;
 };
 
 class CastModifyOrder : public CastOrder {
-	public:
-		CastModifyOrder();
-		~CastModifyOrder();
+    public:
+        CastModifyOrder();
+        ~CastModifyOrder();
 
-		int fromitem;
-		int toitem;
-		int xloc, yloc, zloc;
+        int fromitem;
+        int toitem;
+        int xloc, yloc, zloc;
 };
 
 class CastMenOrder : public CastOrder {
@@ -497,40 +497,40 @@ class CastHypnosisOrder : public CastOrder {
 };
 
 class EvictOrder : public Order {
-	public:
-		EvictOrder();
-		~EvictOrder();
+    public:
+        EvictOrder();
+        ~EvictOrder();
 
-		AList targets;
+        AList targets;
 };
 
 class BankOrder : public Order {
-	public:
+    public:
 
-		BankOrder();
-		~BankOrder();
+        BankOrder();
+        ~BankOrder();
 
-		int what; // 1 == withdraw; 2 == deposit
-		int amount;
+        int what; // 1 == withdraw; 2 == deposit
+        int amount;
 };
 
 class IdleOrder : public Order {
-	public:
-		IdleOrder();
-		~IdleOrder();
+    public:
+        IdleOrder();
+        ~IdleOrder();
 };
 
 class TransportOrder : public Order {
-	public:
-		TransportOrder();
-		~TransportOrder();
+    public:
+        TransportOrder();
+        ~TransportOrder();
 
-		int item;
-		// amount == -1 means all available at transport time
-		int amount;
-		int except;
+        int item;
+        // amount == -1 means all available at transport time
+        int amount;
+        int except;
 
-		UnitId *target;
+        UnitId *target;
 };
 
 #endif

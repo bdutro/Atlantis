@@ -34,70 +34,70 @@ class Battle;
 #include "items.h"
 
 enum {
-	ASS_NONE,
-	ASS_SUCC,
-	ASS_FAIL
+    ASS_NONE,
+    ASS_SUCC,
+    ASS_FAIL
 };
 
 enum {
-	BATTLE_IMPOSSIBLE,
-	BATTLE_LOST,
-	BATTLE_WON,
-	BATTLE_DRAW
+    BATTLE_IMPOSSIBLE,
+    BATTLE_LOST,
+    BATTLE_WON,
+    BATTLE_DRAW
 };
 
 class BattlePtr : public AListElem
 {
-	public:
-	    BattlePtr();
-		Battle * ptr;
+    public:
+        BattlePtr();
+        Battle * ptr;
 };
 
 class Battle : public AListElem
 {
-	public:
-		Battle(ARegion *);
-		~Battle();
+    public:
+        Battle(ARegion *);
+        ~Battle();
 
-		int Run(ARegion *, Unit *, AList *, Unit *, AList *, int ass,
-				ARegionList *pRegs);
-		void NormalRound(int round,Army *,Army *,int regtype, int bias = 0, int ambush=0, int assassination=0);
-		void DoAttack(int round, Soldier *a, Army *attackers, Army *def,
-				int ass = 0);
-		void FormationsPhase(Army * a, Army * b, int regtype, int bias, int ambush, int ass); ///
+        int Run(ARegion *, Unit *, AList *, Unit *, AList *, int ass,
+                ARegionList *pRegs);
+        void NormalRound(int round,Army *,Army *,int regtype, int bias = 0, int ambush=0, int assassination=0);
+        void DoAttack(int round, Soldier *a, Army *attackers, Army *def,
+                int ass = 0);
+        void FormationsPhase(Army * a, Army * b, int regtype, int bias, int ambush, int ass); ///
 
-		void GetSpoils(AList *,ItemList *, int);
+        void GetSpoils(AList *,ItemList *, int);
 
-		//
-		// These functions should be implemented in specials.cpp
-		//
-		void UpdateShields(Army *a, Army *enemy);
-		void DoBinding(Army *att, Army *def);
-        void UpdateRoundSpells(Army * a, Army * b);		
+        //
+        // These functions should be implemented in specials.cpp
+        //
+        void UpdateShields(Army *a, Army *enemy);
+        void DoBinding(Army *att, Army *def);
+        void UpdateRoundSpells(Army * a, Army * b);        
         int GetRoundSpellLevel(Army *a, Army *b, int type, int spell, int antispell);
-		void DoSpecialAttack( int round, Soldier *a, Army *attackers, Army *def);
+        void DoSpecialAttack( int round, Soldier *a, Army *attackers, Army *def);
 
-		void WriteSides(ARegion *,Unit *,Unit *,AList *,AList *,int,
-				ARegionList *pRegs );
+        void WriteSides(ARegion *,Unit *,Unit *,AList *,AList *,int,
+                ARegionList *pRegs );
 
         void WriteTerrainMessage(int regtype);
         void WriteAggressionMessage(Army *a, Army *b);
         void TransferMessages(Army *a, Army *b);
-		void AddLine(const AString &);
-		void Report(Areport *,Faction *);
-		
-		void WriteBattleSituation(Army *a, Army *b);
-		AString WriteBattleFormation(char f, char g, int size);
+        void AddLine(const AString &);
+        void Report(Areport *,Faction *);
+        
+        void WriteBattleSituation(Army *a, Army *b);
+        AString WriteBattleFormation(char f, char g, int size);
 
-		int assassination;
-		Faction * attacker; /* Only matters in the case of an assassination */
-		AString * asstext;
-		AList text;
-		
-		//Used for statistics / times reports
-		ARegion *region;
-		int casualties;
-		
+        int assassination;
+        Faction * attacker; /* Only matters in the case of an assassination */
+        AString * asstext;
+        AList text;
+        
+        //Used for statistics / times reports
+        ARegion *region;
+        int casualties;
+        
 };
 
 #endif

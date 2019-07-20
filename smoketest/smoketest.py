@@ -150,7 +150,7 @@ if "--continue" in args:
     tempfile.close()
     numturns = thisturn + numturns
 else:
-	thisturn = 0
+    thisturn = 0
 
 while thisturn <= numturns:
     print "Turn",thisturn,"of",numturns

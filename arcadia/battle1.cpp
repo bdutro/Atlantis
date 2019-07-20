@@ -90,55 +90,55 @@ void Game::GetDFacs(ARegion * r,Unit * t,AList & facs)
 
 
 void Game::GetAFacs(ARegion *r, Unit *att, Unit *tar, AList &dfacs,
-		AList &afacs, AList &atts)
+        AList &afacs, AList &atts)
 {
-	forlist((&r->objects)) {
-		Object * obj = (Object *) elem;
-		forlist((&obj->units)) {
-			Unit * u = (Unit *) elem;
-			if (u->canattack && u->IsReallyAlive()) {
-				int add = 0;
-				if ((u->faction == att->faction ||
-							u->GetAttitude(r,tar) == A_HOSTILE) &&
-						(u->guard != GUARD_AVOID || u == att)) {
-					add = 1;
-				} else {
-					if (u->guard == GUARD_ADVANCE &&
-							u->GetAttitude(r,tar) != A_ALLY) {
-						add = 1;
-					} else {
-						if (u->attackorders) {
-							forlist(&(u->attackorders->targets)) {
-								UnitId * id = (UnitId *) elem;
-								Unit *t = r->GetUnitId(id, u->faction->num);
-								if (!t) continue;
-								if (t == tar) {
-									u->attackorders->targets.Remove(id);
-									delete id;
-								}
-								if(t->faction == tar->faction) add = 1;
-							}
-						}
-					}
-				}
+    forlist((&r->objects)) {
+        Object * obj = (Object *) elem;
+        forlist((&obj->units)) {
+            Unit * u = (Unit *) elem;
+            if (u->canattack && u->IsReallyAlive()) {
+                int add = 0;
+                if ((u->faction == att->faction ||
+                            u->GetAttitude(r,tar) == A_HOSTILE) &&
+                        (u->guard != GUARD_AVOID || u == att)) {
+                    add = 1;
+                } else {
+                    if (u->guard == GUARD_ADVANCE &&
+                            u->GetAttitude(r,tar) != A_ALLY) {
+                        add = 1;
+                    } else {
+                        if (u->attackorders) {
+                            forlist(&(u->attackorders->targets)) {
+                                UnitId * id = (UnitId *) elem;
+                                Unit *t = r->GetUnitId(id, u->faction->num);
+                                if (!t) continue;
+                                if (t == tar) {
+                                    u->attackorders->targets.Remove(id);
+                                    delete id;
+                                }
+                                if(t->faction == tar->faction) add = 1;
+                            }
+                        }
+                    }
+                }
 
-				if (add) {
-					if (!GetFaction2(&dfacs,u->faction->num)) {
-						Location * l = new Location;
-						l->unit = u;
-						l->obj = obj;
-						l->region = r;
-						atts.Add(l);
-						if (!GetFaction2(&afacs,u->faction->num)) {
-							FactionPtr * p = new FactionPtr;
-							p->ptr = u->faction;
-							afacs.Add(p);
-						}
-					}
-				}
-			}
-		}
-	}
+                if (add) {
+                    if (!GetFaction2(&dfacs,u->faction->num)) {
+                        Location * l = new Location;
+                        l->unit = u;
+                        l->obj = obj;
+                        l->region = r;
+                        atts.Add(l);
+                        if (!GetFaction2(&afacs,u->faction->num)) {
+                            FactionPtr * p = new FactionPtr;
+                            p->ptr = u->faction;
+                            afacs.Add(p);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 int Game::CanAttack(ARegion * r,AList * afacs,Unit * u) {
@@ -159,268 +159,268 @@ int Game::CanAttack(ARegion * r,AList * afacs,Unit * u) {
 }
 
 void Game::GetSides(ARegion *r, AList &afacs, AList &dfacs, AList &atts,
-		AList &defs, Unit *att, Unit *tar, int ass, int adv)
+        AList &defs, Unit *att, Unit *tar, int ass, int adv)
 {
     att->crossbridge = 0;
     tar->crossbridge = 0;
 
-	if (ass) {
-		/* Assassination attempt */
-		Location * l = new Location;
-		l->unit = att;
-		l->obj = r->GetDummy();
-		l->region = r;
-		atts.Add(l);
+    if (ass) {
+        /* Assassination attempt */
+        Location * l = new Location;
+        l->unit = att;
+        l->obj = r->GetDummy();
+        l->region = r;
+        atts.Add(l);
 
-		l = new Location;
-		l->unit = tar;
-		l->obj = r->GetDummy();
-		l->region = r;
-		defs.Add(l);
+        l = new Location;
+        l->unit = tar;
+        l->obj = r->GetDummy();
+        l->region = r;
+        defs.Add(l);
 
-		return;
-	}
+        return;
+    }
 
-	int j=NDIRS;
-	int noaida = 0, noaidd = 0;
-	for (int i=-1;i<j;i++) {
-		ARegion * r2 = r;
-		if (i>=0) {
-			r2 = r->neighbors[i];
-			if (!r2) continue;
-			forlist(&r2->objects) {
-				/* Can't get building bonus in another region */
-				((Object *) elem)->capacity = 0;
-			}
-		} else {
-			forlist(&r2->objects) {
-				Object * o = (Object *) elem;
-				/* Set building capacity */
-				if (o->incomplete < 1 && o->IsBuilding()) {
-					o->capacity = ObjectDefs[o->type].protect;
-				}
-			}
-		}
-		forlist (&r2->objects) {
-			Object * o = (Object *) elem;
-			forlist (&o->units) {
-				Unit * u = (Unit *) elem;
-				int add = 0;
-				u->crossbridge = 0;
+    int j=NDIRS;
+    int noaida = 0, noaidd = 0;
+    for (int i=-1;i<j;i++) {
+        ARegion * r2 = r;
+        if (i>=0) {
+            r2 = r->neighbors[i];
+            if (!r2) continue;
+            forlist(&r2->objects) {
+                /* Can't get building bonus in another region */
+                ((Object *) elem)->capacity = 0;
+            }
+        } else {
+            forlist(&r2->objects) {
+                Object * o = (Object *) elem;
+                /* Set building capacity */
+                if (o->incomplete < 1 && o->IsBuilding()) {
+                    o->capacity = ObjectDefs[o->type].protect;
+                }
+            }
+        }
+        forlist (&r2->objects) {
+            Object * o = (Object *) elem;
+            forlist (&o->units) {
+                Unit * u = (Unit *) elem;
+                int add = 0;
+                u->crossbridge = 0;
 #define ADD_ATTACK 1
 #define ADD_DEFENSE 2
-				/* First, can the unit be involved in the battle at all? */
-				if ((i==-1 || u->GetFlag(FLAG_HOLDING) == 0) && u->IsReallyAlive()) {
-					if (GetFaction2(&afacs,u->faction->num)) {
-						/*
-						 * The unit is on the attacking side, check if the
-						 * unit should be in the battle
-						 */
-						if (i == -1 || (!noaida)) {
-							if (u->canattack &&
-									(u->guard != GUARD_AVOID || u==att) &&
-									u->CanMoveTo(r2,r) &&
-									!::GetUnit(&atts,u->num)) {
-								add = ADD_ATTACK;
-							}
-						}
-					} else {
-						/* The unit is not on the attacking side */
-						/*
-						 * First, check for the noaid flag; if it is set,
-						 * only units from this region will join on the
-						 * defensive side
-						 */
-						if (!(i != -1 && noaidd)) {
-							if (u->type == U_GUARD) {
-								/* The unit is a city guardsman */
-								if (i == -1/* && adv == 0*/ && u->faction->ethnicity == tar->faction->ethnicity)
-									add = ADD_DEFENSE;
-							} else if(u->type == U_GUARDMAGE) {
-								/* the unit is a city guard support mage */
-								if(i == -1/* && adv == 0*/ && u->faction->ethnicity == tar->faction->ethnicity)
-									add = ADD_DEFENSE;
-							} else {
-								/*
-								 * The unit is not a city guardsman, check if
-								 * the unit is on the defensive side
-								 */
-								if (GetFaction2(&dfacs,u->faction->num)) {
-									if (u->guard == GUARD_AVOID) {
-										/*
-										 * The unit is avoiding, and doesn't
-										 * want to be in the battle if he can
-										 * avoid it
-										 */
-										if (u == tar ||
-												(u->faction == tar->faction &&
-												 i==-1 &&
-												 CanAttack(r,&afacs,u))) {
-											add = ADD_DEFENSE;
-										}
-									} else {
-										/*
-										 * The unit is not avoiding, and wants
-										 * to defend, if it can
-										 */
-										if (u->CanMoveTo(r2,r)) {
-											add = ADD_DEFENSE;
-										}
-									}
-								} 
-							}
-						}
-					}
-				}
+                /* First, can the unit be involved in the battle at all? */
+                if ((i==-1 || u->GetFlag(FLAG_HOLDING) == 0) && u->IsReallyAlive()) {
+                    if (GetFaction2(&afacs,u->faction->num)) {
+                        /*
+                         * The unit is on the attacking side, check if the
+                         * unit should be in the battle
+                         */
+                        if (i == -1 || (!noaida)) {
+                            if (u->canattack &&
+                                    (u->guard != GUARD_AVOID || u==att) &&
+                                    u->CanMoveTo(r2,r) &&
+                                    !::GetUnit(&atts,u->num)) {
+                                add = ADD_ATTACK;
+                            }
+                        }
+                    } else {
+                        /* The unit is not on the attacking side */
+                        /*
+                         * First, check for the noaid flag; if it is set,
+                         * only units from this region will join on the
+                         * defensive side
+                         */
+                        if (!(i != -1 && noaidd)) {
+                            if (u->type == U_GUARD) {
+                                /* The unit is a city guardsman */
+                                if (i == -1/* && adv == 0*/ && u->faction->ethnicity == tar->faction->ethnicity)
+                                    add = ADD_DEFENSE;
+                            } else if(u->type == U_GUARDMAGE) {
+                                /* the unit is a city guard support mage */
+                                if(i == -1/* && adv == 0*/ && u->faction->ethnicity == tar->faction->ethnicity)
+                                    add = ADD_DEFENSE;
+                            } else {
+                                /*
+                                 * The unit is not a city guardsman, check if
+                                 * the unit is on the defensive side
+                                 */
+                                if (GetFaction2(&dfacs,u->faction->num)) {
+                                    if (u->guard == GUARD_AVOID) {
+                                        /*
+                                         * The unit is avoiding, and doesn't
+                                         * want to be in the battle if he can
+                                         * avoid it
+                                         */
+                                        if (u == tar ||
+                                                (u->faction == tar->faction &&
+                                                 i==-1 &&
+                                                 CanAttack(r,&afacs,u))) {
+                                            add = ADD_DEFENSE;
+                                        }
+                                    } else {
+                                        /*
+                                         * The unit is not avoiding, and wants
+                                         * to defend, if it can
+                                         */
+                                        if (u->CanMoveTo(r2,r)) {
+                                            add = ADD_DEFENSE;
+                                        }
+                                    }
+                                } 
+                            }
+                        }
+                    }
+                }
 
-				if (add == ADD_ATTACK) {
-					Location * l = new Location;
-					l->unit = u;
-					l->obj = o;
-					l->region = r2;
-					atts.Add(l);
-				} else if (add == ADD_DEFENSE) {
-						Location * l = new Location;
-						l->unit = u;
-						l->obj = o;
-						l->region = r2;
-						defs.Add(l);
-				}
-			}
-		}
-		//
-		// If we are in the original region, check for the noaid status of
-		// the units involved
-		//
-		if (i == -1) {
-			noaida = 1;
-			forlist (&atts) {
-				Location *l = (Location *) elem;
-				if (!l->unit->GetFlag(FLAG_NOAID)) {
-					noaida = 0;
-					break;
-				}
-			}
-		}
+                if (add == ADD_ATTACK) {
+                    Location * l = new Location;
+                    l->unit = u;
+                    l->obj = o;
+                    l->region = r2;
+                    atts.Add(l);
+                } else if (add == ADD_DEFENSE) {
+                        Location * l = new Location;
+                        l->unit = u;
+                        l->obj = o;
+                        l->region = r2;
+                        defs.Add(l);
+                }
+            }
+        }
+        //
+        // If we are in the original region, check for the noaid status of
+        // the units involved
+        //
+        if (i == -1) {
+            noaida = 1;
+            forlist (&atts) {
+                Location *l = (Location *) elem;
+                if (!l->unit->GetFlag(FLAG_NOAID)) {
+                    noaida = 0;
+                    break;
+                }
+            }
+        }
 
-		noaidd = 1;
-		{
-			forlist (&defs) {
-				Location *l = (Location *) elem;
-				if (!l->unit->GetFlag(FLAG_NOAID)) {
-					noaidd = 0;
-					break;
-				}
-			}
-		}
-	}
+        noaidd = 1;
+        {
+            forlist (&defs) {
+                Location *l = (Location *) elem;
+                if (!l->unit->GetFlag(FLAG_NOAID)) {
+                    noaidd = 0;
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void Game::KillDead(Location * l)
 {
-	if (!l->unit->IsReallyAlive()) {
-		l->region->Kill(l->unit); //this deletes all non-mage units which are dead. Otherwise transfers items and moves to dummy region.
-		if(l->unit->dead) {  //ie a mage.
-	        //ARCADIA_MAGIC Patch
-    	    Faction *fac = GetFaction(&factions, ghostfaction);
+    if (!l->unit->IsReallyAlive()) {
+        l->region->Kill(l->unit); //this deletes all non-mage units which are dead. Otherwise transfers items and moves to dummy region.
+        if(l->unit->dead) {  //ie a mage.
+            //ARCADIA_MAGIC Patch
+            Faction *fac = GetFaction(&factions, ghostfaction);
             if(fac) l->unit->faction = fac;
             else {
                 l->unit->MoveUnit(0); //routine for destroying a unit, from ARegion::Kill()
-        	    l->region->hell.Add(l->unit);
-        	}
-		}
-	} else {
-		if (l->unit->advancefrom) {
-			l->unit->MoveUnit( l->unit->advancefrom->GetDummy() );
-		}
-	}
+                l->region->hell.Add(l->unit);
+            }
+        }
+    } else {
+        if (l->unit->advancefrom) {
+            l->unit->MoveUnit( l->unit->advancefrom->GetDummy() );
+        }
+    }
 }
 
 int Game::RunBattle(ARegion * r,Unit * attacker,Unit * target,int ass,
                      int adv)
 {
-	AList afacs,dfacs;
-	AList atts,defs;
-	FactionPtr * p;
-	int result;
+    AList afacs,dfacs;
+    AList atts,defs;
+    FactionPtr * p;
+    int result;
 
-	if (ass) {
-		if(attacker->GetAttitude(r,target) == A_ALLY) {
-			attacker->Error("ASSASSINATE: Can't assassinate an ally.");
-			return BATTLE_IMPOSSIBLE;
-		}
-		/* Assassination attempt */
-		p = new FactionPtr;
-		p->ptr = attacker->faction;
-		afacs.Add(p);
-		p = new FactionPtr;
-		p->ptr = target->faction;
-		dfacs.Add(p);
-	} else {
-		if( r->IsSafeRegion() ) {
-			attacker->Error("ATTACK: No battles allowed in safe regions.");
-			return BATTLE_IMPOSSIBLE;
-		}
-		if(attacker->GetAttitude(r,target) == A_ALLY) {
-			attacker->Error("ATTACK: Can't attack an ally.");
-			return BATTLE_IMPOSSIBLE;
-		}
-		GetDFacs(r,target,dfacs);
-		if (GetFaction2(&dfacs,attacker->faction->num)) {
-			attacker->Error("ATTACK: Can't attack an ally.");
-			return BATTLE_IMPOSSIBLE;
-		}
-		GetAFacs(r,attacker,target,dfacs,afacs,atts);
-	}
-	GetSides(r,afacs,dfacs,atts,defs,attacker,target,ass,adv);
+    if (ass) {
+        if(attacker->GetAttitude(r,target) == A_ALLY) {
+            attacker->Error("ASSASSINATE: Can't assassinate an ally.");
+            return BATTLE_IMPOSSIBLE;
+        }
+        /* Assassination attempt */
+        p = new FactionPtr;
+        p->ptr = attacker->faction;
+        afacs.Add(p);
+        p = new FactionPtr;
+        p->ptr = target->faction;
+        dfacs.Add(p);
+    } else {
+        if( r->IsSafeRegion() ) {
+            attacker->Error("ATTACK: No battles allowed in safe regions.");
+            return BATTLE_IMPOSSIBLE;
+        }
+        if(attacker->GetAttitude(r,target) == A_ALLY) {
+            attacker->Error("ATTACK: Can't attack an ally.");
+            return BATTLE_IMPOSSIBLE;
+        }
+        GetDFacs(r,target,dfacs);
+        if (GetFaction2(&dfacs,attacker->faction->num)) {
+            attacker->Error("ATTACK: Can't attack an ally.");
+            return BATTLE_IMPOSSIBLE;
+        }
+        GetAFacs(r,attacker,target,dfacs,afacs,atts);
+    }
+    GetSides(r,afacs,dfacs,atts,defs,attacker,target,ass,adv);
 
-	if(atts.Num() <= 0) {
-		// This shouldn't happen, but just in case
-		Awrite(AString("Cannot find any attackers!"));
-		return BATTLE_IMPOSSIBLE;
-	}
-	if(defs.Num() <= 0) {
-		// This shouldn't happen, but just in case
-		Awrite(AString("Cannot find any defenders!"));
-		return BATTLE_IMPOSSIBLE;
-	}
+    if(atts.Num() <= 0) {
+        // This shouldn't happen, but just in case
+        Awrite(AString("Cannot find any attackers!"));
+        return BATTLE_IMPOSSIBLE;
+    }
+    if(defs.Num() <= 0) {
+        // This shouldn't happen, but just in case
+        Awrite(AString("Cannot find any defenders!"));
+        return BATTLE_IMPOSSIBLE;
+    }
 
-	Battle * b = new Battle(r);
-	b->WriteSides(r,attacker,target,&atts,&defs,ass, &regions );
+    Battle * b = new Battle(r);
+    b->WriteSides(r,attacker,target,&atts,&defs,ass, &regions );
 
-	battles.Add(b);
-	forlist(&factions) {
-		Faction * f = (Faction *) elem;
-		if (GetFaction2(&afacs,f->num) || GetFaction2(&dfacs,f->num) ||
-				r->Present(f)) {
-			BattlePtr * p = new BattlePtr;
-			p->ptr = b;
-			f->battles.Add(p);
-		}
-	}
+    battles.Add(b);
+    forlist(&factions) {
+        Faction * f = (Faction *) elem;
+        if (GetFaction2(&afacs,f->num) || GetFaction2(&dfacs,f->num) ||
+                r->Present(f)) {
+            BattlePtr * p = new BattlePtr;
+            p->ptr = b;
+            f->battles.Add(p);
+        }
+    }
 
-	result = b->Run(r,attacker,&atts,target,&defs,ass, &regions );
-	/* Remove all dead units */
+    result = b->Run(r,attacker,&atts,target,&defs,ass, &regions );
+    /* Remove all dead units */
 #ifdef DEBUG
 Awrite("Killing attackers");
 #endif
-	{
-		forlist(&atts) {
-			KillDead((Location *) elem);
-		}
-	}
+    {
+        forlist(&atts) {
+            KillDead((Location *) elem);
+        }
+    }
 #ifdef DEBUG
 Awrite("Killing defenders");
 #endif
-	{
-		forlist(&defs) {
-			KillDead((Location *) elem);
-		}
-	}
+    {
+        forlist(&defs) {
+            KillDead((Location *) elem);
+        }
+    }
 #ifdef DEBUG
 Awrite("Battle all run");
 #endif
-	return result;
+    return result;
 }
 
 Battle::Battle(ARegion *r)
@@ -452,7 +452,7 @@ int Battle::Run( ARegion * region,
                   int ass,
                   ARegionList *pRegs )
 {
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 1");
 #endif
 
@@ -469,31 +469,31 @@ Awrite("battles 1");
 
     armies[0] = new Army(att,atts,region->type,2*ass); //ass = 2 for attacker, 1 for defender. This is used for armour selection.
 
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 2");
 #endif
 
     armies[1] = new Army(tar,defs,region->type,ass);
-#ifdef DEBUG2		
+#ifdef DEBUG2        
 Awrite("battles 2.1");
 #endif
     if(!ass) {
         WriteTerrainMessage(region->type);
-#ifdef DEBUG2		
+#ifdef DEBUG2        
 Awrite("battles 2.2");
 #endif
         WriteAggressionMessage(armies[0],armies[1]);
-#ifdef DEBUG2		
+#ifdef DEBUG2        
 Awrite("battles 2.3");
 #endif
         armies[0]->DoEthnicMoraleEffects(this);
-#ifdef DEBUG2		
+#ifdef DEBUG2        
 Awrite("battles 2.4");
 #endif
         armies[1]->DoEthnicMoraleEffects(this);
     }
 
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 3");
 #endif
 
@@ -502,7 +502,7 @@ Awrite("battles 3");
         NormalRound(round++,armies[0],armies[1],region->type, 0,0,ass);
     }
     
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 4");
 #endif
 
@@ -510,12 +510,12 @@ Awrite("battles 4");
         (!armies[0]->NumAlive() && armies[1]->NumAlive())) {
         if (ass) assassination = ASS_FAIL;
 
-		if (armies[0]->NumAlive()) {
-		  AddLine(*(armies[0]->pLeader->name) + " is routed!");
-		  NormalRound(round++,armies[0],armies[1],region->type,1);
-		} else {
-		  AddLine(*(armies[0]->pLeader->name) + " is destroyed!");
-		}
+        if (armies[0]->NumAlive()) {
+          AddLine(*(armies[0]->pLeader->name) + " is routed!");
+          NormalRound(round++,armies[0],armies[1],region->type,1);
+        } else {
+          AddLine(*(armies[0]->pLeader->name) + " is destroyed!");
+        }
         AddLine("Total Casualties:");
         
         ItemList *spoils = new ItemList;
@@ -526,7 +526,7 @@ Awrite("battles 4");
         } else {
             temp = "Spoils: none.";
         }   
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 5");
 #endif
         armies[1]->Win(this, spoils, loserdead); //change the Win function for better spoils handling
@@ -537,13 +537,13 @@ Awrite("battles 5");
         //soldiers seem to have already been deleted in win/lose/tie methods
         delete armies[0];      
         delete armies[1];
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("returning loss");
 #endif
         return BATTLE_LOST;
     }
 
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 6");
 #endif
 
@@ -557,12 +557,12 @@ Awrite("battles 6");
                                   "!");
         }
         if (armies[1]->NumAlive()) {
-		  AddLine(*(armies[1]->pLeader->name) + " is routed!");
-		  NormalRound(round++,armies[0],armies[1],region->type,2);
-		} else {
-		  AddLine(*(armies[1]->pLeader->name) + " is destroyed!");
-		}
-#ifdef DEBUG		
+          AddLine(*(armies[1]->pLeader->name) + " is routed!");
+          NormalRound(round++,armies[0],armies[1],region->type,2);
+        } else {
+          AddLine(*(armies[1]->pLeader->name) + " is destroyed!");
+        }
+#ifdef DEBUG        
 Awrite("battles 7");
 #endif
         AddLine("Total Casualties:");
@@ -582,12 +582,12 @@ Awrite("battles 7");
         delete spoils;
         delete armies[0];
         delete armies[1];
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("returning won");
 #endif
         return BATTLE_WON;
     }
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 8");
 #endif
     AddLine("The battle ends indecisively.");
@@ -599,15 +599,15 @@ Awrite("battles 8");
     AddLine("");
     AddLine(temp);
     AddLine("");
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 8.5");
 #endif
     delete armies[0];
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("battles 9");
 #endif
     delete armies[1];
-#ifdef DEBUG		
+#ifdef DEBUG        
 Awrite("returning draw");
 #endif
     return BATTLE_DRAW;
@@ -660,8 +660,8 @@ AddLine(AString("Attacks left: ") + aatt + " - " + batt);
 Awrite("Done attacks");
 #endif
     /* Finish round */
-	armya->Regenerate(this);
-	armyb->Regenerate(this);
+    armya->Regenerate(this);
+    armyb->Regenerate(this);
     aialive -= aalive;
     AddLine(*(armya->pLeader->name) + " loses " + aialive + ".");
     bialive -= balive;
@@ -677,89 +677,89 @@ void Battle::DoAttack(int round, Soldier *a, Army *attackers, Army *def, int ass
 #ifdef DEBUG2
 cout << a->unit->num;
 #endif
-	DoSpecialAttack(round, a, attackers, def);
+    DoSpecialAttack(round, a, attackers, def);
 #ifdef DEBUG2
 cout << ".";
 #endif
-	if (!def->NumAlive()) return;
+    if (!def->NumAlive()) return;
 
-	if (a->riding != -1) {
-		MountType *pMt = FindMount(ItemDefs[a->riding].abr);
-		// This does mount special attack. Adjust it so cannot behind formations cannot hit non-engaged formations (ie its not ranged)
-		if(pMt->mountSpecial != NULL) {
-			int i, num, tot = -1;
-			SpecialType *spd = FindSpecial(pMt->mountSpecial);
-			for(i = 0; i < 4; i++) {
-				int times = spd->damage[i].value;
-				if(spd->effectflags & SpecialType::FX_USE_LEV)
-					times *= pMt->specialLev;
-				int realtimes = spd->damage[i].minnum + getrandom(times) +
-					getrandom(times);
-				num  = def->DoAnAttack(pMt->mountSpecial, realtimes, a->race,
-						spd->damage[i].type, pMt->specialLev,
-						spd->damage[i].flags, spd->damage[i].dclass,
-						spd->damage[i].effect, 0, attackers, a->inform, this);
-				if(num != -1) {
-					if(tot == -1) tot = num;
-					else tot += num;
-				}
-			}
-			if(tot != -1) {
-				AddLine(a->name + " " + spd->spelldesc + ", " +
-						spd->spelldesc2 + tot + spd->spelltarget + ".");
-			}
-		}
-	}
-	if(!def->NumAlive()) return;
+    if (a->riding != -1) {
+        MountType *pMt = FindMount(ItemDefs[a->riding].abr);
+        // This does mount special attack. Adjust it so cannot behind formations cannot hit non-engaged formations (ie its not ranged)
+        if(pMt->mountSpecial != NULL) {
+            int i, num, tot = -1;
+            SpecialType *spd = FindSpecial(pMt->mountSpecial);
+            for(i = 0; i < 4; i++) {
+                int times = spd->damage[i].value;
+                if(spd->effectflags & SpecialType::FX_USE_LEV)
+                    times *= pMt->specialLev;
+                int realtimes = spd->damage[i].minnum + getrandom(times) +
+                    getrandom(times);
+                num  = def->DoAnAttack(pMt->mountSpecial, realtimes, a->race,
+                        spd->damage[i].type, pMt->specialLev,
+                        spd->damage[i].flags, spd->damage[i].dclass,
+                        spd->damage[i].effect, 0, attackers, a->inform, this);
+                if(num != -1) {
+                    if(tot == -1) tot = num;
+                    else tot += num;
+                }
+            }
+            if(tot != -1) {
+                AddLine(a->name + " " + spd->spelldesc + ", " +
+                        spd->spelldesc2 + tot + spd->spelltarget + ".");
+            }
+        }
+    }
+    if(!def->NumAlive()) return;
 
-	int numAttacks = a->attacks;
-	if(a->attacks < 0) {
-		if(round % ( -1 * a->attacks ) == 0)  //This used to be 1 (ie xbow attacks in round 1,3,5. Setting it to zero means xbow attacks in rounds 2,4,6)
-			numAttacks = 1;
-		else
-			numAttacks = 0;
-	} else if(ass && (Globals->MAX_ASSASSIN_FREE_ATTACKS > 0) &&
-			(numAttacks > Globals->MAX_ASSASSIN_FREE_ATTACKS)) {
-		numAttacks = Globals->MAX_ASSASSIN_FREE_ATTACKS;
-	}
+    int numAttacks = a->attacks;
+    if(a->attacks < 0) {
+        if(round % ( -1 * a->attacks ) == 0)  //This used to be 1 (ie xbow attacks in round 1,3,5. Setting it to zero means xbow attacks in rounds 2,4,6)
+            numAttacks = 1;
+        else
+            numAttacks = 0;
+    } else if(ass && (Globals->MAX_ASSASSIN_FREE_ATTACKS > 0) &&
+            (numAttacks > Globals->MAX_ASSASSIN_FREE_ATTACKS)) {
+        numAttacks = Globals->MAX_ASSASSIN_FREE_ATTACKS;
+    }
 
-	int strength = 1;
-	int frenzy = 0;
-	if((ItemDefs[a->race].type & IT_MAN)) frenzy = a->unit->GetSkill(S_FRENZY); //used to upgrade attack below
-	if(frenzy > 1) strength = frenzy;
-	
-	int kills = 0;	
-	
-	for (int i = 0; i < numAttacks; i++) {
-		WeaponType *pWep = NULL;
-		if(a->weapon != -1)
-			pWep = FindWeapon(ItemDefs[a->weapon].abr);
+    int strength = 1;
+    int frenzy = 0;
+    if((ItemDefs[a->race].type & IT_MAN)) frenzy = a->unit->GetSkill(S_FRENZY); //used to upgrade attack below
+    if(frenzy > 1) strength = frenzy;
+    
+    int kills = 0;    
+    
+    for (int i = 0; i < numAttacks; i++) {
+        WeaponType *pWep = NULL;
+        if(a->weapon != -1)
+            pWep = FindWeapon(ItemDefs[a->weapon].abr);
 
-		int flags = 0;
-		int attackType = a->attacktype; //this is set to weapon attack type in soldier::soldier
-		int mountBonus = 0;
-		int attackClass = SLASHING;
-		if(pWep) {
-			flags = pWep->flags;
-			mountBonus = pWep->mountBonus;
-			attackClass = pWep->weapClass;
-		}
+        int flags = 0;
+        int attackType = a->attacktype; //this is set to weapon attack type in soldier::soldier
+        int mountBonus = 0;
+        int attackClass = SLASHING;
+        if(pWep) {
+            flags = pWep->flags;
+            mountBonus = pWep->mountBonus;
+            attackClass = pWep->weapClass;
+        }
 
-		
-		if(frenzy) { //upgrade attack type by 1.
-		    if(attackClass != ARMORPIERCING) attackClass = ARMORPIERCING;
-		    else attackClass = NUM_WEAPON_CLASSES;
+        
+        if(frenzy) { //upgrade attack type by 1.
+            if(attackClass != ARMORPIERCING) attackClass = ARMORPIERCING;
+            else attackClass = NUM_WEAPON_CLASSES;
         }
         
-		kills += def->DoAnAttack(NULL, 1, a->race, attackType, a->askill, flags, attackClass,
-				NULL, mountBonus, attackers, a->inform, this, strength);
+        kills += def->DoAnAttack(NULL, 1, a->race, attackType, a->askill, flags, attackClass,
+                NULL, mountBonus, attackers, a->inform, this, strength);
 #ifdef DEBUG2
 cout << ".";
 #endif
-		if (!def->NumAlive()) break;
-	}
-	
-	if(frenzy) AddLine(AString(*a->unit->name) + " attacks with unholy strength, killing " + kills);
+        if (!def->NumAlive()) break;
+    }
+    
+    if(frenzy) AddLine(AString(*a->unit->name) + " attacks with unholy strength, killing " + kills);
 }
 
 void Battle::FormationsPhase(Army * armya, Army * armyb, int regtype, int bias, int ambush, int ass)
@@ -808,7 +808,7 @@ void Battle::FormationsPhase(Army * armya, Army * armyb, int regtype, int bias, 
 Awrite("Updating Shields");
 #endif
     // Update both army's shields
-   	armya->shields.DeleteAll();
+       armya->shields.DeleteAll();
     armyb->shields.DeleteAll();
     UpdateShields(armya, armyb);
     UpdateShields(armyb, armya);
@@ -920,30 +920,30 @@ Awrite("Clearing Empty Engagements");
 
 void Battle::GetSpoils(AList * losers, ItemList *spoils, int ass)
 {
-	forlist(losers) {
-		Unit * u = ((Location *) elem)->unit;
-		int numalive = u->GetSoldiers();
-		int numdead = u->losses;
-		if(ass && numdead == 0) {
+    forlist(losers) {
+        Unit * u = ((Location *) elem)->unit;
+        int numalive = u->GetSoldiers();
+        int numdead = u->losses;
+        if(ass && numdead == 0) {
             numdead++;  //assassinations with resurrected targets still get spoils.
             numalive --;
         }
-		forlist(&u->items) {
-			Item * i = (Item *) elem;
-			if(IsSoldier(i->type)) continue;
-			// New rule:  Assassins with RINGS cannot get AMTS in spoils
-			// This rule is only meaningful with Proportional AMTS usage
-			// is enabled, otherwise it has no effect.
-			if((ass == 2) && (i->type == I_AMULETOFTS)) continue;
-			float percent = (float)numdead/(float)(numalive+numdead);
-			int num = (int)(i->num * percent);
-			int num2 = (num + getrandom(2))/2;
-			//if some types of items should never be lost, set num2 = num here for those item types.
-			if(ItemDefs[i->type].flags & ItemType::NEVERLOST) num2 = num;
-			spoils->SetNum(i->type, spoils->GetNum(i->type) + num2);
-			u->items.SetNum(i->type, i->num - num);
-		}
-	}
+        forlist(&u->items) {
+            Item * i = (Item *) elem;
+            if(IsSoldier(i->type)) continue;
+            // New rule:  Assassins with RINGS cannot get AMTS in spoils
+            // This rule is only meaningful with Proportional AMTS usage
+            // is enabled, otherwise it has no effect.
+            if((ass == 2) && (i->type == I_AMULETOFTS)) continue;
+            float percent = (float)numdead/(float)(numalive+numdead);
+            int num = (int)(i->num * percent);
+            int num2 = (num + getrandom(2))/2;
+            //if some types of items should never be lost, set num2 = num here for those item types.
+            if(ItemDefs[i->type].flags & ItemType::NEVERLOST) num2 = num;
+            spoils->SetNum(i->type, spoils->GetNum(i->type) + num2);
+            u->items.SetNum(i->type, i->num - num);
+        }
+    }
 }
 
 void Battle::WriteSides(ARegion * r, Unit * att, Unit * tar, AList * atts,
@@ -951,40 +951,40 @@ void Battle::WriteSides(ARegion * r, Unit * att, Unit * tar, AList * atts,
 {
   if (ass) {
     AddLine(*att->name + " attempts to assassinate " + *tar->name
-	    + " in " + r->ShortPrint( pRegs ) + "!");
+        + " in " + r->ShortPrint( pRegs ) + "!");
   } else {
     AddLine(*att->name + " attacks " + *tar->name + " in " +
-	    r->ShortPrint( pRegs ) + "!");
+        r->ShortPrint( pRegs ) + "!");
   }
   AddLine("");
 
   int dobs = 0;
   int aobs = 0;
   {
-	  forlist(defs) {
-		  int a = ((Location *)elem)->unit->GetAttribute("observation");
-		  if(a > dobs) dobs = a;
-	  }
+      forlist(defs) {
+          int a = ((Location *)elem)->unit->GetAttribute("observation");
+          if(a > dobs) dobs = a;
+      }
   }
 
   AddLine("Attackers:");
   {
-	  forlist(atts) {
-		  int a = ((Location *)elem)->unit->GetAttribute("observation");
-		  if(a > aobs) aobs = a;
-		  AString * temp = ((Location *) elem)->unit->BattleReport(dobs);
-		  AddLine(*temp);
-		  delete temp;
-	  }
+      forlist(atts) {
+          int a = ((Location *)elem)->unit->GetAttribute("observation");
+          if(a > aobs) aobs = a;
+          AString * temp = ((Location *) elem)->unit->BattleReport(dobs);
+          AddLine(*temp);
+          delete temp;
+      }
   }
   AddLine("");
   AddLine("Defenders:");
   {
-	  forlist(defs) {
-		  AString * temp = ((Location *) elem)->unit->BattleReport(aobs);
-		  AddLine(*temp);
-		  delete temp;
-	  }
+      forlist(defs) {
+          AString * temp = ((Location *) elem)->unit->BattleReport(aobs);
+          AddLine(*temp);
+          delete temp;
+      }
   }
   AddLine("");
 }
@@ -992,10 +992,10 @@ void Battle::WriteSides(ARegion * r, Unit * att, Unit * tar, AList * atts,
 void Battle::WriteTerrainMessage(int regtype)
 {
     AString temp;
-	int terrainflags = TerrainDefs[regtype].flags;
- 	if ((terrainflags & TerrainType::FLYINGMOUNTS) && (terrainflags & TerrainType::RIDINGMOUNTS)) {
-    	if (!(terrainflags & TerrainType::FLYINGLIMITED) && !(terrainflags & TerrainType::RIDINGLIMITED))
- 	        temp = "The terrain allows riding and flying.";
+    int terrainflags = TerrainDefs[regtype].flags;
+     if ((terrainflags & TerrainType::FLYINGMOUNTS) && (terrainflags & TerrainType::RIDINGMOUNTS)) {
+        if (!(terrainflags & TerrainType::FLYINGLIMITED) && !(terrainflags & TerrainType::RIDINGLIMITED))
+             temp = "The terrain allows riding and flying.";
         else if (!(terrainflags & TerrainType::FLYINGLIMITED) && (terrainflags & TerrainType::RIDINGLIMITED))
             temp = "The terrain allows flying and limited riding. Riding soldiers do not receive a combat bonus due to their riding skill.";
         else if ((terrainflags & TerrainType::FLYINGLIMITED) && !(terrainflags & TerrainType::RIDINGLIMITED))

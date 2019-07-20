@@ -34,56 +34,56 @@ class Battle;
 #include "items.h"
 
 enum {
-	ASS_NONE,
-	ASS_SUCC,
-	ASS_FAIL
+    ASS_NONE,
+    ASS_SUCC,
+    ASS_FAIL
 };
 
 enum {
-	BATTLE_IMPOSSIBLE,
-	BATTLE_LOST,
-	BATTLE_WON,
-	BATTLE_DRAW
+    BATTLE_IMPOSSIBLE,
+    BATTLE_LOST,
+    BATTLE_WON,
+    BATTLE_DRAW
 };
 
 class BattlePtr : public AListElem
 {
-	public:
-		Battle * ptr;
+    public:
+        Battle * ptr;
 };
 
 class Battle : public AListElem
 {
-	public:
-		Battle();
-		~Battle();
+    public:
+        Battle();
+        ~Battle();
 
-		void Report(Areport *,Faction *);
-		void AddLine(const AString &);
+        void Report(Areport *,Faction *);
+        void AddLine(const AString &);
 
-		int Run(ARegion *, Unit *, AList *, Unit *, AList *, int ass,
-				ARegionList *pRegs);
-		void FreeRound(Army *,Army *, int ass = 0);
-		void NormalRound(int,Army *,Army *);
-		void DoAttack(int round, Soldier *a, Army *attackers, Army *def,
-				int behind, int ass = 0);
+        int Run(ARegion *, Unit *, AList *, Unit *, AList *, int ass,
+                ARegionList *pRegs);
+        void FreeRound(Army *,Army *, int ass = 0);
+        void NormalRound(int,Army *,Army *);
+        void DoAttack(int round, Soldier *a, Army *attackers, Army *def,
+                int behind, int ass = 0);
 
-		void GetSpoils(AList *,ItemList *, int);
+        void GetSpoils(AList *,ItemList *, int);
 
-		//
-		// These functions should be implemented in specials.cpp
-		//
-		void UpdateShields(Army *);
-		void DoSpecialAttack( int round, Soldier *a, Army *attackers,
-				Army *def, int behind );
+        //
+        // These functions should be implemented in specials.cpp
+        //
+        void UpdateShields(Army *);
+        void DoSpecialAttack( int round, Soldier *a, Army *attackers,
+                Army *def, int behind );
 
-		void WriteSides(ARegion *,Unit *,Unit *,AList *,AList *,int,
-				ARegionList *pRegs );
+        void WriteSides(ARegion *,Unit *,Unit *,AList *,AList *,int,
+                ARegionList *pRegs );
 
-		int assassination;
-		Faction * attacker; /* Only matters in the case of an assassination */
-		AString * asstext;
-		AList text;
+        int assassination;
+        Faction * attacker; /* Only matters in the case of an assassination */
+        AString * asstext;
+        AList text;
 };
 
 #endif

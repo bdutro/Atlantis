@@ -64,10 +64,10 @@ char *mn[] = {
 char ** MonthNames = mn;
 
 char *weath[] = {
-	"clear",
-	"winter",
-	"monsoon season",
-	"blizzard"
+    "clear",
+    "winter",
+    "monsoon season",
+    "blizzard"
 };
 
 char ** SeasonNames = weath;

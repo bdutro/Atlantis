@@ -40,10 +40,10 @@ class Formation;
 #include "helper.h"
 
 enum {
-	FORM_FOOT,
-	FORM_RIDE,
-	FORM_FLY,
-	FORM_ANY
+    FORM_FOOT,
+    FORM_RIDE,
+    FORM_FLY,
+    FORM_ANY
 };
 
 enum {
@@ -64,75 +64,75 @@ enum {
 
 class Formation
 {
-	public:
-		Formation();
-		~Formation();
+    public:
+        Formation();
+        ~Formation();
 
-		void SetupFormation(int formnum, int count);
+        void SetupFormation(int formnum, int count);
 
-		int bonus;      // modifies the attack chance from 50% to 67% (+1) or 33% (-1) etc.
-		int tempbonus;  // this only applies to the formation currently attacking
-		
-		//access methods		
-	    int GetNumMen() const { return nummen; }
-	    int GetSize() const { return size; }
-	    void AddSize(int addsize) {size += addsize; }
-	    int Type() const { return type; }
-	    int Behind() const { return behind; }
-	    int Flank() const { return flank; }
-	    int Reserve() const { return reserve; }
-	    int IsConcealed() const { return concealed; }
-	    void SetConcealed(int state) { concealed = state; }
-	    int CanAttack() const { return canattack; }
-	    void SetTemporaryBonus(int b);
-	    void RemoveTemporaryBonus();
-	    Soldier * GetSoldier(int soldiernum) const;
-	    Soldier * GetAttacker(int soldiernum);
-	    int GetNonIllusionSize() const;
-	    int CountMages() const;
-	    Soldier * GetMage(int);
-	    
-	    
-	    //modification methods
-	    void AddSoldier(Soldier * pSoldier);
-	    void AddCanAttackSoldier(Soldier * pSoldier);
-	    Soldier * RemoveSoldier(int soldiernum);
-	    void TransferSoldier(int, Formation * pToForm);
-	    void MoveSoldiers(Formation * pToForm);
-	    int MoveSoldiers(Formation * pToForm, int sizetomove, int condition=0);
-	    void Kill(int soldiernum, Army *itsarmy, int numhits = 1);
+        int bonus;      // modifies the attack chance from 50% to 67% (+1) or 33% (-1) etc.
+        int tempbonus;  // this only applies to the formation currently attacking
+        
+        //access methods        
+        int GetNumMen() const { return nummen; }
+        int GetSize() const { return size; }
+        void AddSize(int addsize) {size += addsize; }
+        int Type() const { return type; }
+        int Behind() const { return behind; }
+        int Flank() const { return flank; }
+        int Reserve() const { return reserve; }
+        int IsConcealed() const { return concealed; }
+        void SetConcealed(int state) { concealed = state; }
+        int CanAttack() const { return canattack; }
+        void SetTemporaryBonus(int b);
+        void RemoveTemporaryBonus();
+        Soldier * GetSoldier(int soldiernum) const;
+        Soldier * GetAttacker(int soldiernum);
+        int GetNonIllusionSize() const;
+        int CountMages() const;
+        Soldier * GetMage(int);
+        
+        
+        //modification methods
+        void AddSoldier(Soldier * pSoldier);
+        void AddCanAttackSoldier(Soldier * pSoldier);
+        Soldier * RemoveSoldier(int soldiernum);
+        void TransferSoldier(int, Formation * pToForm);
+        void MoveSoldiers(Formation * pToForm);
+        int MoveSoldiers(Formation * pToForm, int sizetomove, int condition=0);
+        void Kill(int soldiernum, Army *itsarmy, int numhits = 1);
 
-		void Reset();
-		void ResetHeal() const;
-		void Regenerate(Battle *b) const;
+        void Reset();
+        void ResetHeal() const;
+        void Regenerate(Battle *b) const;
 
-		//Magic Targetting:
-		int CheckSpecialTarget(char *, int soldiernum) const; //This is in specials.cpp
-		
-		//Formation Phase methods
-		int Engaged(Army *itsarmy) const;
-		void Sort(Army *itsarmy, Battle *b, int regtype);
-		
-		int NumMeleeAttacks() const;
-		int NumRangedAttacks() const;
-		float MeleeAttackLevel() const;
-		float MeleeDefenceLevel() const;
-		
-		
-  		
-	private:	
-	//ultimately, type, behind, flank and reserve could all be determined from number,
-	//so could be got rid of to save 16*19*2 = 608 bytes of memory ;)
-		SoldierPtr * pSoldiers;
-		int nummen;
+        //Magic Targetting:
+        int CheckSpecialTarget(char *, int soldiernum) const; //This is in specials.cpp
+        
+        //Formation Phase methods
+        int Engaged(Army *itsarmy) const;
+        void Sort(Army *itsarmy, Battle *b, int regtype);
+        
+        int NumMeleeAttacks() const;
+        int NumRangedAttacks() const;
+        float MeleeAttackLevel() const;
+        float MeleeDefenceLevel() const;
+        
+        
+          
+    private:    
+    //ultimately, type, behind, flank and reserve could all be determined from number,
+    //so could be got rid of to save 16*19*2 = 608 bytes of memory ;)
+        SoldierPtr * pSoldiers;
+        int nummen;
         int size;  //number of hits in the formation (including illusions).
-		int lastkilled; //don't think this is used yet?
+        int lastkilled; //don't think this is used yet?
         int type; //should be constant after creation
         int behind; //should be constant after creation
         int canattack;
-		int flank; //should be constant after creation
-		int concealed; // whether formation is concealed (for flanking maneuvres only).
-		int reserve;
-		int number; //should be constant after creation. Don't think this is needed?
+        int flank; //should be constant after creation
+        int concealed; // whether formation is concealed (for flanking maneuvres only).
+        int reserve;
+        int number; //should be constant after creation. Don't think this is needed?
 };
 #endif

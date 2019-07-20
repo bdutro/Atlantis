@@ -32,14 +32,14 @@
 
 void Game::CreateVMons()
 {
-	if (!Globals->LAIR_MONSTERS_EXIST) return;
+    if (!Globals->LAIR_MONSTERS_EXIST) return;
 
-	return;
+    return;
 }
 
 void Game::GrowVMons()
 {
-	if (!Globals->LAIR_MONSTERS_EXIST) return;
+    if (!Globals->LAIR_MONSTERS_EXIST) return;
 
-	return;
+    return;
 }

@@ -8,8 +8,7 @@ directiondict = {'North':'n', 'Northeast':'ne', 'Northwest':'nw',
 attitudes = ['hostile', 'unfriendly', 'neutral', 'friendly', 'ally',]
                 
 def generateturn(report, template):
-    """Given a report and a template, return a set of orders 
-	   as a string."""
+    """Given a report and a template, return a set of orders as a string."""
     orders = ''
     maxfactionfound = 0
     
@@ -19,7 +18,7 @@ def generateturn(report, template):
     temp = ''
     for line in report:
         if len(line) > 2 and line[-2] in ['.','-',':']: 
-        	# -2 since we'll have \n's at the end
+            # -2 since we'll have \n's at the end
             withoutspaces = re.sub('\s+',' ',temp+line)
             tempreport.append(withoutspaces)
             temp=''

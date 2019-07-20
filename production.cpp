@@ -31,95 +31,95 @@
 
 Production::Production()
 {
-	itemtype = -1;
-	amount = 0;
-	baseamount = 0;
-	productivity = 0;
-	skill = -1;
+    itemtype = -1;
+    amount = 0;
+    baseamount = 0;
+    productivity = 0;
+    skill = -1;
 }
 
 Production::Production(int it, int maxamt)
 {
-	itemtype = it;
-	amount = maxamt;
-	if (Globals->RANDOM_ECONOMY)
-		amount += getrandom(maxamt);
-	baseamount = amount;
-	productivity = 10;
-	AString skname = ItemDefs[it].pSkill;
-	skill = LookupSkill(&skname);
+    itemtype = it;
+    amount = maxamt;
+    if (Globals->RANDOM_ECONOMY)
+        amount += getrandom(maxamt);
+    baseamount = amount;
+    productivity = 10;
+    AString skname = ItemDefs[it].pSkill;
+    skill = LookupSkill(&skname);
 }
 
 void Production::Writeout(Aoutfile *f)
 {
-	if (itemtype != -1) f->PutStr(ItemDefs[itemtype].abr);
-	else f->PutStr("NO_ITEM");
-	f->PutInt(amount);
-	f->PutInt(baseamount);
-	if (itemtype == I_SILVER) {
-		if (skill != -1) f->PutStr(SkillDefs[skill].abbr);
-		else f->PutStr("NO_SKILL");
-	}
-	f->PutInt(productivity);
+    if (itemtype != -1) f->PutStr(ItemDefs[itemtype].abr);
+    else f->PutStr("NO_ITEM");
+    f->PutInt(amount);
+    f->PutInt(baseamount);
+    if (itemtype == I_SILVER) {
+        if (skill != -1) f->PutStr(SkillDefs[skill].abbr);
+        else f->PutStr("NO_SKILL");
+    }
+    f->PutInt(productivity);
 }
 
 void Production::Readin(Ainfile *f)
 {
-	AString *temp;
+    AString *temp;
 
-	temp = f->GetStr();
-	itemtype = LookupItem(temp);
-	delete temp;
+    temp = f->GetStr();
+    itemtype = LookupItem(temp);
+    delete temp;
 
-	amount = f->GetInt();
-	baseamount = f->GetInt();
+    amount = f->GetInt();
+    baseamount = f->GetInt();
 
-	if (itemtype == I_SILVER) temp = f->GetStr();
-	else temp = new AString(ItemDefs[itemtype].pSkill);
-	skill = LookupSkill(temp);
-	delete temp;
+    if (itemtype == I_SILVER) temp = f->GetStr();
+    else temp = new AString(ItemDefs[itemtype].pSkill);
+    skill = LookupSkill(temp);
+    delete temp;
 
-	productivity = f->GetInt();
+    productivity = f->GetInt();
 }
 
 AString Production::WriteReport()
 {
-	AString temp = ItemString(itemtype, amount);
-	return temp;
+    AString temp = ItemString(itemtype, amount);
+    return temp;
 }
 
 void ProductionList::Writeout(Aoutfile *f)
 {
-	f->PutInt(Num());
-	forlist(this) ((Production *) elem)->Writeout(f);
+    f->PutInt(Num());
+    forlist(this) ((Production *) elem)->Writeout(f);
 }
 
 void ProductionList::Readin(Ainfile *f)
 {
-	int n = f->GetInt();
-	for (int i=0; i<n; i++) {
-		Production *p = new Production;
-		p->Readin(f);
-		Add(p);
-	}
+    int n = f->GetInt();
+    for (int i=0; i<n; i++) {
+        Production *p = new Production;
+        p->Readin(f);
+        Add(p);
+    }
 }
-	
+    
 Production *ProductionList::GetProd(int t, int s)
 {
-	forlist(this) {
-		Production *p = (Production *) elem;
-		if (p->itemtype == t && p->skill == s) return p;
-	}
-	return 0;
+    forlist(this) {
+        Production *p = (Production *) elem;
+        if (p->itemtype == t && p->skill == s) return p;
+    }
+    return 0;
 }
 
 void ProductionList::AddProd(Production *p)
 {
-	Production *p2 = GetProd(p->itemtype, p->skill);
-	if (p2) {
-		Remove(p2);
-		delete p2;
-	}
-	
-	Add(p);
+    Production *p2 = GetProd(p->itemtype, p->skill);
+    if (p2) {
+        Remove(p2);
+        delete p2;
+    }
+    
+    Add(p);
 }
