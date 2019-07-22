@@ -27,10 +27,13 @@
 
 #include <functional>
 #include <map>
-using namespace std;
+#include <vector>
+#include <list>
+#include <memory>
 
 class Soldier;
 class Army;
+class Location;
 
 #include "unit.h"
 #include "alist.h"
@@ -41,7 +44,8 @@ class Army;
 
 class Soldier {
     public:
-        Soldier(Unit *unit, Object *object, int regType, int race, int ass=0);
+        using Handle = std::shared_ptr<Soldier>;
+        Soldier(const Unit::Handle& unit, const Object::Handle& object, int regType, int race, int ass=0);
 
         void SetupSpell();
         void SetupCombatItems();
@@ -63,13 +67,13 @@ class Soldier {
 
         /* Unit info */
         AString name;
-        Unit * unit;
+        Unit::WeakHandle unit;
         int race;
         int riding;
         int building;
 
         /* Healing information */
-        int healing;
+        unsigned int healing;
         int healtype;
         int healitem;
         int canbehealed;
@@ -95,62 +99,65 @@ class Soldier {
         int amuletofi;
 
         /* Effects */
-        map< char const *, int > effects;
+        std::map< char const *, int > effects;
 };
-
-typedef Soldier * SoldierPtr;
 
 class Army
 {
     public:
-        Army(Unit *,AList *,int,int = 0);
-        ~Army();
+        using Handle = std::shared_ptr<Army>;
 
-        void WriteLosses(Battle *);
-        void Lose(Battle *,ItemList *);
-        void Win(Battle *,ItemList *);
-        void Tie(Battle *);
-        int CanBeHealed();
-        void DoHeal(Battle *);
-        void DoHealLevel(Battle *,int,int useItems );
-        void Regenerate(Battle *);
+        Army(const Unit::Handle&, const std::list<std::shared_ptr<Location>>&, int, int = 0);
+        ~Army() = default;
 
-        void GetMonSpoils(ItemList *,int, int);
+        void WriteLosses(Battle&);
+        void Lose(Battle&, ItemList&);
+        void Win(Battle&, const ItemList&);
+        void Tie(Battle&);
+        bool CanBeHealed();
+        void DoHeal(Battle&);
+        void DoHealLevel(Battle&,int,int useItems );
+        void Regenerate(Battle&);
 
-        int Broken();
-        int NumAlive();
-        int NumSpoilers();
-        int CanAttack();
-        int NumFront();
-        Soldier *GetAttacker( int, int & );
-        int GetEffectNum(char const *effect);
-        int GetTargetNum(char const *special = NULL);
-        Soldier *GetTarget( int );
+        void GetMonSpoils(ItemList&, int, size_t);
+
+        bool Broken();
+        size_t NumAlive();
+        size_t NumSpoilers();
+        size_t CanAttack();
+        size_t NumFront();
+        Soldier::Handle GetAttacker(size_t, bool &);
+        ssize_t GetEffectNum(char const *effect);
+        ssize_t GetTargetNum(char const *special = NULL);
+        Soldier::Handle GetTarget( size_t );
         int RemoveEffects(int num, char const *effect);
         int DoAnAttack(char const *special, int numAttacks, int attackType,
                 int attackLevel, int flags, int weaponClass, char const *effect,
-                int mountBonus, Soldier *attacker);
-        void Kill(int);
+                int mountBonus, const Soldier::Handle& attacker);
+        void Kill(size_t);
         void Reset();
 
         //
         // These funcs are in specials.cpp
         //
-        int CheckSpecialTarget(char const *,int);
+        bool CheckSpecialTarget(char const *, size_t);
 
-        SoldierPtr * soldiers;
-        Unit * leader;
+        std::vector<Soldier::Handle> soldiers;
+        Unit::WeakHandle leader;
         ShieldList shields;
         int round;
         int tac;
-        int canfront;
-        int canbehind;
-        int notfront;
-        int notbehind;
-        int count;
+        size_t canfront;
+        size_t canbehind;
+        size_t notfront;
+        size_t notbehind;
+        size_t count;
 
         int hitsalive; // current number of "living hits"
         int hitstotal; // Number of hits at start of battle.
+
+    private:
+        size_t BuildArmy_(const std::list<std::shared_ptr<Location>>& locs, int regtype, int ass);
 };
 
 #endif

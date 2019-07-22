@@ -688,7 +688,7 @@ void Game::Run1BuildOrder(ARegion *r, Object *obj, Unit *u)
 /* Alternate processing for building item-type ship
  * objects and instantiating fleets.
  */
-void Game::RunBuildShipOrder(ARegion * r,Object * obj,Unit * u)
+void Game::RunBuildShipOrder(ARegion * r, Object *, Unit * u)
 {
     int ship, skill, level, maxbuild, unfinished, output, percent;
     AString skname;
@@ -1540,7 +1540,7 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
     } // end tactics check
     
     // adjust teaching for study rate
-    taughtdays = ((long int) o->days * u->skills.GetStudyRate(sk, u->GetMen()) / 30);
+    taughtdays = static_cast<int>(static_cast<long int>(o->days) * u->skills.GetStudyRate(sk, u->GetMen()) / 30);
 
     days = u->skills.GetStudyRate(sk, u->GetMen()) * u->GetMen() + taughtdays;
 

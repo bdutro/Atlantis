@@ -28,8 +28,6 @@
 #include <iostream>
 #include "alist.h"
 
-using namespace std;
-
 class AString : public AListElem {
     friend ostream & operator <<(ostream &os, const AString &);
     friend istream & operator >>(istream &is, AString &);

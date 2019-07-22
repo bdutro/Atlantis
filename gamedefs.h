@@ -26,17 +26,28 @@
 #ifndef GAME_DEFS
 #define GAME_DEFS
 
+#include <array>
+
 #include "helper.h"
 
 /* Directions */
-enum {
-    D_NORTH,
-    D_NORTHEAST,
-    D_SOUTHEAST,
-    D_SOUTH,
-    D_SOUTHWEST,
-    D_NORTHWEST,
-    NDIRS
+enum class Directions : uint8_t {
+    D_NORTH = 0,
+    D_NORTHEAST = 1,
+    D_SOUTHEAST = 2,
+    D_SOUTH = 3,
+    D_SOUTHWEST = 4,
+    D_NORTHWEST = 5,
+    NDIRS = 6
+};
+
+constexpr std::array<Directions, static_cast<size_t>(Directions::NDIRS)> ALL_DIRECTIONS = {
+    Directions::D_NORTH,
+    Directions::D_NORTHEAST,
+    Directions::D_SOUTHEAST,
+    Directions::D_SOUTH,
+    Directions::D_SOUTHWEST,
+    Directions::D_NORTHWEST
 };
 
 extern char const **DirectionStrs;
@@ -59,7 +70,7 @@ extern int allowedQuartermastersSize;
 extern int *allowedTacticians;
 extern int allowedTacticiansSize;
 
-extern int NUMBATTLEITEMS;
+extern unsigned int NUMBATTLEITEMS;
 extern int NUMARMORS;
 extern int NUMWEAPONS;
 extern int NUMMOUNTS;
@@ -184,20 +195,20 @@ public:
 
     int TIMES_REWARD;
 
-    int TOWNS_EXIST;
-    int LEADERS_EXIST;
+    bool TOWNS_EXIST;
+    bool LEADERS_EXIST;
     int SKILL_LIMIT_NONLEADERS;
     int MAGE_NONLEADERS;
-    int RACES_EXIST;
-    int GATES_EXIST;
-    int FOOD_ITEMS_EXIST;
+    bool RACES_EXIST;
+    bool GATES_EXIST;
+    bool FOOD_ITEMS_EXIST;
     int COASTAL_FISH;
-    int CITY_MONSTERS_EXIST;
-    int WANDERING_MONSTERS_EXIST;
-    int LAIR_MONSTERS_EXIST;
-    int WEATHER_EXISTS;
+    bool CITY_MONSTERS_EXIST;
+    bool WANDERING_MONSTERS_EXIST;
+    bool LAIR_MONSTERS_EXIST;
+    bool WEATHER_EXISTS;
     int OPEN_ENDED;
-    int NEXUS_EXISTS;
+    bool NEXUS_EXISTS;
     int CONQUEST_GAME;
 
     //
@@ -261,7 +272,7 @@ public:
     int FLIGHT_OVER_WATER;
 
     // Do starting cities exist?
-    int START_CITIES_EXIST;
+    bool START_CITIES_EXIST;
 
     //
     // Are starting cities safe regions?  Also controls if guards in
@@ -294,7 +305,7 @@ public:
     //
     // Are we allowing apprentices?
     //
-    int APPRENTICES_EXIST;
+    bool APPRENTICES_EXIST;
     // And what are they called?
     char const *APPRENTICE_NAME;
 
@@ -326,13 +337,13 @@ public:
     int ICOSAHEDRAL_WORLD;
 
     // How many levels of the underworld do we want?
-    int UNDERWORLD_LEVELS;
+    unsigned int UNDERWORLD_LEVELS;
 
     // How many levels of the underdeep do we want?
-    int UNDERDEEP_LEVELS;
+    unsigned int UNDERDEEP_LEVELS;
 
     // Is there an abyss level?
-    int ABYSS_LEVEL;
+    unsigned int ABYSS_LEVEL;
 
     // Town probability; 100 = default
     int TOWN_PROBABILITY;
@@ -356,10 +367,10 @@ public:
     int LESS_ARCTIC_TOWNS;
     
     // Percent of surface level covered with ocean.
-    int OCEAN;
+    unsigned int OCEAN;
     
     // Size factor for continent creation.
-    int CONTINENT_SIZE;
+    unsigned int CONTINENT_SIZE;
     
     // Granularity of terrain - default setting is 0.
     // A value of 1 means maximum variability,
@@ -381,12 +392,12 @@ public:
     // that thin strips of land will be 'cut'. This chance is
     // doubled when a region has exactly four adjacent sea
     // areas. (default is 30, 0 means no removal)
-    int SEVER_LAND_BRIDGES;
+    unsigned int SEVER_LAND_BRIDGES;
 
     // Maximum Size of inland seas to fill in. WARNING: game
     // creation time will rise exponentially with this value.
     // Recommended: 8-12
-    int SEA_LIMIT;
+    unsigned int SEA_LIMIT;
 
     // Lake Effect on Wages Options
     // Lakes will add one to adjacent regions wages if set
@@ -528,7 +539,7 @@ public:
     // Set MONSTER_SPOILS_RECOVERY > 0 to set a time in months over which
     // monster spoils are slowly regained.
     // This has no effect unles MONSTER_NO_SPOILS is also set.
-    int MONSTER_SPOILS_RECOVERY;
+    size_t MONSTER_SPOILS_RECOVERY;
 
     // Use this to limit the number of attacks an assassin gets in the free
     // round.
@@ -664,7 +675,7 @@ public:
     int FRACTIONAL_WEIGHT;
 
     // Use grow algorithm for races?
-    int GROW_RACES;
+    unsigned int GROW_RACES;
 
     // Enable Creation of Towns mid-game, migration and population dynamics?
     // NOTE: not implemented yet.
@@ -698,7 +709,7 @@ public:
     // Turn on to make gate numbers non-contiguous, and spread
     // over a wider range.  This option will also turn off reporting
     // of the total number of gates in the game
-    int DISPERSE_GATE_NUMBERS;
+    bool DISPERSE_GATE_NUMBERS;
 
     // Chance of men killed by undead coming back from the grave
     // as undead themselves

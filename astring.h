@@ -25,21 +25,22 @@
 #ifndef ASTRING_CLASS
 #define ASTRING_CLASS
 
+#include <memory>
 #include <iostream>
 #include "alist.h"
 
-using namespace std;
-
 class AString : public AListElem {
-    friend ostream & operator <<(ostream &os, const AString &);
-    friend istream & operator >>(istream &is, AString &);
+    friend std::ostream & operator <<(std::ostream &os, const AString &);
+    friend std::istream & operator >>(std::istream &is, AString &);
 public:
+    using Handle = std::shared_ptr<AString>;
 
     AString();
     AString(char *);
     AString(const char *);
     AString(int);
     AString(unsigned int);
+    AString(size_t);
     AString(char);
     AString(const AString &);
     ~AString();
@@ -55,18 +56,18 @@ public:
     AString & operator=(const char *);
 
     char *Str();
-    int Len();
+    size_t Len();
 
     AString *gettoken();
     int getat();
     AString *getlegal();
-    AString *Trunc(int, int back=30);
+    AString *Trunc(size_t, size_t back=30);
     int value();
     AString *StripWhite();
 
 private:
 
-    int len;
+    size_t len;
     char *str;
     int isEqual(const char *);
 };

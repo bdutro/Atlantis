@@ -38,7 +38,12 @@
 
 class Unit;
 class UnitId;
+class Object;
 
+#include <memory>
+#include <set>
+#include <string>
+#include "unitid.h"
 #include "faction.h"
 #include "alist.h"
 #include "gameio.h"
@@ -46,9 +51,6 @@ class UnitId;
 #include "fileio.h"
 #include "skills.h"
 #include "items.h"
-#include "object.h"
-#include <set>
-#include <string>
 
 enum {
     GUARD_NONE,
@@ -99,26 +101,12 @@ enum {
 #define FLAG_SWIMSPOILS            0x2000
 #define FLAG_SAILSPOILS            0x4000
 
-class UnitId : public AListElem {
-    public:
-        UnitId();
-        ~UnitId();
-        AString Print();
-
-        int unitnum; /* if 0, it is a new unit */
-        int alias;
-        int faction;
-};
-
-class UnitPtr : public AListElem {
-    public:
-        Unit * ptr;
-};
-UnitPtr *GetUnitList(AList *, Unit *);
-
-class Unit : public AListElem
+class Unit
 {
     public:
+        using Handle = std::shared_ptr<Unit>;
+        using WeakHandle = std::weak_ptr<Unit>;
+
         Unit();
         Unit(int,Faction *,int = 0);
         ~Unit();
@@ -130,8 +118,8 @@ class Unit : public AListElem
         void Readin( Ainfile *f, AList *, ATL_VER v );
 
         AString SpoilsReport(void);
-        int CanGetSpoil(Item *i);
-        void WriteReport(Areport *,int,int,int,int, int, int);
+        bool CanGetSpoil(const Item::Handle& i);
+        void WriteReport(Areport *,int,int,int, bool, int, bool);
         AString GetName(int);
         AString MageReport();
         AString ReadyItem();
@@ -141,26 +129,26 @@ class Unit : public AListElem
 
         void ClearOrders();
         void ClearCastOrders();
-        void DefaultOrders(Object *);
+        void DefaultOrders(const std::shared_ptr<Object>&);
         void SetName(AString *);
         void SetDescribe(AString *);
-        void PostTurn(ARegion *reg);
+        void PostTurn(const ARegion& reg);
 
-        int IsLeader();
-        int IsNormal();
-        int GetMons();
-        int GetMen();
-        int GetLeaders();
-        int GetSoldiers();
-        int GetMen(int);
-        void SetMen(int,int);
+        bool IsLeader();
+        bool IsNormal();
+        size_t GetMons();
+        size_t GetMen();
+        size_t GetLeaders();
+        size_t GetSoldiers();
+        size_t GetMen(int);
+        void SetMen(int, size_t);
         int GetMoney();
         void SetMoney(int);
         int GetSharedNum(int);
         void ConsumeShared(int,int);
         int GetSharedMoney();
         void ConsumeSharedMoney(int);
-        int IsAlive();
+        bool IsAlive();
 
         int MaintCost();
         void Short(int, int);
@@ -185,34 +173,34 @@ class Unit : public AListElem
         int GetAvailSkill(int);
         int GetRealSkill(int);
         void ForgetSkill(int);
-        int CheckDepend(int,SkillDepend &s);
-        int CanStudy(int);
+        bool CheckDepend(int,SkillDepend &s);
+        bool CanStudy(int);
         int Study(int,int); /* Returns 1 if it succeeds */
         int Practice(int);
         void AdjustSkills();
 
         /* Return 1 if can see, 2 if can see faction */
-        int CanSee(ARegion *,Unit *, int practice = 0);
-        int CanCatch(ARegion *,Unit *);
+        bool CanSee(const ARegion&, const Unit::Handle&, int practice = 0);
+        bool CanCatch(const ARegion&, const Unit::Handle&);
         int AmtsPreventCrime(Unit *);
-        int GetAttitude(ARegion *,Unit *); /* Get this unit's attitude toward
+        int GetAttitude(const ARegion&, const Unit::Handle&); /* Get this unit's attitude toward
                                               the Unit parameter */
         int Hostile();
-        int Forbids(ARegion *,Unit *);
+        bool Forbids(const ARegion&,const Unit::Handle&);
         int Weight();
         int FlyingCapacity();
         int RidingCapacity();
         int SwimmingCapacity();
         int WalkingCapacity();
-        int CanFly(int);
-        int CanRide(int);
-        int CanWalk(int);
-        int CanFly();
-        int CanSwim();
-        int CanReallySwim();
-        int MoveType(ARegion *r = 0);
-        int CalcMovePoints(ARegion *r = 0);
-        int CanMoveTo(ARegion *,ARegion *);
+        bool CanFly(int);
+        bool CanRide(int);
+        bool CanWalk(int);
+        bool CanFly();
+        bool CanSwim();
+        bool CanReallySwim();
+        int MoveType(const std::shared_ptr<ARegion>& r = nullptr);
+        int CalcMovePoints(const std::shared_ptr<ARegion>& r = nullptr);
+        bool CanMoveTo(const ARegion&, const ARegion&);
         int GetFlag(int);
         void SetFlag(int,int);
         void CopyFlags(Unit *);
@@ -225,18 +213,19 @@ class Unit : public AListElem
         int CanUseWeapon(WeaponType *pWep);
         int Taxers(int);
 
-        void MoveUnit( Object *newobj );
+        void MoveUnit(const std::weak_ptr<Object>& newobj);
+        void Detach();
         void DiscardUnfinishedShips();
 
         void Event(const AString &);
         void Error(const AString &);
 
-        Faction *faction;
-        Faction *formfaction;
-        Object *object;
+        std::weak_ptr<Faction> faction;
+        std::weak_ptr<Faction> formfaction;
+        std::weak_ptr<Object> object;
         AString *name;
         AString *describe;
-        int num;
+        size_t num;
         int type;
         int alias;
         int gm_alias; /* used for gm manual creation of new units */
@@ -254,12 +243,12 @@ class Unit : public AListElem
         int readyItem;
         int readyWeapon[MAX_READY];
         int readyArmor[MAX_READY];
-        AList oldorders;
+        std::list<AString::Handle> oldorders;
         int needed; /* For assessing maintenance */
         int hunger;
         int stomach_space;
-        int losses;
-        int free;
+        size_t losses;
+        size_t free;
         int practiced; // Has this unit practiced a skill this turn
         int moved;
         int phase;
@@ -284,10 +273,10 @@ class Unit : public AListElem
         Order *monthorders;
         AttackOrder *attackorders;
         EvictOrder *evictorders;
-        ARegion *advancefrom;
+        std::weak_ptr<ARegion> advancefrom;
 
         AList exchangeorders;
-        AList turnorders;
+        std::list<TurnOrder::Handle> turnorders;
         int inTurnBlock;
         Order *presentMonthOrders;
         int presentTaxing;
@@ -297,8 +286,17 @@ class Unit : public AListElem
         int format;
 
         // Used for tracking VISIT quests
-        set<string> visited;
-        int raised;
+        std::set<std::string> visited;
+        size_t raised;
 };
+
+class UnitPtr {
+    public:
+        using Handle = std::shared_ptr<UnitPtr>;
+        using WeakHandle = std::weak_ptr<UnitPtr>;
+        Unit::Handle ptr;
+};
+
+UnitPtr::Handle GetUnitList(const std::list<UnitPtr::Handle>&, const Unit::Handle&);
 
 #endif

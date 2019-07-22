@@ -194,23 +194,23 @@ int StudyRateAdjustment(int days, int exp)
             && (rate > 0)) {
             rate -= 1;
             if (rate <= 5) {
-                prevd += cdays / slope;
+                prevd += static_cast<int>(cdays / slope);
                 ctr += cdays;
                 cdays = 0;
                 slope = (slope * 2)/3;
             }
             cdays += inc;
-            int clevel = GetLevelByDays(cdays/slope);
+            int clevel = GetLevelByDays(static_cast<int>(cdays / slope));
             if ((clevel > level)    && (rate > 5)) {
                 level = clevel;
                 switch(level) {
                     case 1: slope = 80;    
-                        prevd += cdays /slope;
+                        prevd += static_cast<int>(cdays / slope);
                         ctr += cdays;
                         cdays = 0;
                         break;
                     case 2: slope = 125;
-                        prevd += cdays / slope;
+                        prevd += static_cast<int>(cdays / slope);
                         ctr += cdays;
                         cdays = 0;
                         break;

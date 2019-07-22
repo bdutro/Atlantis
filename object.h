@@ -28,12 +28,13 @@
 
 class Object;
 
+#include <memory>
 #include "alist.h"
 #include "fileio.h"
 #include "gamedefs.h"
 #include "faction.h"
 #include "items.h"
-#include <map>
+#include "unit.h"
 
 #define I_WOOD_OR_STONE -2
 
@@ -81,22 +82,25 @@ int ParseObject(AString *, int ships);
 
 int ObjectIsShip(int);
 
-class Object : public AListElem
+class Object
 {
     public:
-        Object(ARegion *region);
+        using Handle = std::shared_ptr<Object>;
+        using WeakHandle = std::weak_ptr<Object>;
+
+        Object(const std::weak_ptr<ARegion>& region);
         ~Object();
 
         void Readin(Ainfile *f, AList *, ATL_VER v);
         void Writeout(Aoutfile *f);
-        void Report(Areport *, Faction *, int, int, int, int, int, int, int);
+        void Report(Areport *, const std::shared_ptr<Faction>&, int, int, int, int, int, int, bool);
 
         void SetName(AString *);
         void SetDescribe(AString *);
 
-        Unit *GetUnit(int);
-        Unit *GetUnitAlias(int, int); /* alias, faction number */
-        Unit *GetUnitId(UnitId *, int);
+        std::weak_ptr<Unit> GetUnit(int);
+        std::weak_ptr<Unit> GetUnitAlias(int, int); /* alias, faction number */
+        std::weak_ptr<Unit> GetUnitId(const UnitId&, int);
 
         // AS
         int IsRoad();
@@ -127,8 +131,8 @@ class Object : public AListElem
         
         AString *name;
         AString *describe;
-        ARegion *region;
-        int inner;
+        std::weak_ptr<ARegion> region;
+        ssize_t inner;
         int num;
         int type;
         int incomplete;
@@ -138,10 +142,10 @@ class Object : public AListElem
         int runes;
         int prevdir;
         int mages;
-        int shipno;
+        size_t shipno;
         int movepoints;
-        AList units;
-        AList ships;
+        std::list<std::shared_ptr<Unit>> units;
+        std::list<std::shared_ptr<Item>> ships;
 };
 
 #endif

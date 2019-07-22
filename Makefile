@@ -11,7 +11,11 @@ GAME ?= standard
 
 CPLUS = g++
 CC = gcc
-CFLAGS = -g -I. -I.. -Wall
+WARNFLAGS = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wconversion
+
+EXTRA_WARNFLAGS = -Wshadow
+
+CFLAGS = -std=c++17 -MMD -g -I. -I.. $(WARNFLAGS)
 
 RULESET_OBJECTS = extra.o map.o monsters.o rules.o world.o 
 
@@ -23,6 +27,8 @@ ENGINE_OBJECTS = alist.o aregion.o army.o astring.o battle.o economy.o \
 
 OBJECTS = $(patsubst %.o,$(GAME)/obj/%.o,$(RULESET_OBJECTS)) \
   $(patsubst %.o,obj/%.o,$(ENGINE_OBJECTS)) 
+
+DEPENDS = ${OBJECTS:.o=.d}
 
 $(GAME)-m: objdir $(OBJECTS)
 	$(CPLUS) $(CFLAGS) -o $(GAME)/$(GAME) $(OBJECTS)
@@ -117,3 +123,4 @@ $(patsubst %.o,$(GAME)/obj/%.o,$(RULESET_OBJECTS)): $(GAME)/obj/%.o: $(GAME)/%.c
 $(patsubst %.o,obj/%.o,$(ENGINE_OBJECTS)): obj/%.o: %.cpp
 	$(CPLUS) $(CFLAGS) -c -o $@ $<
 
+-include ${DEPENDS}

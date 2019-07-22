@@ -2495,16 +2495,27 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
             int ok = 0;
             switch(towntype) {
                 case TOWN_VILLAGE:
-                    if (unit->object->type == O_TOWER) ok = 1;
-                    if (unit->object->type == O_MTOWER) ok = 1;
+                    switch(unit->object->type) {
+                        case O_TOWER:
+                        case O_MTOWER:
+                            ok = 1;
+                    }
+                    /* FALLTHRU */
                 case TOWN_TOWN:
-                    if (unit->object->type == O_FORT) ok = 1;
-                    if (unit->object->type == O_MFORTRESS) ok = 1;
+                    switch(unit->object->type) {
+                        case O_FORT:
+                        case O_MFORTRESS:
+                            ok = 1;
+                    }
+                    /* FALLTHRU */
                 case TOWN_CITY:
-                    if (unit->object->type == O_CASTLE) ok = 1;
-                    if (unit->object->type == O_CITADEL) ok = 1;
-                    if (unit->object->type == O_MCASTLE) ok = 1;
-                    if (unit->object->type == O_MCITADEL) ok = 1;
+                    switch(unit->object->type) {
+                        case O_CASTLE:
+                        case O_CITADEL:
+                        case O_MCASTLE:
+                        case O_MCITADEL:
+                            ok = 1;
+                    }
             }
             if (!ok) {
                 unit->Error(AString("NAME: Unit is not in a large ")+
@@ -2952,7 +2963,7 @@ void Game::ProcessEvictOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessIdleOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessIdleOrder(Unit *u, AString *, OrdersCheck *pCheck)
 {
     if (u->monthorders || (Globals->TAX_PILLAGE_MONTH_LONG &&
         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {

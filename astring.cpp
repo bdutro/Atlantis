@@ -69,6 +69,15 @@ AString::AString(unsigned int l)
     strcpy(str,buf);
 }
 
+AString::AString(size_t l)
+{
+    char buf[21];
+    sprintf(buf,"%lu",l);
+    len = strlen(buf);
+    str = new char[len+1];
+    strcpy(str,buf);
+}
+
 AString::AString(char c)
 {
     len = 1;
@@ -136,11 +145,11 @@ int AString::isEqual(const char *temp2)
     while ((*temp1) && (*temp2)) {
         char t1 = *temp1;
         if ((t1 >= 'A') && (t1 <= 'Z'))
-            t1 = t1 - 'A' + 'a';
+            t1 = static_cast<char>(t1 - 'A' + 'a');
         if (t1 == '_') t1 = ' ';
         char t2 = *temp2;
         if ((t2 >= 'A') && (t2 <= 'Z'))
-            t2 = t2 - 'A' + 'a';
+            t2 = static_cast<char>(t2 - 'A' + 'a');
         if (t2 == '_') t2 = ' ';
         if (t1 != t2) return 0;
         temp1++;
@@ -153,11 +162,11 @@ int AString::isEqual(const char *temp2)
 AString AString::operator+(const AString &s)
 {
     char *temp = new char[len+s.len+1];
-    int i;
+    size_t i;
     for (i=0; i<len; i++) {
         temp[i] = str[i];
     }
-    for (int j=0; j<s.len+1; j++) {
+    for (size_t j=0; j<s.len+1; j++) {
         temp[i++] = s.str[j];
     }
     AString temp2 = AString(temp);
@@ -168,11 +177,11 @@ AString AString::operator+(const AString &s)
 AString &AString::operator+=(const AString &s)
 {
     char *temp = new char[len+s.len+1];
-    int i;
+    size_t i;
     for (i=0; i<len; i++) {
         temp[i] = str[i];
     }
-    for (int j=0; j<s.len+1; j++) {
+    for (size_t j=0; j<s.len+1; j++) {
         temp[i++] = s.str[j];
     }
     delete[] str;
@@ -187,7 +196,7 @@ char *AString::Str()
     return str;
 }
 
-int AString::Len()
+size_t AString::Len()
 {
     return len;
 }
@@ -195,8 +204,8 @@ int AString::Len()
 AString *AString::gettoken()
 {
     char buf[1024];
-    int place = 0;
-    int place2 = 0;
+    size_t place = 0;
+    size_t place2 = 0;
     while (place < len && (str[place] == ' ' || str[place] == '\t'))
         place++;
     if (place >= len) return 0;
@@ -233,7 +242,7 @@ AString *AString::gettoken()
         return new AString(buf);
     }
     char * buf2 = new char[len-place2+1];
-    int newlen = 0;
+    size_t newlen = 0;
     place2 = 0;
     while (place < len) {
         buf2[place2++] = str[place++];
@@ -248,7 +257,7 @@ AString *AString::gettoken()
 
 AString *AString::StripWhite()
 {
-    int place = 0;
+    size_t place = 0;
     while (place < len && (str[place] == ' ' || str[place] == '\t')) {
         place++;
     }
@@ -260,7 +269,7 @@ AString *AString::StripWhite()
 
 int AString::getat()
 {
-    int place = 0;
+    size_t place = 0;
     while (place < len && (str[place] == ' ' || str[place] == '\t'))
         place++;
     if (place >= len) return 0;
@@ -271,6 +280,7 @@ int AString::getat()
     return 0;
 }
 
+char islegal(char c);
 char islegal(char c)
 {
     if ((c>='a' && c<='z') || (c>='A' && c<='Z') || (c>='0' && c<='9') ||
@@ -288,7 +298,7 @@ AString *AString::getlegal()
     char * temp = new char[len+1];
     char * temp2 = temp;
     int j = 0;
-    for (int i=0; i<len; i++) {
+    for (size_t i=0; i<len; i++) {
         if (islegal(str[i])) {
             *temp2 = str[i];
             if (str[i] != ' ') j=1;
@@ -318,17 +328,17 @@ int AString::CheckPrefix(const AString &s)
     return AString(x) == s;
 }
 
-AString *AString::Trunc(int val, int back)
+AString *AString::Trunc(size_t val, size_t back)
 {
-    int l=Len();
+    size_t l=Len();
     if (l <= val) return 0;
-    for (int i = 0; i < val; i++) {
+    for (size_t i = 0; i < val; i++) {
         if (str[i] == '\n' || str[i] == '\r') {
             str[i] = '\0';
             return new AString(&(str[i+1]));
         }
     }
-    for (int i=val; i>(val-back); i--) {
+    for (size_t i=val; i>(val-back); i--) {
         if (str[i] == ' ') {
             str[i] = '\0';
             return new AString(&(str[i+1]));
@@ -352,13 +362,13 @@ int AString::value()
     return ret;
 }
 
-ostream & operator <<(ostream & os,const AString & s)
+std::ostream & operator <<(std::ostream & os,const AString & s)
 {
     os << s.str;
     return os;
 }
 
-istream & operator >>(istream & is,AString & s)
+std::istream & operator >>(std::istream & is,AString & s)
 {
     char * buf = new char[256];
     is >> buf;

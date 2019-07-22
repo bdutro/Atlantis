@@ -27,7 +27,6 @@
 
 #include <functional>
 #include <map>
-using namespace std;
 
 class Army;
 

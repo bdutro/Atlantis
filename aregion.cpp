@@ -28,42 +28,40 @@
 #include "game.h"
 #include "gamedata.h"
 
-Location *GetUnit(AList *list, int n)
+Location::WeakHandle GetUnit(const std::list<Location::Handle>& list, size_t n)
 {
-    forlist(list) {
-        Location *l = (Location *) elem;
-        if (l->unit->num == n) return l;
+    for(const auto& l: list) {
+        if (l->unit.lock()->num == n) return l;
     }
-    return 0;
+    return Location::WeakHandle();
 }
 
-ARegionPtr *GetRegion(AList *l, int n)
+ARegionPtr::WeakHandle GetRegion(const std::list<ARegionPtr::Handle>& l, size_t n)
 {
-    forlist(l) {
-        ARegionPtr *p = (ARegionPtr *) elem;
+    for(const auto& p: l) {
         if (p->ptr->num == n) return p;
     }
-    return 0;
+    return ARegionPtr::WeakHandle();
 }
 
 Farsight::Farsight()
 {
-    faction = 0;
-    unit = 0;
+    faction.reset();
+    unit.reset();
     level = 0;
     observation = 0;
-    for (int i = 0; i < NDIRS; i++)
-        exits_used[i] = 0;
+    std::fill(exits_used.begin(), exits_used.end(), false);
 }
 
-Farsight *GetFarsight(AList *l, Faction *fac)
+Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>& l, const Faction::Handle& fac)
 {
-    forlist(l) {
-        Farsight *f = (Farsight *) elem;
-        if (f->faction == fac) return f;
+    for(const auto& f: l) {
+        if (f->faction.lock() == fac) return f;
     }
-    return 0;
+    return Farsight::WeakHandle();
 }
+
+AString TownString(int i);
 
 AString TownString(int i)
 {
@@ -91,11 +89,11 @@ TownInfo::~TownInfo()
     if (name) delete name;
 }
 
-void TownInfo::Readin(Ainfile *f, ATL_VER &v)
+void TownInfo::Readin(Ainfile *f, ATL_VER &)
 {
     name = f->GetStr();
-    pop = f->GetInt();
-    hab = f->GetInt();
+    pop = f->GetInt<int>();
+    hab = f->GetInt<int>();
 }
 
 void TownInfo::Writeout(Aoutfile *f)
@@ -122,8 +120,7 @@ ARegion::ARegion()
     improvement = 0;
     clearskies = 0;
     earthlore = 0;
-    for (int i=0; i<NDIRS; i++)
-        neighbors[i] = 0;
+    ZeroNeighbors();
     visited = 0;
 }
 
@@ -135,8 +132,8 @@ ARegion::~ARegion()
 
 void ARegion::ZeroNeighbors()
 {
-    for (int i=0; i<NDIRS; i++) {
-        neighbors[i] = 0;
+    for(auto& n: neighbors) {
+        n.reset();
     }
 }
 
@@ -147,57 +144,70 @@ void ARegion::SetName(char const *c)
 }
 
 
-int ARegion::IsNativeRace(int item)
+bool ARegion::IsNativeRace(int item)
 {
     TerrainType *typer = &(TerrainDefs[type]);
-    int coastal = sizeof(typer->coastal_races)/sizeof(int);
-    int noncoastal = sizeof(typer->races)/sizeof(int);
     if (IsCoastal()) {
-        for (int i=0; i<coastal; i++) {
-            if (item == typer->coastal_races[i]) return 1;
+        for (const auto& r: typer->coastal_races) {
+            if (item == r)
+            {
+                return true;
+            }
         }
     }
-    for (int i=0; i<noncoastal; i++) {
-        if (item == typer->races[i]) return 1;
+    for (const auto& r: typer->races) {
+        if (item == r)
+        {
+            return true;
+        }
     }
-    return 0;
+    return false;
 }
 
-int ARegion::GetNearestProd(int item)
+unsigned int ARegion::GetNearestProd(int item)
 {
-    AList regs, regs2;
-    AList *rptr = &regs;
-    AList *r2ptr = &regs2;
-    AList *temp;
-    ARegionPtr *p = new ARegionPtr;
-    p->ptr = this;
-    regs.Add(p);
+    //AList regs, regs2;
+    //AList *rptr = &regs;
+    //AList *r2ptr = &regs2;
+    //AList *temp;
+    //ARegionPtr *p = new ARegionPtr;
+    //p->ptr = this;
+    //regs.Add(p);
+    std::list<ARegionPtr::Handle> regs, regs2;
+    {
+        auto& p = regs.emplace_back(std::make_shared<ARegionPtr>());
+        p->ptr = shared_from_this();
+    }
 
-    for (int i=0; i<5; i++) {
-        forlist(rptr) {
-            ARegion *r = ((ARegionPtr *) elem)->ptr;
+    for (unsigned int i=0; i<5; i++) {
+        for(const auto& rp: regs) {
+            ARegion::Handle r = rp->ptr;
             AString skname = ItemDefs[item].pSkill;
             int sk = LookupSkill(&skname);
             if (r->products.GetProd(item, sk)) {
-                regs.DeleteAll();
-                regs2.DeleteAll();
+                regs.clear();
+                regs2.clear();
                 return i;
             }
-            for (int j=0; j<NDIRS; j++) {
-                if (neighbors[j]) {
-                    p = new ARegionPtr;
-                    p->ptr = neighbors[j];
-                    r2ptr->Add(p);
+            for (const auto& n: neighbors) {
+                if (!n.expired()) {
+                    //p = new ARegionPtr;
+                    //p->ptr = neighbors[j];
+                    //r2ptr->Add(p);
+                    auto& p = regs2.emplace_back(std::make_shared<ARegionPtr>());
+                    p->ptr = n.lock();
                 }
             }
-            rptr->DeleteAll();
-            temp = rptr;
-            rptr = r2ptr;
-            r2ptr = temp;
+            //rptr->DeleteAll();
+            //temp = rptr;
+            //rptr = r2ptr;
+            //r2ptr = temp;
+            regs.clear();
+            std::swap(regs, regs2);
         }
     }
-    regs.DeleteAll();
-    regs2.DeleteAll();
+    //regs.DeleteAll();
+    //regs2.DeleteAll();
     return 5;
 }
 
@@ -245,25 +255,29 @@ void ARegion::LairCheck()
     }
 }
 
+Object::Handle& ARegion::AddObject()
+{
+    return objects.emplace_back(std::make_shared<Object>(weak_from_this()));
+}
+
 void ARegion::MakeLair(int t)
 {
-    Object *o = new Object(this);
+    Object::Handle& o = AddObject();
     o->num = buildingseq++;
     o->name = new AString(AString(ObjectDefs[t].name) +
             " [" + o->num + "]");
     o->type = t;
     o->incomplete = 0;
     o->inner = -1;
-    objects.Add(o);
 }
 
-int ARegion::GetPoleDistance(int dir)
+unsigned int ARegion::GetPoleDistance(Directions dir)
 {
-    int ct = 1;
-    ARegion *nreg = neighbors[dir];
-    while (nreg) {
+    unsigned int ct = 1;
+    ARegion::WeakHandle nreg = neighbors[static_cast<size_t>(dir)];
+    while (!nreg.expired()) {
         ct++;
-        nreg = nreg->neighbors[dir];
+        nreg = nreg.lock()->neighbors[static_cast<size_t>(dir)];
     }
     return ct;
 }
@@ -279,24 +293,28 @@ void ARegion::Setup()
     //
     // Make the dummy object
     //
-    Object *obj = new Object(this);
-    objects.Add(obj);
+    AddObject();
 
     if (Globals->LAIR_MONSTERS_EXIST)
         LairCheck();
 }
 
-int ARegion::TraceConnectedRoad(int dir, int sum, AList *con, int range, int dev)
+int ARegion::TraceConnectedRoad(Directions dir, int sum, std::list<ARegionPtr::Handle>& con, int range, int dev)
 {
-    ARegionPtr *rn = new ARegionPtr();
-    rn->ptr = this;
-    int isnew = 1;
-    forlist(con) {
-        ARegionPtr *reg = (ARegionPtr *) elem;
-        if ((reg) && (reg->ptr)) if (reg->ptr == this) isnew = 0;
+    ARegionPtr::Handle rn = std::make_shared<ARegionPtr>();
+    rn->ptr = shared_from_this();
+    bool isnew = true;
+    for(const auto& reg: con) {
+        if (reg && reg->ptr && (reg->ptr == shared_from_this()))
+        {
+            isnew = false;
+        }
     }
-    if (isnew == 0) return sum;
-    con->Add(rn);
+    if (!isnew)
+    {
+        return sum;
+    }
+    con.push_back(rn);
     // Add bonus for connecting town
     if (town) sum++;
     // Add bonus if development is higher
@@ -304,12 +322,25 @@ int ARegion::TraceConnectedRoad(int dir, int sum, AList *con, int range, int dev
     if (development * 2 > dev * 5) sum++;
     // Check further along road
     if (range > 0) {
-        for (int d=0; d<NDIRS; d++) {
-            if (!HasExitRoad(d)) continue;
-            ARegion *r = neighbors[d];
-            if (!r) continue;
-            if (dir == r->GetRealDirComp(d)) continue;
-            if (r->HasConnectingRoad(d)) sum = r->TraceConnectedRoad(d, sum, con, range-1, dev+2);
+        for (const auto d: ALL_DIRECTIONS) {
+            if (!HasExitRoad(d))
+            {
+                continue;
+            }
+            const ARegion::WeakHandle& r = neighbors[static_cast<size_t>(d)];
+            if (r.expired())
+            {
+                continue;
+            }
+            ARegion::Handle r_sp = r.lock();
+            if (dir == r_sp->GetRealDirComp(d))
+            {
+                continue;
+            }
+            if (r_sp->HasConnectingRoad(d))
+            {
+                sum = r_sp->TraceConnectedRoad(d, sum, con, range-1, dev+2);
+            }
         }
     }
     return sum;
@@ -318,24 +349,30 @@ int ARegion::TraceConnectedRoad(int dir, int sum, AList *con, int range, int dev
 int ARegion::RoadDevelopmentBonus(int range, int dev)
 {
     int bonus = 0;
-    AList *con = new AList();
-    ARegionPtr *rp = new ARegionPtr();
-    rp->ptr = this;
-    con->Add(rp);
-    for (int d=0; d<NDIRS; d++) {
+    std::list<ARegionPtr::Handle> con;
+    auto& rp = con.emplace_back(std::make_shared<ARegionPtr>());
+    rp->ptr = shared_from_this();
+    for (const auto d: ALL_DIRECTIONS) {
         if (!HasExitRoad(d)) continue;
-        ARegion *r = neighbors[d];
-        if (!r) continue;
-        if (r->HasConnectingRoad(d)) bonus = r->TraceConnectedRoad(d, bonus, con, range-1, dev);
+        const ARegion::WeakHandle& r = neighbors[static_cast<size_t>(d)];
+        if (r.expired())
+        {
+            continue;
+        }
+        ARegion::Handle r_sp = r.lock();
+        if (r_sp->HasConnectingRoad(d))
+        {
+            bonus = r_sp->TraceConnectedRoad(d, bonus, con, range-1, dev);
+        }
     }
     return bonus;    
 }
 
 // AS
-void ARegion::DoDecayCheck(ARegionList *pRegs)
+void ARegion::DoDecayCheck(const ARegionList& pRegs)
 {
-    forlist (&objects) {
-        Object *o = (Object *) elem;
+    for(const auto& o: objects)
+    {
         if (!(ObjectDefs[o->type].flags & ObjectType::NEVERDECAY)) {
             DoDecayClicks(o, pRegs);
         }
@@ -343,7 +380,7 @@ void ARegion::DoDecayCheck(ARegionList *pRegs)
 }
 
 // AS
-void ARegion::DoDecayClicks(Object *o, ARegionList *pRegs)
+void ARegion::DoDecayClicks(const Object::Handle& o, const ARegionList& pRegs)
 {
     if (ObjectDefs[o->type].flags & ObjectType::NEVERDECAY) return;
 
@@ -362,12 +399,11 @@ void ARegion::DoDecayClicks(Object *o, ARegionList *pRegs)
 }
 
 // AS
-void ARegion::RunDecayEvent(Object *o, ARegionList *pRegs)
+void ARegion::RunDecayEvent(const Object::Handle& o, const ARegionList& pRegs)
 {
-    AList *pFactions;
-    pFactions = PresentFactions();
-    forlist (pFactions) {
-        Faction *f = ((FactionPtr *) elem)->ptr;
+    std::list<FactionPtr::Handle> pFactions = PresentFactions();
+    for(const auto& fp: pFactions) {
+        const Faction::Handle& f = fp->ptr;
         f->Event(GetDecayFlavor() + *o->name + " " +
                 ObjectDefs[o->type].name + " in " +
                 ShortPrint(pRegs));
@@ -535,6 +571,7 @@ int ARegion::GetMaxClicks()
         case R_CERAN_DESERT3:
             terrainAdd = -1;
             if (badWeather) weatherAdd = 5;
+            break;
         case R_CAVERN:
         case R_UFOREST:
         case R_TUNNELS:
@@ -573,120 +610,130 @@ int ARegion::PillageCheck()
 }
 
 // AS
-int ARegion::HasRoad()
+bool ARegion::HasRoad()
 {
-    forlist (&objects) {
-        Object *o = (Object *) elem;
-        if (o->IsRoad() && o->incomplete < 1) return 1;
+    for(const auto& o: objects)
+    {
+        if (o->IsRoad() && o->incomplete < 1) return true;
     }
-    return 0;
+    return false;
 }
 
 // AS
-int ARegion::HasExitRoad(int realDirection)
+bool ARegion::HasExitRoad(Directions realDirection)
 {
-    forlist (&objects) {
-        Object *o = (Object *) elem;
+    for(const auto& o: objects)
+    {
         if (o->IsRoad() && o->incomplete < 1) {
-            if (o->type == GetRoadDirection(realDirection)) return 1;
+            if (o->type == GetRoadDirection(realDirection)) return true;
         }
     }
-    return 0;
+    return false;
 }
 
 // AS
 int ARegion::CountConnectingRoads()
 {
     int connections = 0;
-    for (int i = 0; i < NDIRS; i++) {
-        if (HasExitRoad(i) && neighbors[i] &&
-                HasConnectingRoad(i))
+    for (const auto i: ALL_DIRECTIONS) {
+        if (HasExitRoad(i) && !neighbors[static_cast<size_t>(i)].expired() && HasConnectingRoad(i))
             connections ++;
     }
     return connections;
 }
 
 // AS
-int ARegion::HasConnectingRoad(int realDirection)
+bool ARegion::HasConnectingRoad(Directions realDirection)
 {
-    int opposite = GetRealDirComp(realDirection);
+    Directions opposite = GetRealDirComp(realDirection);
+    const size_t idx = static_cast<size_t>(realDirection);
 
-    if (neighbors[realDirection]
-            && neighbors[realDirection]->HasExitRoad(opposite))
-        return 1;
+    if (!neighbors[idx].expired() && neighbors[idx].lock()->HasExitRoad(opposite))
+    {
+        return true;
+    }
 
-    return 0;
+    return false;
 }
 
 // AS
-int ARegion::GetRoadDirection(int realDirection)
+int ARegion::GetRoadDirection(Directions realDirection)
 {
     int roadDirection = 0;
     switch (realDirection) {
-        case D_NORTH:
+        case Directions::D_NORTH:
             roadDirection = O_ROADN;
             break;
-        case D_NORTHEAST:
+        case Directions::D_NORTHEAST:
             roadDirection = O_ROADNE;
             break;
-        case D_NORTHWEST:
+        case Directions::D_NORTHWEST:
             roadDirection = O_ROADNW;
             break;
-        case D_SOUTH:
+        case Directions::D_SOUTH:
             roadDirection = O_ROADS;
             break;
-        case D_SOUTHEAST:
+        case Directions::D_SOUTHEAST:
             roadDirection = O_ROADSE;
             break;
-        case D_SOUTHWEST:
+        case Directions::D_SOUTHWEST:
             roadDirection = O_ROADSW;
             break;
+        default:
+            throw std::runtime_error("Invalid direction specified");
     }
     return roadDirection;
 }
 
 // AS
-int ARegion::GetRealDirComp(int realDirection)
+Directions ARegion::GetRealDirComp(Directions realDirection)
 {
-    int complementDirection = 0;
-
-    if (neighbors[realDirection]) {
-        ARegion *n = neighbors[realDirection];
-        for (int i = 0; i < NDIRS; i++)
-            if (n->neighbors[i] == this)
+    Directions complementDirection;
+    const size_t idx = static_cast<size_t>(realDirection);
+    if (!neighbors[idx].expired()) {
+        const ARegion::Handle n = neighbors[idx].lock();
+        const ARegion::Handle this_shared = shared_from_this();
+        for (const auto i: ALL_DIRECTIONS)
+        {
+            if (n->neighbors[static_cast<size_t>(i)].lock() == this_shared)
+            {
                 return i;
+            }
+        }
     }
 
     switch (realDirection) {
-        case D_NORTH:
-            complementDirection = D_SOUTH;
+        case Directions::D_NORTH:
+            complementDirection = Directions::D_SOUTH;
             break;
-        case D_NORTHEAST:
-            complementDirection = D_SOUTHWEST;
+        case Directions::D_NORTHEAST:
+            complementDirection = Directions::D_SOUTHWEST;
             break;
-        case D_NORTHWEST:
-            complementDirection = D_SOUTHEAST;
+        case Directions::D_NORTHWEST:
+            complementDirection = Directions::D_SOUTHEAST;
             break;
-        case D_SOUTH:
-            complementDirection = D_NORTH;
+        case Directions::D_SOUTH:
+            complementDirection = Directions::D_NORTH;
             break;
-        case D_SOUTHEAST:
-            complementDirection = D_NORTHWEST;
+        case Directions::D_SOUTHEAST:
+            complementDirection = Directions::D_NORTHWEST;
             break;
-        case D_SOUTHWEST:
-            complementDirection = D_NORTHEAST;
+        case Directions::D_SOUTHWEST:
+            complementDirection = Directions::D_NORTHEAST;
             break;
+        default:
+            throw std::runtime_error("Invalid direction specified");
     }
     return complementDirection;
 }
 
-AString ARegion::ShortPrint(ARegionList *pRegs)
+AString ARegion::ShortPrint(const ARegionList& pRegs)
 {
     AString temp = TerrainDefs[type].name;
 
     temp += AString(" (") + xloc + "," + yloc;
 
-    ARegionArray *pArr = pRegs->pRegionArrays[zloc];
+    const ARegionArray::Handle& pArr = pRegs.pRegionArrays[zloc];
     if (pArr->strName) {
         temp += ",";
         if (Globals->EASIER_UNDERWORLD &&
@@ -695,14 +742,14 @@ AString ARegion::ShortPrint(ARegionList *pRegs)
         } else {
             // add less explicit multilevel information about the underworld
             if (zloc > 2 && zloc < Globals->UNDERWORLD_LEVELS+2) {
-                for (int i = zloc; i > 3; i--) {
+                for (unsigned int i = zloc; i > 3; i--) {
                     temp += "very ";
                 }
                 temp += "deep ";
             } else if ((zloc > Globals->UNDERWORLD_LEVELS+2) &&
                         (zloc < Globals->UNDERWORLD_LEVELS +
                         Globals->UNDERDEEP_LEVELS + 2)) {
-                for (int i = zloc; i > Globals->UNDERWORLD_LEVELS + 3; i--) {
+                for (unsigned int i = zloc; i > Globals->UNDERWORLD_LEVELS + 3; i--) {
                     temp += "very ";
                 }
                 temp += "deep ";
@@ -720,7 +767,7 @@ AString ARegion::ShortPrint(ARegionList *pRegs)
     return temp;
 }
 
-AString ARegion::Print(ARegionList *pRegs)
+AString ARegion::Print(const ARegionList& pRegs)
 {
     AString temp = ShortPrint(pRegs);
     if (town) {
@@ -730,7 +777,7 @@ AString ARegion::Print(ARegionList *pRegs)
     return temp;
 }
 
-void ARegion::SetLoc(int x, int y, int z)
+void ARegion::SetLoc(unsigned int x, unsigned int y, unsigned int z)
 {
     xloc = x;
     yloc = y;
@@ -751,16 +798,16 @@ void ARegion::SetGateStatus(int month)
     }
 }
 
-void ARegion::Kill(Unit *u)
+void ARegion::Kill(const Unit::Handle& u)
 {
-    Unit *first = 0;
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
+    Unit::Handle first = nullptr;
+    for(const auto& obj: objects)
+    {
         if (obj) {
-            forlist((&obj->units)) {
-                if (((Unit *) elem)->faction->num == u->faction->num &&
-                    ((Unit *) elem) != u) {
-                    first = (Unit *) elem;
+            for(const auto& cur_unit: obj->units)
+            {
+                if((cur_unit->faction.lock()->num == u->faction.lock()->num) && (cur_unit != u)) {
+                    first = cur_unit;
                     break;
                 }
             }
@@ -770,8 +817,7 @@ void ARegion::Kill(Unit *u)
 
     if (first) {
         // give u's stuff to first
-        forlist(&u->items) {
-            Item *i = (Item *) elem;
+        for(const auto& i: u->items) {
             if (ItemDefs[i->type].type & IT_SHIP &&
                     first->items.GetNum(i->type) > 0) {
                 if (first->items.GetNum(i->type) > i->num)
@@ -786,7 +832,7 @@ void ARegion::Kill(Unit *u)
                 // If the item would cause them to drown then they won't
                 // pick it up.
                 if (TerrainDefs[type].similar_type == R_OCEAN) {
-                    if (first->object->type == O_DUMMY) {
+                    if (first->object.lock()->type == O_DUMMY) {
                         if (!first->CanReallySwim()) {
                             first->items.SetNum(i->type,
                                     first->items.GetNum(i->type) - i->num);
@@ -798,31 +844,29 @@ void ARegion::Kill(Unit *u)
         }
     }
 
-    u->MoveUnit(0);
-    hell.Add(u);
+    u->Detach();
+    hell.push_back(u);
 }
 
 void ARegion::ClearHell()
 {
-    hell.DeleteAll();
+    hell.clear();
 }
 
-Object *ARegion::GetObject(int num)
+Object::WeakHandle ARegion::GetObject(int num)
 {
-    forlist(&objects) {
-        Object *o = (Object *) elem;
+    for(const auto& o: objects) {
         if (o->num == num) return o;
     }
-    return 0;
+    return Object::WeakHandle();
 }
 
-Object *ARegion::GetDummy()
+Object::WeakHandle ARegion::GetDummy()
 {
-    forlist(&objects) {
-        Object *o = (Object *) elem;
+    for(const auto& o: objects) {
         if (o->type == O_DUMMY) return o;
     }
-    return 0;
+    return Object::WeakHandle();
 }
 
 /* Checks all fleets to see if they are empty.
@@ -831,142 +875,168 @@ Object *ARegion::GetDummy()
  */
 void ARegion::CheckFleets()
 {
-    forlist(&objects) {
-        Object *o = (Object *) elem;
+    auto o_it = objects.begin();
+    while(o_it != objects.end())
+    {
+        const auto& o = *o_it;
         if (o->IsFleet()) {
-            int bail = 0;
-            if (o->FleetCapacity() < 1) bail = 1;
-            int alive = 0;
-            forlist(&o->units) {
-                Unit * unit = (Unit *) elem;
-                if (unit->IsAlive()) alive = 1;
-                if (bail > 0) unit->MoveUnit(GetDummy());
+            bool bail = false;
+            if (o->FleetCapacity() < 1) bail = true;
+            bool alive = false;
+            for(const auto& unit: o->units) {
+                alive = unit->IsAlive();
+                if (bail)
+                {
+                    unit->MoveUnit(GetDummy());
+                }
             }
             // don't remove fleets when no living units are
             // aboard when they're not at sea.
-            if (TerrainDefs[type].similar_type != R_OCEAN) alive = 1;
-            if ((alive == 0) || (bail == 1)) {
-                objects.Remove(o);
-                delete o;
+            if (TerrainDefs[type].similar_type != R_OCEAN) alive = true;
+            if (!alive || bail) {
+                o_it = objects.erase(o_it);
+                continue;
             }
         }
+        ++o_it;
     }
 }
 
-Unit *ARegion::GetUnit(int num)
+Unit::WeakHandle ARegion::GetUnit(int num)
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        Unit *u = obj->GetUnit(num);
-        if (u) {
-            return(u);
+    for(const auto&obj: objects) {
+        const auto& u = obj->GetUnit(num);
+        if (!u.expired()) {
+            return u;
         }
     }
-    return 0;
+    return Unit::WeakHandle();
 }
 
-Location *ARegion::GetLocation(UnitId *id, int faction)
+Location::Handle ARegion::GetLocation(const UnitId& id, int faction) const
 {
-    Unit *retval = 0;
-    forlist(&objects) {
-        Object *o = (Object *) elem;
+    Unit::WeakHandle retval;
+    for(const auto& o: objects)
+    {
         retval = o->GetUnitId(id, faction);
-        if (retval) {
-            Location *l = new Location;
-            l->region = this;
+        if (!retval.expired()) {
+            Location::Handle l = std::make_shared<Location>();
+            l->region = std::const_pointer_cast<ARegion>(shared_from_this());
             l->obj = o;
             l->unit = retval;
             return l;
         }
     }
-    return 0;
+    return nullptr;
 }
 
-Unit *ARegion::GetUnitAlias(int alias, int faction)
+Unit::WeakHandle ARegion::GetUnitAlias(int alias, int faction)
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        Unit *u = obj->GetUnitAlias(alias, faction);
-        if (u) {
-            return(u);
+    for(const auto& obj: objects) {
+        Unit::WeakHandle u = obj->GetUnitAlias(alias, faction);
+        if (!u.expired()) {
+            return u;
         }
     }
-    return 0;
+    return Unit::WeakHandle();
 }
 
-Unit *ARegion::GetUnitId(UnitId *id, int faction)
+Unit::WeakHandle ARegion::GetUnitId(const UnitId& id, int faction)
 {
-    Unit *retval = 0;
-    forlist(&objects) {
-        Object *o = (Object *) elem;
+    Unit::WeakHandle retval;
+    for(const auto&o: objects) {
         retval = o->GetUnitId(id, faction);
-        if (retval) return retval;
+        if (!retval.expired())
+        {
+            return retval;
+        }
     }
     return retval;
 }
 
-void ARegion::DeduplicateUnitList(AList *list, int faction)
+void ARegion::DeduplicateUnitList(std::list<UnitId>& list, int faction)
 {
-    int i, j;
-    UnitId *id;
-    Unit *outer, *inner;
+    std::set<UnitId> seen_ids;
+    auto it = list.begin();
+    while(it != list.end())
+    {
+        const auto& u = GetUnitId(*it, faction);
+        if(u.expired())
+        {
+            continue;
+        }
+        if(!seen_ids.count(*it))
+        {
+            seen_ids.insert(*it);
+            ++it;
+        }
+        else
+        {
+            it = list.erase(it);
+        }
+    }
 
-    i = 0;
-    forlist(list) {
-        id = (UnitId *) elem;
+    /*forlist(list) {
+        id = dynamic_cast<UnitId *>(elem);
         outer = GetUnitId(id, faction);
-        if (!outer)
+        if (outer.expired())
             continue;
         j = 0;
         forlist(list) {
-            id = (UnitId *) elem;
+            id = dynamic_cast<UnitId *>(elem);
             inner = GetUnitId(id, faction);
-            if (!inner)
+            if (inner.expired())
                 continue;
-            if (inner->num == outer->num && j > i) {
+            if (inner.lock()->num == outer.lock()->num && j > i) {
                 list->Remove(id);
                 delete id;
             }
             j++;
         }
         i++;
-    }
+    }*/
 }
 
-Location *ARegionList::GetUnitId(UnitId *id, int faction, ARegion *cur)
+Location::Handle ARegionList::GetUnitId(const UnitId& id, int faction, const ARegion& cur)
 {
-    Location *retval = NULL;
     // Check current region first
-    retval = cur->GetLocation(id, faction);
-    if (retval) return retval;
+    Location::Handle retval = cur.GetLocation(id, faction);
+    if (retval)
+    {
+        return retval;
+    }
 
     // No? We must be looking for an existing unit.
-    if (!id->unitnum) return NULL;
-
-    return this->FindUnit(id->unitnum);
-}
-
-int ARegion::Present(Faction *f)
-{
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist((&obj->units))
-            if (((Unit *) elem)->faction == f) return 1;
+    if (!id.unitnum)
+    {
+        return nullptr;
     }
-    return 0;
+
+    return this->FindUnit(id.unitnum);
 }
 
-AList *ARegion::PresentFactions()
+bool ARegion::Present(const Faction::Handle& f)
 {
-    AList *facs = new AList;
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist((&obj->units)) {
-            Unit *u = (Unit *) elem;
-            if (!GetFaction2(facs, u->faction->num)) {
-                FactionPtr *p = new FactionPtr;
-                p->ptr = u->faction;
-                facs->Add(p);
+    for(const auto& obj: objects)
+    {
+        for(const auto& u: obj->units)
+        {
+            if (u->faction.lock() == f) return true;
+        }
+    }
+    return false;
+}
+
+std::list<FactionPtr::Handle> ARegion::PresentFactions()
+{
+    std::list<FactionPtr::Handle> facs;
+    for(const auto& obj: objects)
+    {
+        for(const auto& u: obj->units)
+        {
+            if (!GetFaction2(facs, u->faction.lock()->num)) {
+                auto& p = facs.emplace_back(std::make_shared<FactionPtr>());
+                p->ptr = u->faction.lock();
             }
         }
     }
@@ -1014,8 +1084,11 @@ void ARegion::Writeout(Aoutfile *f)
     products.Writeout(f);
     markets.Writeout(f);
 
-    f->PutInt(objects.Num());
-    forlist ((&objects)) ((Object *) elem)->Writeout(f);
+    f->PutInt(objects.size());
+    for(const auto& o: objects)
+    {
+        o->Writeout(f);
+    }
 }
 
 int LookupRegionType(AString *token)
@@ -1032,34 +1105,34 @@ void ARegion::Readin(Ainfile *f, AList *facs, ATL_VER v)
 
     name = f->GetStr();
 
-    num = f->GetInt();
+    num = f->GetInt<size_t>();
     temp = f->GetStr();
     type = LookupRegionType(temp);
     delete temp;
-    buildingseq = f->GetInt();
-    gate = f->GetInt();
-    if (gate > 0) gatemonth = f->GetInt();
+    buildingseq = f->GetInt<int>();
+    gate = f->GetInt<int>();
+    if (gate > 0) gatemonth = f->GetInt<int>();
 
     temp = f->GetStr();
     race = LookupItem(temp);
     delete temp;
 
-    population = f->GetInt();
-    basepopulation = f->GetInt();
-    wages = f->GetInt();
-    maxwages = f->GetInt();
-    wealth = f->GetInt();
+    population = f->GetInt<int>();
+    basepopulation = f->GetInt<int>();
+    wages = f->GetInt<int>();
+    maxwages = f->GetInt<int>();
+    wealth = f->GetInt<int>();
     
-    elevation = f->GetInt();
-    humidity = f->GetInt();
-    temperature = f->GetInt();
-    vegetation = f->GetInt();
-    culture = f->GetInt();
+    elevation = f->GetInt<int>();
+    humidity = f->GetInt<int>();
+    temperature = f->GetInt<int>();
+    vegetation = f->GetInt<int>();
+    culture = f->GetInt<int>();
 
-    habitat = f->GetInt();
-    development = f->GetInt();
+    habitat = f->GetInt<int>();
+    development = f->GetInt<int>();
 
-    if (f->GetInt()) {
+    if (f->GetInt<int>()) {
         town = new TownInfo;
         town->Readin(f, v);
         town->dev = TownDevelopment();
@@ -1067,85 +1140,85 @@ void ARegion::Readin(Ainfile *f, AList *facs, ATL_VER v)
         town = 0;
     }
 
-    xloc = f->GetInt();
-    yloc = f->GetInt();
-    zloc = f->GetInt();
-    visited = f->GetInt();
+    xloc = f->GetInt<unsigned int>();
+    yloc = f->GetInt<unsigned int>();
+    zloc = f->GetInt<unsigned int>();
+    visited = f->GetInt<int>();
 
     products.Readin(f);
     markets.Readin(f);
 
-    int i = f->GetInt();
+    int i = f->GetInt<int>();
     buildingseq = 1;
     for (int j=0; j<i; j++) {
-        Object *temp = new Object(this);
+        Object::Handle& temp = AddObject();
         temp->Readin(f, facs, v);
         if (temp->num >= buildingseq)
+        {
             buildingseq = temp->num + 1;
-        objects.Add(temp);
+        }
     }
     fleetalias = 1;
     newfleets.clear();
 }
 
-int ARegion::CanMakeAdv(Faction *fac, int item)
+bool ARegion::CanMakeAdv(const Faction::Handle& fac, int item)
 {
     AString skname;
     int sk;
-    Farsight *f;
 
     if (Globals->IMPROVED_FARSIGHT) {
-        forlist(&farsees) {
-            f = (Farsight *)elem;
-            if (f && f->faction == fac && f->unit) {
+        for(const auto& f: farsees)
+        {
+            if (f && f->faction.lock() == fac && !f->unit.expired()) {
                 skname = ItemDefs[item].pSkill;
                 sk = LookupSkill(&skname);
-                if (f->unit->GetSkill(sk) >= ItemDefs[item].pLevel)
-                    return 1;
+                if (f->unit.lock()->GetSkill(sk) >= ItemDefs[item].pLevel)
+                    return true;
             }
         }
     }
 
     if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_RESOURCES)) {
-        forlist(&passers) {
-            f = (Farsight *)elem;
-            if (f && f->faction == fac && f->unit) {
+        for(const auto& f: passers)
+        {
+            if (f && f->faction.lock() == fac && !f->unit.expired()) {
                 skname = ItemDefs[item].pSkill;
                 sk = LookupSkill(&skname);
-                if (f->unit->GetSkill(sk) >= ItemDefs[item].pLevel)
-                    return 1;
+                if (f->unit.lock()->GetSkill(sk) >= ItemDefs[item].pLevel)
+                    return true;
             }
         }
     }
 
-    forlist(&objects) {
-        Object *o = (Object *) elem;
-        forlist(&o->units) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == fac) {
+    for(const auto& o: objects)
+    {
+        for(const auto& u: o->units)
+        {
+            if (u->faction.lock() == fac) {
                 skname = ItemDefs[item].pSkill;
                 sk = LookupSkill(&skname);
                 if (u->GetSkill(sk) >= ItemDefs[item].pLevel)
-                    return 1;
+                    return true;
             }
         }
     }
-    return 0;
+    return false;
 }
 
-void ARegion::WriteProducts(Areport *f, Faction *fac, int present)
+void ARegion::WriteProducts(Areport *f, const Faction::Handle& fac, bool present)
 {
     AString temp = "Products: ";
-    int has = 0;
+    bool has = false;
     forlist((&products)) {
-        Production *p = ((Production *) elem);
+        Production *p = dynamic_cast<Production *>(elem);
         if (ItemDefs[p->itemtype].type & IT_ADVANCED) {
             if (CanMakeAdv(fac, p->itemtype) || (fac->IsNPC())) {
                 if (has) {
                     temp += AString(", ") + p->WriteReport();
                 } else {
-                    has = 1;
+                    has = true;
                     temp += p->WriteReport();
                 }
             }
@@ -1168,38 +1241,42 @@ void ARegion::WriteProducts(Areport *f, Faction *fac, int present)
                 if (has) {
                     temp += AString(", ") + p->WriteReport();
                 } else {
-                    has = 1;
+                    has = true;
                     temp += p->WriteReport();
                 }
             }
         }
     }
 
-    if (has==0) temp += "none";
+    if (!has)
+    {
+        temp += "none";
+    }
     temp += ".";
     f->PutStr(temp);
 }
 
-int ARegion::HasItem(Faction *fac, int item)
+bool ARegion::HasItem(const Faction::Handle& fac, int item)
 {
-    forlist(&objects) {
-        Object *o = (Object *) elem;
-        forlist(&o->units) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == fac) {
-                if (u->items.GetNum(item)) return 1;
+    for(const auto& o: objects)
+    {
+        for(const auto& u: o->units)
+        {
+            if (u->faction.lock() == fac)
+            {
+                if (u->items.GetNum(item)) return true;
             }
         }
     }
-    return 0;
+    return false;
 }
 
-void ARegion::WriteMarkets(Areport *f, Faction *fac, int present)
+void ARegion::WriteMarkets(Areport *f, const Faction::Handle& fac, bool present)
 {
     AString temp = "Wanted: ";
-    int has = 0;
+    bool has = false;
     forlist(&markets) {
-        Market *m = (Market *) elem;
+        Market *m = dynamic_cast<Market *>(elem);
         if (!m->amount) continue;
         if (!present &&
                 !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_MARKETS))
@@ -1215,20 +1292,23 @@ void ARegion::WriteMarkets(Areport *f, Faction *fac, int present)
             if (has) {
                 temp += ", ";
             } else {
-                has = 1;
+                has = true;
             }
             temp += m->Report();
         }
     }
-    if (!has) temp += "none";
+    if (!has)
+    {
+        temp += "none";
+    }
     temp += ".";
     f->PutStr(temp);
 
     temp = "For Sale: ";
-    has = 0;
+    has = false;
     {
         forlist(&markets) {
-            Market *m = (Market *) elem;
+            Market *m = dynamic_cast<Market *>(elem);
             if (!m->amount) continue;
             if (!present &&
                     !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_MARKETS))
@@ -1237,18 +1317,21 @@ void ARegion::WriteMarkets(Areport *f, Faction *fac, int present)
                 if (has) {
                     temp += ", ";
                 } else {
-                    has = 1;
+                    has = true;
                 }
                 temp += m->Report();
             }
         }
     }
-    if (!has) temp += "none";
+    if (!has)
+    {
+        temp += "none";
+    }
     temp += ".";
     f->PutStr(temp);
 }
 
-void ARegion::WriteEconomy(Areport *f, Faction *fac, int present)
+void ARegion::WriteEconomy(Areport *f, const Faction::Handle& fac, bool present)
 {
     f->AddTab();
 
@@ -1266,16 +1349,17 @@ void ARegion::WriteEconomy(Areport *f, Faction *fac, int present)
     f->DropTab();
 }
 
-void ARegion::WriteExits(Areport *f, ARegionList *pRegs, int *exits_seen)
+void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const std::array<bool, ALL_DIRECTIONS.size()>& exits_seen)
 {
     f->PutStr("Exits:");
     f->AddTab();
     int y = 0;
-    for (int i=0; i<NDIRS; i++) {
-        ARegion *r = neighbors[i];
-        if (r && exits_seen[i]) {
+    for (const auto d: ALL_DIRECTIONS) {
+        size_t i = static_cast<size_t>(d);
+        const ARegion::WeakHandle& r = neighbors[i];
+        if (!r.expired() && exits_seen[i]) {
             f->PutStr(AString(DirectionStrs[i]) + " : " +
-                    r->Print(pRegs) + ".");
+                    r.lock()->Print(pRegs) + ".");
             y = 1;
         }
     }
@@ -1289,23 +1373,24 @@ void ARegion::WriteExits(Areport *f, ARegionList *pRegs, int *exits_seen)
 "keep you safe as long as you should choose to stay. However, rumor " \
 "has it that once you have left the Nexus, you can never return."
 
-void ARegion::WriteReport(Areport *f, Faction *fac, int month,
-        ARegionList *pRegions)
+void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, const ARegionList& pRegions)
 {
-    Farsight *farsight = GetFarsight(&farsees, fac);
-    Farsight *passer = GetFarsight(&passers, fac);
-    int present = Present(fac) || fac->IsNPC();
+    Farsight::WeakHandle farsight = GetFarsight(farsees, fac);
+    const bool has_farsight = !farsight.expired();
+    Farsight::WeakHandle passer = GetFarsight(passers, fac);
+    const bool has_passer = !passer.expired();
+    const bool present = Present(fac) || fac->IsNPC();
 
-    if (farsight || passer || present) {
+    if (has_farsight || has_passer || present) {
         AString temp = Print(pRegions);
         if (Population() &&
-            (present || farsight ||
+            (present || has_farsight ||
              (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_PEASANTS))) {
             temp += AString(", ") + Population() + " peasants";
             if (Globals->RACES_EXIST) {
                 temp += AString(" (") + ItemDefs[race].names + ")";
             }
-            if (present || farsight ||
+            if (present || has_farsight ||
                     Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_REGION_MONEY) {
                 temp += AString(", $") + wealth;
             } else {
@@ -1327,7 +1412,7 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
                 temp += SeasonNames[weather];
             }
             temp += " last month; ";
-            int nxtweather = pRegions->GetWeather(this, (month + 1) % 12);
+            int nxtweather = pRegions.GetWeather(*this, (month + 1) % 12);
             temp += "it will be ";
             temp += SeasonNames[nxtweather];
             temp += " next month.";
@@ -1345,7 +1430,7 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
 #endif
 
         if (type == R_NEXUS) {
-            int len = strlen(AC_STRING)+2*strlen(Globals->WORLD_NAME);
+            size_t len = strlen(AC_STRING) + 2*strlen(Globals->WORLD_NAME);
             char *nexus_desc = new char[len];
             sprintf(nexus_desc, AC_STRING, Globals->WORLD_NAME,
                     Globals->WORLD_NAME);
@@ -1357,27 +1442,22 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
 
         f->DropTab();
 
-        WriteEconomy(f, fac, present || farsight);
+        WriteEconomy(f, fac, present || has_farsight);
 
-        int exits_seen[NDIRS];
-        if (present || farsight ||
-                (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_ALL_EXITS)) {
-            for (int i = 0; i < NDIRS; i++)
-                exits_seen[i] = 1;
+        std::array<bool, ALL_DIRECTIONS.size()> exits_seen;
+        if (present || has_farsight || (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_ALL_EXITS)) {
+            std::fill(exits_seen.begin(), exits_seen.end(), true);
         } else {
             // This is just a transit report and we're not showing all
             // exits.   See if we are showing used exits.
 
             // Show none by default.
-            int i;
-            for (i = 0; i < NDIRS; i++)
-                exits_seen[i] = 0;
+            std::fill(exits_seen.begin(), exits_seen.end(), false);
             // Now, if we should, show the ones actually used.
             if (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_USED_EXITS) {
-                forlist(&passers) {
-                    Farsight *p = (Farsight *)elem;
-                    if (p->faction == fac) {
-                        for (i = 0; i < NDIRS; i++) {
+                for(const auto& p: passers) {
+                    if (p->faction.lock() == fac) {
+                        for (size_t i = 0; i < exits_seen.size(); ++i) {
                             exits_seen[i] |= p->exits_used[i];
                         }
                     }
@@ -1391,32 +1471,28 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
             int sawgate = 0;
             if (fac->IsNPC())
                 sawgate = 1;
-            if (Globals->IMPROVED_FARSIGHT && farsight) {
-                forlist(&farsees) {
-                    Farsight *watcher = (Farsight *)elem;
-                    if (watcher && watcher->faction == fac && watcher->unit) {
-                        if (watcher->unit->GetSkill(S_GATE_LORE)) {
+            if (Globals->IMPROVED_FARSIGHT && has_farsight) {
+                for(const auto& watcher: farsees) {
+                    if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                        if (watcher->unit.lock()->GetSkill(S_GATE_LORE)) {
                             sawgate = 1;
                         }
                     }
                 }
             }
             if (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) {
-                forlist(&passers) {
-                    Farsight *watcher = (Farsight *)elem;
-                    if (watcher && watcher->faction == fac && watcher->unit) {
-                        if (watcher->unit->GetSkill(S_GATE_LORE)) {
+                for(const auto& watcher: passers) {
+                    if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                        if (watcher->unit.lock()->GetSkill(S_GATE_LORE)) {
                             sawgate = 1;
                         }
                     }
                 }
             }
-            forlist(&objects) {
-                Object *o = (Object *) elem;
-                forlist(&o->units) {
-                    Unit *u = (Unit *) elem;
+            for(const auto& o: objects) {
+                for(const auto& u: o->units) {
                     if (!sawgate &&
-                            ((u->faction == fac) &&
+                            ((u->faction.lock() == fac) &&
                              u->GetSkill(S_GATE_LORE))) {
                         sawgate = 1;
                     }
@@ -1429,7 +1505,7 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
                     temp += gate;
                     if (!Globals->DISPERSE_GATE_NUMBERS) {
                         temp += " of ";
-                        temp += pRegions->numberofgates;
+                        temp += pRegions.numberofgates;
                     }
                     temp += ").";
                     f->PutStr(temp);
@@ -1441,12 +1517,12 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
             }
         }
 
-        int obs = GetObservation(fac, 0);
-        int truesight = GetTrueSight(fac, 0);
+        int obs = GetObservation(fac, false);
+        int truesight = GetTrueSight(fac, false);
         int detfac = 0;
 
-        int passobs = GetObservation(fac, 1);
-        int passtrue = GetTrueSight(fac, 1);
+        int passobs = GetObservation(fac, true);
+        int passtrue = GetTrueSight(fac, true);
         int passdetfac = detfac;
 
         if (fac->IsNPC()) {
@@ -1454,20 +1530,17 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
             passobs = 10;
         }
 
-        forlist (&objects) {
-            Object *o = (Object *) elem;
-            forlist(&o->units) {
-                Unit *u = (Unit *) elem;
-                if (u->faction == fac && u->GetSkill(S_MIND_READING) > 2) {
+        for(const auto& o: objects) {
+            for(const auto& u: o->units) {
+                if (u->faction.lock() == fac && u->GetSkill(S_MIND_READING) > 2) {
                     detfac = 1;
                 }
             }
         }
-        if (Globals->IMPROVED_FARSIGHT && farsight) {
-            forlist(&farsees) {
-                Farsight *watcher = (Farsight *)elem;
-                if (watcher && watcher->faction == fac && watcher->unit) {
-                    if (watcher->unit->GetSkill(S_MIND_READING) > 2) {
+        if (Globals->IMPROVED_FARSIGHT && has_farsight) {
+            for(const auto& watcher: farsees) {
+                if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                    if (watcher->unit.lock()->GetSkill(S_MIND_READING) > 2) {
                         detfac = 1;
                     }
                 }
@@ -1476,10 +1549,9 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
 
         if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
                 (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
-            forlist(&passers) {
-                Farsight *watcher = (Farsight *)elem;
-                if (watcher && watcher->faction == fac && watcher->unit) {
-                    if (watcher->unit->GetSkill(S_MIND_READING) > 2) {
+            for(const auto& watcher: passers) {
+                if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                    if (watcher->unit.lock()->GetSkill(S_MIND_READING) > 2) {
                         passdetfac = 1;
                     }
                 }
@@ -1487,10 +1559,10 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
         }
 
         {
-            forlist (&objects) {
-                ((Object *) elem)->Report(f, fac, obs, truesight, detfac,
+            for(const auto& o: objects) {
+                o->Report(f, fac, obs, truesight, detfac,
                             passobs, passtrue, passdetfac,
-                            present || farsight);
+                            present || has_farsight);
             }
             f->EndLine();
         }
@@ -1498,17 +1570,15 @@ void ARegion::WriteReport(Areport *f, Faction *fac, int month,
 }
 
 // DK
-void ARegion::WriteTemplate(Areport *f, Faction *fac,
-        ARegionList *pRegs, int month)
+void ARegion::WriteTemplate(Areport *f, const Faction::Handle& fac,
+        const ARegionList& pRegs, int month)
 {
     int header = 0, order;
     AString temp, *token;
 
-    forlist (&objects) {
-        Object *o = (Object *) elem;
-        forlist(&o->units) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == fac) {
+    for(const auto& o: objects) {
+        for(const auto &u: o->units) {
+            if (u->faction.lock() == fac) {
                 if (!header) {
                     // DK
                     if (fac->temformat == TEMPLATE_MAP) {
@@ -1528,8 +1598,8 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                     f->PutStr(u->TemplateReport(), 1);
                 }
                 int gotMonthOrder = 0;
-                forlist(&(u->oldorders)) {
-                    temp = *((AString *) elem);
+                for(const auto& s: u->oldorders) {
+                    temp = *s;
                     temp.getat();
                     token = temp.gettoken();
                     if (token) {
@@ -1556,18 +1626,17 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                     }
                     if (order == O_ENDTURN || order == O_ENDFORM)
                         f->DropTab();
-                    f->PutStr(*((AString *) elem));
+                    f->PutStr(*s);
                     if (order == O_TURN || order == O_FORM)
                         f->AddTab();
                 }
                 f->ClearTab();
-                u->oldorders.DeleteAll();
+                u->oldorders.clear();
 
                 int firstMonthOrder = gotMonthOrder;
-                if (u->turnorders.First()) {
-                    TurnOrder *tOrder;
-                    forlist(&u->turnorders) {
-                        tOrder = (TurnOrder *)elem;
+                if (!u->turnorders.empty()) {
+                    for(const auto& tOrder: u->turnorders)
+                    {
                         if (firstMonthOrder) {
                             if (tOrder->repeating)
                                 f->PutStr(AString("@TURN"));
@@ -1575,8 +1644,8 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                                 f->PutStr(AString("TURN"));
                             f->AddTab();
                         }
-                        forlist(&tOrder->turnOrders) {
-                            temp = *((AString *) elem);
+                        for(const auto& t: tOrder->turnOrders) {
+                            temp = *t;
                             temp.getat();
                             token = temp.gettoken();
                             if (token) {
@@ -1586,7 +1655,7 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                                 order = NORDERS;
                             if (order == O_ENDTURN || order == O_ENDFORM)
                                 f->DropTab();
-                            f->PutStr(*((AString *) elem));
+                            f->PutStr(*t);
                             if (order == O_TURN || order == O_FORM)
                                 f->AddTab();
                         }
@@ -1597,12 +1666,12 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                         firstMonthOrder = 1;
                         f->ClearTab();
                     }
-                    tOrder = (TurnOrder *) u->turnorders.First();
+                    const TurnOrder::Handle& tOrder = u->turnorders.front();
                     if (tOrder->repeating && !gotMonthOrder) {
                         f->PutStr(AString("@TURN"));
                         f->AddTab();
-                        forlist(&tOrder->turnOrders) {
-                            temp = *((AString *) elem);
+                        for(const auto& t: tOrder->turnOrders) {
+                            temp = *t;
                             temp.getat();
                             token = temp.gettoken();
                             if (token) {
@@ -1612,7 +1681,7 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                                 order = NORDERS;
                             if (order == O_ENDTURN || order == O_ENDFORM)
                                 f->DropTab();
-                            f->PutStr(*((AString *) elem));
+                            f->PutStr(*t);
                             if (order == O_TURN || order == O_FORM)
                                 f->AddTab();
                         }
@@ -1620,21 +1689,20 @@ void ARegion::WriteTemplate(Areport *f, Faction *fac,
                         f->PutStr(AString("ENDTURN"));
                     }
                 }
-                u->turnorders.DeleteAll();
+                u->turnorders.clear();
             }
         }
     }
 }
 
-int ARegion::GetTrueSight(Faction *f, int usepassers)
+int ARegion::GetTrueSight(const Faction::Handle& f, bool usepassers)
 {
     int truesight = 0;
 
     if (Globals->IMPROVED_FARSIGHT) {
-        forlist(&farsees) {
-            Farsight *farsight = (Farsight *)elem;
-            if (farsight && farsight->faction == f && farsight->unit) {
-                int t = farsight->unit->GetSkill(S_TRUE_SEEING);
+        for(const auto& farsight: farsees) {
+            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
+                int t = farsight->unit.lock()->GetSkill(S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
         }
@@ -1643,20 +1711,17 @@ int ARegion::GetTrueSight(Faction *f, int usepassers)
     if (usepassers &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
-        forlist(&passers) {
-            Farsight *farsight = (Farsight *)elem;
-            if (farsight && farsight->faction == f && farsight->unit) {
-                int t = farsight->unit->GetSkill(S_TRUE_SEEING);
+        for(const auto& farsight: passers) {
+            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
+                int t = farsight->unit.lock()->GetSkill(S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
         }
     }
 
-    forlist ((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == f) {
+    for(const auto& obj: objects) {
+        for(const auto& u: obj->units) {
+            if (u->faction.lock() == f) {
                 int temp = u->GetSkill(S_TRUE_SEEING);
                 if (temp>truesight) truesight = temp;
             }
@@ -1665,14 +1730,13 @@ int ARegion::GetTrueSight(Faction *f, int usepassers)
     return truesight;
 }
 
-int ARegion::GetObservation(Faction *f, int usepassers)
+int ARegion::GetObservation(const Faction::Handle& f, bool usepassers)
 {
     int obs = 0;
 
     if (Globals->IMPROVED_FARSIGHT) {
-        forlist(&farsees) {
-            Farsight *farsight = (Farsight *)elem;
-            if (farsight && farsight->faction == f && farsight->unit) {
+        for(const auto& farsight: farsees) {
+            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
                 int o = farsight->observation;
                 if (o > obs) obs = o;
             }
@@ -1682,20 +1746,17 @@ int ARegion::GetObservation(Faction *f, int usepassers)
     if (usepassers &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
-        forlist(&passers) {
-            Farsight *farsight = (Farsight *)elem;
-            if (farsight && farsight->faction == f && farsight->unit) {
+        for(const auto& farsight: passers) {
+            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
                 int o = farsight->observation;
                 if (o > obs) obs = o;
             }
         }
     }
 
-    forlist ((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == f) {
+    for(const auto& obj: objects) {
+        for(const auto& u: obj->units) {
+            if (u->faction.lock() == f) {
                 int temp = u->GetAttribute("observation");
                 if (temp>obs) obs = temp;
             }
@@ -1709,36 +1770,43 @@ void ARegion::SetWeather(int newWeather)
     weather = newWeather;
 }
 
-int ARegion::IsCoastal()
+unsigned int ARegion::IsCoastal()
 {
     if (type == R_LAKE) {
         if (Globals->LAKESIDE_IS_COASTAL)
             return 1;
     } else if (TerrainDefs[type].similar_type == R_OCEAN)
         return 1;
-    int seacount = 0;
-    for (int i=0; i<NDIRS; i++) {
-        if (neighbors[i] && TerrainDefs[neighbors[i]->type].similar_type == R_OCEAN) {
-            if (!Globals->LAKESIDE_IS_COASTAL && neighbors[i]->type == R_LAKE) continue;
-            seacount++;
+    unsigned int seacount = 0;
+    for (const auto& n: neighbors) {
+        if (!n.expired())
+        {
+            int n_type = n.lock()->type;
+            if(TerrainDefs[n_type].similar_type == R_OCEAN) {
+                if (!Globals->LAKESIDE_IS_COASTAL && n_type == R_LAKE) continue;
+                seacount++;
+            }
         }
     }
     return seacount;
 }
 
-int ARegion::IsCoastalOrLakeside()
+unsigned int ARegion::IsCoastalOrLakeside()
 {
-    if (TerrainDefs[type].similar_type == R_OCEAN) return 1;
-    int seacount = 0;
-    for (int i=0; i<NDIRS; i++) {
-        if (neighbors[i] && TerrainDefs[neighbors[i]->type].similar_type == R_OCEAN) {
-            seacount++;
+    if (TerrainDefs[type].similar_type == R_OCEAN) return true;
+    unsigned int seacount = 0;
+    for (const auto& n: neighbors) {
+        if(!n.expired())
+        {
+            if (TerrainDefs[n.lock()->type].similar_type == R_OCEAN) {
+                seacount++;
+            }
         }
     }
     return seacount;
 }
 
-int ARegion::MoveCost(int movetype, ARegion *fromRegion, int dir, AString *road)
+int ARegion::MoveCost(int movetype, ARegion *fromRegion, Directions dir, AString *road)
 {
     int cost = 1;
     if (Globals->WEATHER_EXISTS) {
@@ -1761,49 +1829,43 @@ int ARegion::MoveCost(int movetype, ARegion *fromRegion, int dir, AString *road)
     return cost;
 }
 
-Unit *ARegion::Forbidden(Unit *u)
+Unit::WeakHandle ARegion::Forbidden(const Unit::Handle& u)
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u2 = (Unit *) elem;
-            if (u2->Forbids(this, u)) return u2;
+    for(const auto& obj: objects) {
+        for(const auto& u2: obj->units) {
+            if (u2->Forbids(*this, u)) return u2;
         }
     }
-    return 0;
+    return Unit::WeakHandle();
 }
 
-Unit *ARegion::ForbiddenByAlly(Unit *u)
+Unit::WeakHandle ARegion::ForbiddenByAlly(const Unit::Handle& u)
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u2 = (Unit *) elem;
-            if (u->faction->GetAttitude(u2->faction->num) == A_ALLY &&
-                u2->Forbids(this, u)) return u2;
+    for(const auto& obj: objects) {
+        for(const auto& u2: obj->units) {
+            if (u->faction.lock()->GetAttitude(u2->faction.lock()->num) == A_ALLY &&
+                u2->Forbids(*this, u)) return u2;
         }
     }
-    return 0;
+    return Unit::WeakHandle();
 }
 
-int ARegion::HasCityGuard()
+bool ARegion::HasCityGuard()
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u = (Unit *) elem;
+    for(const auto& obj: objects) {
+        for(const auto& u: obj->units) {
             if (u->type == U_GUARD && u->GetSoldiers() &&
                 u->guard == GUARD_GUARD) {
-                return 1;
+                return true;
             }
         }
     }
-    return 0;
+    return false;
 }
 
-int ARegion::NotifySpell(Unit *caster, char const *spell, ARegionList *pRegs)
+bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const ARegionList& pRegs)
 {
-    AList flist;
+    std::list<Faction::Handle> flist;
     unsigned int i;
 
     SkillType *pS = FindSkill(spell);
@@ -1812,139 +1874,127 @@ int ARegion::NotifySpell(Unit *caster, char const *spell, ARegionList *pRegs)
         // Okay, we aren't notifyable, check our prerequisites
         for (i = 0; i < sizeof(pS->depends)/sizeof(SkillDepend); i++) {
             if (pS->depends[i].skill == NULL) break;
-            if (NotifySpell(caster, pS->depends[i].skill, pRegs)) return 1;
+            if (NotifySpell(caster, pS->depends[i].skill, pRegs)) return true;
         }
-        return 0;
+        return false;
     }
 
     AString skname = spell;
     int sp = LookupSkill(&skname);
-    forlist((&objects)) {
-        Object *o = (Object *) elem;
-        forlist ((&o->units)) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == caster->faction) continue;
+    for(const auto& o: objects) {
+        for(const auto& u: o->units) {
+            if (u->faction.lock() == caster->faction.lock()) continue;
             if (u->GetSkill(sp)) {
-                if (!GetFaction2(&flist, u->faction->num)) {
-                    FactionPtr *fp = new FactionPtr;
-                    fp->ptr = u->faction;
-                    flist.Add(fp);
+                if (!GetFaction(flist, u->faction.lock()->num)) {
+                    flist.emplace_back(u->faction);
                 }
             }
         }
     }
 
-    forlist_reuse (&flist) {
-        FactionPtr *fp = (FactionPtr *) elem;
-        fp->ptr->Event(AString(*(caster->name)) + " uses " + SkillStrs(sp) +
+    for(const auto& fp: flist) {
+        fp->Event(AString(*(caster->name)) + " uses " + SkillStrs(sp) +
                 " in " + Print(pRegs) + ".");
     }
-    return 1;
+    return true;
 }
 
 // ALT, 26-Jul-2000
 // Procedure to notify all units in city about city name change
-void ARegion::NotifyCity(Unit *caster, AString& oldname, AString& newname)
+void ARegion::NotifyCity(const Unit::Handle& caster, AString& oldname, AString& newname)
 {
-    AList flist;
-    forlist((&objects)) {
-        Object *o = (Object *) elem;
-        forlist ((&o->units)) {
-            Unit *u = (Unit *) elem;
-            if (u->faction == caster->faction) continue;
-            if (!GetFaction2(&flist, u->faction->num)) {
-                FactionPtr *fp = new FactionPtr;
-                fp->ptr = u->faction;
-                flist.Add(fp);
+    std::list<FactionPtr::Handle> flist;
+    for(const auto& o: objects) {
+        for(const auto& u: o->units) {
+            if (u->faction.lock() == caster->faction.lock()) continue;
+            if (!GetFaction2(flist, u->faction.lock()->num)) {
+                auto& fp = flist.emplace_back(std::make_shared<FactionPtr>());
+                fp->ptr = u->faction.lock();
             }
         }
     }
     {
-        forlist(&flist) {
-            FactionPtr *fp = (FactionPtr *) elem;
+        for(const auto& fp: flist) {
             fp->ptr->Event(AString(*(caster->name)) + " renames " +
                     oldname + " to " + newname + ".");
         }
     }
 }
 
-int ARegion::CanTax(Unit *u)
+bool ARegion::CanTax(const Unit::Handle& u)
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u2 = (Unit *) elem;
+    for(const auto& obj: objects) {
+        for(const auto& u2: obj->units) {
             if (u2->guard == GUARD_GUARD && u2->IsAlive())
-                if (u2->GetAttitude(this, u) <= A_NEUTRAL)
-                    return 0;
+                if (u2->GetAttitude(*this, u) <= A_NEUTRAL)
+                    return false;
         }
     }
-    return 1;
+    return true;
 }
 
-int ARegion::CanPillage(Unit *u)
+bool ARegion::CanPillage(const Unit::Handle& u)
 {
-    forlist(&objects) {
-        Object *obj = (Object *)elem;
-        forlist (&obj->units) {
-            Unit *u2 = (Unit *)elem;
+    for(const auto& obj: objects) {
+        for(const auto& u2: obj->units) {
             if (u2->guard == GUARD_GUARD && u2->IsAlive() &&
-                    u2->faction != u->faction)
-                return 0;
+                    u2->faction.lock() != u->faction.lock())
+                return false;
         }
     }
-    return 1;
+    return true;
 }
 
-int ARegion::ForbiddenShip(Object *ship)
+bool ARegion::ForbiddenShip(const Object::Handle& ship)
 {
-    forlist(&ship->units) {
-        Unit *u = (Unit *) elem;
-        if (Forbidden(u)) return 1;
+    for(const auto& u: ship->units) {
+        if (!Forbidden(u).expired()) return true;
     }
-    return 0;
+    return false;
 }
 
 void ARegion::DefaultOrders()
 {
-    forlist((&objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units))
-            ((Unit *) elem)->DefaultOrders(obj);
+    for(const auto& obj: objects)
+    {
+        for(const auto& u: obj->units)
+        {
+            u->DefaultOrders(obj);
+        }
     }
 }
 
 //
 // This is just used for mapping; just check if there is an inner region.
 //
-int ARegion::HasShaft()
+bool ARegion::HasShaft()
 {
-    forlist (&objects) {
-        Object *o = (Object *) elem;
-        if (o->inner != -1) return 1;
+    for(const auto& o: objects) {
+        if (o->inner != -1) return true;
     }
-    return 0;
+    return false;
 }
 
-int ARegion::IsGuarded()
+bool ARegion::IsGuarded()
 {
-    forlist (&objects) {
-        Object *o = (Object *) elem;
-        forlist (&o->units) {
-            Unit *u = (Unit *) elem;
-            if (u->guard == GUARD_GUARD) return 1;
+    for(const auto& o: objects)
+    {
+        for(const auto& u: o->units)
+        {
+            if (u->guard == GUARD_GUARD)
+            {
+                return true;
+            }
         }
     }
-    return 0;
+    return false;
 }
 
 int ARegion::CountWMons()
 {
     int count = 0;
-    forlist (&objects) {
-        Object *o = (Object *) elem;
-        forlist (&o->units) {
-            Unit *u = (Unit *) elem;
+    for(const auto& o: objects) {
+        for(const auto& u: o->units) {
             if (u->type == U_WMON) {
                 count ++;
             }
@@ -1956,17 +2006,16 @@ int ARegion::CountWMons()
 /* New Fleet objects are stored in the newfleets
  * map for resolving aliases in the Enter NEW phase.
  */
-void ARegion::AddFleet(Object * fleet)
+void ARegion::AddFleet(const Object::Handle& fleet)
 {
-    objects.Add(fleet);
+    objects.push_back(fleet);
     //Awrite(AString("Setting up fleet alias #") + fleetalias + ": " + fleet->num);
-    newfleets.insert(make_pair(fleetalias++, fleet->num));
-    
+    newfleets.insert(std::make_pair(fleetalias++, fleet->num));
 }
 
 int ARegion::ResolveFleetAlias(int alias)
 {
-    map<int, int>::iterator f;
+    std::map<int, int>::iterator f;
     f = newfleets.find(alias);
     //Awrite(AString("Resolving Fleet Alias #") + alias + ": " + f->second);
     if (f == newfleets.end()) return -1;
@@ -1975,31 +2024,17 @@ int ARegion::ResolveFleetAlias(int alias)
 
 ARegionList::ARegionList()
 {
-    pRegionArrays = 0;
+    pRegionArrays.clear();
     numLevels = 0;
     numberofgates = 0;
 }
 
-ARegionList::~ARegionList()
-{
-    if (pRegionArrays) {
-        int i;
-        for (i = 0; i < numLevels; i++) {
-            delete pRegionArrays[i];
-        }
-
-        delete pRegionArrays;
-    }
-}
-
 void ARegionList::WriteRegions(Aoutfile *f)
 {
-    f->PutInt(Num());
+    f->PutInt(regions_.size());
 
     f->PutInt(numLevels);
-    int i;
-    for (i = 0; i < numLevels; i++) {
-        ARegionArray *pRegs = pRegionArrays[i];
+    for (const auto& pRegs: pRegionArrays) {
         f->PutInt(pRegs->x);
         f->PutInt(pRegs->y);
         if (pRegs->strName) {
@@ -2011,14 +2046,17 @@ void ARegionList::WriteRegions(Aoutfile *f)
     }
 
     f->PutInt(numberofgates);
-    forlist(this) ((ARegion *) elem)->Writeout(f);
+    for(const auto& reg: regions_)
+    {
+        reg->Writeout(f);
+    }
     {
         f->PutStr("Neighbors");
-        forlist(this) {
-            ARegion *reg = (ARegion *) elem;
-            for (i = 0; i < NDIRS; i++) {
-                if (reg->neighbors[i]) {
-                    f->PutInt(reg->neighbors[i]->num);
+        for(const auto& reg: regions_)
+        {
+            for (const auto& n: reg->neighbors) {
+                if (!n.expired()) {
+                    f->PutInt(n.lock()->num);
                 } else {
                     f->PutInt(-1);
                 }
@@ -2027,75 +2065,74 @@ void ARegionList::WriteRegions(Aoutfile *f)
     }
 }
 
-int ARegionList::ReadRegions(Ainfile *f, AList *factions, ATL_VER v)
+bool ARegionList::ReadRegions(Ainfile *f, AList *factions, ATL_VER v)
 {
-    int num = f->GetInt();
+    unsigned int num = f->GetInt<unsigned int>();
 
-    numLevels = f->GetInt();
+    numLevels = f->GetInt<unsigned int>();
     CreateLevels(numLevels);
-    int i;
-    for (i = 0; i < numLevels; i++) {
-        int curX = f->GetInt();
-        int curY = f->GetInt();
+    for (unsigned int i = 0; i < numLevels; i++) {
+        unsigned int curX = f->GetInt<unsigned int>();
+        unsigned int curY = f->GetInt<unsigned int>();
         AString *name = f->GetStr();
-        ARegionArray *pRegs = new ARegionArray(curX, curY);
+        ARegionArray::Handle pRegs = std::make_shared<ARegionArray>(curX, curY);
         if (*name == "none") {
             pRegs->strName = 0;
             delete name;
         } else {
             pRegs->strName = name;
         }
-        pRegs->levelType = f->GetInt();
+        pRegs->levelType = f->GetInt<int>();
         pRegionArrays[i] = pRegs;
     }
 
-    numberofgates = f->GetInt();
+    numberofgates = f->GetInt<unsigned int>();
 
     ARegionFlatArray fa(num);
 
     Awrite("Reading the regions...");
-    for (i = 0; i < num; i++) {
-        ARegion *temp = new ARegion;
+    for (unsigned int i = 0; i < num; i++) {
+        auto& temp = regions_.emplace_back(std::make_shared<ARegion>());
         temp->Readin(f, factions, v);
         fa.SetRegion(temp->num, temp);
-        Add(temp);
 
-        pRegionArrays[temp->zloc]->SetRegion(temp->xloc, temp->yloc,
-                                                temp);
+        pRegionArrays[temp->zloc]->SetRegion(temp->xloc, temp->yloc, temp);
     }
 
     Awrite("Setting up the neighbors...");
     {
         delete f->GetStr();
-        forlist(this) {
-            ARegion *reg = (ARegion *) elem;
-            for (i = 0; i < NDIRS; i++) {
-                int j = f->GetInt();
+        for(const auto& reg: regions_) {
+            for (auto& n: reg->neighbors) {
+                ssize_t j = f->GetInt<ssize_t>();
                 if (j != -1) {
-                    reg->neighbors[i] = fa.GetRegion(j);
+                    n = fa.GetRegion(static_cast<size_t>(j));
                 } else {
-                    reg->neighbors[i] = 0;
+                    n.reset();
                 }
             }
         }
     }
-    return 1;
+    return true;
 }
 
-ARegion *ARegionList::GetRegion(int n)
+ARegion::WeakHandle ARegionList::GetRegion(size_t n)
 {
-    forlist(this) {
-        if (((ARegion *) elem)->num == n) return ((ARegion *) elem);
+    for(const auto& r: regions_) {
+        if (r->num == n)
+        {
+            return r;
+        }
     }
-    return 0;
+    return ARegion::WeakHandle();
 }
 
-ARegion *ARegionList::GetRegion(int x, int y, int z)
+ARegion::WeakHandle ARegionList::GetRegion(unsigned int x, unsigned int y, unsigned int z)
 {
 
-    if (z >= numLevels) return NULL;
+    if (z >= numLevels) return ARegion::WeakHandle();
 
-    ARegionArray *arr = pRegionArrays[z];
+    const auto& arr = pRegionArrays[z];
 
     x = (x + arr->x) % arr->x;
     y = (y + arr->y) % arr->y;
@@ -2103,16 +2140,13 @@ ARegion *ARegionList::GetRegion(int x, int y, int z)
     return(arr->GetRegion(x, y));
 }
 
-Location *ARegionList::FindUnit(int i)
+Location::Handle ARegionList::FindUnit(size_t i)
 {
-    forlist(this) {
-        ARegion *reg = (ARegion *) elem;
-        forlist((&reg->objects)) {
-            Object *obj = (Object *) elem;
-            forlist((&obj->units)) {
-                Unit *u = (Unit *) elem;
+    for(const auto& reg: regions_) {
+        for(const auto& obj: reg->objects) {
+            for(const auto& u: obj->units) {
                 if (u->num == i) {
-                    Location *retval = new Location;
+                    Location::Handle retval = std::make_shared<Location>();
                     retval->unit = u;
                     retval->region = reg;
                     retval->obj = obj;
@@ -2121,32 +2155,32 @@ Location *ARegionList::FindUnit(int i)
             }
         }
     }
-    return 0;
+    return nullptr;
 }
 
-void ARegionList::NeighSetup(ARegion *r, ARegionArray *ar)
+void ARegionList::NeighSetup(const ARegion::Handle& r, const ARegionArray::Handle& ar)
 {
     r->ZeroNeighbors();
 
     if (r->yloc != 0 && r->yloc != 1) {
-        r->neighbors[D_NORTH] = ar->GetRegion(r->xloc, r->yloc - 2);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTH)] = ar->GetRegion(r->xloc, r->yloc - 2);
     }
     if (r->yloc != 0) {
-        r->neighbors[D_NORTHEAST] = ar->GetRegion(r->xloc + 1, r->yloc - 1);
-        r->neighbors[D_NORTHWEST] = ar->GetRegion(r->xloc - 1, r->yloc - 1);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)] = ar->GetRegion(r->xloc + 1, r->yloc - 1);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)] = ar->GetRegion(r->xloc - 1, r->yloc - 1);
     }
     if (r->yloc != ar->y - 1) {
-        r->neighbors[D_SOUTHEAST] = ar->GetRegion(r->xloc + 1, r->yloc + 1);
-        r->neighbors[D_SOUTHWEST] = ar->GetRegion(r->xloc - 1, r->yloc + 1);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)] = ar->GetRegion(r->xloc + 1, r->yloc + 1);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)] = ar->GetRegion(r->xloc - 1, r->yloc + 1);
     }
     if (r->yloc != ar->y - 1 && r->yloc != ar->y - 2) {
-        r->neighbors[D_SOUTH] = ar->GetRegion(r->xloc, r->yloc + 2);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTH)] = ar->GetRegion(r->xloc, r->yloc + 2);
     }
 }
 
-void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
+void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionArray::Handle& ar)
 {
-    int scale, x, y, x2, y2, x3, neighX, neighY;
+    unsigned int scale, x, y, x2, y2, x3, neighX, neighY;
 
     scale = ar->x / 10;
 
@@ -2165,10 +2199,10 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
     y2 = 10 * scale - 1 - y;
     // Always try to connect in the standard way...
     if (y > 1) {
-        r->neighbors[D_NORTH] = ar->GetRegion(x, y - 2);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTH)] = ar->GetRegion(x, y - 2);
     }
     // but if that fails, use the special icosahedral connections:
-    if (!r->neighbors[D_NORTH]) {
+    if (r->neighbors[static_cast<size_t>(Directions::D_NORTH)].expired()) {
         if (y > 0 && y < 3 * scale)
         {
             if (y == 2) {
@@ -2184,16 +2218,16 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
                 neighY = y - 2;
             }
             neighX %= (scale * 10);
-            r->neighbors[D_NORTH] = ar->GetRegion(neighX, neighY);
+            r->neighbors[static_cast<size_t>(Directions::D_NORTH)] = ar->GetRegion(neighX, neighY);
         }
     }
     if (y > 0) {
         neighX = x + 1;
         neighY = y - 1;
         neighX %= (scale * 10);
-        r->neighbors[D_NORTHEAST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)] = ar->GetRegion(neighX, neighY);
     }
-    if (!r->neighbors[D_NORTHEAST]) {
+    if (r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)].expired()) {
         if (y == 0) {
             neighX = 4 * scale;
             neighY = 2;
@@ -2217,15 +2251,15 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
             neighY = y - 2;
         }
         neighX %= (scale * 10);
-        r->neighbors[D_NORTHEAST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)] = ar->GetRegion(neighX, neighY);
     }
     if (y2 > 0) {
         neighX = x + 1;
         neighY = y + 1;
         neighX %= (scale * 10);
-        r->neighbors[D_SOUTHEAST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)] = ar->GetRegion(neighX, neighY);
     }
-    if (!r->neighbors[D_SOUTHEAST]) {
+    if (r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)].expired()) {
         if (y == 0) {
             neighX = 2 * scale;
             neighY = 2;
@@ -2249,12 +2283,12 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
             neighY = y + 2;
         }
         neighX %= (scale * 10);
-        r->neighbors[D_SOUTHEAST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)] = ar->GetRegion(neighX, neighY);
     }
     if (y2 > 1) {
-        r->neighbors[D_SOUTH] = ar->GetRegion(x, y + 2);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTH)] = ar->GetRegion(x, y + 2);
     }
-    if (!r->neighbors[D_SOUTH]) {
+    if (r->neighbors[static_cast<size_t>(Directions::D_SOUTH)].expired()) {
         if (y2 > 0 && y2 < 3 * scale)
         {
             if (y2 == 2) {
@@ -2270,16 +2304,16 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
                 neighY = y + 2;
             }
             neighX = (neighX + scale * 10) % (scale * 10);
-            r->neighbors[D_SOUTH] = ar->GetRegion(neighX, neighY);
+            r->neighbors[static_cast<size_t>(Directions::D_SOUTH)] = ar->GetRegion(neighX, neighY);
         }
     }
     if (y2 > 0) {
         neighX = x - 1;
         neighY = y + 1;
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[D_SOUTHWEST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)] = ar->GetRegion(neighX, neighY);
     }
-    if (!r->neighbors[D_SOUTHWEST]) {
+    if (r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)].expired()) {
         if (y == 0) {
             neighX = 8 * scale;
             neighY = 2;
@@ -2303,15 +2337,15 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
             neighY = y + 1;
         }
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[D_SOUTHWEST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)] = ar->GetRegion(neighX, neighY);
     }
     if (y > 0) {
         neighX = x - 1;
         neighY = y - 1;
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[D_NORTHWEST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)] = ar->GetRegion(neighX, neighY);
     }
-    if (!r->neighbors[D_NORTHWEST]) {
+    if (r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)].expired()) {
         if (y == 0) {
             neighX = 6 * scale;
             neighY = 2;
@@ -2335,7 +2369,7 @@ void ARegionList::IcosahedralNeighSetup(ARegion *r, ARegionArray *ar)
             neighY = y - 1;
         }
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[D_NORTHWEST] = ar->GetRegion(neighX, neighY);
+        r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)] = ar->GetRegion(neighX, neighY);
     }
 }
 
@@ -2346,8 +2380,7 @@ void ARegionList::CalcDensities()
     int i;
     for (i=0; i<R_NUM; i++)
         arr[i] = 0;
-    forlist(this) {
-        ARegion *reg = ((ARegion *) elem);
+    for(const auto& reg: regions_) {
         arr[reg->type]++;
     }
     for (i=0; i<R_NUM; i++)
@@ -2361,8 +2394,7 @@ void ARegionList::TownStatistics()
     int villages = 0;
     int towns = 0;
     int cities = 0;
-    forlist(this) {
-        ARegion *reg = ((ARegion *) elem);
+    for(const auto& reg: regions_) {
         if (reg->town) {
             switch(reg->town->TownType()) {
                 case TOWN_VILLAGE:
@@ -2387,57 +2419,63 @@ void ARegionList::TownStatistics()
     Awrite("");
 }
 
-ARegion *ARegionList::FindGate(int x)
+ARegion::WeakHandle ARegionList::FindGate(int x)
 {
-    if (x == -1) {
+    if (x == -1)
+    {
         int count = 0;
 
-        forlist(this) {
-            ARegion *r = (ARegion *) elem;
+        for(const auto& r: regions_) {
             if (r->gate)
                 count++;
         }
         count = getrandom(count);
-        forlist_reuse(this) {
-            ARegion *r = (ARegion *) elem;
+        for(const auto& r: regions_) {
             if (r->gate) {
                 if (!count)
                     return r;
                 count--;
             }
         }
-
-        return 0;
     }
-    forlist(this) {
-        ARegion *r = (ARegion *) elem;
-        if (r->gate == x) return r;
+    else
+    {
+        for(const auto& r: regions_) {
+            if (r->gate == x) return r;
+        }
     }
-    return 0;
+    return ARegion::WeakHandle();
 }
 
-ARegion *ARegionList::FindConnectedRegions(ARegion *r, ARegion *tail, int shaft)
+ARegion::WeakHandle ARegionList::FindConnectedRegions(const ARegion::Handle& r, ARegion::Handle tail, bool shaft)
 {
-        int i;
-        Object *o;
-        ARegion *inner;
-
-        for (i = 0; i < NDIRS; i++) {
-                if (r->neighbors[i] && r->neighbors[i]->distance == -1) {
-                        tail->next = r->neighbors[i];
-                        tail = tail->next;
-                        tail->distance = r->distance + 1;
-                }
+    for (const auto& n: r->neighbors)
+    {
+        if (!n.expired())
+        {
+            const auto r_sp = n.lock();
+            if(!r_sp->distance.isValid())
+            {
+                tail->next = r_sp;
+                tail = tail->next.lock();
+                tail->distance = 0;
+            }
         }
+    }
     if (shaft) {
-        forlist(&r->objects) {
-            o = (Object *) elem;
+        for(const auto& o: r->objects)
+        {
             if (o->inner != -1) {
-                inner = GetRegion(o->inner);
-                if (inner && inner->distance == -1) {
-                    tail->next = inner;
-                    tail = tail->next;
-                    tail->distance = r->distance + 1;
+                ARegion::WeakHandle inner = GetRegion(static_cast<size_t>(o->inner));
+                if (!inner.expired())
+                {
+                    const auto inner_sp = inner.lock();
+                    if(!inner_sp->distance.isValid())
+                    {
+                        tail->next = inner_sp;
+                        tail = tail->next.lock();
+                        tail->distance = r->distance + 1;
+                    }
                 }
             }
         }
@@ -2446,51 +2484,55 @@ ARegion *ARegionList::FindConnectedRegions(ARegion *r, ARegion *tail, int shaft)
         return tail;
 }
 
-ARegion *ARegionList::FindNearestStartingCity(ARegion *start, int *dir)
+ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle start, unsigned int *dir)
 {
-    ARegion *r, *queue, *inner;
-    int offset, i, valid;
-        Object *o;
-
-    forlist(this) {
-        r = (ARegion *) elem;
-        r->distance = -1;
-        r->next = 0;
+    for(const auto& r: regions_) {
+        r->distance.invalidate();
+        r->next.reset();
     }
 
-    start->distance = 0;
-    queue = start;
-    while (start) {
-        queue = FindConnectedRegions(start, queue, 1);
-        valid = 0;
-        if (start) {
+    start.lock()->distance = 0;
+    ARegion::WeakHandle queue = start;
+    while (!start.expired()) {
+        queue = FindConnectedRegions(start.lock(), queue.lock(), true);
+        bool valid = false;
+        if (!start.expired()) {
             if (Globals->START_CITIES_EXIST) {
-                if (start->IsStartingCity())
-                    valid = 1;
-            } else {
+                if (start.lock()->IsStartingCity())
+                {
+                    valid = true;
+                }
+            }
+            else
+            {
                 // No starting cities?
                 // Then any explored settlement will do
-                if (start->town && start->visited)
-                    valid = 1;
+                const auto start_sp = start.lock();
+                if (start_sp->town && start_sp->visited)
+                {
+                    valid = true;
+                }
             }
         }
         if (valid) {
             if (dir) {
-                offset = getrandom(NDIRS);
-                for (i = 0; i < NDIRS; i++) {
-                    r = start->neighbors[(i + offset) % NDIRS];
-                    if (!r)
+                size_t offset = static_cast<unsigned int>(getrandom(ALL_DIRECTIONS.size()));
+                const auto start_sp = start.lock();
+                for (size_t i = 0; i < ALL_DIRECTIONS.size(); i++) {
+                    const auto& r = start_sp->neighbors[(i + offset) % ALL_DIRECTIONS.size()];
+                    if (r.expired())
+                    {
                         continue;
-                    if (r->distance + 1 == start->distance) {
-                        *dir = (i + offset) % NDIRS;
+                    }
+                    if (r.lock()->distance + 1 == start_sp->distance) {
+                        *dir = static_cast<unsigned int>((i + offset) % ALL_DIRECTIONS.size());
                         break;
                     }
                 }
-                forlist(&start->objects) {
-                    o = (Object *) elem;
+                for(const auto& o: start_sp->objects) {
                     if (o->inner != -1) {
-                        inner = GetRegion(o->inner);
-                        if (inner->distance + 1 == start->distance) {
+                        const auto& inner = GetRegion(static_cast<size_t>(o->inner));
+                        if (inner.lock()->distance + 1 == start_sp->distance) {
                             *dir = MOVE_IN;
                             break;
                         }
@@ -2499,31 +2541,32 @@ ARegion *ARegionList::FindNearestStartingCity(ARegion *start, int *dir)
             }
             return start;
         }
-        start = start->next;
+        start = start.lock()->next;
     }
 
     // This should never happen!
-    return 0;
+    return ARegion::WeakHandle();
 }
 
-int ARegionList::GetPlanarDistance(ARegion *one, ARegion *two,
-        int penalty, int maxdist)
+unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const ARegion::Handle& two, int penalty, unsigned int maxdist)
 {
-    if (one->zloc == ARegionArray::LEVEL_NEXUS ||
-            two->zloc == ARegionArray::LEVEL_NEXUS)
+    if (one->zloc == ARegionArray::LEVEL_NEXUS || two->zloc == ARegionArray::LEVEL_NEXUS)
+    {
         return 10000000;
+    }
 
     if (Globals->ABYSS_LEVEL) {
         // make sure you cannot teleport into or from the abyss
-        int ablevel = Globals->UNDERWORLD_LEVELS +
-            Globals->UNDERDEEP_LEVELS + 2;
+        unsigned int ablevel = Globals->UNDERWORLD_LEVELS + Globals->UNDERDEEP_LEVELS + 2;
         if (one->zloc == ablevel || two->zloc == ablevel)
+        {
             return 10000000;
+        }
     }
 
-    int one_x, one_y, two_x, two_y;
-    int maxy;
-    ARegionArray *pArr=pRegionArrays[ARegionArray::LEVEL_SURFACE];
+    unsigned int one_x, one_y, two_x, two_y;
+    unsigned int maxy;
+    const auto& pArr = pRegionArrays[ARegionArray::LEVEL_SURFACE];
 
     one_x = one->xloc * GetLevelXScale(one->zloc);
     one_y = one->yloc * GetLevelYScale(one->zloc);
@@ -2532,24 +2575,23 @@ int ARegionList::GetPlanarDistance(ARegion *one, ARegion *two,
     two_y = two->yloc * GetLevelYScale(two->zloc);
 
     if (Globals->ICOSAHEDRAL_WORLD) {
-        int zdist;
-        ARegion *start, *target, *queue;
+        ARegion::WeakHandle start, target, queue;
 
         start = pArr->GetRegion(one_x, one_y);
-        if (start == 0) {
+        if (start.expired()) {
             one_x += GetLevelXScale(one->zloc) - 1;
             one_y += GetLevelYScale(one->zloc) - 1;
             start = pArr->GetRegion(one_x, one_y);
         }
 
         target = pArr->GetRegion(two_x, two_y);
-        if (target == 0) {
+        if (target.expired()) {
             two_x += GetLevelXScale(two->zloc) - 1;
             two_y += GetLevelYScale(two->zloc) - 1;
             target = pArr->GetRegion(two_x, two_y);
         }
 
-        if (start == 0 || target == 0) {
+        if (start.expired() || target.expired()) {
             // couldn't find equivalent locations on
             // the surface (this should never happen)
             Awrite(AString("Unable to find ends pathing from (") +
@@ -2562,25 +2604,25 @@ int ARegionList::GetPlanarDistance(ARegion *one, ARegion *two,
             return 10000000;
         }
 
-        forlist(this) {
-            ARegion *r = (ARegion *) elem;
-            r->distance = -1;
-            r->next = 0;
+        for(const auto& r: regions_) {
+            r->distance.invalidate();
+            r->next.reset();
         }
         
-        zdist = (one->zloc - two->zloc);
-        if (zdist < 0) zdist = -zdist;
-        start->distance = zdist * penalty;
+        unsigned int zdist = absdiff(one->zloc, two->zloc);
+
+        auto start_sp  = start.lock();
+        start_sp->distance = zdist * static_cast<unsigned int>(penalty);
         queue = start;
-        while (maxdist == -1 || start->distance <= maxdist) {
-            if (start->xloc == two_x && start->yloc == two_y) {
+        while (maxdist == std::numeric_limits<decltype(maxdist)>::max() || static_cast<unsigned int>(start_sp->distance) <= maxdist) {
+            if (start_sp->xloc == two_x && start_sp->yloc == two_y) {
                 // found our target within range
-                return start->distance;
+                return start_sp->distance;
             }
             // add neighbours to the search list
-            queue = FindConnectedRegions(start, queue, 0);
-            start = start->next;
-            if (start == 0)
+            queue = FindConnectedRegions(start_sp, queue.lock(), 0);
+            start = start_sp->next;
+            if (start.expired())
             {
                 // ran out of hexes to search
                 // (this should never happen)
@@ -2593,76 +2635,82 @@ int ARegionList::GetPlanarDistance(ARegion *one, ARegion *two,
                     two->zloc + ")!");
                 return 10000000;
             }
+            start_sp = start.lock();
         }
         // didn't find the target within range
-        return start->distance;
+        return start_sp->distance;
     } else {
-        maxy = one_y - two_y;
-        if (maxy < 0) maxy=-maxy;
+        maxy = absdiff(one_y, two_y);
 
-        int maxx = one_x - two_x;
-        if (maxx < 0) maxx = -maxx;
+        unsigned int maxx = absdiff(one_x, two_x);
 
-        int max2 = one_x + pArr->x - two_x;
-        if (max2 < 0) max2 = -max2;
+        unsigned int max2 = absdiff(one_x + pArr->x, two_x);
         if (max2 < maxx) maxx = max2;
 
-        max2 = one_x - (two_x + pArr->x);
-        if (max2 < 0) max2 = -max2;
+        max2 = absdiff(one_x, two_x + pArr->x);
         if (max2 < maxx) maxx = max2;
 
         if (maxy > maxx) maxx = (maxx+maxy)/2;
 
         if (one->zloc != two->zloc) {
-            int zdist = (one->zloc - two->zloc);
+            unsigned int zdist = (one->zloc - two->zloc);
             if ((two->zloc - one->zloc) > zdist)
                 zdist = two->zloc - one->zloc;
-            maxx += (penalty * zdist);
+            maxx += (static_cast<unsigned int>(penalty) * zdist);
         }
 
         return maxx;
     }
 }
 
-ARegionArray *ARegionList::GetRegionArray(int level)
+const ARegionArray::Handle& ARegionList::GetRegionArray(size_t level)
 {
-    return(pRegionArrays[level]);
+    return pRegionArrays[level];
 }
 
-void ARegionList::CreateLevels(int n)
+void ARegionList::CreateLevels(unsigned int n)
 {
     numLevels = n;
-    pRegionArrays = new ARegionArray *[n];
+    pRegionArrays.resize(n);
 }
 
-ARegionArray::ARegionArray(int xx, int yy)
+ARegionArray::ARegionArray(unsigned int xx, unsigned int yy)
 {
     x = xx;
     y = yy;
-    regions = new ARegion *[x * y / 2 + 1];
+    regions.resize(x * y / 2 + 1);
     strName = 0;
 
-    int i;
-    for (i = 0; i < x * y / 2; i++) regions[i] = 0;
+    for (unsigned int i = 0; i < x * y / 2; i++)
+    {
+        regions[i].reset();
+    }
 }
 
 ARegionArray::~ARegionArray()
 {
     if (strName) delete strName;
-    delete [] regions;
 }
 
-void ARegionArray::SetRegion(int xx, int yy, ARegion *r)
+void ARegionArray::SetRegion(unsigned int xx, unsigned int yy, const ARegion::WeakHandle& r)
 {
     regions[xx / 2 + yy * x / 2] = r;
 }
 
-ARegion *ARegionArray::GetRegion(int xx, int yy)
+ARegion::WeakHandle ARegionArray::GetRegion(unsigned int xx, unsigned int yy)
 {
     xx = (xx + x) % x;
     yy = (yy + y) % y;
-    if ((xx + yy) % 2) return(0);
-    return(regions[xx / 2 + yy * x / 2]);
+    if ((xx + yy) % 2)
+    {
+        return ARegion::WeakHandle();
+    }
+    return regions[xx / 2 + yy * x / 2];
+}
+
+int ARegion::calculateWagesWithRatio(float ratio, int multiplier)
+{
+    return static_cast<int>(static_cast<float>(Wages() * multiplier) * ratio);
 }
 
 void ARegionArray::SetName(char const *name)
@@ -2675,22 +2723,17 @@ void ARegionArray::SetName(char const *name)
     }
 }
 
-ARegionFlatArray::ARegionFlatArray(int s)
+ARegionFlatArray::ARegionFlatArray(size_t s)
 {
     size = s;
-    regions = new ARegion *[s];
+    regions.resize(s);
 }
 
-ARegionFlatArray::~ARegionFlatArray()
-{
-    if (regions) delete regions;
-}
-
-void ARegionFlatArray::SetRegion(int x, ARegion *r) {
+void ARegionFlatArray::SetRegion(size_t x, const ARegion::Handle& r) {
     regions[x] = r;
 }
 
-ARegion *ARegionFlatArray::GetRegion(int x) {
+ARegion::WeakHandle ARegionFlatArray::GetRegion(size_t x) {
     return regions[x];
 }
 
@@ -2706,3 +2749,4 @@ int ParseTerrain(AString *token)
     
     return (-1);
 }
+

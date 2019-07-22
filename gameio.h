@@ -25,13 +25,36 @@
 #ifndef GAME_IO
 #define GAME_IO
 
+#include <type_traits>
 #include "astring.h"
+#include "i_rand.h"
 
 void initIO();
 void doneIO();
 
+extern randctx isaac_ctx;
+
 /* Get a random number from 0 to (int-1) */
-int getrandom(int);
+template<typename I>
+I getrandom(I range)
+{
+    const bool neg = std::is_signed<I>::value && (range < 0);
+    if (!range) return I(0);
+    I ret = I(0);
+    if (neg) range = -range;
+    unsigned long i = isaac_rand( &isaac_ctx );
+    i = i % static_cast<unsigned long>(range);
+    if (neg) ret = static_cast<I>(-i);
+    else ret = static_cast<I>(i);
+    return ret;
+}
+
+template<>
+float getrandom(float range)
+{
+    return static_cast<float>(getrandom(range));
+}
+
 /* Seed the random number generator */
 void seedrandom(int);
 void seedrandomrandom();

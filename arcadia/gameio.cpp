@@ -25,8 +25,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 #include "gameio.h"
 #include "gamedefs.h"
 #include <stdlib.h>

@@ -520,7 +520,7 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
 // NEW FUNCTION DK 2000.03.07,
 // converted WriteExits
 //
-void ARegion::GetMapLine(char *buffer, int line, ARegionList *pRegs)
+void ARegion::GetMapLine(char *buffer, int line, ARegionList *)
 {
 
     for (int m=0; m<MAP_WIDTH; m++) {
@@ -549,7 +549,7 @@ void ARegion::GetMapLine(char *buffer, int line, ARegionList *pRegs)
         if (y == line || y+1 == line) {
             if (y == line) {
                 if (name) {
-                    int len = strlen(name);
+                    size_t len = strlen(name);
                     if (len > FILL_SIZE) len = FILL_SIZE;
                     memcpy(dest + x, name, len);
                 } else {

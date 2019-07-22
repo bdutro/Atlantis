@@ -154,7 +154,7 @@ void Game::ProcessCastOrder(Unit * u,AString * o, OrdersCheck *pCheck )
     }
 }
 
-void Game::ProcessMindReading(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessMindReading(Unit *u,AString *o, OrdersCheck *)
 {
     UnitId *id = ParseUnit(o);
 
@@ -172,7 +172,7 @@ void Game::ProcessMindReading(Unit *u,AString *o, OrdersCheck *pCheck )
     u->castorders = order;
 }
 
-void Game::ProcessBirdLore(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessBirdLore(Unit *u,AString *o, OrdersCheck *)
 {
     AString *token = o->gettoken();
 
@@ -220,7 +220,7 @@ void Game::ProcessBirdLore(Unit *u,AString *o, OrdersCheck *pCheck )
     delete token;
 }
 
-void Game::ProcessInvisibility(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessInvisibility(Unit *u,AString *o, OrdersCheck *)
 {
     AString *token = o->gettoken();
 
@@ -250,7 +250,7 @@ void Game::ProcessInvisibility(Unit *u,AString *o, OrdersCheck *pCheck )
     }
 }
 
-void Game::ProcessPhanDemons(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessPhanDemons(Unit *u,AString *o, OrdersCheck *)
 {
     CastIntOrder *order = new CastIntOrder;
     order->spell = S_CREATE_PHANTASMAL_DEMONS;
@@ -298,7 +298,7 @@ void Game::ProcessPhanDemons(Unit *u,AString *o, OrdersCheck *pCheck )
     u->castorders = order;
 }
 
-void Game::ProcessPhanUndead(Unit *u,AString *o, OrdersCheck *pCheck)
+void Game::ProcessPhanUndead(Unit *u,AString *o, OrdersCheck *)
 {
     CastIntOrder *order = new CastIntOrder;
     order->spell = S_CREATE_PHANTASMAL_UNDEAD;
@@ -346,7 +346,7 @@ void Game::ProcessPhanUndead(Unit *u,AString *o, OrdersCheck *pCheck)
     u->castorders = order;
 }
 
-void Game::ProcessPhanBeasts(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessPhanBeasts(Unit *u,AString *o, OrdersCheck *)
 {
     CastIntOrder *order = new CastIntOrder;
     order->spell = S_CREATE_PHANTASMAL_BEASTS;
@@ -388,7 +388,7 @@ void Game::ProcessPhanBeasts(Unit *u,AString *o, OrdersCheck *pCheck )
     u->castorders = order;
 }
 
-void Game::ProcessGenericSpell(Unit *u,int spell, OrdersCheck *pCheck )
+void Game::ProcessGenericSpell(Unit *u,int spell, OrdersCheck *)
 {
     CastOrder *orders = new CastOrder;
     orders->spell = spell;
@@ -397,8 +397,7 @@ void Game::ProcessGenericSpell(Unit *u,int spell, OrdersCheck *pCheck )
     u->castorders = orders;
 }
 
-void Game::ProcessRegionSpell(Unit *u, AString *o, int spell,
-        OrdersCheck *pCheck)
+void Game::ProcessRegionSpell(Unit *u, AString *o, int spell, OrdersCheck *)
 {
     AString *token = o->gettoken();
     int x = -1;
@@ -465,7 +464,7 @@ void Game::ProcessRegionSpell(Unit *u, AString *o, int spell,
         u->castorders = order;
 }
 
-void Game::ProcessCastPortalLore(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessCastPortalLore(Unit *u,AString *o, OrdersCheck *)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -508,7 +507,7 @@ void Game::ProcessCastPortalLore(Unit *u,AString *o, OrdersCheck *pCheck )
     }
 }
 
-void Game::ProcessCastGateLore(Unit *u,AString *o, OrdersCheck *pCheck )
+void Game::ProcessCastGateLore(Unit *u,AString *o, OrdersCheck *)
 {
     AString *token = o->gettoken();
 
@@ -615,7 +614,7 @@ void Game::ProcessCastGateLore(Unit *u,AString *o, OrdersCheck *pCheck )
     u->Error("CAST: Invalid argument.");
 }
 
-void Game::ProcessTransmutation(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessTransmutation(Unit *u, AString *o, OrdersCheck *)
 {
     CastTransmuteOrder *order;
     AString *token;
@@ -942,7 +941,7 @@ int Game::RunMindReading(ARegion *r,Unit *u)
     return 1;
 }
 
-int Game::RunEnchant(ARegion *r,Unit *u, int skill, int item)
+int Game::RunEnchant(ARegion *,Unit *u, int skill, int item)
 {
     int level, max, num, i, a;
     unsigned int c;
@@ -1045,7 +1044,7 @@ int Game::RunConstructGate(ARegion *r,Unit *u, int spell)
     return 1;
 }
 
-int Game::RunEngraveRunes(ARegion *r,Object *o,Unit *u)
+int Game::RunEngraveRunes(ARegion *, Object *o, Unit *u)
 {
     if (o->IsFleet() || !o->IsBuilding()) {
         u->Error("Runes of Warding may only be engraved on a building.");
@@ -1064,16 +1063,21 @@ int Game::RunEngraveRunes(ARegion *r,Object *o,Unit *u)
         case 5:
             if (o->type == O_MCASTLE) break;
             if (o->type == O_MCITADEL) break;
+            /* FALLTHRU */
         case 4:
             if (o->type == O_CITADEL) break;
             if (o->type == O_MFORTRESS) break;
+            /* FALLTHRU */
         case 3:
             if (o->type == O_CASTLE) break;
             if (o->type == O_MTOWER) break;
+            /* FALLTHRU */
         case 2:
             if (o->type == O_FORT) break;
+            /* FALLTHRU */
         case 1:
             if (o->type == O_TOWER) break;
+            /* FALLTHRU */
         default:
             u->Error("Not high enough level to engrave Runes of Warding on "
                     "that building.");
@@ -1606,7 +1610,7 @@ int Game::RunFarsight(ARegion *r,Unit *u)
     return 1;
 }
 
-int Game::RunDetectGates(ARegion *r,Object *o,Unit *u)
+int Game::RunDetectGates(ARegion *r, Object *, Unit *u)
 {
     int level = u->GetSkill(S_GATE_LORE);
 
@@ -1642,7 +1646,7 @@ int Game::RunDetectGates(ARegion *r,Object *o,Unit *u)
     return 1;
 }
 
-int Game::RunTeleport(ARegion *r,Object *o,Unit *u)
+int Game::RunTeleport(ARegion *r, Object *, Unit *u)
 {
     ARegion *tar;
     int val;
@@ -1673,7 +1677,7 @@ int Game::RunTeleport(ARegion *r,Object *o,Unit *u)
     return 1;
 }
 
-int Game::RunGateJump(ARegion *r,Object *o,Unit *u)
+int Game::RunGateJump(ARegion *r, Object *, Unit *u)
 {
     int level = u->GetSkill(S_GATE_LORE);
     int nexgate = 0;
@@ -1809,7 +1813,7 @@ int Game::RunGateJump(ARegion *r,Object *o,Unit *u)
     return 1;
 }
 
-int Game::RunPortalLore(ARegion *r,Object *o,Unit *u)
+int Game::RunPortalLore(ARegion *r, Object *, Unit *u)
 {
     int level = u->GetSkill(S_PORTAL_LORE);
     TeleportOrder *order = u->teleportorders;
@@ -1888,7 +1892,7 @@ int Game::RunPortalLore(ARegion *r,Object *o,Unit *u)
     return 1;
 }
 
-int Game::RunTransmutation(ARegion *r, Unit *u)
+int Game::RunTransmutation(ARegion *, Unit *u)
 {
     CastTransmuteOrder *order;
     int level, num, source;

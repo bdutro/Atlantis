@@ -854,11 +854,11 @@ int Game::GenRules(const AString &rules, const AString &css,
     temp = "For Sale: 50 ";
     temp += AString(ItemDefs[manidx].names) + " [" + ItemDefs[manidx].abr + "]";
     temp += " at $";
-    float ratio = ItemDefs[(Globals->RACES_EXIST?I_NOMAD:I_MAN)].baseprice/
-        (float)Globals->BASE_MAN_COST;
+    float ratio = static_cast<float>(ItemDefs[(Globals->RACES_EXIST ? I_NOMAD : I_MAN)].baseprice) /
+                  static_cast<float>(Globals->BASE_MAN_COST);
     temp += (int)(60*ratio);
     if (Globals->LEADERS_EXIST) {
-        ratio = ItemDefs[leadidx].baseprice/(float)Globals->BASE_MAN_COST;
+        ratio = static_cast<float>(ItemDefs[leadidx].baseprice) / static_cast<float>(Globals->BASE_MAN_COST);
         temp += AString(", 10 ") + ItemDefs[leadidx].names + " [" +
             ItemDefs[leadidx].abr + "] at $";
         temp += (int)(60*ratio);

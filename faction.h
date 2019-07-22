@@ -33,6 +33,8 @@
 class Faction;
 class Game;
 
+#include <memory>
+
 #include "gameio.h"
 #include "aregion.h"
 #include "fileio.h"
@@ -113,14 +115,12 @@ public:
     int attitude;
 };
 
-class FactionPtr : public AListElem {
-public:
-    Faction * ptr;
-};
-
-class Faction : public AListElem
+class Faction
 {
 public:
+    using Handle = std::shared_ptr<Faction>;
+    using WeakHandle = std::weak_ptr<Faction>;
+
     Faction();
     Faction(int);
     ~Faction();
@@ -148,9 +148,9 @@ public:
     int GetAttitude(int);
     void RemoveAttitude(int);
     
-    int CanCatch(ARegion *,Unit *);
+    int CanCatch(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
     /* Return 1 if can see, 2 if can see faction */
-    int CanSee(ARegion *,Unit *, int practice = 0);
+    int CanSee(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&, int practice = 0);
     
     void DefaultOrders();
     void TimesReward();
@@ -177,7 +177,7 @@ public:
     AString * address;
     AString * password;
     int times;
-    int showunitattitudes;
+    bool showunitattitudes;
     int temformat;
     char exists;
     int quit;
@@ -204,20 +204,26 @@ public:
     AList extraPlayers;
     AList errors;
     AList events;
-    AList battles;
+    std::list<std::shared_ptr<BattlePtr>> battles;
     AList shows;
     AList itemshows;
     AList objectshows;
 
     // These are used for 'granting' units to a faction via the players.in
     // file
-    ARegion *pReg;
-    ARegion *pStartLoc;
+    std::shared_ptr<ARegion> pReg;
+    std::shared_ptr<ARegion> pStartLoc;
     int noStartLeader;
     int startturn;
 };
 
-Faction * GetFaction(AList *,int);
-Faction * GetFaction2(AList *,int); /*This AList is a list of FactionPtr*/
+class FactionPtr {
+public:
+    using Handle = std::shared_ptr<FactionPtr>;
+    Faction::Handle ptr;
+};
+
+Faction::Handle GetFaction(const std::list<Faction::Handle>&, int);
+Faction::Handle GetFaction2(const std::list<FactionPtr::Handle>&, int); /*This AList is a list of FactionPtr*/
 
 #endif

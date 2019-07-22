@@ -89,14 +89,14 @@ public:
     // Give this particular game a chance to set up the faction. This is in
     // extra.cpp.
     //
-    int SetupFaction(Faction *pFac);
+    int SetupFaction(const Faction::Handle& pFac);
 
     void ViewFactions();
 
     //
     // Get a new unit, with its number assigned.
     //
-    Unit *GetNewUnit(Faction *fac, int an = 0);
+    Unit::Handle GetNewUnit(const Faction::Handle& fac, int an = 0);
 
     //
     // Setup the array of units.
@@ -280,9 +280,9 @@ private:
             int type, int val);
     void ModifyHealing(int level, int patients, int success);
 
-    AList factions;
-    AList newfactions; /* List of strings */
-    AList battles;
+    std::list<Faction::Handle> factions;
+    std::list<AString> newfactions; /* List of strings */
+    std::list<Battle::Handle> battles;
     ARegionList regions;
     int factionseq;
     unsigned int unitseq;
@@ -482,7 +482,7 @@ private:
     //
     // CheckVictory is used to see if the game is over.
     //
-    Faction *CheckVictory();
+    Faction::WeakHandle CheckVictory();
 
     void EndGame(Faction *pVictor);
 
@@ -576,13 +576,41 @@ private:
     //
     // Battle function
     //
-    int KillDead(Location *, Battle *);
-    int RunBattle(ARegion *, Unit *, Unit *, int = 0, int = 0);
-    void GetSides(ARegion *, AList &, AList &, AList &, AList &, Unit *, Unit *,
-                  int = 0, int = 0);
-    int CanAttack(ARegion *, AList *, Unit *);
-    void GetAFacs(ARegion *, Unit *, Unit *, AList &, AList &, AList &);
-    void GetDFacs(ARegion *, Unit *, AList &);
+    size_t KillDead(const Location::Handle&, const Battle::Handle&);
+    int RunBattle(const ARegion::Handle&, const Unit::Handle&, const Unit::Handle&, int = 0, bool = false);
+    void GetSidesForRegion_(const ARegion::Handle&,
+                            const ARegion::Handle&,
+                            std::list<FactionPtr::Handle>&,
+                            std::list<FactionPtr::Handle>&,
+                            std::list<Location::Handle>&,
+                            std::list<Location::Handle>&,
+                            const Unit::Handle&,
+                            const Unit::Handle&,
+                            bool,
+                            bool&,
+                            bool&,
+                            bool = false);
+    void GetSides(const ARegion::Handle&,
+                  std::list<FactionPtr::Handle>&,
+                  std::list<FactionPtr::Handle>&,
+                  std::list<Location::Handle>&,
+                  std::list<Location::Handle>&,
+                  const Unit::Handle&,
+                  const Unit::Handle&,
+                  int = 0,
+                  bool = false);
+    bool CanAttack(const ARegion::Handle&,
+                   const std::list<FactionPtr::Handle>&,
+                   const Unit::Handle&);
+    void GetAFacs(const ARegion::Handle&,
+                  const Unit::Handle&,
+                  const Unit::Handle&,
+                  std::list<FactionPtr::Handle>&,
+                  std::list<FactionPtr::Handle>&,
+                  std::list<Location::Handle>&);
+    void GetDFacs(const ARegion::Handle&,
+                  const Unit::Handle&,
+                  std::list<FactionPtr::Handle>&);
 };
 
 #endif

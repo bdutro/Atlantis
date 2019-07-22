@@ -27,7 +27,6 @@
 
 #include <iostream>
 #include <fstream>
-using namespace std;
 
 #define F_ENDLINE '\n'
 
@@ -182,17 +181,20 @@ AString * Ainfile::GetStrNoSkip()
     return s;
 }
 
-int Ainfile::GetInt()
+void Aoutfile::PutInt(size_t x)
 {
-    int x;
-    *file >> x;
-    return x;
+    *file << x;
+    *file << F_ENDLINE;
+}
+
+void Aoutfile::PutInt(unsigned int x)
+{
+    PutInt(static_cast<size_t>(x));
 }
 
 void Aoutfile::PutInt(int x)
 {
-    *file << x;
-    *file << F_ENDLINE;
+    PutInt(static_cast<size_t>(x));
 }
 
 void Aoutfile::PutStr(char const *s)

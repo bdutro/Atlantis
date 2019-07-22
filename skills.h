@@ -159,8 +159,8 @@ class SkillList : public AList {
 
 class HealType {
     public:
-        int num;
-        int rate;
+        unsigned int num;
+        unsigned int rate;
 };
 extern HealType * HealDefs;
 

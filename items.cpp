@@ -1229,11 +1229,13 @@ AString *ItemDescription(int item, int full)
     return temp;
 }
 
-int IsSoldier(int item)
+bool IsSoldier(int item)
 {
     if (ItemDefs[item].type & IT_MAN || ItemDefs[item].type & IT_MONSTER)
-        return 1;
-    return 0;
+    {
+        return true;
+    }
+    return false;
 }
 
 
@@ -1287,39 +1289,68 @@ void Item::Readin(Ainfile *f)
 
 void ItemList::Writeout(Aoutfile *f)
 {
-    f->PutInt(Num());
-    forlist (this) ((Item *) elem)->Writeout(f);
+    f->PutInt(size());
+    for(const auto& e: *this)
+    {
+        e->Writeout(f);
+    }
 }
 
 void ItemList::Readin(Ainfile *f)
 {
-    int i = f->GetInt();
-    for (int j=0; j<i; j++) {
-        Item *temp = new Item;
+    size_t i = f->GetInt<size_t>();
+    for (size_t j=0; j<i; j++) {
+        Item::Handle temp = std::make_shared<Item>();
         temp->Readin(f);
-        if (temp->type < 0 || temp->num < 1 ||
-                ItemDefs[temp->type].flags & ItemType::DISABLED)
-            delete temp;
-        else
-            Add(temp);
+        if (!(temp->type < 0 || temp->num < 1 || ItemDefs[temp->type].flags & ItemType::DISABLED))
+        {
+            items_.push_back(temp);
+        }
     }
 }
 
-int ItemList::GetNum(int t)
+size_t ItemList::GetNum(int t) const
 {
-    forlist(this) {
-        Item *i = (Item *) elem;
-        if (i->type == t) return i->num;
+    for(const auto& i: *this) {
+        if (i->type == t)
+        {
+            return i->num;
+        }
     }
     return 0;
+}
+
+size_t ItemList::GetNumMatching(int t) const
+{
+    size_t n = 0;
+    for(const auto& i: *this)
+    {
+        if(ItemDefs[i->type].type & t)
+        {
+            n += i->num;
+        }
+    }
+    return n;
+}
+
+size_t ItemList::GetNumSoldiers() const
+{
+    size_t n = 0;
+    for(const auto& i: *this)
+    {
+        if(IsSoldier(i->type))
+        {
+            n += i->num;
+        }
+    }
+    return n;
 }
 
 int ItemList::Weight()
 {
     int wt = 0;
     int frac = 0;
-    forlist(this) {
-        Item *i = (Item *) elem;
+    for(const auto& i: *this) {
         // Except unfinished ships from weight calculations:
         // these just get removed when the unit moves.
         if (ItemDefs[i->type].type & IT_SHIP) continue;
@@ -1333,8 +1364,7 @@ int ItemList::Weight()
 
 int ItemList::CanSell(int t)
 {
-    forlist(this) {
-        Item *i = (Item *)elem;
+    for(const auto& i: *this) {
         if (i->type == t) return i->num - i->selling;
     }
     return 0;
@@ -1342,16 +1372,14 @@ int ItemList::CanSell(int t)
 
 void ItemList::Selling(int t, int n)
 {
-    forlist(this) {
-        Item *i = (Item *)elem;
+    for(const auto& i: *this) {
         if (i->type == t) i->selling += n;
     }
 }
 
 void ItemList::UncheckAll()
 {
-    forlist(this) {
-        Item *i = (Item *)elem;
+    for(const auto& i: *this) {
         i->checked = 0;
     }
 }
@@ -1370,8 +1398,7 @@ AString ItemList::Report(int obs,int seeillusions,int nofirstcomma)
 AString ItemList::BattleReport()
 {
     AString temp;
-    forlist(this) {
-        Item *i = (Item *) elem;
+    for(const auto& i: *this) {
         if (ItemDefs[i->type].combat) {
             temp += ", ";
             temp += i->Report(0);
@@ -1392,9 +1419,8 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
         int nofirstcomma)
 {
     AString temp;
-    forlist(this) {
+    for(const auto &i : *this) {
         int report = 0;
-        Item *i = (Item *) elem;
         if (i->checked) continue;
         switch (type) {
             case 0:
@@ -1461,31 +1487,22 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
     return temp;
 }
 
-void ItemList::SetNum(int t,int n)
+void ItemList::SetNum(int t, size_t n)
 {
     // sanity check: does this item type exist?
     if ((t<0) || (t>=NITEMS)) return;
     if (n) {
-        forlist(this) {
-            Item *i = (Item *) elem;
+        for(const auto& i: *this) {
             if (i->type == t) {
                 i->num = n;
                 return;
             }
         }
-        Item *i = new Item;
+        auto& i = items_.emplace_back(std::make_shared<Item>());
         i->type = t;
         i->num = n;
-        Add(i);
     } else {
-        forlist(this) {
-            Item *i = (Item *) elem;
-            if (i->type == t) {
-                Remove(i);
-                delete i;
-                return;
-            }
-        }
+        items_.remove_if([t](const Item::Handle& i){ return i->type == t; });
     }
 }
 

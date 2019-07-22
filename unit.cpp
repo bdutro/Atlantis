@@ -48,13 +48,12 @@ AString UnitId::Print()
     }
 }
 
-UnitPtr *GetUnitList(AList *list, Unit *u)
+UnitPtr::Handle GetUnitList(const std::list<UnitPtr::Handle>& list, const Unit::Handle& u)
 {
-    forlist (list) {
-        UnitPtr *p = (UnitPtr *) elem;
+    for(const auto& p: list) {
         if (p->ptr == u) return p;
     }
-    return 0;
+    return nullptr;
 }
 
 Unit::Unit()
@@ -209,7 +208,7 @@ void Unit::Writeout(Aoutfile *s)
     }
 }
 
-void Unit::Readin(Ainfile *s, AList *facs, ATL_VER v)
+void Unit::Readin(Ainfile *s, AList *facs, ATL_VER)
 {
     name = s->GetStr();
     describe = s->GetStr();
@@ -359,33 +358,33 @@ AString Unit::GetName(int obs)
     return ret;
 }
 
-int Unit::CanGetSpoil(Item *i)
+bool Unit::CanGetSpoil(const Item::Handle& i)
 {
     int weight, load, capacity;
 
-    if (!i) return 0;
+    if (!i) return false;
     if (ItemDefs[i->type].type & IT_SHIP) {
         // Don't pick up an incomplete ship if we already have one
-        if (items.GetNum(i->type) > 0) return 0;
+        if (items.GetNum(i->type) > 0) return false;
     }
     weight = ItemDefs[i->type].weight;
-    if (!weight) return 1; // any unit can carry 0 weight spoils
+    if (!weight) return true; // any unit can carry 0 weight spoils
 
     if (flags & FLAG_NOSPOILS)
-        return 0;
+        return false;
 
     load = items.Weight();
     
     if (flags & FLAG_FLYSPOILS) {
         capacity = ItemDefs[i->type].fly;
         if (FlyingCapacity() + capacity < load + weight)
-            return 0;
+            return false;
     }
 
     if (flags & FLAG_RIDESPOILS) {
         capacity = ItemDefs[i->type].ride;
         if (RidingCapacity() + capacity < load + weight)
-            return 0;
+            return false;
     }
 
     if (flags & FLAG_WALKSPOILS) {
@@ -396,7 +395,7 @@ int Unit::CanGetSpoil(Item *i)
                 capacity = ItemDefs[i->type].hitchwalk;
         }
         if (WalkingCapacity() + capacity < load + weight)
-            return 0;
+            return false;
     }
 
     if (flags & FLAG_SWIMSPOILS) {
@@ -404,16 +403,16 @@ int Unit::CanGetSpoil(Item *i)
         if (ItemDefs[i->type].type & IT_SHIP)
             capacity = 0;
         if (SwimmingCapacity() + capacity < load + weight)
-            return 0;
+            return false;
     }
 
     if ((flags & FLAG_SAILSPOILS) && object && object->IsFleet()) {
         load = object->FleetLoad();
         if (object->FleetCapacity() < load + weight)
-            return 0;
+            return false;
     }
 
-    return 1; // all spoils
+    return true; // all spoils
 }
 
 AString Unit::SpoilsReport() {
@@ -427,7 +426,7 @@ AString Unit::SpoilsReport() {
 }
 
 void Unit::WriteReport(Areport *f, int obs, int truesight, int detfac,
-                int autosee, int attitude, int showattitudes)
+                bool autosee, int attitude, bool showattitudes)
 {
     int stealth = GetAttribute("stealth");
     if (obs==-1) {
@@ -711,7 +710,7 @@ void Unit::ClearCastOrders()
     teleportorders = 0;
 }
 
-void Unit::DefaultOrders(Object *obj)
+void Unit::DefaultOrders(const Object::Handle& obj)
 {
     int count, weight, i;
     ARegion *r, *n;
@@ -795,7 +794,7 @@ void Unit::DefaultOrders(Object *obj)
     }
 }
 
-void Unit::PostTurn(ARegion *r)
+void Unit::PostTurn(ARegion *)
 {
     if (type == U_WMON) {
         forlist(&items) {
@@ -835,7 +834,7 @@ void Unit::SetDescribe(AString *s)
         describe = 0;
 }
 
-int Unit::IsAlive()
+bool Unit::IsAlive()
 {
     if (type == U_MAGE || type == U_APPRENTICE) {
         return(GetMen());
@@ -843,13 +842,13 @@ int Unit::IsAlive()
         forlist(&items) {
             Item *i = (Item *) elem;
             if (IsSoldier(i->type) && i->num > 0)
-                return 1;
+                return true;
         }
     }
-    return 0;
+    return false;
 }
 
-void Unit::SetMen(int t, int n)
+void Unit::SetMen(int t, size_t n)
 {
     if (ItemDefs[t].type & IT_MAN) {
         int oldmen = GetMen();
@@ -864,56 +863,29 @@ void Unit::SetMen(int t, int n)
     }
 }
 
-int Unit::GetMen(int t)
+size_t Unit::GetMen(int t)
 {
     return items.GetNum(t);
 }
 
-int Unit::GetMons()
+size_t Unit::GetMons()
 {
-    int n=0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
-        if (ItemDefs[i->type].type & IT_MONSTER) {
-            n += i->num;
-        }
-    }
-    return n;
+    return items.GetNumMatching(IT_MONSTER);
 }
 
-int Unit::GetMen()
+size_t Unit::GetMen()
 {
-    int n = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
-        if (ItemDefs[i->type].type & IT_MAN) {
-            n += i->num;
-        }
-    }
-    return n;
+    return items.GetNumMatching(IT_MAN);
 }
 
-int Unit::GetLeaders()
+size_t Unit::GetLeaders()
 {
-    int n = 0;
-    forlist (&items) {
-        Item *i = (Item *)elem;
-        if (ItemDefs[i->type].type & IT_LEADER) {
-            n += i->num;
-        }
-    }
-    return n;
+    return items.GetNumMatching(IT_LEADER);
 }
 
-int Unit::GetSoldiers()
+size_t Unit::GetSoldiers()
 {
-    int n = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
-        if (IsSoldier(i->type)) n+=i->num;
-    }
-
-    return n;
+    return items.GetNumSoldiers();
 }
 
 void Unit::SetMoney(int n)
@@ -1149,20 +1121,20 @@ void Unit::ForgetSkill(int sk)
     }
 }
 
-int Unit::CheckDepend(int lev, SkillDepend &dep)
+bool Unit::CheckDepend(int lev, SkillDepend &dep)
 {
     AString skname = dep.skill;
     int sk = LookupSkill(&skname);
-    if (sk == -1) return 0;
+    if (sk == -1) return false;
     int temp = GetRealSkill(sk);
-    if (temp < dep.level) return 0;
-    if (lev >= temp) return 0;
-    return 1;
+    if (temp < dep.level) return false;
+    if (lev >= temp) return false;
+    return true;
 }
 
-int Unit::CanStudy(int sk)
+bool Unit::CanStudy(int sk)
 {
-    if (skills.GetStudyRate(sk, GetMen()) < 1) return 0;
+    if (skills.GetStudyRate(sk, GetMen()) < 1) return false;
 
     if (Globals->SKILL_LIMIT_NONLEADERS &&
         IsNormal() &&
@@ -1170,21 +1142,21 @@ int Unit::CanStudy(int sk)
         skills.Num() > 0) {
         if (!Globals->MAGE_NONLEADERS ||
             !(SkillDefs[sk].flags & SkillType::MAGIC))
-        return 0;
+        return false;
     }
     
     int curlev = GetRealSkill(sk);
 
-    if (SkillDefs[sk].flags & SkillType::DISABLED) return 0;
+    if (SkillDefs[sk].flags & SkillType::DISABLED) return false;
 
     unsigned int c;
     for (c = 0; c < sizeof(SkillDefs[sk].depends)/sizeof(SkillDepend); c++) {
-        if (SkillDefs[sk].depends[c].skill == NULL) return 1;
+        if (SkillDefs[sk].depends[c].skill == NULL) return true;
         SkillType *pS = FindSkill(SkillDefs[sk].depends[c].skill);
         if (pS && (pS->flags & SkillType::DISABLED)) continue;
-        if (!CheckDepend(curlev, SkillDefs[sk].depends[c])) return 0;
+        if (!CheckDepend(curlev, SkillDefs[sk].depends[c])) return false;
     }
-    return 1;
+    return true;
 }
 
 int Unit::Study(int sk, int days)
@@ -1363,16 +1335,16 @@ int Unit::Practice(int sk)
     return bonus;
 }
 
-int Unit::IsLeader()
+bool Unit::IsLeader()
 {
-    if (GetLeaders()) return 1;
-    return 0;
+    if (GetLeaders()) return true;
+    return false;
 }
 
-int Unit::IsNormal()
+bool Unit::IsNormal()
 {
-    if (GetMen() && !IsLeader()) return 1;
-    return 0;
+    if (GetMen() && !IsLeader()) return true;
+    return false;
 }
 
 void Unit::AdjustSkills()
@@ -1606,43 +1578,43 @@ int Unit::WalkingCapacity()
     return cap;
 }
 
-int Unit::CanFly(int weight)
+bool Unit::CanFly(int weight)
 {
-    if (FlyingCapacity() >= weight) return 1;
-    return 0;
+    if (FlyingCapacity() >= weight) return true;
+    return false;
 }
 
-int Unit::CanReallySwim()
+bool Unit::CanReallySwim()
 {
-    if (IsAlive() && (SwimmingCapacity() >= items.Weight())) return 1;
-    return 0;
+    if (IsAlive() && (SwimmingCapacity() >= items.Weight())) return true;
+    return false;
 }
 
-int Unit::CanSwim()
+bool Unit::CanSwim()
 {
     if (this->CanReallySwim())
-        return 1;
+        return true;
     if ((Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE) && this->CanFly())
-        return 1;
-    return 0;
+        return true;
+    return false;
 }
 
-int Unit::CanFly()
+bool Unit::CanFly()
 {
     int weight = items.Weight();
     return CanFly(weight);
 }
 
-int Unit::CanRide(int weight)
+bool Unit::CanRide(int weight)
 {
-    if (RidingCapacity() >= weight) return 1;
-    return 0;
+    if (RidingCapacity() >= weight) return true;
+    return false;
 }
 
-int Unit::CanWalk(int weight)
+bool Unit::CanWalk(int weight)
 {
-    if (WalkingCapacity() >= weight) return 1;
-    return 0;
+    if (WalkingCapacity() >= weight) return true;
+    return false;
 }
 
 int Unit::MoveType(ARegion *r)
@@ -1755,9 +1727,9 @@ int Unit::CalcMovePoints(ARegion *r)
     return speed;
 }
 
-int Unit::CanMoveTo(ARegion *r1, ARegion *r2)
+bool Unit::CanMoveTo(ARegion *r1, ARegion *r2)
 {
-    if (r1 == r2) return 1;
+    if (r1 == r2) return true;
 
     int exit = 1;
     int i;
@@ -1770,7 +1742,7 @@ int Unit::CanMoveTo(ARegion *r1, ARegion *r2)
             break;
         }
     }
-    if (exit) return 0;
+    if (exit) return false;
     exit = 1;
     for (i=0; i<NDIRS; i++) {
         if (r2->neighbors[i] == r1) {
@@ -1778,24 +1750,24 @@ int Unit::CanMoveTo(ARegion *r1, ARegion *r2)
             break;
         }
     }
-    if (exit) return 0;
+    if (exit) return false;
 
     int mt = MoveType();
     if (((TerrainDefs[r1->type].similar_type == R_OCEAN) ||
                 (TerrainDefs[r2->type].similar_type == R_OCEAN)) &&
             (!CanSwim() || GetFlag(FLAG_NOCROSS_WATER)))
-        return 0;
+        return false;
     int mp = CalcMovePoints() - moved;
-    if (mp < (r2->MoveCost(mt, r1, dir, 0))) return 0;
-    return 1;
+    if (mp < (r2->MoveCost(mt, r1, dir, 0))) return false;
+    return true;
 }
 
-int Unit::CanCatch(ARegion *r, Unit *u)
+bool Unit::CanCatch(ARegion *r, Unit *u)
 {
     return faction->CanCatch(r, u);
 }
 
-int Unit::CanSee(ARegion *r, Unit *u, int practice)
+bool Unit::CanSee(ARegion *r, Unit *u, int practice)
 {
     return faction->CanSee(r, u, practice);
 }
@@ -1813,16 +1785,26 @@ int Unit::AmtsPreventCrime(Unit *u)
     return 0;
 }
 
-int Unit::GetAttitude(ARegion *r, Unit *u)
+int Unit::GetAttitude(const ARegion& r, const Unit::Handle& u)
 {
-    if (faction == u->faction) return A_ALLY;
+    if (faction == u->faction)
+    {
+        return A_ALLY;
+    }
     int att = faction->GetAttitude(u->faction->num);
-    if (att >= A_FRIENDLY && att >= faction->defaultattitude) return att;
+    if (att >= A_FRIENDLY && att >= faction->defaultattitude)
+    {
+        return att;
+    }
 
     if (CanSee(r, u) == 2)
+    {
         return att;
+    }
     else
+    {
         return faction->defaultattitude;
+    }
 }
 
 int Unit::Hostile()
@@ -1841,14 +1823,14 @@ int Unit::Hostile()
     return retval;
 }
 
-int Unit::Forbids(ARegion *r, Unit *u)
+bool Unit::Forbids(ARegion *r, const Unit::Handle& u)
 {
-    if (guard != GUARD_GUARD) return 0;
-    if (!IsAlive()) return 0;
-    if (!CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) return 0;
-    if (!CanCatch(r, u)) return 0;
-    if (GetAttitude(r, u) < A_NEUTRAL) return 1;
-    return 0;
+    if (guard != GUARD_GUARD) return false;
+    if (!IsAlive()) return false;
+    if (!CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) return false;
+    if (!CanCatch(r, u)) return false;
+    if (GetAttitude(r, u) < A_NEUTRAL) return true;
+    return false;
 }
 
 /* This function was modified to either return the amount of
@@ -2298,11 +2280,17 @@ int Unit::GetWeapon(AString &itm, int riding, int ridingBonus,
     return item;
 }
 
-void Unit::MoveUnit(Object *toobj)
+void Unit::Detach()
 {
-    if (object) object->units.Remove(this);
+    if (!object.expired()) object.lock()->units.Remove(this);
+    object.reset();
+}
+
+void Unit::MoveUnit(const std::weak_ptr<Object>& toobj)
+{
+    if (!object.expired()) object.lock()->units.Remove(this);
     object = toobj;
-    if (object) {
+    if (!object.expired()) {
         object->units.Add(this);
     }
 }

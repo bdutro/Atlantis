@@ -25,15 +25,11 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
 #include "gameio.h"
 #include "gamedefs.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-
-#include "i_rand.h"
 
 static randctx isaac_ctx;
 
@@ -45,7 +41,7 @@ void cleartoendl()
     char ch = ' ';
     while (!(cin.eof()) && (ch != ENDLINE))
     {
-        ch = cin.get();
+        ch = static_cast<char>(cin.get());
     }
 }
 
@@ -56,19 +52,6 @@ void initIO()
 
 void doneIO()
 {
-}
-
-int getrandom(int range)
-{
-    int neg = (range < 0);
-    if (!range) return 0;
-    int ret = 0;
-    if (neg) range = -range;
-    unsigned long i = isaac_rand( &isaac_ctx );
-    i = i % range;
-    if (neg) ret = (int)(i*-1);
-    else ret = (int)i;
-    return ret;
 }
 
 void seedrandom(int num)
@@ -84,7 +67,7 @@ void seedrandom(int num)
 
 void seedrandomrandom()
 {
-    seedrandom( time( 0 ) );
+    seedrandom( static_cast<int>(time( 0 ) ));
 }
 
 int Agetint()

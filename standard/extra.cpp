@@ -28,7 +28,7 @@
 #include "game.h"
 #include "gamedata.h"
 
-int Game::SetupFaction( Faction *pFac )
+int Game::SetupFaction( const Faction::Handle& pFac )
 {
     pFac->unclaimed = Globals->START_MONEY + TurnNumber() * 50;
 
@@ -38,7 +38,7 @@ int Game::SetupFaction( Faction *pFac )
     //
     // Set up first unit.
     //
-    Unit *temp2 = GetNewUnit( pFac );
+    Unit::Handle temp2 = GetNewUnit( pFac );
     temp2->SetMen(I_LEADERS, 1);
     pFac->DiscoverItem(I_LEADERS, 0, 1);
     temp2->reveal = REVEAL_FACTION;
@@ -73,18 +73,18 @@ int Game::SetupFaction( Faction *pFac )
         temp2->items.SetNum(I_SILVER, 10);
     }
 
-    ARegion *reg = NULL;
+    ARegion::WeakHandle reg;
     if (pFac->pStartLoc) {
         reg = pFac->pStartLoc;
     } else if (!Globals->MULTI_HEX_NEXUS) {
-        reg = (ARegion *)(regions.First());
+        reg = regions.front();
     } else {
-        ARegionArray *pArr = regions.GetRegionArray(ARegionArray::LEVEL_NEXUS);
-        while(!reg) {
+        auto pArr = regions.GetRegionArray(ARegionArray::LEVEL_NEXUS);
+        while(reg.expired()) {
             reg = pArr->GetRegion(getrandom(pArr->x), getrandom(pArr->y));
         }
     }
-    temp2->MoveUnit( reg->GetDummy() );
+    temp2->MoveUnit( reg.lock()->GetDummy() );
 
     if (Globals->LAIR_MONSTERS_EXIST || Globals->WANDERING_MONSTERS_EXIST) {
         // Try to auto-declare all player factions unfriendly
@@ -95,23 +95,19 @@ int Game::SetupFaction( Faction *pFac )
     return( 1 );
 }
 
-Faction *Game::CheckVictory()
+Faction::WeakHandle Game::CheckVictory()
 {
-    forlist(&regions) {
-        ARegion *region = (ARegion *)elem;
-        forlist(&region->objects) {
-            Object *obj = (Object *)elem;
+    for(const auto& region: regions) {
+        for(const auto& obj: region->objects) {
             if (obj->type != O_BKEEP){
                 continue;
             }
-            if (obj->units.Num()){
-                return NULL;
+            if (!obj->units.empty()){
+                return Faction::WeakHandle();
             }
             // Now see find the first faction guarding the region
-            forlist(&region->objects) {
-                Object *o = region->GetDummy();
-                forlist(&o->units) {
-                    Unit *u = (Unit *)elem;
+            for(const auto& o: region->objects) {
+                for(const auto& u: o->units) {
                     if (u->guard == GUARD_GUARD){
                         return u->faction;
                     }
@@ -120,7 +116,7 @@ Faction *Game::CheckVictory()
             break;
         }
     }
-    return NULL;
+    return Faction::WeakHandle();
 }
 
 void Game::ModifyTablesPerRuleset(void)

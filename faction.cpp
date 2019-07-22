@@ -109,7 +109,7 @@ void Attitude::Writeout(Aoutfile *f)
     f->PutInt(attitude);
 }
 
-void Attitude::Readin(Ainfile *f, ATL_VER v)
+void Attitude::Readin(Ainfile *f, ATL_VER)
 {
     factionnum = f->GetInt();
     attitude = f->GetInt();
@@ -801,20 +801,28 @@ int Faction::IsNPC()
     return 0;
 }
 
-Faction *GetFaction(AList *facs, int n)
+Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, int n)
 {
-    forlist(facs)
-        if (((Faction *) elem)->num == n)
-            return (Faction *) elem;
-    return 0;
+    for(const auto& f: facs)
+    {
+        if (f->num == n)
+        {
+            return f;
+        }
+    }
+    return nullptr;
 }
 
-Faction *GetFaction2(AList *facs, int n)
+Faction::Handle GetFaction2(const std::list<FactionPtr::Handle>& facs, int n)
 {
-    forlist(facs)
-        if (((FactionPtr *) elem)->ptr->num == n)
-            return ((FactionPtr *) elem)->ptr;
-    return 0;
+    for(const auto& f: facs)
+    {
+        if (f->ptr->num == n)
+        {
+            return f->ptr;
+        }
+    }
+    return nullptr;
 }
 
 void Faction::DiscoverItem(int item, int force, int full)

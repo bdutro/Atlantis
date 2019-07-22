@@ -209,48 +209,54 @@ int Object::CanModify()
     return (ObjectDefs[type].flags & ObjectType::CANMODIFY);
 }
 
-Unit *Object::GetUnit(int num)
+Unit::WeakHandle Object::GetUnit(int num)
 {
-    forlist((&units))
-        if (((Unit *) elem)->num == num)
-            return ((Unit *) elem);
-    return 0;
+    for(const auto& u: units)
+    {
+        if(u->num == num)
+        {
+            return u;
+        }
+    }
+    return Unit::WeakHandle();
 }
 
-Unit *Object::GetUnitAlias(int alias, int faction)
+Unit::WeakHandle Object::GetUnitAlias(int alias, int faction)
 {
     // First search for units with the 'formfaction'
-    forlist((&units)) {
-        if (((Unit *)elem)->alias == alias &&
-                ((Unit *)elem)->formfaction->num == faction)
-            return ((Unit *)elem);
+    for(const auto& u: units)
+    {
+        if (u->alias == alias && u->formfaction->num == faction)
+        {
+            return u;
+        }
     }
     // Now search against their current faction
+    for(const auto& u: units)
     {
-        forlist((&units)) {
-            if (((Unit *) elem)->alias == alias &&
-                    ((Unit *) elem)->faction->num == faction)
-                return ((Unit *) elem);
+        if (u->alias == alias && u->faction->num == faction)
+        {
+            return u;
         }
     }
-    return 0;
+    return Unit::WeakHandle();
 }
 
-Unit *Object::GetUnitId(UnitId *id, int faction)
+Unit::WeakHandle Object::GetUnitId(const UnitId& id, int faction)
 {
-    if (id == 0) return 0;
-    if (id->unitnum) {
-        return GetUnit(id->unitnum);
+    //if (id == 0) return Unit::WeakHandle();
+    if (id.unitnum) {
+        return GetUnit(id.unitnum);
     } else {
-        if (id->faction) {
-            return GetUnitAlias(id->alias, id->faction);
+        if (id.faction) {
+            return GetUnitAlias(id.alias, id.faction);
         } else {
-            return GetUnitAlias(id->alias, faction);
+            return GetUnitAlias(id.alias, faction);
         }
     }
 }
 
-int Object::CanEnter(ARegion *reg, Unit *u)
+int Object::CanEnter(ARegion *, Unit *u)
 {
     if (!(ObjectDefs[type].flags & ObjectType::CANENTER) &&
             (u->type == U_MAGE || u->type == U_NORMAL ||
@@ -279,8 +285,8 @@ Unit *Object::GetOwner()
     return(owner);
 }
 
-void Object::Report(Areport *f, Faction *fac, int obs, int truesight,
-        int detfac, int passobs, int passtrue, int passdetfac, int present)
+void Object::Report(Areport *f, const Faction::Handle& fac, int obs, int truesight,
+        int detfac, int passobs, int passtrue, int passdetfac, bool present)
 {
     ObjectType *ob = &ObjectDefs[type];
 

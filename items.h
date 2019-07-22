@@ -28,6 +28,9 @@
 class Item;
 class ItemType;
 
+#include <list>
+#include <memory>
+
 #include "fileio.h"
 #include "gamedefs.h"
 #include "alist.h"
@@ -109,9 +112,9 @@ class ItemType
         int mOut; // How many of the item are conjured
         Materials mInput[4];
 
-        int weight;
+        size_t weight;
         int type;
-        int baseprice;
+        size_t baseprice;
         int combat;
 
         int walk;
@@ -184,7 +187,7 @@ class MonType
         char const *special;
         int specialLevel;
 
-        int silver;
+        size_t silver;
         int spoiltype;
         int hostile; /* Percent */
         int number;
@@ -351,11 +354,12 @@ enum {
 extern AString ItemString(int type, int num, int flags=0);
 extern AString *ItemDescription(int item, int full);
 
-extern int IsSoldier(int);
+extern bool IsSoldier(int);
 
-class Item : public AListElem
+class Item
 {
     public:
+        using Handle = std::shared_ptr<Item>;
         Item();
         ~Item();
 
@@ -365,14 +369,17 @@ class Item : public AListElem
         AString Report(int);
 
         int type;
-        int num;
+        size_t num;
         int selling;
         int checked; // flag whether item has been reported, counted etc.
 };
 
-class ItemList : public AList
+class ItemList
 {
     public:
+        using iterator = std::list<Item::Handle>::iterator;
+        using const_iterator = std::list<Item::Handle>::const_iterator;
+
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
 
@@ -381,11 +388,25 @@ class ItemList : public AList
         AString ReportByType(int, int, int, int);
 
         int Weight();
-        int GetNum(int);
-        void SetNum(int, int); /* type, number */
+        size_t GetNum(int) const;
+        size_t GetNumMatching(int t) const;
+        size_t GetNumSoldiers() const;
+        void SetNum(int, size_t); /* type, number */
         int CanSell(int);
         void Selling(int, int); /* type, number */
         void UncheckAll(); // re-set checked flag for all
+        
+        iterator begin() { return items_.begin(); }
+        iterator end() { return items_.end(); }
+        const_iterator begin() const { return items_.begin(); }
+        const_iterator end() const { return items_.end(); }
+        const_iterator cbegin() const { return items_.cbegin(); }
+        const_iterator cend() const { return items_.cend(); }
+        size_t size() const { return items_.size(); }
+        bool empty() const { return items_.empty(); }
+
+    private:
+        std::list<Item::Handle> items_;
 };
 
 extern AString ShowSpecial(char const *special, int level, int expandLevel,

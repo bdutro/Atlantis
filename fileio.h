@@ -29,7 +29,6 @@
 
 #include <iostream>
 #include <fstream>
-using namespace std;
 
 class Ainfile {
     public:
@@ -42,9 +41,17 @@ class Ainfile {
 
         AString *GetStr();
         AString *GetStrNoSkip();
-        int GetInt();
 
-        ifstream *file;
+        template<typename T>
+        T GetInt()
+        {
+            T x;
+            *file >> x;
+            return x;
+        }
+
+
+        std::ifstream *file;
 };
 
 class Aoutfile {
@@ -59,8 +66,10 @@ class Aoutfile {
         void PutStr(char const *);
         void PutStr(const AString &);
         void PutInt(int);
+        void PutInt(unsigned int);
+        void PutInt(size_t);
 
-        ofstream *file;
+        std::ofstream *file;
 };
 
 class Aorders {
@@ -74,7 +83,7 @@ class Aorders {
 
         AString *GetLine();
 
-        ifstream *file;
+        std::ifstream *file;
 };
 
 class Areport {
@@ -94,7 +103,7 @@ class Areport {
         void PutNoFormat(const AString &);
         void EndLine();
 
-        ofstream *file;
+        std::ofstream *file;
         int tabs;
 };
 
@@ -129,7 +138,7 @@ class Arules {
         AString Link(const AString &href, const AString &text);
         void LinkRef(const AString &name);
 
-        ofstream *file;
+        std::ofstream *file;
         int tabs;
         int wraptab;
 };

@@ -27,6 +27,8 @@
 
 class Battle;
 
+#include <memory>
+#include <list>
 #include "astring.h"
 #include "alist.h"
 #include "fileio.h"
@@ -46,44 +48,62 @@ enum {
     BATTLE_DRAW
 };
 
-class BattlePtr : public AListElem
+class Battle
 {
     public:
-        Battle * ptr;
-};
-
-class Battle : public AListElem
-{
-    public:
-        Battle();
+        using Handle = std::shared_ptr<Battle>;
+        Battle() noexcept;
         ~Battle();
 
-        void Report(Areport *,Faction *);
+        void Report(Areport*, const std::shared_ptr<Faction>&);
         void AddLine(const AString &);
 
-        int Run(ARegion *, Unit *, AList *, Unit *, AList *, int ass,
-                ARegionList *pRegs);
-        void FreeRound(Army *,Army *, int ass = 0);
-        void NormalRound(int,Army *,Army *);
-        void DoAttack(int round, Soldier *a, Army *attackers, Army *def,
-                int behind, int ass = 0);
+        int Run(const std::shared_ptr<ARegion>&,
+                const std::shared_ptr<Unit>&,
+                const std::list<std::shared_ptr<Location>>&,
+                const std::shared_ptr<Unit>&,
+                const std::list<std::shared_ptr<Location>>&,
+                int ass,
+                const ARegionList& pRegs);
+        void FreeRound(const std::shared_ptr<Army>&, const std::shared_ptr<Army>&, int ass = 0);
+        void NormalRound(int, const std::shared_ptr<Army>&, const std::shared_ptr<Army>&);
+        void DoAttack(int round,
+                      const std::shared_ptr<Soldier>& a,
+                      const std::shared_ptr<Army>& attackers,
+                      const std::shared_ptr<Army>& def,
+                      bool behind,
+                      int ass = 0);
 
-        void GetSpoils(AList *,ItemList *, int);
+        void GetSpoils(const std::list<std::shared_ptr<Location>>&, ItemList&, int);
 
         //
         // These functions should be implemented in specials.cpp
         //
-        void UpdateShields(Army *);
-        void DoSpecialAttack( int round, Soldier *a, Army *attackers,
-                Army *def, int behind );
+        void UpdateShields(const std::shared_ptr<Army>& );
+        void DoSpecialAttack(int round,
+                             const std::shared_ptr<Soldier>& a,
+                             const std::shared_ptr<Army>& attackers,
+                             const std::shared_ptr<Army>& def,
+                             bool behind);
 
-        void WriteSides(ARegion *,Unit *,Unit *,AList *,AList *,int,
-                ARegionList *pRegs );
+        void WriteSides(const std::shared_ptr<ARegion>&,
+                        const std::shared_ptr<Unit>&,
+                        const std::shared_ptr<Unit>&,
+                        const std::list<std::shared_ptr<Location>>&,
+                        const std::list<std::shared_ptr<Location>>&,
+                        int,
+                        const ARegionList& pRegs);
 
         int assassination;
-        Faction * attacker; /* Only matters in the case of an assassination */
+        std::weak_ptr<Faction> attacker; /* Only matters in the case of an assassination */
         AString * asstext;
-        AList text;
+        std::list<std::unique_ptr<AString>> text;
+};
+
+class BattlePtr
+{
+    public:
+        Battle::Handle ptr;
 };
 
 #endif

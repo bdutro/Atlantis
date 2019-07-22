@@ -115,8 +115,9 @@ void ARegion::SetupPop()
     // in the World Creation process.
     if ((race == -1) || (!Globals->GROW_RACES)) {
         int noncoastalraces = sizeof(typer->races)/sizeof(int);
+        // TODO: WTF IS THIS
         int allraces =
-            noncoastalraces + sizeof(typer->coastal_races)/sizeof(int);
+            static_cast<int>(noncoastalraces + sizeof(typer->coastal_races)/sizeof(int));
 
         race = -1;
         while (race == -1 || (ItemDefs[race].flags & ItemType::DISABLED)) {
@@ -198,7 +199,7 @@ void ARegion::SetupPop()
     // adjustment for rural areas
     if (pp < 3000) {
         float wpfactor = (float) (120 / (61 - pp / 50));
-        pp += (int) ((float) ((wpfactor * pp + 3000)/(wpfactor + 1)));
+        pp += static_cast<int>(static_cast<float>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1)));
     }
     int wagelimit = (int) ((float) (pp * (Wages() - 10 * Globals->MAINTENANCE_COST) /50));
     if (wagelimit < 0) wagelimit = 0;
@@ -239,17 +240,17 @@ void ARegion::SetupPop()
     products.Add(w);
     products.Add(e);
 
-    float ratio = ItemDefs[race].baseprice / ((float)Globals->BASE_MAN_COST * 10);
+    float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float assignment above
     // Setup Recruiting
-    Market *m = new Market(M_BUY, race, (int)(Wages()*4*ratio),
+    Market *m = new Market(M_BUY, race, calculateWagesWithRatio(ratio),
                             Population()/25, 0, 10000, 0, 2000);
     markets.Add(m);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = ItemDefs[I_LEADERS].baseprice / ((float)Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
-        m = new Market(M_BUY, I_LEADERS, (int)(Wages()*4*ratio),
+        m = new Market(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
         markets.Add(m);
     }
@@ -275,7 +276,7 @@ void ARegion::SetIncome()
     // adjustment for rural areas
     if (pp < 3000) {
         float wpfactor = (float) (120 / (61 - pp / 50));
-        pp += (int) ((float) ((wpfactor * pp + 3000)/(wpfactor + 1)));
+        pp += static_cast<int>(static_cast<float>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1)));
     }
     int maxwages = (int) ((float) (pp * (Wages() - 10 * Globals->MAINTENANCE_COST) /50));
     if (maxwages < 0) maxwages = 0;
@@ -894,16 +895,16 @@ void ARegion::UpdateEditRegion()
         }
     }
 
-    float ratio = ItemDefs[race].baseprice / (float) (Globals->BASE_MAN_COST * 10);
+    float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float calculation above
-    Market *m = new Market(M_BUY, race, (int)(Wages()*4*ratio),
+    Market *m = new Market(M_BUY, race, calculateWagesWithRatio(ratio),
                             Population()/25, 0, 10000, 0, 2000);
     markets.Add(m);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = ItemDefs[I_LEADERS].baseprice / (float) (Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float calculation above
-        m = new Market(M_BUY, I_LEADERS, (int)(Wages()*4*ratio),
+        m = new Market(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
         markets.Add(m);
     }    
@@ -938,8 +939,9 @@ void ARegion::SetupEditRegion()
     // in the World Creation process.
     if ((race == -1) || (!Globals->GROW_RACES)) {
         int noncoastalraces = sizeof(typer->races)/sizeof(int);
+        // TODO: WTF IS THIS
         int allraces =
-            noncoastalraces + sizeof(typer->coastal_races)/sizeof(int);
+            static_cast<int>(noncoastalraces + sizeof(typer->coastal_races)/sizeof(int));
 
         race = -1;
         while (race == -1 || (ItemDefs[race].flags & ItemType::DISABLED)) {
@@ -1012,17 +1014,17 @@ void ARegion::SetupEditRegion()
     // set up work and entertainment income
     SetIncome();
 
-    float ratio = ItemDefs[race].baseprice / ((float)Globals->BASE_MAN_COST * 10);
+    float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float assignment above
     // Setup Recruiting
-    Market *m = new Market(M_BUY, race, (int)(Wages()*4*ratio),
+    Market *m = new Market(M_BUY, race, calculateWagesWithRatio(ratio),
                             Population()/25, 0, 10000, 0, 2000);
     markets.Add(m);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = ItemDefs[I_LEADERS].baseprice / ((float)Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
-        m = new Market(M_BUY, I_LEADERS, (int)(Wages()*4*ratio),
+        m = new Market(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
         markets.Add(m);
     }
@@ -1354,8 +1356,8 @@ void ARegion::Grow()
         //        also, is (2 * town->hab - town->pop) correct?
         //        it's not meant to be 2 * (town->hab - town->pop)?
         //        ((2 * town->hab) - town->pop) seems clearer
-        float increase = tgrowth * (2 * town->hab - town->pop);
-        float limitingfactor = (10 * town->hab);
+        float increase = static_cast<float>(tgrowth * (2 * town->hab - town->pop));
+        float limitingfactor = static_cast<float>(10 * town->hab);
         
         // Ant: Not sure whether we still need the typecasts here
         growpop += (int) (increase / limitingfactor);
@@ -1433,16 +1435,16 @@ int ARegion::MigrationAttractiveness(int homedev, int range, int round)
     Production *p = products.GetProd(I_SILVER, S_ENTERTAINMENT);
     int entertain = p->activity / 20;
     /* available space */
-    float space = 1 / 2;
+    float space = 0.5;
     int offset = Globals->CITY_POP / 100;
     if (town) {
-        space += ((habitat - population) + (town->hab - town->pop) + offset)
-            / (habitat + town->hab + offset);
+        space += static_cast<float>((habitat - population) + (town->hab - town->pop) + offset)
+            / static_cast<float>(habitat + town->hab + offset);
     } else {
-        space += (habitat - population + offset) / (habitat + offset);
+        space += static_cast<float>(habitat - population + offset) / static_cast<float>(habitat + offset);
     }
     /* attractiveness due to development */
-    attractiveness += (int) (space * ((float) 100 * (mdev - homedev) / homedev + entertain));
+    attractiveness += static_cast<int>(space * (static_cast<float>(100 * (mdev - homedev)) / static_cast<float>(homedev) + static_cast<float>(entertain)));
     
     return attractiveness;    
 }
@@ -1480,14 +1482,15 @@ void ARegion::Migrate()
         
         // sanity check - huh?
         if (range < 1) continue;
-        int migrants = (int) (immigrants * ((float) (r->emigrants / totalmig)));
+        //Original line: int migrants = (int) (immigrants * ((float) (r->emigrants / totalmig)));
+        int migrants = static_cast<int>(static_cast<float>(immigrants * r->emigrants) / static_cast<float>(totalmig));
         int mdiff = development - 7 - r->development;
         mdiff -= 8 * (range - 1);
         if (mdiff < 0) continue;
         int mmult = 1;
         for (int x=1; x*x < mdiff; x++) mmult = x;
         // adjust migrants according to development difference
-        migrants = (int) (migrants * (float) (((mdiff + 100) * mmult) / 500));
+        migrants = static_cast<int>(static_cast<float>(migrants) * (static_cast<float>((mdiff + 100) * mmult) / 500));
         AdjustPop(migrants);
         r->AdjustPop(-migrants);
         r->emigrants -= migrants;
@@ -1516,8 +1519,8 @@ void ARegion::PostTurn(ARegionList *pRegs)
     
     /* Development increase due to player activity */
     // scale improvement
-    float imp1 = improvement / 25;
-    int imp2 = (improvement * 2 + 15) / 3;
+    float imp1 = static_cast<float>(improvement) / 25;
+    float imp2 = static_cast<float>(improvement * 2 + 15) / 3;
     improvement = (int) (imp1 * imp2);
     // development increase possible?
     if (improvement > development) {
@@ -1549,16 +1552,16 @@ void ARegion::PostTurn(ARegionList *pRegs)
         if (!done) {
             markets.DeleteAll();
             SetupCityMarket();
-            float ratio = ItemDefs[race].baseprice /
-                (float) (Globals->BASE_MAN_COST * 10);
+            float ratio = static_cast<float>(ItemDefs[race].baseprice) /
+                          static_cast<float>(Globals->BASE_MAN_COST * 10);
             // Setup Recruiting
-            Market *m = new Market(M_BUY, race, (int)(Wages()*4*ratio),
+            Market *m = new Market(M_BUY, race, calculateWagesWithRatio(ratio),
                     Population()/25, 0, 10000, 0, 2000);
             markets.Add(m);
             if (Globals->LEADERS_EXIST) {
-                ratio = ItemDefs[I_LEADERS].baseprice /
-                    (float)Globals->BASE_MAN_COST;
-                m = new Market(M_BUY, I_LEADERS, (int)(Wages()*4*ratio),
+                ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) /
+                        static_cast<float>(Globals->BASE_MAN_COST);
+                m = new Market(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
                 markets.Add(m);
             }

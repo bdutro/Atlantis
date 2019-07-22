@@ -55,7 +55,7 @@ class Quest : public AListElem
         int    building;
         int    regionnum;
         AString    regionname;
-        set<string> destinations;
+        std::set<std::string> destinations;
         AList    rewards;
 };
 
@@ -65,7 +65,7 @@ class QuestList : public AList
         int ReadQuests(Ainfile *f);
         void WriteQuests(Aoutfile *f);
 
-        int CheckQuestKillTarget(Unit *u, ItemList *reward);
+        int CheckQuestKillTarget(const Unit::Handle& u, const ItemList& reward);
         int CheckQuestHarvestTarget(ARegion *r,
                 int item, int harvested, int max,
                 Unit *u);

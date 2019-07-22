@@ -27,7 +27,6 @@
 
 #include <iostream>
 #include <fstream>
-using namespace std;
 
 #define F_ENDLINE '\n'
 

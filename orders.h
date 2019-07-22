@@ -50,6 +50,10 @@ class BankOrder;
 class IdleOrder;
 class TransportOrder;
 
+#include <memory>
+#include <list>
+
+#include "unitid.h"
 #include "unit.h"
 #include "gamedefs.h"
 #include "astring.h"
@@ -144,7 +148,7 @@ extern char const ** OrderStrs;
 
 int Parse1Order(AString *);
 
-class Order : public AListElem {
+class Order {
     public:
         Order();
         virtual ~Order();
@@ -153,8 +157,9 @@ class Order : public AListElem {
         int quiet;
 };
 
-class MoveDir : public AListElem {
+class MoveDir {
     public:
+        using Handle = std::shared_ptr<MoveDir>;
         int dir;
 };
 
@@ -164,7 +169,7 @@ class MoveOrder : public Order {
         ~MoveOrder();
 
         int advancing;
-        AList dirs;
+        std::list<MoveDir::Handle> dirs;
 };
 
 class WithdrawOrder : public Order {
@@ -188,7 +193,7 @@ class GiveOrder : public Order {
         int unfinished;
         int merge;
 
-        UnitId *target;
+        UnitId target;
 };
 
 class StudyOrder : public Order {
@@ -206,7 +211,7 @@ class TeachOrder : public Order {
         TeachOrder();
         ~TeachOrder();
 
-        AList targets;
+        std::list<UnitId> targets;
 };
 
 class ProduceOrder : public Order {
@@ -243,7 +248,7 @@ class AttackOrder : public Order {
         AttackOrder();
         ~AttackOrder();
 
-        AList targets;
+        std::list<UnitId> targets;
 };
 
 class BuildOrder : public Order {
@@ -251,7 +256,7 @@ class BuildOrder : public Order {
         BuildOrder();
         ~BuildOrder();
 
-        UnitId * target;
+        UnitId target;
         int needtocomplete;
 };
 
@@ -260,7 +265,7 @@ class SailOrder : public Order {
         SailOrder();
         ~SailOrder();
 
-        AList dirs;
+        std::list<MoveDir::Handle> dirs;
 };
 
 class FindOrder : public Order {
@@ -276,7 +281,7 @@ class StealOrder : public Order {
         StealOrder();
         ~StealOrder();
 
-        UnitId *target;
+        UnitId target;
         int item;
 };
 
@@ -285,7 +290,7 @@ class AssassinateOrder : public Order {
         AssassinateOrder();
         ~AssassinateOrder();
 
-        UnitId *target;
+        UnitId target;
 };
 
 class ForgetOrder : public Order {
@@ -309,15 +314,17 @@ class ExchangeOrder : public Order {
 
         int exchangeStatus;
 
-        UnitId *target;
+        UnitId target;
 };
 
 class TurnOrder : public Order {
     public:
+        using Handle = std::shared_ptr<TurnOrder>;
+
         TurnOrder();
         ~TurnOrder();
         int repeating;
-        AList turnOrders;
+        std::list<AString::Handle> turnOrders;
 };
 
 class CastOrder : public Order {
@@ -334,7 +341,7 @@ class CastMindOrder : public CastOrder {
         CastMindOrder();
         ~CastMindOrder();
 
-        UnitId *id;
+        UnitId id;
 };
 
 class CastRegionOrder : public CastOrder {
@@ -351,7 +358,7 @@ class TeleportOrder : public CastRegionOrder {
         ~TeleportOrder();
 
         int gate;
-        AList units;
+        std::list<UnitId> units;
 };
 
 class CastIntOrder : public CastOrder {
@@ -367,7 +374,7 @@ class CastUnitsOrder : public CastOrder {
         CastUnitsOrder();
         ~CastUnitsOrder();
 
-        AList units;
+        std::list<UnitId> units;
 };
 
 class CastTransmuteOrder : public CastOrder {
@@ -384,7 +391,7 @@ class EvictOrder : public Order {
         EvictOrder();
         ~EvictOrder();
 
-        AList targets;
+        std::list<UnitId> targets;
 };
 
 class IdleOrder : public Order {
@@ -403,7 +410,7 @@ class TransportOrder : public Order {
         int amount;
         int except;
 
-        UnitId *target;
+        UnitId target;
 };
 
 class JoinOrder : public Order {
@@ -411,7 +418,7 @@ class JoinOrder : public Order {
         JoinOrder();
         ~JoinOrder();
 
-        UnitId *target;
+        UnitId target;
         int overload;
         int merge;
 };

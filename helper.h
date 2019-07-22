@@ -49,10 +49,10 @@ AString( (int) ATL_VER_PATCH( x ) ) ) + \
 //
 typedef unsigned int BITFIELD;
 
-#define BIT( x ) ( 1 << ( x ))
-#define GET_BIT( b, x ) (( b & ( 1 << ( x ))) ? 1 : 0 )
-#define SET_BIT( b, x ) ( b |= ( 1 << ( x )))
-#define CLEAR_BIT( b, x ) ( b &= ~( 1 << ( x )))
+#define BIT( x ) ( 1U << ( x ))
+#define GET_BIT( b, x ) (( b & ( 1U << ( x ))) ? 1 : 0 )
+#define SET_BIT( b, x ) ( b |= ( 1U << ( x )))
+#define CLEAR_BIT( b, x ) ( b &= ~( 1U << ( x )))
 
 //
 // Convenient macros

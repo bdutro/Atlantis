@@ -154,9 +154,13 @@ void QuestList::WriteQuests(Aoutfile *f)
                 break;
             case Quest::VISIT:
                 if (q->building != -1)
+                {
                     f->PutStr(ObjectDefs[q->building].name);
+                }
                 else
+                {
                     f->PutStr("NO_OBJECT");
+                }
                 f->PutInt(q->destinations.size());
                 for (it = q->destinations.begin();
                         it != q->destinations.end();

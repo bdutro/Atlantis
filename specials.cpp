@@ -56,7 +56,7 @@ void Soldier::SetupHealing()
     }
 }
 
-int Army::CheckSpecialTarget(char const *special,int tar)
+bool Army::CheckSpecialTarget(char const *special, size_t tar)
 {
     SpecialType *spd = FindSpecial(special);
     int i;
@@ -151,9 +151,9 @@ int Army::CheckSpecialTarget(char const *special,int tar)
     return 1;
 }
 
-void Battle::UpdateShields(Army *a)
+void Battle::UpdateShields(const Army::Handle& a)
 {
-    for (int i=0; i<a->notbehind; i++) {
+    for (size_t i=0; i<a->notbehind; i++) {
         int shtype = -1;
         SpecialType *spd;
 
@@ -188,8 +188,7 @@ void Battle::UpdateShields(Army *a)
     }
 }
 
-void Battle::DoSpecialAttack(int round, Soldier *a, Army *attackers,
-        Army *def, int behind)
+void Battle::DoSpecialAttack(int, const Soldier::Handle& a, const Army::Handle& , const Army::Handle& def, bool)
 {
     SpecialType *spd;
     int i, num, tot = -1;
