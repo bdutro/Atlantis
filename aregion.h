@@ -83,7 +83,7 @@ class TerrainType
 
         int pop;
         int wages;
-        int economy;
+        unsigned int economy;        
         int movepoints;
         std::array<Product, 7> prods;
         // Race information
@@ -135,10 +135,10 @@ class Farsight
 Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>&, const std::shared_ptr<Faction>&);
 
 enum {
-    TOWN_VILLAGE,
-    TOWN_TOWN,
-    TOWN_CITY,
-    NTOWNS
+    TOWN_VILLAGE = 0,
+    TOWN_TOWN = 1,
+    TOWN_CITY = 2,
+    NTOWNS = 3
 };
 
 class TownInfo
@@ -320,7 +320,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int vegetation;
         int culture;
         // migration origins
-        std::list<ARegion::Handle> migfrom;
+        std::list<ARegion::WeakHandle> migfrom;
         // mid-way migration development
         int migdev;
         int immigrants;

@@ -25,7 +25,8 @@
 #ifndef MARKET_CLASS
 #define MARKET_CLASS
 
-#include "alist.h"
+#include <memory>
+#include <list>
 #include "fileio.h"
 
 enum {
@@ -33,12 +34,13 @@ enum {
     M_SELL
 };
 
-class Market : public AListElem {
+class Market {
 public:
+    using Handle = std::shared_ptr<Market>;
     Market();
 
     /* type, item, price, amount, minpop, maxpop, minamt, maxamt */
-    Market(int,int,int,int,int,int,int,int);
+    Market(int, int, int, int, int, int, int, int);
 
     int type;
     int item;
@@ -59,11 +61,28 @@ public:
     AString Report();
 };
 
-class MarketList : public AList {
+class MarketList {
 public:
+    using iterator = std::list<Market::Handle>::iterator;
+    using const_iterator = std::list<Market::Handle>::const_iterator;
+
     void PostTurn(int,int);
     void Writeout(Aoutfile * f);
     void Readin(Ainfile * f);
+    void DeleteAll();
+    void Add(int, int, int, int, int, int, int, int);
+    void Add(const Market::Handle&);
+    iterator begin() { return markets_.begin(); }
+    iterator end() { return markets_.end(); }
+    const_iterator cbegin() const { return markets_.cbegin(); }
+    const_iterator cend() const { return markets_.cend(); }
+    const_iterator begin() const { return markets_.begin(); }
+    const_iterator end() const { return markets_.end(); }
+    iterator erase(iterator pos) { return markets_.erase(pos); }
+    void clear() { markets_.clear(); }
+
+private:
+    std::list<Market::Handle> markets_;
 };
 
 #endif

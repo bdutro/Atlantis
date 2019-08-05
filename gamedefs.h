@@ -346,7 +346,7 @@ public:
     unsigned int ABYSS_LEVEL;
 
     // Town probability; 100 = default
-    int TOWN_PROBABILITY;
+    unsigned int TOWN_PROBABILITY;
 
     // Raising this value will lessen the effects
     // of a region type's economy on the chance
@@ -354,17 +354,17 @@ public:
     // be exactly equal for all types of regions,
     // at 0 the chance will be directly proportional
     // to the economy value.
-    int TOWN_SPREAD;
+    unsigned int TOWN_SPREAD;
 
     // Reduction (in %) of the chance for towns forming adjacent
     // to each other (0 = normal chance, 100 = no chance of towns
     // forming adjacent to each other)
-    int TOWNS_NOT_ADJACENT;
+    unsigned int TOWNS_NOT_ADJACENT;
 
     // Make settlements near the arctic less likely and smaller
     // Higher values decrease likeliness of settlements
     // suggested: 0-5
-    int LESS_ARCTIC_TOWNS;
+    unsigned int LESS_ARCTIC_TOWNS;
     
     // Percent of surface level covered with ocean.
     unsigned int OCEAN;
@@ -694,7 +694,7 @@ public:
 
     // How developed pre-existing towns are at the start of the game
     // (100 = standard).
-    int TOWN_DEVELOPMENT;
+    unsigned int TOWN_DEVELOPMENT;
     
     // Whether you need to be a war faction to have tact-5 leaders
     int TACTICS_NEEDS_WAR;

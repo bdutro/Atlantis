@@ -69,7 +69,7 @@ public:
     void DefaultWorkOrder();
 
     int RunGame();
-    int EditGame(int *pSaveGame);
+    int EditGame(bool& pSaveGame);
     int SaveGame();
     int WritePlayers();
     int ReadPlayers();
@@ -107,7 +107,7 @@ public:
     //
     // Get a unit by its number.
     //
-    Unit *GetUnit(int num);
+    Unit::WeakHandle GetUnit(int num);
 
     // Handle special gm unit modification functions
     Unit *ParseGMUnit(AString *tag, Faction *pFac);
@@ -122,18 +122,18 @@ private:
     //
     // Game editing functions.
     //
-    ARegion *EditGameFindRegion();
+    ARegion::WeakHandle EditGameFindRegion();
     void EditGameFindUnit();
     void EditGameCreateUnit();
-    void EditGameRegion(ARegion *pReg);
-    void EditGameRegionObjects(ARegion *pReg);
-    void EditGameRegionTerrain(ARegion *pReg );
-    void EditGameRegionMarkets(ARegion *pReg );
-    void EditGameUnit(Unit *pUnit);
-    void EditGameUnitItems(Unit *pUnit);
-    void EditGameUnitSkills(Unit *pUnit);
-    void EditGameUnitMove(Unit *pUnit);
-    void EditGameUnitDetails(Unit *pUnit);
+    void EditGameRegion(const ARegion::Handle& pReg);
+    void EditGameRegionObjects(const ARegion::Handle& pReg);
+    void EditGameRegionTerrain(const ARegion::Handle& pReg );
+    void EditGameRegionMarkets(const ARegion::Handle& pReg );
+    void EditGameUnit(const Unit::Handle& pUnit);
+    void EditGameUnitItems(const Unit::Handle& pUnit);
+    void EditGameUnitSkills(const Unit::Handle& pUnit);
+    void EditGameUnitMove(const Unit::Handle& pUnit);
+    void EditGameUnitDetails(const Unit::Handle& pUnit);
     
     void PreProcessTurn();
     void ReadOrders();

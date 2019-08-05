@@ -153,3 +153,25 @@ void MarketList::Readin(Ainfile *f)
         Add(m);
     }
 }
+
+void MarketList::DeleteAll()
+{
+    markets_.clear();
+}
+
+void MarketList::Add(const Market::Handle& m)
+{
+    markets_.push_back(m);
+}
+
+void MarketList::Add(int type, int item, int price, int amount, int minpop, int maxpop, int minamt, int maxamt)
+{
+    markets_.emplace_back(std::make_shared<Market>(type,
+                                                   item,
+                                                   price,
+                                                   amount,
+                                                   minpop,
+                                                   maxpop,
+                                                   minamt,
+                                                   maxamt));
+}

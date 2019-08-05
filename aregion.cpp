@@ -184,7 +184,7 @@ unsigned int ARegion::GetNearestProd(int item)
             ARegion::Handle r = rp->ptr;
             AString skname = ItemDefs[item].pSkill;
             int sk = LookupSkill(&skname);
-            if (r->products.GetProd(item, sk)) {
+            if (!r->products.GetProd(item, sk).expired()) {
                 regs.clear();
                 regs2.clear();
                 return i;
@@ -226,10 +226,10 @@ void ARegion::LairCheck()
     if (check >= tt->lairChance) return;
 
     int count = 0;
-    unsigned int c;
-    for (c = 0; c < sizeof(tt->lairs)/sizeof(int); c++) {
-        if (tt->lairs[c] != -1) {
-            if (!(ObjectDefs[tt->lairs[c]].flags & ObjectType::DISABLED)) {
+    for(const auto& l: tt->lairs)
+    {
+        if (l != -1) {
+            if (!(ObjectDefs[l].flags & ObjectType::DISABLED)) {
                 count++;
             }
         }
@@ -237,11 +237,12 @@ void ARegion::LairCheck()
     count = getrandom(count);
 
     int lair = -1;
-    for (c = 0; c < sizeof(tt->lairs)/sizeof(int); c++) {
-        if (tt->lairs[c] != -1) {
-            if (!(ObjectDefs[tt->lairs[c]].flags & ObjectType::DISABLED)) {
+    for(const auto& l: tt->lairs)
+    {
+        if (l != -1) {
+            if (!(ObjectDefs[l].flags & ObjectType::DISABLED)) {
                 if (!count) {
-                    lair = tt->lairs[c];
+                    lair = l;
                     break;
                 }
                 count--;
@@ -1211,8 +1212,7 @@ void ARegion::WriteProducts(Areport *f, const Faction::Handle& fac, bool present
 {
     AString temp = "Products: ";
     bool has = false;
-    forlist((&products)) {
-        Production *p = dynamic_cast<Production *>(elem);
+    for(const auto& p: products) {
         if (ItemDefs[p->itemtype].type & IT_ADVANCED) {
             if (CanMakeAdv(fac, p->itemtype) || (fac->IsNPC())) {
                 if (has) {
@@ -1275,8 +1275,7 @@ void ARegion::WriteMarkets(Areport *f, const Faction::Handle& fac, bool present)
 {
     AString temp = "Wanted: ";
     bool has = false;
-    forlist(&markets) {
-        Market *m = dynamic_cast<Market *>(elem);
+    for(const auto& m: markets) {
         if (!m->amount) continue;
         if (!present &&
                 !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_MARKETS))
@@ -1307,8 +1306,7 @@ void ARegion::WriteMarkets(Areport *f, const Faction::Handle& fac, bool present)
     temp = "For Sale: ";
     has = false;
     {
-        forlist(&markets) {
-            Market *m = dynamic_cast<Market *>(elem);
+        for(const auto& m: markets) {
             if (!m->amount) continue;
             if (!present &&
                     !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_MARKETS))
@@ -1866,15 +1864,21 @@ bool ARegion::HasCityGuard()
 bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const ARegionList& pRegs)
 {
     std::list<Faction::Handle> flist;
-    unsigned int i;
 
     SkillType *pS = FindSkill(spell);
 
     if (!(pS->flags & SkillType::NOTIFY)) {
         // Okay, we aren't notifyable, check our prerequisites
-        for (i = 0; i < sizeof(pS->depends)/sizeof(SkillDepend); i++) {
-            if (pS->depends[i].skill == NULL) break;
-            if (NotifySpell(caster, pS->depends[i].skill, pRegs)) return true;
+        for(const auto& d: pS->depends)
+        {
+            if (d.skill == nullptr)
+            {
+                break;
+            }
+            if (NotifySpell(caster, d.skill, pRegs))
+            {
+                return true;
+            }
         }
         return false;
     }

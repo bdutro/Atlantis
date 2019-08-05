@@ -2539,7 +2539,6 @@ void ARegion::MakeStartingCity()
     town->dev = TownDevelopment();
 
     float ratio;
-    Market *m;
     markets.DeleteAll();
     if (Globals->START_CITIES_START_UNLIMITED) {
         for (int i=0; i<NITEMS; i++) {
@@ -2552,60 +2551,55 @@ void ARegion::MakeStartingCity()
                 {
                     continue;
                 }
-                m = new Market(M_BUY,
-                               i,
-                               static_cast<int>(ItemDefs[i].baseprice*5/2),
-                               -1,
-                               5000,
-                               5000,
-                               -1,
-                               -1);
-                markets.Add(m);
+                markets.Add(M_BUY,
+                            i,
+                            static_cast<int>(ItemDefs[i].baseprice*5/2),
+                            -1,
+                            5000,
+                            5000,
+                            -1,
+                            -1);
             }
         }
         ratio = static_cast<float>(ItemDefs[race].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
         // hack: include wage factor of 10 in float calculation above
-        m = new Market(M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
-        markets.Add(m);
+        markets.Add(M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
         if (Globals->LEADERS_EXIST) {
             ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
-            m = new Market(M_BUY,
-                           I_LEADERS,
-                           calculateWagesWithRatio(ratio),
-                           -1,
-                           5000,
-                           5000,
-                           -1,
-                           -1);
-            markets.Add(m);
+            markets.Add(M_BUY,
+                        I_LEADERS,
+                        calculateWagesWithRatio(ratio),
+                        -1,
+                        5000,
+                        5000,
+                        -1,
+                        -1);
         }
     } else {
         SetupCityMarket();
         ratio = static_cast<float>(ItemDefs[race].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
         // hack: include wage factor of 10 in float calculation above
         /* Setup Recruiting */
-        m = new Market(M_BUY,
-                       race,
-                       calculateWagesWithRatio(ratio),
-                       Population() / 5,
-                       0,
-                       10000,
-                       0,
-                       2000);
-        markets.Add(m);
+        markets.Add(M_BUY,
+                    race,
+                    calculateWagesWithRatio(ratio),
+                    Population() / 5,
+                    0,
+                    10000,
+                    0,
+                    2000);
         if ( Globals->LEADERS_EXIST ) {
             ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
-            m = new Market(M_BUY,
-                           I_LEADERS,
-                           calculateWagesWithRatio(ratio),
-                           Population() / 25,
-                           0,
-                           10000,
-                           0,
-                           400);
-            markets.Add(m);
+            markets.Add(M_BUY,
+                        I_LEADERS,
+                        calculateWagesWithRatio(ratio),
+                        Population() / 25,
+                        0,
+                        10000,
+                        0,
+                        400);
         }
     }
 }

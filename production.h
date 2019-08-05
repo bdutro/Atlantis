@@ -25,6 +25,8 @@
 #ifndef PRODUCTION_CLASS
 #define PRODUCTION_CLASS
 
+#include <memory>
+#include <list>
 #include "gamedefs.h"
 #include "alist.h"
 #include "fileio.h"
@@ -32,8 +34,11 @@
 #define P_BIG 40
 #define P_SMALL 20
 
-class Production : public AListElem {
+class Production {
 public:
+    using Handle = std::shared_ptr<Production>;
+    using WeakHandle = std::weak_ptr<Production>;
+
     Production(int,int); /* item type, amt max */
     Production();
     
@@ -49,13 +54,31 @@ public:
     int activity;
 };
 
-class ProductionList : public AList {
+class ProductionList {
 public:
-    Production * GetProd(int,int); /* item type, skill */
+    using iterator = std::list<Production::Handle>::iterator;
+    using const_iterator = std::list<Production::Handle>::const_iterator;
+
+    Production::WeakHandle GetProd(int,int); /* item type, skill */
     void AddProd(Production *);
-    
+
     void Writeout(Aoutfile *);
     void Readin(Ainfile *);
+    void Add(int it, int maxamt);
+    void Add(const Production::Handle& p);
+
+    iterator begin() { return products_.begin(); }
+    iterator end() { return products_.end(); }
+    const_iterator cbegin() const { return products_.cbegin(); }
+    const_iterator cend() const { return products_.cend(); }
+    const_iterator begin() const { return products_.begin(); }
+    const_iterator end() const { return products_.end(); }
+    iterator erase(iterator pos) { return products_.erase(pos); }
+    void clear() { products_.clear(); }
+
+private:
+    iterator GetProd_(int,int); /* item type, skill */
+    std::list<Production::Handle> products_;
 };
 
 #endif
