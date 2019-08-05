@@ -36,7 +36,7 @@ static char buf[1024];
 
 Aoutfile::Aoutfile()
 {
-    file = new ofstream;
+    file = new std::ofstream;
 }
 
 Aoutfile::~Aoutfile()
@@ -46,7 +46,7 @@ Aoutfile::~Aoutfile()
 
 Ainfile::Ainfile()
 {
-    file = new ifstream;
+    file = new std::ifstream;
 }
 
 Ainfile::~Ainfile()
@@ -56,7 +56,7 @@ Ainfile::~Ainfile()
 
 Aorders::Aorders()
 {
-    file = new ifstream;
+    file = new std::ifstream;
 }
 
 Aorders::~Aorders()
@@ -66,7 +66,7 @@ Aorders::~Aorders()
 
 Areport::Areport()
 {
-    file = new ofstream;
+    file = new std::ofstream;
 }
 
 Areport::~Areport()
@@ -76,7 +76,7 @@ Areport::~Areport()
 
 Arules::Arules()
 {
-    file = new ofstream;
+    file = new std::ofstream;
 }
 
 Arules::~Arules()
@@ -88,22 +88,22 @@ void Aoutfile::Open(const AString &s)
 {
     while(!(file->rdbuf()->is_open())) {
         AString *name = getfilename(s);
-        file->open(name->Str(), ios::out|ios::ate);
+        file->open(name->Str(), std::ios::out|std::ios::ate);
         delete name;
-        // Handle a broke ios::ate implementation on some boxes
-        file->seekp(0, ios::end);
-        if ((int)file->tellp()!= 0) file->close();
+        // Handle a broke std::ios::ate implementation on some boxes
+        file->seekp(0, std::ios::end);
+        if (file->tellp() != 0) file->close();
     }
 }
 
 int Aoutfile::OpenByName(const AString &s)
 {
     AString temp = s;
-    file->open(temp.Str(), ios::out|ios::ate);
+    file->open(temp.Str(), std::ios::out|std::ios::ate);
     if (!file->rdbuf()->is_open()) return -1;
-    // Handle a broke ios::ate implementation on some boxes
-    file->seekp(0, ios::end);
-    if ((int)file->tellp() != 0) {
+    // Handle a broke std::ios::ate implementation on some boxes
+    file->seekp(0, std::ios::end);
+    if (file->tellp() != 0) {
         file->close();
         return -1;
     }
@@ -114,7 +114,7 @@ void Ainfile::Open(const AString &s)
 {
     while (!(file->rdbuf()->is_open())) {
         AString *name = getfilename(s);
-        file->open(name->Str(),ios::in);
+        file->open(name->Str(),std::ios::in);
         delete name;
     }
 }
@@ -122,7 +122,7 @@ void Ainfile::Open(const AString &s)
 int Ainfile::OpenByName(const AString &s)
 {
     AString temp = s;
-    file->open(temp.Str(),ios::in);
+    file->open(temp.Str(),std::ios::in);
     if (!(file->rdbuf()->is_open())) return -1;
     return 0;
 }
@@ -152,7 +152,9 @@ void Arules::Close()
     file->close();
 }
 
-void skipwhite(ifstream *f)
+void skipwhite(std::ifstream *f);
+
+void skipwhite(std::ifstream *f)
 {
     if (f->eof()) return;
     int ch = f->peek();
@@ -169,7 +171,7 @@ AString * Ainfile::GetStr()
     skipwhite(file);
     if (file->peek() == -1 || file->eof()) return 0;
     file->getline(buf,1023,F_ENDLINE);
-    AString * s = new AString((char *) &(buf[0]));
+    AString * s = new AString(buf);
     return s;
 }
 
@@ -177,7 +179,7 @@ AString * Ainfile::GetStrNoSkip()
 {
     if (file->peek() == -1 || file->eof()) return 0;
     file->getline(buf,1023,F_ENDLINE);
-    AString * s = new AString((char *) &(buf[0]));
+    AString * s = new AString(buf);
     return s;
 }
 
@@ -197,6 +199,11 @@ void Aoutfile::PutInt(int x)
     PutInt(static_cast<size_t>(x));
 }
 
+void Aoutfile::PutBool(bool x)
+{
+    PutInt(static_cast<size_t>(x));
+}
+
 void Aoutfile::PutStr(char const *s)
 {
     *file << s << F_ENDLINE;
@@ -211,7 +218,7 @@ void Aorders::Open(const AString &s)
 {
     while (!(file->rdbuf()->is_open())) {
         AString *name = getfilename(s);
-        file->open(name->Str(),ios::in);
+        file->open(name->Str(),std::ios::in);
         delete name;
     }
 }
@@ -219,7 +226,7 @@ void Aorders::Open(const AString &s)
 int Aorders::OpenByName(const AString &s)
 {
     AString temp = s;
-    file->open(temp.Str(),ios::in);
+    file->open(temp.Str(),std::ios::in);
     if (!(file->rdbuf()->is_open())) return -1;
     return 0;
 }
@@ -230,7 +237,7 @@ AString * Aorders::GetLine()
     if (file->eof()) return 0;
     if (file->peek() == -1) return 0;
     file->getline(buf,1023,F_ENDLINE);
-    AString *s = new AString((char *) &(buf[0]));
+    AString *s = new AString(buf);
     return s;
 }
 
@@ -238,11 +245,11 @@ void Areport::Open(const AString &s)
 {
     while(!(file->rdbuf()->is_open())) {
         AString *name = getfilename(s);
-        file->open(name->Str(),ios::out|ios::ate);
+        file->open(name->Str(),std::ios::out|std::ios::ate);
         delete name;
-        // Handle a broke ios::ate implementation on some boxes
-        file->seekp(0, ios::end);
-        if ((int)file->tellp()!=0) file->close();
+        // Handle a broke std::ios::ate implementation on some boxes
+        file->seekp(0, std::ios::end);
+        if (file->tellp() != 0) file->close();
     }
     tabs = 0;
 }
@@ -250,11 +257,11 @@ void Areport::Open(const AString &s)
 int Areport::OpenByName(const AString &s)
 {
     AString temp = s;
-    file->open(temp.Str(), ios::out|ios::ate);
+    file->open(temp.Str(), std::ios::out|std::ios::ate);
     if (!file->rdbuf()->is_open()) return -1;
-    // Handle a broke ios::ate implementation on some boxes
-    file->seekp(0, ios::end);
-    if ((int)file->tellp() != 0) {
+    // Handle a broke std::ios::ate implementation on some boxes
+    file->seekp(0, std::ios::end);
+    if (file->tellp() != 0) {
         file->close();
         return -1;
     }
@@ -310,11 +317,11 @@ void Arules::Open(const AString &s)
 {
     while(!(file->rdbuf()->is_open())) {
         AString *name = getfilename(s);
-        file->open(name->Str(),ios::out|ios::ate);
+        file->open(name->Str(),std::ios::out|std::ios::ate);
         delete name;
-        // Handle a broke ios::ate implementation on some boxes
-        file->seekp(0, ios::end);
-        if ((int)file->tellp()!=0) file->close();
+        // Handle a broke std::ios::ate implementation on some boxes
+        file->seekp(0, std::ios::end);
+        if (file->tellp() != 0) file->close();
     }
     tabs = 0;
     wraptab = 0;
@@ -323,11 +330,11 @@ void Arules::Open(const AString &s)
 int Arules::OpenByName(const AString &s)
 {
     AString temp = s;
-    file->open(temp.Str(), ios::out|ios::trunc);
+    file->open(temp.Str(), std::ios::out|std::ios::trunc);
     if (!file->rdbuf()->is_open()) return -1;
-    // Handle a broke ios::ate implementation on some boxes
-    file->seekp(0, ios::end);
-    if ((int)file->tellp() != 0) {
+    // Handle a broke std::ios::ate implementation on some boxes
+    file->seekp(0, std::ios::end);
+    if (file->tellp() != 0) {
         file->close();
         return -1;
     }

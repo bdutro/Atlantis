@@ -580,8 +580,8 @@ private:
     int RunBattle(const ARegion::Handle&, const Unit::Handle&, const Unit::Handle&, int = 0, bool = false);
     void GetSidesForRegion_(const ARegion::Handle&,
                             const ARegion::Handle&,
-                            std::list<FactionPtr::Handle>&,
-                            std::list<FactionPtr::Handle>&,
+                            std::list<Faction::WeakHandle>&,
+                            std::list<Faction::WeakHandle>&,
                             std::list<Location::Handle>&,
                             std::list<Location::Handle>&,
                             const Unit::Handle&,
@@ -591,8 +591,8 @@ private:
                             bool&,
                             bool = false);
     void GetSides(const ARegion::Handle&,
-                  std::list<FactionPtr::Handle>&,
-                  std::list<FactionPtr::Handle>&,
+                  std::list<Faction::WeakHandle>&,
+                  std::list<Faction::WeakHandle>&,
                   std::list<Location::Handle>&,
                   std::list<Location::Handle>&,
                   const Unit::Handle&,
@@ -600,17 +600,17 @@ private:
                   int = 0,
                   bool = false);
     bool CanAttack(const ARegion::Handle&,
-                   const std::list<FactionPtr::Handle>&,
+                   const std::list<Faction::WeakHandle>&,
                    const Unit::Handle&);
     void GetAFacs(const ARegion::Handle&,
                   const Unit::Handle&,
                   const Unit::Handle&,
-                  std::list<FactionPtr::Handle>&,
-                  std::list<FactionPtr::Handle>&,
+                  std::list<Faction::WeakHandle>&,
+                  std::list<Faction::WeakHandle>&,
                   std::list<Location::Handle>&);
     void GetDFacs(const ARegion::Handle&,
                   const Unit::Handle&,
-                  std::list<FactionPtr::Handle>&);
+                  std::list<Faction::WeakHandle>&);
 };
 
 #endif

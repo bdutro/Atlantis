@@ -68,6 +68,7 @@ class Aoutfile {
         void PutInt(int);
         void PutInt(unsigned int);
         void PutInt(size_t);
+        void PutBool(bool);
 
         std::ofstream *file;
 };

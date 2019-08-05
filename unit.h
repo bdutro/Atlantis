@@ -119,7 +119,7 @@ class Unit
 
         AString SpoilsReport(void);
         bool CanGetSpoil(const Item::Handle& i);
-        void WriteReport(Areport *,int,int,int, bool, int, bool);
+        void WriteReport(Areport *,int,int,bool, bool, int, bool);
         AString GetName(int);
         AString MageReport();
         AString ReadyItem();
@@ -290,13 +290,6 @@ class Unit
         size_t raised;
 };
 
-class UnitPtr {
-    public:
-        using Handle = std::shared_ptr<UnitPtr>;
-        using WeakHandle = std::weak_ptr<UnitPtr>;
-        Unit::Handle ptr;
-};
-
-UnitPtr::Handle GetUnitList(const std::list<UnitPtr::Handle>&, const Unit::Handle&);
+Unit::WeakHandle GetUnitList(const std::list<Unit::WeakHandle>&, const Unit::Handle&);
 
 #endif

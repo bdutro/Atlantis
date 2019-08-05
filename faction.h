@@ -34,6 +34,7 @@ class Faction;
 class Game;
 
 #include <memory>
+#include <list>
 
 #include "gameio.h"
 #include "aregion.h"
@@ -104,10 +105,12 @@ public:
     int vectorsize;
 };
     
-class Attitude : public AListElem {
+class Attitude {
 public:
-    Attitude();
-    ~Attitude();
+    using Handle = std::shared_ptr<Attitude>;
+
+    Attitude() = default;
+    ~Attitude() = default;
     void Writeout(Aoutfile * );
     void Readin( Ainfile *, ATL_VER version );
     
@@ -133,7 +136,7 @@ public:
     void SetNameNoChange( AString *str );
     void SetAddress( AString &strNewAddress );
     
-    void CheckExist(ARegionList *);
+    void CheckExist(const ARegionList&);
     void Error(const AString &);
     void Event(const AString &);
     
@@ -148,7 +151,7 @@ public:
     int GetAttitude(int);
     void RemoveAttitude(int);
     
-    int CanCatch(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
+    bool CanCatch(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
     /* Return 1 if can see, 2 if can see faction */
     int CanSee(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&, int practice = 0);
     
@@ -156,7 +159,7 @@ public:
     void TimesReward();
     
     void SetNPC();
-    int IsNPC();
+    bool IsNPC() const;
 
     void DiscoverItem(int item, int force, int full);
 
@@ -179,7 +182,7 @@ public:
     int times;
     bool showunitattitudes;
     int temformat;
-    char exists;
+    bool exists;
     int quit;
     int numshows;
     
@@ -187,14 +190,14 @@ public:
     int numapprentices;
     int numqms;
     int numtacts;
-    AList war_regions;
-    AList trade_regions;
+    std::list<std::weak_ptr<ARegion>> war_regions;
+    std::list<std::weak_ptr<ARegion>> trade_regions;
 
     /* Used when writing reports */
-    AList present_regions;
+    std::list<std::weak_ptr<ARegion>> present_regions;
     
     int defaultattitude;
-    AList attitudes;
+    std::list<Attitude::Handle> attitudes;
     SkillList skills;
     ItemList items;
     
@@ -204,8 +207,8 @@ public:
     AList extraPlayers;
     AList errors;
     AList events;
-    std::list<std::shared_ptr<BattlePtr>> battles;
-    AList shows;
+    std::list<std::weak_ptr<Battle>> battles;
+    std::list<ShowSkill::Handle> shows;
     AList itemshows;
     AList objectshows;
 
@@ -217,13 +220,7 @@ public:
     int startturn;
 };
 
-class FactionPtr {
-public:
-    using Handle = std::shared_ptr<FactionPtr>;
-    Faction::Handle ptr;
-};
-
 Faction::Handle GetFaction(const std::list<Faction::Handle>&, int);
-Faction::Handle GetFaction2(const std::list<FactionPtr::Handle>&, int); /*This AList is a list of FactionPtr*/
+Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>&, int); /*This AList is a list of FactionPtr*/
 
 #endif

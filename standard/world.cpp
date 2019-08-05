@@ -2496,17 +2496,13 @@ bool ARegion::CanBeStartingCity(const ARegionArray &)
     if (town && town->pop == 5000) return false;
 
     int regs = 0;
-    std::list<ARegionPtr::Handle> inlist, donelist;
-
-    {
-        auto& temp = inlist.emplace_back(std::make_shared<ARegionPtr>());
-        temp->ptr = shared_from_this();
-    }
+    std::list<ARegion::WeakHandle> inlist, donelist;
+    inlist.push_back(weak_from_this());
 
     while(!inlist.empty()) {
         auto it = inlist.begin();
         const auto& reg = *it;
-        for (const auto& r2_w: reg->ptr->neighbors) {
+        for (const auto& r2_w: reg.lock()->neighbors) {
             if (r2_w.expired()) continue;
             auto r2 = r2_w.lock();
             if (r2->type == R_OCEAN) continue;
@@ -2514,8 +2510,7 @@ bool ARegion::CanBeStartingCity(const ARegionArray &)
             if (!GetRegion(donelist, r2->num).expired()) continue;
             regs++;
             if (regs>20) return true;
-            auto& temp = inlist.emplace_back(std::make_shared<ARegionPtr>());
-            temp->ptr = r2;
+            inlist.push_back(r2_w);
         }
         donelist.splice(donelist.end(), inlist, it);
     }

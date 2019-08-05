@@ -95,14 +95,6 @@ Faction *FactionVector::GetFaction(int x)
     return vector[x];
 }
 
-Attitude::Attitude()
-{
-}
-
-Attitude::~Attitude()
-{
-}
-
 void Attitude::Writeout(Aoutfile *f)
 {
     f->PutInt(factionnum);
@@ -111,13 +103,13 @@ void Attitude::Writeout(Aoutfile *f)
 
 void Attitude::Readin(Ainfile *f, ATL_VER)
 {
-    factionnum = f->GetInt();
-    attitude = f->GetInt();
+    factionnum = f->GetInt<int>();
+    attitude = f->GetInt<int>();
 }
 
 Faction::Faction()
 {
-    exists = 1;
+    exists = true;
     name = 0;
     for (int i=0; i<NFACTYPES; i++) {
         type[i] = 1;
@@ -139,7 +131,7 @@ Faction::Faction()
 
 Faction::Faction(int n)
 {
-    exists = 1;
+    exists = true;
     num = n;
     for (int i=0; i<NFACTYPES; i++) {
         type[i] = 1;
@@ -166,7 +158,6 @@ Faction::~Faction()
     if (name) delete name;
     if (address) delete address;
     if (password) delete password;
-    attitudes.DeleteAll();
 }
 
 void Faction::Writeout(Aoutfile *f)
@@ -182,44 +173,51 @@ void Faction::Writeout(Aoutfile *f)
     f->PutStr(*address);
     f->PutStr(*password);
     f->PutInt(times);
-    f->PutInt(showunitattitudes);
+    f->PutBool(showunitattitudes);
     f->PutInt(temformat);
 
     skills.Writeout(f);
     items.Writeout(f);
     f->PutInt(defaultattitude);
-    f->PutInt(attitudes.Num());
-    forlist((&attitudes)) ((Attitude *) elem)->Writeout(f);
+    f->PutInt(attitudes.size());
+    for(const auto& a: attitudes)
+    {
+        a->Writeout(f);
+    }
 }
 
 void Faction::Readin(Ainfile *f, ATL_VER v)
 {
-    num = f->GetInt();
-    int i;
+    num = f->GetInt<int>();
 
-    for (i=0; i<NFACTYPES; i++) type[i] = f->GetInt();
+    for (int i = 0; i < NFACTYPES; ++i)
+    {
+        type[i] = f->GetInt<int>();
+    }
 
-    lastchange = f->GetInt();
-    lastorders = f->GetInt();
-    unclaimed = f->GetInt();
+    lastchange = f->GetInt<int>();
+    lastorders = f->GetInt<int>();
+    unclaimed = f->GetInt<int>();
 
     name = f->GetStr();
     address = f->GetStr();
     password = f->GetStr();
-    times = f->GetInt();
-    showunitattitudes = f->GetInt();
-    temformat = f->GetInt();
+    times = f->GetInt<int>();
+    showunitattitudes = f->GetInt<int>();
+    temformat = f->GetInt<int>();
 
     skills.Readin(f);
     items.Readin(f);
 
-    defaultattitude = f->GetInt();
-    int n = f->GetInt();
-    for (i=0; i<n; i++) {
-        Attitude* a = new Attitude;
+    defaultattitude = f->GetInt<int>();
+    int n = f->GetInt<int>();
+    for (int i = 0; i < n; ++i) {
+        Attitude::Handle a = std::make_shared<Attitude>();
         a->Readin(f, v);
-        if (a->factionnum == num) delete a;
-        else attitudes.Add(a);
+        if (a->factionnum != num)
+        {
+            attitudes.push_back(a);
+        }
     }
 
     // if (skills.GetDays(S_BUILDING) > 1)
@@ -289,30 +287,29 @@ void Faction::WriteReport(Areport *f, Game *pGame)
 {
     if (IsNPC() && num == 1) {
         if (Globals->GM_REPORT || (pGame->month == 0 && pGame->year == 1)) {
-            int i, j;
             // Put all skills, items and objects in the GM report
-            shows.DeleteAll();
-            for (i = 0; i < NSKILLS; i++) {
-                for (j = 1; j < 6; j++) {
-                    shows.Add(new ShowSkill(i, j));
+            shows.clear();
+            for (int i = 0; i < NSKILLS; i++) {
+                for (int j = 1; j < 6; j++) {
+                    shows.emplace_back(std::make_shared<ShowSkill>(i, j));
                 }
             }
-            if (shows.Num()) {
+            if (!shows.empty()) {
                 f->PutStr("Skill reports:");
-                forlist(&shows) {
-                    AString *string = ((ShowSkill *)elem)->Report(this);
+                for(const auto& s: shows) {
+                    AString *string = s->Report(*this);
                     if (string) {
                         f->PutStr("");
                         f->PutStr(*string);
                         delete string;
                     }
                 }
-                shows.DeleteAll();
+                shows.clear();
                 f->EndLine();
             }
 
             itemshows.DeleteAll();
-            for (i = 0; i < NITEMS; i++) {
+            for (int i = 0; i < NITEMS; i++) {
                 AString *show = ItemDescription(i, 1);
                 if (show) {
                     itemshows.Add(show);
@@ -322,14 +319,14 @@ void Faction::WriteReport(Areport *f, Game *pGame)
                 f->PutStr("Item reports:");
                 forlist(&itemshows) {
                     f->PutStr("");
-                    f->PutStr(*((AString *)elem));
+                    f->PutStr(*dynamic_cast<AString *>(elem));
                 }
                 itemshows.DeleteAll();
                 f->EndLine();
             }
 
             objectshows.DeleteAll();
-            for (i = 0; i < NOBJECTS; i++) {
+            for (int i = 0; i < NOBJECTS; i++) {
                 AString *show = ObjectDescription(i);
                 if (show) {
                     objectshows.Add(show);
@@ -339,31 +336,21 @@ void Faction::WriteReport(Areport *f, Game *pGame)
                 f->PutStr("Object reports:");
                 forlist(&objectshows) {
                     f->PutStr("");
-                    f->PutStr(*((AString *)elem));
+                    f->PutStr(*dynamic_cast<AString *>(elem));
                 }
                 objectshows.DeleteAll();
                 f->EndLine();
             }
 
-            present_regions.DeleteAll();
-            forlist(&(pGame->regions)) {
-                ARegion *reg = (ARegion *)elem;
-                ARegionPtr *ptr = new ARegionPtr;
-                ptr->ptr = reg;
-                present_regions.Add(ptr);
-            }
+            present_regions.clear();
+            for(const auto& reg: pGame->regions)
             {
-                forlist(&present_regions) {
-                    ((ARegionPtr*)elem)->ptr->WriteReport(f, this,
-                                                                pGame->month,
-                                                                &(pGame->regions));
-                }
+                reg->WriteReport(f, *this, pGame->month, pGame->regions);
             }
-            present_regions.DeleteAll();
         }
         errors.DeleteAll();
         events.DeleteAll();
-        battles.DeleteAll();
+        battles.clear();
         return;
     }
 
@@ -431,7 +418,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
                 pGame->AllowedMages(this) + ")");
         if (Globals->APPRENTICES_EXIST) {
             AString temp;
-            temp = (char) toupper(Globals->APPRENTICE_NAME[0]);
+            temp = static_cast<char>(toupper(Globals->APPRENTICE_NAME[0]));
             temp += Globals->APPRENTICE_NAME + 1;
             temp += "s: ";
             temp += numapprentices;
@@ -441,9 +428,9 @@ void Faction::WriteReport(Areport *f, Game *pGame)
             f->PutStr(temp);
         }
     } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
-        f->PutStr(AString("Tax Regions: ") + war_regions.Num() + " (" +
+        f->PutStr(AString("Tax Regions: ") + war_regions.size() + " (" +
                 pGame->AllowedTaxes(this) + ")");
-        f->PutStr(AString("Trade Regions: ") + trade_regions.Num() + " (" +
+        f->PutStr(AString("Trade Regions: ") + trade_regions.size() + " (" +
                 pGame->AllowedTrades(this) + ")");
         if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
             f->PutStr(AString("Quartermasters: ") + numqms + " (" +
@@ -457,7 +444,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
                 pGame->AllowedMages(this) + ")");
         if (Globals->APPRENTICES_EXIST) {
             AString temp;
-            temp = (char) toupper(Globals->APPRENTICE_NAME[0]);
+            temp = static_cast<char>(toupper(Globals->APPRENTICE_NAME[0]));
             temp += Globals->APPRENTICE_NAME + 1;
             temp += "s: ";
             temp += numapprentices;
@@ -472,40 +459,40 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     if (errors.Num()) {
         f->PutStr("Errors during turn:");
         forlist((&errors)) {
-            f->PutStr(*((AString *) elem));
+            f->PutStr(*dynamic_cast<AString *>(elem));
         }
         errors.DeleteAll();
         f->EndLine();
     }
 
-    if (battles.Num()) {
+    if (!battles.empty()) {
         f->PutStr("Battles during turn:");
-        forlist(&battles) {
-            ((BattlePtr *) elem)->ptr->Report(f, this);
+        for(const auto& b: battles) {
+            b.lock()->Report(f, *this);
         }
-        battles.DeleteAll();
+        battles.clear();
     }
 
     if (events.Num()) {
         f->PutStr("Events during turn:");
         forlist((&events)) {
-            f->PutStr(*((AString *) elem));
+            f->PutStr(*dynamic_cast<AString *>(elem));
         }
         events.DeleteAll();
         f->EndLine();
     }
 
-    if (shows.Num()) {
+    if (!shows.empty()) {
         f->PutStr("Skill reports:");
-        forlist(&shows) {
-            AString* string = ((ShowSkill *) elem)->Report(this);
+        for(const auto& s: shows) {
+            AString* string = s->Report(*this);
             if (string) {
                 f->PutStr("");
                 f->PutStr(*string);
             }
             delete string;
         }
-        shows.DeleteAll();
+        shows.clear();
         f->EndLine();
     }
 
@@ -513,7 +500,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         f->PutStr("Item reports:");
         forlist(&itemshows) {
             f->PutStr("");
-            f->PutStr(*((AString *) elem));
+            f->PutStr(*dynamic_cast<AString *>(elem));
         }
         itemshows.DeleteAll();
         f->EndLine();
@@ -523,7 +510,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         f->PutStr("Object reports:");
         forlist(&objectshows) {
             f->PutStr("");
-            f->PutStr(*((AString *)elem));
+            f->PutStr(*dynamic_cast<AString *>(elem));
         }
         objectshows.DeleteAll();
         f->EndLine();
@@ -536,11 +523,10 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     for (int i=0; i<NATTITUDES; i++) {
         int j=0;
         temp = AString(AttitudeStrs[i]) + " : ";
-        forlist((&attitudes)) {
-            Attitude* a = (Attitude *) elem;
+        for(const auto& a: attitudes) {
             if (a->attitude == i) {
                 if (j) temp += ", ";
-                temp += *(GetFaction(&(pGame->factions),
+                temp += *(GetFaction(pGame->factions,
                             a->factionnum)->name);
                 j = 1;
             }
@@ -555,8 +541,8 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     f->PutStr(temp);
     f->PutStr("");
 
-    forlist(&present_regions) {
-        ((ARegionPtr *) elem)->ptr->WriteReport(f, this, pGame->month, &(pGame->regions));
+    for(const auto& r: present_regions) {
+        r.lock()->WriteReport(f, *this, pGame->month, pGame->regions);
     } 
         // LLS - maybe we don't want this -- I'll assume not, for now 
     //f->PutStr("#end");
@@ -591,9 +577,9 @@ void Faction::WriteTemplate(Areport *f, Game *pGame)
             temp += AString(" \"") + *password + "\"";
         }
         f->PutStr(temp);
-        forlist((&present_regions)) {
+        for(const auto& r: present_regions) {
             // DK
-            ((ARegionPtr *) elem)->ptr->WriteTemplate(f, this, &(pGame->regions), pGame->month);
+            r.lock()->WriteTemplate(f, *this, pGame->regions, pGame->month);
         }
 
         f->PutStr("");
@@ -616,21 +602,20 @@ void Faction::WriteFacInfo(Aoutfile *file)
     file->PutStr(AString("Template: ") + TemplateStrs[temformat]);
 
     forlist(&extraPlayers) {
-        AString *pStr = (AString *) elem;
+        AString *pStr = dynamic_cast<AString *>(elem);
         file->PutStr(*pStr);
     }
 
     extraPlayers.DeleteAll();
 }
 
-void Faction::CheckExist(ARegionList* regs)
+void Faction::CheckExist(const ARegionList& regs)
 {
     if (IsNPC()) return;
-    exists = 0;
-    forlist(regs) {
-        ARegion* reg = (ARegion *) elem;
-        if (reg->Present(this)) {
-            exists = 1;
+    exists = false;
+    for(const auto& reg: regs) {
+        if (reg->Present(*this)) {
+            exists = true;
             return;
         }
     }
@@ -659,11 +644,10 @@ void Faction::Event(const AString &s)
 
 void Faction::RemoveAttitude(int f)
 {
-    forlist((&attitudes)) {
-        Attitude *a = (Attitude *) elem;
+    for(auto it = attitudes.begin(); it != attitudes.end(); ++it) {
+        const auto& a = *it;
         if (a->factionnum == f) {
-            attitudes.Remove(a);
-            delete a;
+            attitudes.erase(it);
             return;
         }
     }
@@ -672,8 +656,7 @@ void Faction::RemoveAttitude(int f)
 int Faction::GetAttitude(int n)
 {
     if (n == num) return A_ALLY;
-    forlist((&attitudes)) {
-        Attitude *a = (Attitude *) elem;
+    for(const auto& a: attitudes) {
         if (a->factionnum == n)
             return a->attitude;
     }
@@ -682,12 +665,11 @@ int Faction::GetAttitude(int n)
 
 void Faction::SetAttitude(int num, int att)
 {
-    forlist((&attitudes)) {
-        Attitude *a = (Attitude *) elem;
+    for(auto it = attitudes.begin(); it != attitudes.end(); ++it) {
+        const auto& a = *it;
         if (a->factionnum == num) {
             if (att == -1) {
-                attitudes.Remove(a);
-                delete a;
+                attitudes.erase(it);
                 return;
             } else {
                 a->attitude = att;
@@ -696,44 +678,39 @@ void Faction::SetAttitude(int num, int att)
         }
     }
     if (att != -1) {
-        Attitude *a = new Attitude;
+        auto& a = attitudes.emplace_back(std::make_shared<Attitude>());
         a->factionnum = num;
         a->attitude = att;
-        attitudes.Add(a);
     }
 }
 
-int Faction::CanCatch(ARegion *r, Unit *t)
+bool Faction::CanCatch(const ARegion::Handle& r, const Unit::Handle& t)
 {
     if (TerrainDefs[r->type].similar_type == R_OCEAN) return 1;
 
     int def = t->GetDefenseRiding();
 
-    forlist(&r->objects) {
-        Object *o = (Object *) elem;
-        forlist(&o->units) {
-            Unit *u = (Unit *) elem;
+    for(const auto& o: r->objects) {
+        for(const auto& u: o->units) {
             if (u == t && o->type != O_DUMMY) return 1;
-            if (u->faction == this && u->GetAttackRiding() >= def) return 1;
+            if (u->faction.lock().get() == this && u->GetAttackRiding() >= def) return 1;
         }
     }
     return 0;
 }
 
-int Faction::CanSee(ARegion* r, Unit* u, int practice)
+int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practice)
 {
-    int detfac = 0;
-    if (u->faction == this) return 2;
+    bool detfac = false;
+    if (u->faction.lock().get() == this) return 2;
     if (u->reveal == REVEAL_FACTION) return 2;
     int retval = 0;
     if (u->reveal == REVEAL_UNIT) retval = 1;
     if (u->guard == GUARD_GUARD) retval = 1;
-    forlist((&r->objects)) {
-        Object* obj = (Object *) elem;
+    for(const auto& obj: r->objects) {
         int dummy = 0;
         if (obj->type == O_DUMMY) dummy = 1;
-        forlist((&obj->units)) {
-            Unit* temp = (Unit *) elem;
+        for(const auto& temp: obj->units) {
             if (u == temp && dummy == 0) retval = 1;
 
             // penalty of 2 to stealth if assassinating and 1 if stealing
@@ -751,7 +728,7 @@ int Faction::CanSee(ARegion* r, Unit* u, int practice)
                 }
             }
 
-            if (temp->faction == this) {
+            if (temp->faction.lock().get() == this) {
                 if (temp->GetAttribute("observation") >
                         u->GetAttribute("stealth") - stealpenalty) {
                     if (practice) {
@@ -767,7 +744,7 @@ int Faction::CanSee(ARegion* r, Unit* u, int practice)
                         if (retval < 1) retval = 1;
                     }
                 }
-                if (temp->GetSkill(S_MIND_READING) > 2) detfac = 1;
+                if (temp->GetSkill(S_MIND_READING) > 2) detfac = true;
             }
         }
     }
@@ -777,8 +754,8 @@ int Faction::CanSee(ARegion* r, Unit* u, int practice)
 
 void Faction::DefaultOrders()
 {
-    war_regions.DeleteAll();
-    trade_regions.DeleteAll();
+    war_regions.clear();
+    trade_regions.clear();
     numshows = 0;
 }
 
@@ -795,10 +772,10 @@ void Faction::SetNPC()
     for (int i=0; i<NFACTYPES; i++) type[i] = -1;
 }
 
-int Faction::IsNPC()
+bool Faction::IsNPC() const
 {
-    if (type[F_WAR] == -1) return 1;
-    return 0;
+    if (type[F_WAR] == -1) return true;
+    return false;
 }
 
 Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, int n)
@@ -813,21 +790,22 @@ Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, int n)
     return nullptr;
 }
 
-Faction::Handle GetFaction2(const std::list<FactionPtr::Handle>& facs, int n)
+Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>& facs, int n)
 {
     for(const auto& f: facs)
     {
-        if (f->ptr->num == n)
+        if (f.lock()->num == n)
         {
-            return f->ptr;
+            return f;
         }
     }
-    return nullptr;
+    return Faction::WeakHandle();
 }
 
 void Faction::DiscoverItem(int item, int force, int full)
 {
-    int seen, skill, i;
+    int skill;
+    size_t seen;
     AString skname;
 
     seen = items.GetNum(item);
@@ -858,10 +836,10 @@ void Faction::DiscoverItem(int item, int force, int full)
         skname = ItemDefs[item].grantSkill;
         skill = LookupSkill(&skname);
         if (skill != -1 && !(SkillDefs[skill].flags & SkillType::DISABLED)) {
-            for (i = 1; i <= ItemDefs[item].maxGrant; i++) {
+            for (int i = 1; i <= ItemDefs[item].maxGrant; i++) {
                 if (i > skills.GetDays(skill)) {
                     skills.SetDays(skill, i);
-                    shows.Add(new ShowSkill(skill, i));
+                    shows.emplace_back(std::make_shared<ShowSkill>(skill, i));
                 }
             }
         }

@@ -36,12 +36,12 @@ Location::WeakHandle GetUnit(const std::list<Location::Handle>& list, size_t n)
     return Location::WeakHandle();
 }
 
-ARegionPtr::WeakHandle GetRegion(const std::list<ARegionPtr::Handle>& l, size_t n)
+ARegion::WeakHandle GetRegion(const std::list<ARegion::WeakHandle>& l, size_t n)
 {
     for(const auto& p: l) {
-        if (p->ptr->num == n) return p;
+        if (p.lock()->num == n) return p;
     }
-    return ARegionPtr::WeakHandle();
+    return ARegion::WeakHandle();
 }
 
 Farsight::Farsight()
@@ -53,10 +53,10 @@ Farsight::Farsight()
     std::fill(exits_used.begin(), exits_used.end(), false);
 }
 
-Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>& l, const Faction::Handle& fac)
+Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>& l, const Faction& fac)
 {
     for(const auto& f: l) {
-        if (f->faction.lock() == fac) return f;
+        if (f->faction.lock().get() == &fac) return f;
     }
     return Farsight::WeakHandle();
 }
@@ -173,15 +173,12 @@ unsigned int ARegion::GetNearestProd(int item)
     //ARegionPtr *p = new ARegionPtr;
     //p->ptr = this;
     //regs.Add(p);
-    std::list<ARegionPtr::Handle> regs, regs2;
-    {
-        auto& p = regs.emplace_back(std::make_shared<ARegionPtr>());
-        p->ptr = shared_from_this();
-    }
+    std::list<ARegion::WeakHandle> regs, regs2;
+    regs.push_back(weak_from_this());
 
     for (unsigned int i=0; i<5; i++) {
         for(const auto& rp: regs) {
-            ARegion::Handle r = rp->ptr;
+            ARegion::Handle r = rp.lock();
             AString skname = ItemDefs[item].pSkill;
             int sk = LookupSkill(&skname);
             if (!r->products.GetProd(item, sk).expired()) {
@@ -194,8 +191,7 @@ unsigned int ARegion::GetNearestProd(int item)
                     //p = new ARegionPtr;
                     //p->ptr = neighbors[j];
                     //r2ptr->Add(p);
-                    auto& p = regs2.emplace_back(std::make_shared<ARegionPtr>());
-                    p->ptr = n.lock();
+                    regs2.push_back(n);
                 }
             }
             //rptr->DeleteAll();
@@ -300,13 +296,13 @@ void ARegion::Setup()
         LairCheck();
 }
 
-int ARegion::TraceConnectedRoad(Directions dir, int sum, std::list<ARegionPtr::Handle>& con, int range, int dev)
+int ARegion::TraceConnectedRoad(Directions dir, int sum, std::list<ARegion::WeakHandle>& con, int range, int dev)
 {
-    ARegionPtr::Handle rn = std::make_shared<ARegionPtr>();
-    rn->ptr = shared_from_this();
+    ARegion::WeakHandle rn = weak_from_this();
     bool isnew = true;
-    for(const auto& reg: con) {
-        if (reg && reg->ptr && (reg->ptr == shared_from_this()))
+    for(const auto& reg: con)
+    {
+        if (!reg.expired() && (reg.lock().get() == this))
         {
             isnew = false;
         }
@@ -350,9 +346,8 @@ int ARegion::TraceConnectedRoad(Directions dir, int sum, std::list<ARegionPtr::H
 int ARegion::RoadDevelopmentBonus(int range, int dev)
 {
     int bonus = 0;
-    std::list<ARegionPtr::Handle> con;
-    auto& rp = con.emplace_back(std::make_shared<ARegionPtr>());
-    rp->ptr = shared_from_this();
+    std::list<ARegion::WeakHandle> con;
+    con.push_back(weak_from_this());
     for (const auto d: ALL_DIRECTIONS) {
         if (!HasExitRoad(d)) continue;
         const ARegion::WeakHandle& r = neighbors[static_cast<size_t>(d)];
@@ -402,9 +397,9 @@ void ARegion::DoDecayClicks(const Object::Handle& o, const ARegionList& pRegs)
 // AS
 void ARegion::RunDecayEvent(const Object::Handle& o, const ARegionList& pRegs)
 {
-    std::list<FactionPtr::Handle> pFactions = PresentFactions();
+    std::list<Faction::WeakHandle> pFactions = PresentFactions();
     for(const auto& fp: pFactions) {
-        const Faction::Handle& f = fp->ptr;
+        const auto f = fp.lock();
         f->Event(GetDecayFlavor() + *o->name + " " +
                 ObjectDefs[o->type].name + " in " +
                 ShortPrint(pRegs));
@@ -1016,28 +1011,27 @@ Location::Handle ARegionList::GetUnitId(const UnitId& id, int faction, const ARe
     return this->FindUnit(id.unitnum);
 }
 
-bool ARegion::Present(const Faction::Handle& f)
+bool ARegion::Present(const Faction& f)
 {
     for(const auto& obj: objects)
     {
         for(const auto& u: obj->units)
         {
-            if (u->faction.lock() == f) return true;
+            if (u->faction.lock().get() == &f) return true;
         }
     }
     return false;
 }
 
-std::list<FactionPtr::Handle> ARegion::PresentFactions()
+std::list<Faction::WeakHandle> ARegion::PresentFactions()
 {
-    std::list<FactionPtr::Handle> facs;
+    std::list<Faction::WeakHandle> facs;
     for(const auto& obj: objects)
     {
         for(const auto& u: obj->units)
         {
-            if (!GetFaction2(facs, u->faction.lock()->num)) {
-                auto& p = facs.emplace_back(std::make_shared<FactionPtr>());
-                p->ptr = u->faction.lock();
+            if (GetFaction2(facs, u->faction.lock()->num).expired()) {
+                facs.push_back(u->faction);
             }
         }
     }
@@ -1163,7 +1157,7 @@ void ARegion::Readin(Ainfile *f, AList *facs, ATL_VER v)
     newfleets.clear();
 }
 
-bool ARegion::CanMakeAdv(const Faction::Handle& fac, int item)
+bool ARegion::CanMakeAdv(const Faction& fac, int item)
 {
     AString skname;
     int sk;
@@ -1171,7 +1165,7 @@ bool ARegion::CanMakeAdv(const Faction::Handle& fac, int item)
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& f: farsees)
         {
-            if (f && f->faction.lock() == fac && !f->unit.expired()) {
+            if (f && f->faction.lock().get() == &fac && !f->unit.expired()) {
                 skname = ItemDefs[item].pSkill;
                 sk = LookupSkill(&skname);
                 if (f->unit.lock()->GetSkill(sk) >= ItemDefs[item].pLevel)
@@ -1184,7 +1178,7 @@ bool ARegion::CanMakeAdv(const Faction::Handle& fac, int item)
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_RESOURCES)) {
         for(const auto& f: passers)
         {
-            if (f && f->faction.lock() == fac && !f->unit.expired()) {
+            if (f && f->faction.lock().get() == &fac && !f->unit.expired()) {
                 skname = ItemDefs[item].pSkill;
                 sk = LookupSkill(&skname);
                 if (f->unit.lock()->GetSkill(sk) >= ItemDefs[item].pLevel)
@@ -1197,7 +1191,7 @@ bool ARegion::CanMakeAdv(const Faction::Handle& fac, int item)
     {
         for(const auto& u: o->units)
         {
-            if (u->faction.lock() == fac) {
+            if (u->faction.lock().get() == &fac) {
                 skname = ItemDefs[item].pSkill;
                 sk = LookupSkill(&skname);
                 if (u->GetSkill(sk) >= ItemDefs[item].pLevel)
@@ -1208,13 +1202,13 @@ bool ARegion::CanMakeAdv(const Faction::Handle& fac, int item)
     return false;
 }
 
-void ARegion::WriteProducts(Areport *f, const Faction::Handle& fac, bool present)
+void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
 {
     AString temp = "Products: ";
     bool has = false;
     for(const auto& p: products) {
         if (ItemDefs[p->itemtype].type & IT_ADVANCED) {
-            if (CanMakeAdv(fac, p->itemtype) || (fac->IsNPC())) {
+            if (CanMakeAdv(fac, p->itemtype) || (fac.IsNPC())) {
                 if (has) {
                     temp += AString(", ") + p->WriteReport();
                 } else {
@@ -1256,13 +1250,13 @@ void ARegion::WriteProducts(Areport *f, const Faction::Handle& fac, bool present
     f->PutStr(temp);
 }
 
-bool ARegion::HasItem(const Faction::Handle& fac, int item)
+bool ARegion::HasItem(const Faction& fac, int item)
 {
     for(const auto& o: objects)
     {
         for(const auto& u: o->units)
         {
-            if (u->faction.lock() == fac)
+            if (u->faction.lock().get() == &fac)
             {
                 if (u->items.GetNum(item)) return true;
             }
@@ -1271,7 +1265,7 @@ bool ARegion::HasItem(const Faction::Handle& fac, int item)
     return false;
 }
 
-void ARegion::WriteMarkets(Areport *f, const Faction::Handle& fac, bool present)
+void ARegion::WriteMarkets(Areport *f, const Faction& fac, bool present)
 {
     AString temp = "Wanted: ";
     bool has = false;
@@ -1329,7 +1323,7 @@ void ARegion::WriteMarkets(Areport *f, const Faction::Handle& fac, bool present)
     f->PutStr(temp);
 }
 
-void ARegion::WriteEconomy(Areport *f, const Faction::Handle& fac, bool present)
+void ARegion::WriteEconomy(Areport *f, const Faction& fac, bool present)
 {
     f->AddTab();
 
@@ -1371,13 +1365,13 @@ void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const std::array<
 "keep you safe as long as you should choose to stay. However, rumor " \
 "has it that once you have left the Nexus, you can never return."
 
-void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, const ARegionList& pRegions)
+void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegionList& pRegions)
 {
     Farsight::WeakHandle farsight = GetFarsight(farsees, fac);
     const bool has_farsight = !farsight.expired();
     Farsight::WeakHandle passer = GetFarsight(passers, fac);
     const bool has_passer = !passer.expired();
-    const bool present = Present(fac) || fac->IsNPC();
+    const bool present = Present(fac) || fac.IsNPC();
 
     if (has_farsight || has_passer || present) {
         AString temp = Print(pRegions);
@@ -1454,7 +1448,7 @@ void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, con
             // Now, if we should, show the ones actually used.
             if (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_USED_EXITS) {
                 for(const auto& p: passers) {
-                    if (p->faction.lock() == fac) {
+                    if (p->faction.lock().get() == &fac) {
                         for (size_t i = 0; i < exits_seen.size(); ++i) {
                             exits_seen[i] |= p->exits_used[i];
                         }
@@ -1466,23 +1460,23 @@ void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, con
         WriteExits(f, pRegions, exits_seen);
 
         if (Globals->GATES_EXIST && gate && gate != -1) {
-            int sawgate = 0;
-            if (fac->IsNPC())
-                sawgate = 1;
+            bool sawgate = false;
+            if (fac.IsNPC())
+                sawgate = true;
             if (Globals->IMPROVED_FARSIGHT && has_farsight) {
                 for(const auto& watcher: farsees) {
-                    if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                    if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
                         if (watcher->unit.lock()->GetSkill(S_GATE_LORE)) {
-                            sawgate = 1;
+                            sawgate = true;
                         }
                     }
                 }
             }
             if (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) {
                 for(const auto& watcher: passers) {
-                    if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                    if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
                         if (watcher->unit.lock()->GetSkill(S_GATE_LORE)) {
-                            sawgate = 1;
+                            sawgate = true;
                         }
                     }
                 }
@@ -1490,9 +1484,9 @@ void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, con
             for(const auto& o: objects) {
                 for(const auto& u: o->units) {
                     if (!sawgate &&
-                            ((u->faction.lock() == fac) &&
+                            ((u->faction.lock().get() == &fac) &&
                              u->GetSkill(S_GATE_LORE))) {
-                        sawgate = 1;
+                        sawgate = true;
                     }
                 }
             }
@@ -1517,29 +1511,29 @@ void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, con
 
         int obs = GetObservation(fac, false);
         int truesight = GetTrueSight(fac, false);
-        int detfac = 0;
+        bool detfac = false;
 
         int passobs = GetObservation(fac, true);
         int passtrue = GetTrueSight(fac, true);
-        int passdetfac = detfac;
+        bool passdetfac = detfac;
 
-        if (fac->IsNPC()) {
+        if (fac.IsNPC()) {
             obs = 10;
             passobs = 10;
         }
 
         for(const auto& o: objects) {
             for(const auto& u: o->units) {
-                if (u->faction.lock() == fac && u->GetSkill(S_MIND_READING) > 2) {
-                    detfac = 1;
+                if (u->faction.lock().get() == &fac && u->GetSkill(S_MIND_READING) > 2) {
+                    detfac = true;
                 }
             }
         }
         if (Globals->IMPROVED_FARSIGHT && has_farsight) {
             for(const auto& watcher: farsees) {
-                if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
                     if (watcher->unit.lock()->GetSkill(S_MIND_READING) > 2) {
-                        detfac = 1;
+                        detfac = true;
                     }
                 }
             }
@@ -1548,9 +1542,9 @@ void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, con
         if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
                 (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
             for(const auto& watcher: passers) {
-                if (watcher && watcher->faction.lock() == fac && !watcher->unit.expired()) {
+                if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
                     if (watcher->unit.lock()->GetSkill(S_MIND_READING) > 2) {
-                        passdetfac = 1;
+                        passdetfac = true;
                     }
                 }
             }
@@ -1568,7 +1562,7 @@ void ARegion::WriteReport(Areport *f, const Faction::Handle& fac, int month, con
 }
 
 // DK
-void ARegion::WriteTemplate(Areport *f, const Faction::Handle& fac,
+void ARegion::WriteTemplate(Areport *f, const Faction& fac,
         const ARegionList& pRegs, int month)
 {
     int header = 0, order;
@@ -1576,10 +1570,10 @@ void ARegion::WriteTemplate(Areport *f, const Faction::Handle& fac,
 
     for(const auto& o: objects) {
         for(const auto &u: o->units) {
-            if (u->faction.lock() == fac) {
+            if (u->faction.lock().get() == &fac) {
                 if (!header) {
                     // DK
-                    if (fac->temformat == TEMPLATE_MAP) {
+                    if (fac.temformat == TEMPLATE_MAP) {
                         WriteTemplateHeader(f, fac, pRegs, month);
                     } else {
                         f->PutStr("");
@@ -1591,8 +1585,8 @@ void ARegion::WriteTemplate(Areport *f, const Faction::Handle& fac,
                 f->PutStr("");
                 f->PutStr(AString("unit ") + u->num);
                 // DK
-                if (fac->temformat == TEMPLATE_LONG ||
-                        fac->temformat == TEMPLATE_MAP) {
+                if (fac.temformat == TEMPLATE_LONG ||
+                        fac.temformat == TEMPLATE_MAP) {
                     f->PutStr(u->TemplateReport(), 1);
                 }
                 int gotMonthOrder = 0;
@@ -1693,13 +1687,13 @@ void ARegion::WriteTemplate(Areport *f, const Faction::Handle& fac,
     }
 }
 
-int ARegion::GetTrueSight(const Faction::Handle& f, bool usepassers)
+int ARegion::GetTrueSight(const Faction& f, bool usepassers)
 {
     int truesight = 0;
 
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& farsight: farsees) {
-            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
+            if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
                 int t = farsight->unit.lock()->GetSkill(S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
@@ -1710,7 +1704,7 @@ int ARegion::GetTrueSight(const Faction::Handle& f, bool usepassers)
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
-            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
+            if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
                 int t = farsight->unit.lock()->GetSkill(S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
@@ -1719,7 +1713,7 @@ int ARegion::GetTrueSight(const Faction::Handle& f, bool usepassers)
 
     for(const auto& obj: objects) {
         for(const auto& u: obj->units) {
-            if (u->faction.lock() == f) {
+            if (u->faction.lock().get() == &f) {
                 int temp = u->GetSkill(S_TRUE_SEEING);
                 if (temp>truesight) truesight = temp;
             }
@@ -1728,13 +1722,13 @@ int ARegion::GetTrueSight(const Faction::Handle& f, bool usepassers)
     return truesight;
 }
 
-int ARegion::GetObservation(const Faction::Handle& f, bool usepassers)
+int ARegion::GetObservation(const Faction& f, bool usepassers)
 {
     int obs = 0;
 
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& farsight: farsees) {
-            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
+            if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
                 int o = farsight->observation;
                 if (o > obs) obs = o;
             }
@@ -1745,7 +1739,7 @@ int ARegion::GetObservation(const Faction::Handle& f, bool usepassers)
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
-            if (farsight && farsight->faction.lock() == f && !farsight->unit.expired()) {
+            if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
                 int o = farsight->observation;
                 if (o > obs) obs = o;
             }
@@ -1754,7 +1748,7 @@ int ARegion::GetObservation(const Faction::Handle& f, bool usepassers)
 
     for(const auto& obj: objects) {
         for(const auto& u: obj->units) {
-            if (u->faction.lock() == f) {
+            if (u->faction.lock().get() == &f) {
                 int temp = u->GetAttribute("observation");
                 if (temp>obs) obs = temp;
             }
@@ -1907,20 +1901,19 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
 // Procedure to notify all units in city about city name change
 void ARegion::NotifyCity(const Unit::Handle& caster, AString& oldname, AString& newname)
 {
-    std::list<FactionPtr::Handle> flist;
+    std::list<Faction::WeakHandle> flist;
     for(const auto& o: objects) {
         for(const auto& u: o->units) {
             if (u->faction.lock() == caster->faction.lock()) continue;
-            if (!GetFaction2(flist, u->faction.lock()->num)) {
-                auto& fp = flist.emplace_back(std::make_shared<FactionPtr>());
-                fp->ptr = u->faction.lock();
+            if (GetFaction2(flist, u->faction.lock()->num).expired()) {
+                flist.push_back(u->faction);
             }
         }
     }
     {
         for(const auto& fp: flist) {
-            fp->ptr->Event(AString(*(caster->name)) + " renames " +
-                    oldname + " to " + newname + ".");
+            fp.lock()->Event(AString(*(caster->name)) + " renames " +
+                             oldname + " to " + newname + ".");
         }
     }
 }

@@ -285,8 +285,8 @@ Unit *Object::GetOwner()
     return(owner);
 }
 
-void Object::Report(Areport *f, const Faction::Handle& fac, int obs, int truesight,
-        int detfac, int passobs, int passtrue, int passdetfac, bool present)
+void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,
+        bool detfac, int passobs, int passtrue, bool passdetfac, bool present)
 {
     ObjectType *ob = &ObjectDefs[type];
 

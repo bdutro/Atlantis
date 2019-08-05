@@ -93,7 +93,7 @@ class Object
 
         void Readin(Ainfile *f, AList *, ATL_VER v);
         void Writeout(Aoutfile *f);
-        void Report(Areport *, const std::shared_ptr<Faction>&, int, int, int, int, int, int, bool);
+        void Report(Areport *, const Faction&, int, int, bool, int, int, bool, bool);
 
         void SetName(AString *);
         void SetDescribe(AString *);

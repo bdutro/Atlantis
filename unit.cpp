@@ -48,12 +48,12 @@ AString UnitId::Print()
     }
 }
 
-UnitPtr::Handle GetUnitList(const std::list<UnitPtr::Handle>& list, const Unit::Handle& u)
+Unit::WeakHandle GetUnitList(const std::list<Unit::WeakHandle>& list, const Unit::Handle& u)
 {
     for(const auto& p: list) {
-        if (p->ptr == u) return p;
+        if (p.lock() == u) return p;
     }
-    return nullptr;
+    return Unit::WeakHandle();
 }
 
 Unit::Unit()
@@ -425,7 +425,7 @@ AString Unit::SpoilsReport() {
     return temp;
 }
 
-void Unit::WriteReport(Areport *f, int obs, int truesight, int detfac,
+void Unit::WriteReport(Areport *f, int obs, int truesight, bool detfac,
                 bool autosee, int attitude, bool showattitudes)
 {
     int stealth = GetAttribute("stealth");

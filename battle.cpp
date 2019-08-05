@@ -401,8 +401,8 @@ void Battle::WriteSides(const ARegion::Handle& r,
     AddLine("");
 }
 
-void Battle::Report(Areport * f, const Faction::Handle& fac) {
-    if (assassination == ASS_SUCC && fac != attacker.lock()) {
+void Battle::Report(Areport * f, const Faction& fac) {
+    if (assassination == ASS_SUCC && &fac != attacker.lock().get()) {
         f->PutStr(*asstext);
         f->PutStr("");
         return;
@@ -416,7 +416,7 @@ void Battle::AddLine(const AString & s) {
     text.emplace_back(std::make_unique<AString>(s));
 }
 
-void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, std::list<FactionPtr::Handle>& facs)
+void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, std::list<Faction::WeakHandle>& facs)
 {
     int AlliesIncluded = 0;
     
@@ -449,10 +449,9 @@ void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, std::list<F
                      u->GetAttitude(*r, t) == A_ALLY) ) {
 
                     const auto ufac = u->faction.lock();
-                    if (!GetFaction2(facs, ufac->num)) 
+                    if (GetFaction2(facs, ufac->num).expired()) 
                     {
-                        auto& p = facs.emplace_back(std::make_shared<FactionPtr>());
-                        p->ptr = ufac;
+                        facs.push_back(u->faction);
                     }
                 }
             }
@@ -463,8 +462,8 @@ void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, std::list<F
 void Game::GetAFacs(const ARegion::Handle& r,
                     const Unit::Handle& att,
                     const Unit::Handle& tar,
-                    std::list<FactionPtr::Handle>& dfacs,
-                    std::list<FactionPtr::Handle>& afacs,
+                    std::list<Faction::WeakHandle>& dfacs,
+                    std::list<Faction::WeakHandle>& afacs,
                     std::list<Location::Handle>& atts)
 {
     for(const auto& obj: r->objects) {
@@ -511,14 +510,13 @@ void Game::GetAFacs(const ARegion::Handle& r,
                 if (add) {
                     const auto ufac = u->faction.lock();
                     const int ufac_num = ufac->num;
-                    if (!GetFaction2(dfacs, ufac_num)) {
+                    if (GetFaction2(dfacs, ufac_num).expired()) {
                         auto& l = atts.emplace_back(std::make_shared<Location>());
                         l->unit = u;
                         l->obj = obj;
                         l->region = r;
-                        if (!GetFaction2(afacs, ufac_num)) {
-                            auto& p = afacs.emplace_back(std::make_shared<FactionPtr>());
-                            p->ptr = ufac;
+                        if (GetFaction2(afacs, ufac_num).expired()) {
+                            afacs.push_back(u->faction);
                         }
                     }
                 }
@@ -527,19 +525,19 @@ void Game::GetAFacs(const ARegion::Handle& r,
     }
 }
 
-bool Game::CanAttack(const ARegion::Handle& r, const std::list<FactionPtr::Handle>& afacs, const Unit::Handle& u)
+bool Game::CanAttack(const ARegion::Handle& r, const std::list<Faction::WeakHandle>& afacs, const Unit::Handle& u)
 {
     bool see = false;
     bool ride = false;
     for(const auto& f: afacs) {
-        if (f->ptr->CanSee(r, u) == 2) {
+        if (f.lock()->CanSee(r, u) == 2) {
             if (ride)
             {
                 return true;
             }
             see = true;
         }
-        if (f->ptr->CanCatch(r, u)) {
+        if (f.lock()->CanCatch(r, u)) {
             if (see)
             {
                 return true;
@@ -552,8 +550,8 @@ bool Game::CanAttack(const ARegion::Handle& r, const std::list<FactionPtr::Handl
 
 void Game::GetSidesForRegion_(const ARegion::Handle& r,
                               const ARegion::Handle& r2,
-                              std::list<FactionPtr::Handle>& afacs,
-                              std::list<FactionPtr::Handle>& dfacs,
+                              std::list<Faction::WeakHandle>& afacs,
+                              std::list<Faction::WeakHandle>& dfacs,
                               std::list<Location::Handle>& atts,
                               std::list<Location::Handle>& defs,
                               const Unit::Handle& att,
@@ -573,7 +571,7 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
             if ((first || u->GetFlag(FLAG_HOLDING) == 0) && u->IsAlive()) {
                 const auto ufac = u->faction.lock();
                 const auto ufac_num = ufac->num;
-                if (GetFaction2(afacs, ufac_num)) {
+                if (!GetFaction2(afacs, ufac_num).expired()) {
                     /*
                      * The unit is on the attacking side, check if the
                      * unit should be in the battle
@@ -611,7 +609,7 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
                              * The unit is not a city guardsman, check if
                              * the unit is on the defensive side
                              */
-                            if (GetFaction2(dfacs, ufac_num)) {
+                            if (!GetFaction2(dfacs, ufac_num).expired()) {
                                 if (u->guard == GUARD_AVOID) {
                                     /*
                                      * The unit is avoiding, and doesn't
@@ -676,8 +674,8 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
 }
 
 void Game::GetSides(const ARegion::Handle& r,
-                    std::list<FactionPtr::Handle>& afacs,
-                    std::list<FactionPtr::Handle>& dfacs,
+                    std::list<Faction::WeakHandle>& afacs,
+                    std::list<Faction::WeakHandle>& dfacs,
                     std::list<Location::Handle>& atts,
                     std::list<Location::Handle>& defs,
                     const Unit::Handle& att,
@@ -796,12 +794,12 @@ size_t Game::KillDead(const Location::Handle& l, const Battle::Handle& b)
 
 int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, const Unit::Handle& target, int ass, bool adv)
 {
-    std::list<FactionPtr::Handle> afacs;
-    std::list<FactionPtr::Handle> dfacs;
+    std::list<Faction::WeakHandle> afacs;
+    std::list<Faction::WeakHandle> dfacs;
     std::list<Location::Handle> atts;
     std::list<Location::Handle> defs;
     int result;
-    
+
     const auto attacker_faction = attacker->faction.lock();
     if (ass) {
         if (attacker->GetAttitude(*r, target) == A_ALLY) {
@@ -809,14 +807,8 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
             return BATTLE_IMPOSSIBLE;
         }
         /* Assassination attempt */
-        {
-            auto& p = afacs.emplace_back(std::make_shared<FactionPtr>());
-            p->ptr = attacker_faction;
-        }
-        {
-            auto& p = dfacs.emplace_back(std::make_shared<FactionPtr>());
-            p->ptr = target->faction.lock();
-        }
+        afacs.push_back(attacker->faction);
+        dfacs.push_back(target->faction);
     } else {
         if ( r->IsSafeRegion() ) {
             attacker->Error("ATTACK: No battles allowed in safe regions.");
@@ -827,7 +819,7 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
             return BATTLE_IMPOSSIBLE;
         }
         GetDFacs(r, target, dfacs);
-        if (GetFaction2(dfacs, attacker_faction->num)) {
+        if (!GetFaction2(dfacs, attacker_faction->num).expired()) {
             attacker->Error("ATTACK: Can't attack an ally.");
             return BATTLE_IMPOSSIBLE;
         }
@@ -851,10 +843,8 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
     b->WriteSides(r, attacker, target, atts, defs, ass, regions);
 
     for(const auto& f: factions) {
-        if (GetFaction2(afacs,f->num) || GetFaction2(dfacs,f->num) ||
-                r->Present(f)) {
-            auto& p = f->battles.emplace_back(std::make_shared<BattlePtr>());
-            p->ptr = b;
+        if (!GetFaction2(afacs,f->num).expired() || !GetFaction2(dfacs,f->num).expired() || r->Present(*f)) {
+            f->battles.push_back(b);
         }
     }
     result = b->Run(r, attacker, atts, target, defs, ass, regions);

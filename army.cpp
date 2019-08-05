@@ -618,12 +618,12 @@ void Army::WriteLosses(Battle& b) {
     b.AddLine(*(leader.lock()->name) + " loses " + (count - NumAlive()) + ".");
 
     if (notbehind != count) {
-        std::list<UnitPtr::Handle> units;
+        std::list<Unit::WeakHandle> units;
         for (size_t i = notbehind; i<count; i++) {
-            const auto& up = soldiers[i]->unit.lock();
-            if (!GetUnitList(units, up)) {
-                auto& u = units.emplace_back(std::make_shared<UnitPtr>());
-                u->ptr = up;
+            const auto& u_w = soldiers[i]->unit;
+            const auto up = u_w.lock();
+            if (GetUnitList(units, up).expired()) {
+                units.push_back(u_w);
             }
         }
 
@@ -631,9 +631,9 @@ void Army::WriteLosses(Battle& b) {
         AString damaged;
         for(const auto& u: units) {
             if (comma) {
-                damaged += AString(", ") + AString(u->ptr->num);
+                damaged += AString(", ") + AString(u.lock()->num);
             } else {
-                damaged = AString("Damaged units: ") + AString(u->ptr->num);
+                damaged = AString("Damaged units: ") + AString(u.lock()->num);
                 comma = 1;
             }
         }
@@ -839,7 +839,7 @@ void Army::Win(Battle& b, const ItemList& spoils)
     if (count - na) wintype = WIN_DEAD;
     else wintype = WIN_NO_DEAD;
 
-    std::list<UnitPtr::Handle> units;
+    std::list<Unit::WeakHandle> units;
 
     for (size_t x = 0; x < count; x++) {
         const auto& s = soldiers[x];
@@ -861,10 +861,10 @@ void Army::Win(Battle& b, const ItemList& spoils)
                 units.clear();
                 // Make a list of units who can get this type of spoil
                 for (size_t x = 0; x < na; x++) {
-                    const auto& u = soldiers[x]->unit.lock();
+                    const auto& u_w = soldiers[x]->unit;
+                    const auto u = u_w.lock();
                     if (u->CanGetSpoil(i)) {
-                        auto& up = units.emplace_back(std::make_shared<UnitPtr>());
-                        up->ptr = u;
+                        units.push_back(u_w);
                     }
                 }
 
@@ -872,11 +872,15 @@ void Army::Win(Battle& b, const ItemList& spoils)
                 if (ItemDefs[i->type].type & IT_SHIP) {
                     size_t t = getrandom(ns);
                     auto it = std::next(units.begin(), static_cast<ssize_t>(t));
-                    const auto& up = *it;
-                    if (up && up->ptr->CanGetSpoil(i)) {
-                        up->ptr->items.SetNum(i->type, i->num);
-                        up->ptr->faction.lock()->DiscoverItem(i->type, 0, 1);
-                        i->num = 0;
+                    const auto& up_w = *it;
+                    if (!up_w.expired())
+                    {
+                        const auto up = up_w.lock();
+                        if(up->CanGetSpoil(i)) {
+                            up->items.SetNum(i->type, i->num);
+                            up->faction.lock()->DiscoverItem(i->type, 0, 1);
+                            i->num = 0;
+                        }
                     }
                     break;
                 }
@@ -888,11 +892,11 @@ void Army::Win(Battle& b, const ItemList& spoils)
                     auto it = units.begin();
                     while(it != units.end())
                     {
-                        const auto& up = *it;
-                        if (up->ptr->CanGetSpoil(i)) {
-                            up->ptr->items.SetNum(i->type,
-                                    up->ptr->items.GetNum(i->type) + chunk);
-                            up->ptr->faction.lock()->DiscoverItem(i->type, 0, 1);
+                        const auto& up = it->lock();
+                        if (up->CanGetSpoil(i)) {
+                            up->items.SetNum(i->type,
+                                             up->items.GetNum(i->type) + chunk);
+                            up->faction.lock()->DiscoverItem(i->type, 0, 1);
                             i->num -= chunk;
                             ++it;
                         } else {
@@ -904,12 +908,16 @@ void Army::Win(Battle& b, const ItemList& spoils)
                 while (ns > 0 && i->num > 0) {
                     size_t t = getrandom(ns);
                     auto it = std::next(units.begin(), static_cast<ssize_t>(t));
-                    const auto& up = *it;
-                    if (up && up->ptr->CanGetSpoil(i)) {
-                        up->ptr->items.SetNum(i->type,
-                                up->ptr->items.GetNum(i->type) + 1);
-                        up->ptr->faction.lock()->DiscoverItem(i->type, 0, 1);
-                        i->num--;
+                    const auto& up_w = *it;
+                    if (!up_w.expired())
+                    {
+                        const auto up = up_w.lock();
+                        if(up->CanGetSpoil(i)) {
+                            up->items.SetNum(i->type,
+                                             up->items.GetNum(i->type) + 1);
+                            up->faction.lock()->DiscoverItem(i->type, 0, 1);
+                            i->num--;
+                        }
                     } else {
                         units.erase(it);
                         ns--;

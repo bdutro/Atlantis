@@ -132,7 +132,7 @@ class Farsight
         std::array<bool, static_cast<size_t>(Directions::NDIRS)> exits_used;
 };
 
-Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>&, const std::shared_ptr<Faction>&);
+Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>&, const Faction&);
 
 enum {
     TOWN_VILLAGE = 0,
@@ -160,9 +160,6 @@ class TownInfo
         int dev;
 };
 
-class ARegionPtr;
-class FactionPtr;
-
 class ARegion : std::enable_shared_from_this<ARegion>
 {
     friend class Game;
@@ -183,17 +180,17 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Writeout(Aoutfile *);
         void Readin(Ainfile *, AList *, ATL_VER v);
 
-        bool CanMakeAdv(const std::shared_ptr<Faction>&, int);
-        bool HasItem(const std::shared_ptr<Faction>&, int);
-        void WriteProducts(Areport *, const std::shared_ptr<Faction>&, bool);
-        void WriteMarkets(Areport *, const std::shared_ptr<Faction>&, bool);
-        void WriteEconomy(Areport *, const std::shared_ptr<Faction>&, bool);
+        bool CanMakeAdv(const Faction&, int);
+        bool HasItem(const Faction&, int);
+        void WriteProducts(Areport *, const Faction&, bool);
+        void WriteMarkets(Areport *, const Faction&, bool);
+        void WriteEconomy(Areport *, const Faction&, bool);
         void WriteExits(Areport *, const ARegionList& pRegs, const std::array<bool, ALL_DIRECTIONS.size()>& exits_seen);
-        void WriteReport(Areport *f, const std::shared_ptr<Faction>& fac, int month,
+        void WriteReport(Areport *f, const Faction& fac, int month,
                 const ARegionList& pRegions);
         // DK
-        void WriteTemplate(Areport *, const std::shared_ptr<Faction>&, const ARegionList& , int);
-        void WriteTemplateHeader(Areport *, const std::shared_ptr<Faction>&, const ARegionList& , int);
+        void WriteTemplate(Areport *, const Faction&, const ARegionList& , int);
+        void WriteTemplateHeader(Areport *, const Faction&, const ARegionList& , int);
         void GetMapLine(char *, int, const ARegionList& );
 
         AString ShortPrint(const ARegionList& pRegs);
@@ -209,10 +206,10 @@ class ARegion : std::enable_shared_from_this<ARegion>
         Location::Handle GetLocation(const UnitId&, int) const;
 
         void SetLoc(unsigned int, unsigned int, unsigned int);
-        bool Present(const std::shared_ptr<Faction>&);
-        std::list<std::shared_ptr<FactionPtr>> PresentFactions();
-        int GetObservation(const std::shared_ptr<Faction>&, bool);
-        int GetTrueSight(const std::shared_ptr<Faction>&, bool);
+        bool Present(const Faction&);
+        std::list<std::weak_ptr<Faction>> PresentFactions();
+        int GetObservation(const Faction&, bool);
+        int GetTrueSight(const Faction&, bool);
 
         Object::WeakHandle GetObject(int);
         Object::WeakHandle GetDummy();
@@ -268,7 +265,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Migrate();
         void SetTownType(int);
         int DetermineTownSize();
-        int TraceConnectedRoad(Directions, int, std::list<std::shared_ptr<ARegionPtr>>&, int, int);
+        int TraceConnectedRoad(Directions, int, std::list<std::weak_ptr<ARegion>>&, int, int);
         int RoadDevelopmentBonus(int, int);
         int BaseDev();
         int ProdDev();
@@ -373,15 +370,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
 int AGetName(int town, const ARegion::Handle& r);
 
-class ARegionPtr
-{
-    public:
-        using Handle = std::shared_ptr<ARegionPtr>;
-        using WeakHandle = std::weak_ptr<ARegionPtr>;
-        ARegion::Handle ptr;
-};
-
-ARegionPtr::WeakHandle GetRegion(const std::list<ARegionPtr::Handle>&, size_t);
+ARegion::WeakHandle GetRegion(const std::list<ARegion::WeakHandle>&, size_t);
 
 class ARegionArray
 {

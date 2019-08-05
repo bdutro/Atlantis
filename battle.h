@@ -55,7 +55,7 @@ class Battle
         Battle() noexcept;
         ~Battle();
 
-        void Report(Areport*, const std::shared_ptr<Faction>&);
+        void Report(Areport*, const Faction&);
         void AddLine(const AString &);
 
         int Run(const std::shared_ptr<ARegion>&,
@@ -98,12 +98,6 @@ class Battle
         std::weak_ptr<Faction> attacker; /* Only matters in the case of an assassination */
         AString * asstext;
         std::list<std::unique_ptr<AString>> text;
-};
-
-class BattlePtr
-{
-    public:
-        Battle::Handle ptr;
 };
 
 #endif

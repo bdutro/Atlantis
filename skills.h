@@ -121,11 +121,14 @@ int GetLevelByDays(int);
 int GetDaysByLevel(int);
 int StudyRateAdjustment(int, int); /* days, exp */
 
-class ShowSkill : public AListElem {
+class ShowSkill {
     public:
+        using Handle = std::shared_ptr<ShowSkill>;
+        using WeakHandle = std::shared_ptr<ShowSkill>;
+
         ShowSkill(int,int);
 
-        AString * Report(Faction *);
+        AString * Report(const Faction&);
 
         int skill;
         int level;
