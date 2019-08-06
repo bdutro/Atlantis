@@ -150,7 +150,7 @@ class ItemType
 
         char const *grantSkill;
         char const *fromSkills[4];
-        int minGrant, maxGrant;
+        size_t minGrant, maxGrant;
 };
 
 extern ItemType *ItemDefs;

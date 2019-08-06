@@ -584,7 +584,7 @@ Army::Army(const Unit::Handle& ldr, const std::list<Location::Handle>& locs, int
     // from tact-4 to tact-5! Also check that we have skills, otherwise
     // we get a nasty core dump ;)
     if (Globals->TACTICS_NEEDS_WAR && (tactician->skills.Num() != 0)) {
-        int currskill = tactician->skills.GetDays(S_TACTICS) / static_cast<int>(tactician->GetMen());
+        size_t currskill = tactician->skills.GetDays(S_TACTICS) / tactician->GetMen();
         if (currskill < 450 - Globals->SKILL_PRACTICE_AMOUNT) {
             tactician->PracticeAttribute("tactics");
         }

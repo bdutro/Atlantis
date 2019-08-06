@@ -35,6 +35,7 @@ class Game;
 
 #include <memory>
 #include <list>
+#include <vector>
 
 #include "gameio.h"
 #include "aregion.h"
@@ -92,19 +93,6 @@ int ParseAttitude(AString *);
 
 int MagesByFacType(int);
 
-class FactionVector {
-public:
-    FactionVector(int);
-    ~FactionVector();
-
-    void ClearVector();
-    void SetFaction(int, Faction *);
-    Faction *GetFaction(int);
-
-    Faction **vector;
-    int vectorsize;
-};
-    
 class Attitude {
 public:
     using Handle = std::shared_ptr<Attitude>;
@@ -114,7 +102,7 @@ public:
     void Writeout(Aoutfile * );
     void Readin( Ainfile *, ATL_VER version );
     
-    int factionnum;
+    size_t factionnum;
     int attitude;
 };
 
@@ -125,7 +113,7 @@ public:
     using WeakHandle = std::weak_ptr<Faction>;
 
     Faction();
-    Faction(int);
+    Faction(size_t);
     ~Faction();
     
     void Readin( Ainfile *, ATL_VER version );
@@ -146,10 +134,10 @@ public:
     void WriteTemplate(Areport *f, Game *pGame);
     void WriteFacInfo(Aoutfile *);
     
-    void SetAttitude(int,int); /* faction num, attitude */
+    void SetAttitude(size_t,int); /* faction num, attitude */
     /* if attitude == -1, clear it */
-    int GetAttitude(int);
-    void RemoveAttitude(int);
+    int GetAttitude(size_t);
+    void RemoveAttitude(size_t);
     
     bool CanCatch(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
     /* Return 1 if can see, 2 if can see faction */
@@ -163,7 +151,7 @@ public:
 
     void DiscoverItem(int item, int force, int full);
 
-    int num;
+    size_t num;
 
     //
     // The type is only used if Globals->FACTION_LIMIT_TYPE ==
@@ -214,13 +202,35 @@ public:
 
     // These are used for 'granting' units to a faction via the players.in
     // file
-    std::shared_ptr<ARegion> pReg;
-    std::shared_ptr<ARegion> pStartLoc;
+    std::weak_ptr<ARegion> pReg;
+    std::weak_ptr<ARegion> pStartLoc;
     int noStartLeader;
     int startturn;
 };
 
-Faction::Handle GetFaction(const std::list<Faction::Handle>&, int);
-Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>&, int); /*This AList is a list of FactionPtr*/
+class FactionVector {
+public:
+    using iterator = std::vector<Faction::WeakHandle>::iterator;
+    using const_iterator = std::vector<Faction::WeakHandle>::const_iterator;
+
+    FactionVector(size_t);
+    ~FactionVector() = default;
+
+    void ClearVector();
+    void SetFaction(size_t, const Faction::WeakHandle&);
+    Faction::WeakHandle GetFaction(size_t);
+    iterator begin() { return vector.begin(); }
+    iterator end() { return vector.end(); }
+    const_iterator cbegin() const { return vector.cbegin(); }
+    const_iterator cend() const { return vector.cend(); }
+    const_iterator begin() const { return vector.begin(); }
+    const_iterator end() const { return vector.end(); }
+
+    std::vector<Faction::WeakHandle> vector;
+    size_t vectorsize;
+};
+    
+Faction::Handle GetFaction(const std::list<Faction::Handle>&, size_t);
+Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>&, size_t); /*This AList is a list of FactionPtr*/
 
 #endif

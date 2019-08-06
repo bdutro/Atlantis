@@ -1089,7 +1089,7 @@ int Unit::GetAvailSkill(int sk)
     return retval;
 }
 
-int Unit::GetRealSkill(int sk)
+size_t Unit::GetRealSkill(int sk)
 {
     if (GetMen()) {
         return GetLevelByDays(skills.GetDays(sk)/GetMen());

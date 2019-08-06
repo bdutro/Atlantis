@@ -91,7 +91,7 @@ class Object
         Object(const std::weak_ptr<ARegion>& region);
         ~Object();
 
-        void Readin(Ainfile *f, AList *, ATL_VER v);
+        void Readin(Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
         void Writeout(Aoutfile *f);
         void Report(Areport *, const Faction&, int, int, bool, int, int, bool, bool);
 
@@ -100,7 +100,7 @@ class Object
 
         std::weak_ptr<Unit> GetUnit(int);
         std::weak_ptr<Unit> GetUnitAlias(int, int); /* alias, faction number */
-        std::weak_ptr<Unit> GetUnitId(const UnitId&, int);
+        std::weak_ptr<Unit> GetUnitId(const UnitId&, size_t);
 
         // AS
         int IsRoad();

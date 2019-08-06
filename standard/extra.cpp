@@ -74,7 +74,7 @@ int Game::SetupFaction( const Faction::Handle& pFac )
     }
 
     ARegion::WeakHandle reg;
-    if (pFac->pStartLoc) {
+    if (!pFac->pStartLoc.expired()) {
         reg = pFac->pStartLoc;
     } else if (!Globals->MULTI_HEX_NEXUS) {
         reg = regions.front();

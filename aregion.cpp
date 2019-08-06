@@ -909,7 +909,7 @@ Unit::WeakHandle ARegion::GetUnit(int num)
     return Unit::WeakHandle();
 }
 
-Location::Handle ARegion::GetLocation(const UnitId& id, int faction) const
+Location::Handle ARegion::GetLocation(const UnitId& id, size_t faction) const
 {
     Unit::WeakHandle retval;
     for(const auto& o: objects)
@@ -937,7 +937,7 @@ Unit::WeakHandle ARegion::GetUnitAlias(int alias, int faction)
     return Unit::WeakHandle();
 }
 
-Unit::WeakHandle ARegion::GetUnitId(const UnitId& id, int faction)
+Unit::WeakHandle ARegion::GetUnitId(const UnitId& id, size_t faction)
 {
     Unit::WeakHandle retval;
     for(const auto&o: objects) {
@@ -950,7 +950,7 @@ Unit::WeakHandle ARegion::GetUnitId(const UnitId& id, int faction)
     return retval;
 }
 
-void ARegion::DeduplicateUnitList(std::list<UnitId>& list, int faction)
+void ARegion::DeduplicateUnitList(std::list<UnitId>& list, size_t faction)
 {
     std::set<UnitId> seen_ids;
     auto it = list.begin();
@@ -993,7 +993,7 @@ void ARegion::DeduplicateUnitList(std::list<UnitId>& list, int faction)
     }*/
 }
 
-Location::Handle ARegionList::GetUnitId(const UnitId& id, int faction, const ARegion& cur)
+Location::Handle ARegionList::GetUnitId(const UnitId& id, size_t faction, const ARegion& cur)
 {
     // Check current region first
     Location::Handle retval = cur.GetLocation(id, faction);
@@ -1094,7 +1094,7 @@ int LookupRegionType(AString *token)
     return -1;
 }
 
-void ARegion::Readin(Ainfile *f, AList *facs, ATL_VER v)
+void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER v)
 {
     AString *temp;
 
@@ -2062,7 +2062,7 @@ void ARegionList::WriteRegions(Aoutfile *f)
     }
 }
 
-bool ARegionList::ReadRegions(Ainfile *f, AList *factions, ATL_VER v)
+bool ARegionList::ReadRegions(Ainfile *f, const std::list<Faction::Handle>& factions, ATL_VER v)
 {
     unsigned int num = f->GetInt<unsigned int>();
 

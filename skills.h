@@ -148,9 +148,9 @@ class Skill : public AListElem {
 
 class SkillList : public AList {
     public:
-        int GetDays(int); /* Skill */
+        size_t GetDays(int); /* Skill */
         int GetExp(int); /* Skill */
-        void SetDays(int,int); /* Skill, days */
+        void SetDays(int,size_t); /* Skill, days */
         void SetExp(int,int); /* Skill, exp */
         void Combine(SkillList *);
         int GetStudyRate(int, int); /* Skill, num of men */

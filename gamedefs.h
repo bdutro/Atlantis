@@ -603,7 +603,7 @@ public:
     int MONSTER_BATTLE_REGEN;
 
     // Amount of skill improvement when a skill is used
-    int SKILL_PRACTICE_AMOUNT;
+    unsigned int SKILL_PRACTICE_AMOUNT;
     
     // Experience mandatory: use lower rates of study per
     // this amount of experience less than current days of

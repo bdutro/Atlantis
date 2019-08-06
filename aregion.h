@@ -178,7 +178,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void SetName(char const *);
 
         void Writeout(Aoutfile *);
-        void Readin(Ainfile *, AList *, ATL_VER v);
+        void Readin(Ainfile *, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
 
         bool CanMakeAdv(const Faction&, int);
         bool HasItem(const Faction&, int);
@@ -201,9 +201,9 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         std::weak_ptr<Unit> GetUnit(int);
         std::weak_ptr<Unit> GetUnitAlias(int, int); /* alias, faction number */
-        std::weak_ptr<Unit> GetUnitId(const UnitId&, int);
-        void DeduplicateUnitList(std::list<UnitId>&, int);
-        Location::Handle GetLocation(const UnitId&, int) const;
+        std::weak_ptr<Unit> GetUnitId(const UnitId&, size_t);
+        void DeduplicateUnitList(std::list<UnitId>&, size_t);
+        Location::Handle GetLocation(const UnitId&, size_t) const;
 
         void SetLoc(unsigned int, unsigned int, unsigned int);
         bool Present(const Faction&);
@@ -445,10 +445,10 @@ class ARegionList
 
         ARegion::WeakHandle GetRegion(size_t);
         ARegion::WeakHandle GetRegion(unsigned int, unsigned int, unsigned int);
-        bool ReadRegions(Ainfile *f, AList *, ATL_VER v);
+        bool ReadRegions(Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
         void WriteRegions(Aoutfile *f);
         Location::Handle FindUnit(size_t);
-        Location::Handle GetUnitId(const UnitId& id, int faction, const ARegion& cur);
+        Location::Handle GetUnitId(const UnitId& id, size_t faction, const ARegion& cur);
 
         void ChangeStartingCity(ARegion *, int);
         ARegion::WeakHandle GetStartingCity(const ARegion& AC, size_t num, unsigned int level, unsigned int maxX, unsigned int maxY);

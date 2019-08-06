@@ -509,7 +509,7 @@ void Game::GetAFacs(const ARegion::Handle& r,
 
                 if (add) {
                     const auto ufac = u->faction.lock();
-                    const int ufac_num = ufac->num;
+                    const size_t ufac_num = ufac->num;
                     if (GetFaction2(dfacs, ufac_num).expired()) {
                         auto& l = atts.emplace_back(std::make_shared<Location>());
                         l->unit = u;

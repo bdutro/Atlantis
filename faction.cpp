@@ -68,29 +68,24 @@ int ParseAttitude(AString *token)
     return -1;
 }
 
-FactionVector::FactionVector(int size)
+FactionVector::FactionVector(size_t size)
 {
-    vector = new Faction *[size];
+    vector.resize(size);
     vectorsize = size;
     ClearVector();
 }
 
-FactionVector::~FactionVector()
-{
-    delete vector;
-}
-
 void FactionVector::ClearVector()
 {
-    for (int i=0; i<vectorsize; i++) vector[i] = 0;
+    vector.clear();
 }
 
-void FactionVector::SetFaction(int x, Faction *fac)
+void FactionVector::SetFaction(size_t x, const Faction::WeakHandle& fac)
 {
     vector[x] = fac;
 }
 
-Faction *FactionVector::GetFaction(int x)
+Faction::WeakHandle FactionVector::GetFaction(size_t x)
 {
     return vector[x];
 }
@@ -103,7 +98,7 @@ void Attitude::Writeout(Aoutfile *f)
 
 void Attitude::Readin(Ainfile *f, ATL_VER)
 {
-    factionnum = f->GetInt<int>();
+    factionnum = f->GetInt<size_t>();
     attitude = f->GetInt<int>();
 }
 
@@ -123,13 +118,11 @@ Faction::Faction()
     quit = 0;
     defaultattitude = A_NEUTRAL;
     unclaimed = 0;
-    pReg = NULL;
-    pStartLoc = NULL;
     noStartLeader = 0;
     startturn = 0;
 }
 
-Faction::Faction(int n)
+Faction::Faction(size_t n)
 {
     exists = true;
     num = n;
@@ -147,8 +140,6 @@ Faction::Faction(int n)
     defaultattitude = A_NEUTRAL;
     quit = 0;
     unclaimed = 0;
-    pReg = NULL;
-    pStartLoc = NULL;
     noStartLeader = 0;
     startturn = 0;
 }
@@ -188,7 +179,7 @@ void Faction::Writeout(Aoutfile *f)
 
 void Faction::Readin(Ainfile *f, ATL_VER v)
 {
-    num = f->GetInt<int>();
+    num = f->GetInt<size_t>();
 
     for (int i = 0; i < NFACTYPES; ++i)
     {
@@ -415,7 +406,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     f->PutStr("Faction Status:");
     if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_MAGE_COUNT) {
         f->PutStr(AString("Mages: ") + nummages + " (" +
-                pGame->AllowedMages(this) + ")");
+                pGame->AllowedMages(*this) + ")");
         if (Globals->APPRENTICES_EXIST) {
             AString temp;
             temp = static_cast<char>(toupper(Globals->APPRENTICE_NAME[0]));
@@ -423,25 +414,25 @@ void Faction::WriteReport(Areport *f, Game *pGame)
             temp += "s: ";
             temp += numapprentices;
             temp += " (";
-            temp += pGame->AllowedApprentices(this);
+            temp += pGame->AllowedApprentices(*this);
             temp += ")";
             f->PutStr(temp);
         }
     } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
         f->PutStr(AString("Tax Regions: ") + war_regions.size() + " (" +
-                pGame->AllowedTaxes(this) + ")");
+                pGame->AllowedTaxes(*this) + ")");
         f->PutStr(AString("Trade Regions: ") + trade_regions.size() + " (" +
-                pGame->AllowedTrades(this) + ")");
+                pGame->AllowedTrades(*this) + ")");
         if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
             f->PutStr(AString("Quartermasters: ") + numqms + " (" +
-                    pGame->AllowedQuarterMasters(this) + ")");
+                    pGame->AllowedQuarterMasters(*this) + ")");
         }
         if (Globals->TACTICS_NEEDS_WAR) {
             f->PutStr(AString("Tacticians: ") + numtacts + " (" +
-                    pGame->AllowedTacticians(this) + ")");
+                    pGame->AllowedTacticians(*this) + ")");
         }
         f->PutStr(AString("Mages: ") + nummages + " (" +
-                pGame->AllowedMages(this) + ")");
+                pGame->AllowedMages(*this) + ")");
         if (Globals->APPRENTICES_EXIST) {
             AString temp;
             temp = static_cast<char>(toupper(Globals->APPRENTICE_NAME[0]));
@@ -449,7 +440,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
             temp += "s: ";
             temp += numapprentices;
             temp += " (";
-            temp += pGame->AllowedApprentices(this);
+            temp += pGame->AllowedApprentices(*this);
             temp += ")";
             f->PutStr(temp);
         }
@@ -642,7 +633,7 @@ void Faction::Event(const AString &s)
     events.Add(temp);
 }
 
-void Faction::RemoveAttitude(int f)
+void Faction::RemoveAttitude(size_t f)
 {
     for(auto it = attitudes.begin(); it != attitudes.end(); ++it) {
         const auto& a = *it;
@@ -653,7 +644,7 @@ void Faction::RemoveAttitude(int f)
     }
 }
 
-int Faction::GetAttitude(int n)
+int Faction::GetAttitude(size_t n)
 {
     if (n == num) return A_ALLY;
     for(const auto& a: attitudes) {
@@ -663,7 +654,7 @@ int Faction::GetAttitude(int n)
     return defaultattitude;
 }
 
-void Faction::SetAttitude(int num, int att)
+void Faction::SetAttitude(size_t num, int att)
 {
     for(auto it = attitudes.begin(); it != attitudes.end(); ++it) {
         const auto& a = *it;
@@ -778,7 +769,7 @@ bool Faction::IsNPC() const
     return false;
 }
 
-Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, int n)
+Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, size_t n)
 {
     for(const auto& f: facs)
     {
@@ -790,7 +781,7 @@ Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, int n)
     return nullptr;
 }
 
-Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>& facs, int n)
+Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>& facs, size_t n)
 {
     for(const auto& f: facs)
     {
@@ -836,7 +827,7 @@ void Faction::DiscoverItem(int item, int force, int full)
         skname = ItemDefs[item].grantSkill;
         skill = LookupSkill(&skname);
         if (skill != -1 && !(SkillDefs[skill].flags & SkillType::DISABLED)) {
-            for (int i = 1; i <= ItemDefs[item].maxGrant; i++) {
+            for (size_t i = 1; i <= ItemDefs[item].maxGrant; i++) {
                 if (i > skills.GetDays(skill)) {
                     skills.SetDays(skill, i);
                     shows.emplace_back(std::make_shared<ShowSkill>(skill, i));

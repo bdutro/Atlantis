@@ -171,7 +171,7 @@ class Unit
         void SetSkill(int,int);
         int GetSkillMax(int);
         int GetAvailSkill(int);
-        int GetRealSkill(int);
+        size_t GetRealSkill(int);
         void ForgetSkill(int);
         bool CheckDepend(int,SkillDepend &s);
         bool CanStudy(int);

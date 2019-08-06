@@ -28,6 +28,8 @@
 
 class Game;
 
+#include <vector>
+
 #include "aregion.h"
 #include "alist.h"
 #include "faction.h"
@@ -73,9 +75,9 @@ public:
     int SaveGame();
     int WritePlayers();
     int ReadPlayers();
-    int ReadPlayersLine(AString *pToken, AString *pLine, Faction *pFac,
+    int ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle& pFac,
                          int newPlayer);
-    void WriteNewFac(Faction *pFac);
+    void WriteNewFac(const Faction::Handle& pFac);
 
     int ViewMap(const AString &, const AString &);
     // LLS
@@ -83,7 +85,7 @@ public:
     int GenRules(const AString &, const AString &, const AString &);
     int DoOrdersCheck(const AString &strOrders, const AString &strCheck);
 
-    Faction *AddFaction(int noleader=0, ARegion *pStart = NULL);
+    Faction::Handle AddFaction(int noleader=0, const ARegion::Handle& pStart = nullptr);
 
     //
     // Give this particular game a chance to set up the faction. This is in
@@ -110,7 +112,7 @@ public:
     Unit::WeakHandle GetUnit(int num);
 
     // Handle special gm unit modification functions
-    Unit *ParseGMUnit(AString *tag, Faction *pFac);
+    Unit::WeakHandle ParseGMUnit(AString *tag, const Faction::Handle& pFac);
 
     int TurnNumber();
 
@@ -138,7 +140,7 @@ private:
     void PreProcessTurn();
     void ReadOrders();
     void RunOrders();
-    void ClearOrders(Faction *);
+    void ClearOrders(const Faction::Handle&);
     void MakeFactionReportLists();
     void CountAllSpecialists();
     //void CountAllMages();
@@ -169,16 +171,16 @@ private:
     int MakeWMon(ARegion *pReg);
     void MakeLMon(Object *pObj);
 
-    void WriteSurfaceMap(Aoutfile *f, ARegionArray *pArr, int type);
-    void WriteUnderworldMap(Aoutfile *f, ARegionArray *pArr, int type);
-    char GetRChar(ARegion *r);
-    AString GetXtraMap(ARegion *, int);
+    void WriteSurfaceMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type);
+    void WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type);
+    char GetRChar(const ARegion::Handle& r);
+    AString GetXtraMap(const ARegion::Handle&, int);
 
     // LLS
     // Functions to do upgrades to the ruleset -- should be in extras.cpp
-    int UpgradeMajorVersion(int savedVersion);
-    int UpgradeMinorVersion(int savedVersion);
-    int UpgradePatchLevel(int savedVersion);
+    int UpgradeMajorVersion(ATL_VER savedVersion);
+    int UpgradeMinorVersion(ATL_VER savedVersion);
+    int UpgradePatchLevel(ATL_VER savedVersion);
 
     // JLT
     // Functions to allow enabling/disabling parts of the data tables
@@ -284,9 +286,9 @@ private:
     std::list<AString> newfactions; /* List of strings */
     std::list<Battle::Handle> battles;
     ARegionList regions;
-    int factionseq;
+    size_t factionseq;
     unsigned int unitseq;
-    Unit **ppUnits;
+    std::vector<Unit::Handle> ppUnits;
     unsigned int maxppunits;
     int shipseq;
     int year;
@@ -301,82 +303,82 @@ private:
     int gameStatus;
 
     int guardfaction;
-    int monfaction;
+    size_t monfaction;
     int doExtraInit;
     
     //
     // Parsing functions
     //
-    void ParseError(OrdersCheck *pCheck, Unit *pUnit, Faction *pFac,
+    void ParseError(OrdersCheck *pCheck, const Unit::Handle&pUnit, Faction *pFac,
                      const AString &strError);
     UnitId *ParseUnit(AString *s);
     int ParseDir(AString *token);
 
 
     void ParseOrders(int faction, Aorders *ordersFile, OrdersCheck *pCheck);
-    void ProcessOrder(int orderNum, Unit *unit, AString *order,
+    void ProcessOrder(int orderNum, const Unit::Handle& unit, AString *order,
                        OrdersCheck *pCheck);
-    void ProcessMoveOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessAdvanceOrder(Unit *, AString *, OrdersCheck *pCheck);
-    Unit *ProcessFormOrder(Unit *former, AString *order,
+    void ProcessMoveOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessAdvanceOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    Unit::WeakHandle ProcessFormOrder(const Unit::Handle& former, AString *order,
                        OrdersCheck *pCheck, int atsign);
-    void ProcessAddressOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessAvoidOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessGuardOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessNameOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessDescribeOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessBehindOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessGiveOrder(int, Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessWithdrawOrder(Unit *, AString *, OrdersCheck *pCheck);
+    void ProcessAddressOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessAvoidOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessGuardOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessNameOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessDescribeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessBehindOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessGiveOrder(int, const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessWithdrawOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
     void ProcessDeclareOrder(Faction *, AString *, OrdersCheck *pCheck);
-    void ProcessStudyOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessTeachOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessWorkOrder(Unit *, int quiet, OrdersCheck *pCheck);
-    void ProcessProduceOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessBuyOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessSellOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessAttackOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessBuildOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessSailOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessEnterOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessLeaveOrder(Unit *, OrdersCheck *pCheck);
-    void ProcessPromoteOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessEvictOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessTaxOrder(Unit *, OrdersCheck *pCheck);
-    void ProcessPillageOrder(Unit *, OrdersCheck *pCheck);
-    void ProcessConsumeOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessRevealOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessFindOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessDestroyOrder(Unit *, OrdersCheck *pCheck);
-    void ProcessQuitOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessRestartOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessAssassinateOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessStealOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessFactionOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessClaimOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessCombatOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessPrepareOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessWeaponOrder(Unit *u, AString *o, OrdersCheck *pCheck);
-    void ProcessArmorOrder(Unit *u, AString *o, OrdersCheck *pCheck);
-    void ProcessCastOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessEntertainOrder(Unit *, OrdersCheck *pCheck);
-    void ProcessForgetOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessReshowOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessHoldOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessNoaidOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessNocrossOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessNospoilsOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessSpoilsOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessAutoTaxOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessOptionOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessPasswordOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessExchangeOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessIdleOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessTransportOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessDistributeOrder(Unit *, AString *, OrdersCheck *pCheck);
-    void ProcessShareOrder(Unit *, AString *, OrdersCheck *pCheck);
-    AString *ProcessTurnOrder(Unit *, Aorders *, OrdersCheck *pCheck, int);
-    void ProcessJoinOrder(Unit *, AString *, OrdersCheck *pCheck);
+    void ProcessStudyOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessTeachOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessWorkOrder(const Unit::Handle&, int quiet, OrdersCheck *pCheck);
+    void ProcessProduceOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessBuyOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessSellOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessAttackOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessBuildOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessSailOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessEnterOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessLeaveOrder(const Unit::Handle&, OrdersCheck *pCheck);
+    void ProcessPromoteOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessEvictOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessTaxOrder(const Unit::Handle&, OrdersCheck *pCheck);
+    void ProcessPillageOrder(const Unit::Handle&, OrdersCheck *pCheck);
+    void ProcessConsumeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessRevealOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessFindOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessDestroyOrder(const Unit::Handle&, OrdersCheck *pCheck);
+    void ProcessQuitOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessRestartOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessAssassinateOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessStealOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessFactionOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessClaimOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessCombatOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessPrepareOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessWeaponOrder(const Unit::Handle& u, AString *o, OrdersCheck *pCheck);
+    void ProcessArmorOrder(const Unit::Handle& u, AString *o, OrdersCheck *pCheck);
+    void ProcessCastOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessEntertainOrder(const Unit::Handle&, OrdersCheck *pCheck);
+    void ProcessForgetOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessReshowOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessHoldOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessNoaidOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessNocrossOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessNospoilsOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessSpoilsOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessAutoTaxOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessOptionOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessPasswordOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessExchangeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessIdleOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessTransportOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessDistributeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ProcessShareOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    AString *ProcessTurnOrder(const Unit::Handle&, Aorders *, OrdersCheck *pCheck, int);
+    void ProcessJoinOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
 
     void RemoveInactiveFactions();
 
@@ -387,14 +389,14 @@ private:
     //
     // This can be called by parse functions
     //
-    int CountMages(Faction *);
-    int CountApprentices(Faction *);
-    int CountQuarterMasters(Faction *);
-    int CountTacticians(Faction *);
+    size_t CountMages(const Faction::Handle&);
+    size_t CountApprentices(const Faction::Handle&);
+    size_t CountQuarterMasters(const Faction::Handle&);
+    size_t CountTacticians(const Faction::Handle&);
     
     void FindDeadFactions();
     void DeleteEmptyUnits();
-    void DeleteEmptyInRegion(ARegion *);
+    void DeleteEmptyInRegion(const ARegion::Handle&);
     void EmptyHell();
     void DoGuard1Orders();
     void DoGiveOrders();
@@ -403,7 +405,7 @@ private:
     void WriteTimesArticle(AString);
 
     void DoExchangeOrders();
-    void DoExchangeOrder(ARegion *, Unit *, ExchangeOrder *);
+    void DoExchangeOrder(const ARegion::Handle&, const Unit::Handle&, ExchangeOrder *);
 
     //
     // Faction limit functions.
@@ -411,25 +413,25 @@ private:
     // The first 4 are game specific and can be found in extra.cpp. They
     // may return -1 to indicate no limit.
     //
-    int AllowedMages(Faction *pFac);
-    int AllowedApprentices(Faction *pFact);
-    int AllowedQuarterMasters(Faction *pFact);
-    int AllowedTacticians(Faction *pFact);
-    int AllowedTaxes(Faction *pFac);
-    int AllowedTrades(Faction *pFac);
-    int TaxCheck(ARegion *pReg, Faction *pFac);
-    int TradeCheck(ARegion *pReg, Faction *pFac);
+    int AllowedMages(const Faction& pFac);
+    int AllowedApprentices(const Faction& pFact);
+    int AllowedQuarterMasters(const Faction& pFact);
+    int AllowedTacticians(const Faction& pFact);
+    int AllowedTaxes(const Faction& pFac);
+    int AllowedTrades(const Faction& pFac);
+    int TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
+    int TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
 
     //
     // The DoGiveOrder returns 0 normally, or 1 if no more GIVE orders
     // should be allowed
     //
-    int DoGiveOrder(ARegion *, Unit *, GiveOrder *);
+    int DoGiveOrder(const ARegion::Handle&, const Unit::Handle&, GiveOrder *);
     //
     // The DoWithdrawOrder returns 0 normally, or 1 if no more WITHDRAW
     // orders should be allowed
     //
-    int DoWithdrawOrder(ARegion *, Unit *, WithdrawOrder *);
+    int DoWithdrawOrder(const ARegion::Handle&, const Unit::Handle&, WithdrawOrder *);
 
     //
     // These are game specific, and can be found in extra.cpp

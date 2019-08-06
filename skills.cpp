@@ -281,7 +281,7 @@ Skill *Skill::Split(int total, int leave)
     return temp;
 }
 
-int SkillList::GetDays(int skill)
+size_t SkillList::GetDays(int skill)
 {
     forlist(this) {
         Skill *s = (Skill *) elem;
@@ -292,7 +292,7 @@ int SkillList::GetDays(int skill)
     return 0;
 }
 
-void SkillList::SetDays(int skill, int days)
+void SkillList::SetDays(int skill, size_t days)
 {
     forlist(this) {
         Skill *s = (Skill *) elem;

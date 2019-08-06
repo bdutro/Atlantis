@@ -1150,12 +1150,12 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                 }
                 SAFE_DELETE(pToken);
 
-                int days;
+                size_t days;
                 pToken = pStr->gettoken();
                 if (!pToken) {
                     days = 0;
                 } else {
-                    days = pToken->value();
+                    days = static_cast<size_t>(pToken->value());
                 }
 
                 if ((SkillDefs[skillNum].flags & SkillType::MAGIC) &&
@@ -1166,8 +1166,8 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                         (pUnit->type == U_NORMAL)) {
                     pUnit->type = U_APPRENTICE;
                 }
-                pUnit->skills.SetDays(skillNum, days * static_cast<int>(pUnit->GetMen()));
-                int lvl = pUnit->GetRealSkill(skillNum);
+                pUnit->skills.SetDays(skillNum, days * pUnit->GetMen());
+                size_t lvl = pUnit->GetRealSkill(skillNum);
                 if (lvl > pUnit->faction.lock()->skills.GetDays(skillNum)) {
                     pUnit->faction.lock()->skills.SetDays(skillNum, lvl);
                 }
@@ -1249,7 +1249,7 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
                         Awrite( "Try again." );
                         break;
                     }
-                    int fnum = pToken->value();
+                    size_t fnum = static_cast<size_t>(pToken->value());
                     SAFE_DELETE( pToken );
                     if (fnum<1) {
                         Awrite("Invalid Faction Number");

@@ -123,7 +123,7 @@ void Object::Writeout(Aoutfile *f)
     WriteoutFleet(f);
 }
 
-void Object::Readin(Ainfile *f, AList *facs, ATL_VER v)
+void Object::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER v)
 {
     AString *temp;
 
@@ -242,7 +242,7 @@ Unit::WeakHandle Object::GetUnitAlias(int alias, int faction)
     return Unit::WeakHandle();
 }
 
-Unit::WeakHandle Object::GetUnitId(const UnitId& id, int faction)
+Unit::WeakHandle Object::GetUnitId(const UnitId& id, size_t faction)
 {
     //if (id == 0) return Unit::WeakHandle();
     if (id.unitnum) {
