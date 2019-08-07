@@ -61,19 +61,20 @@ Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>& l, const Fac
     return Farsight::WeakHandle();
 }
 
-AString TownString(int i);
+AString TownString(TownTypeEnum i);
 
-AString TownString(int i)
+AString TownString(TownTypeEnum i)
 {
     switch (i) {
-    case TOWN_VILLAGE:
-        return "village";
-    case TOWN_TOWN:
-        return "town";
-    case TOWN_CITY:
-        return "city";
+        case TownTypeEnum::TOWN_VILLAGE:
+            return "village";
+        case TownTypeEnum::TOWN_TOWN:
+            return "town";
+        case TownTypeEnum::TOWN_CITY:
+            return "city";
+        default:
+            return "huh?";
     }
-    return "huh?";
 }
 
 TownInfo::TownInfo()
@@ -2394,14 +2395,17 @@ void ARegionList::TownStatistics()
     for(const auto& reg: regions_) {
         if (reg->town) {
             switch(reg->town->TownType()) {
-                case TOWN_VILLAGE:
+                case TownTypeEnum::TOWN_VILLAGE:
                     villages++;
                     break;
-                case TOWN_TOWN:
+                case TownTypeEnum::TOWN_TOWN:
                     towns++;
                     break;
-                case TOWN_CITY:
+                case TownTypeEnum::TOWN_CITY:
                     cities++;
+                    break;
+                default:
+                    break;
             }    
         }
     }

@@ -27,6 +27,7 @@
 #define GAME_DEFS
 
 #include <array>
+#include <vector>
 
 #include "helper.h"
 
@@ -57,18 +58,12 @@ extern char const **MonthNames;
 
 extern char const **SeasonNames;
 
-extern int *allowedMages;
-extern int allowedMagesSize;
-extern int *allowedApprentices;
-extern int allowedApprenticesSize;
-extern int *allowedTaxes;
-extern int allowedTaxesSize;
-extern int *allowedTrades;
-extern int allowedTradesSize;
-extern int *allowedQuartermasters;
-extern int allowedQuartermastersSize;
-extern int *allowedTacticians;
-extern int allowedTacticiansSize;
+extern const std::vector<int> allowedMages;
+extern const std::vector<int> allowedApprentices;
+extern const std::vector<int> allowedTaxes;
+extern const std::vector<int> allowedTrades;
+extern const std::vector<int> allowedQuartermasters;
+extern const std::vector<int> allowedTacticians;
 
 extern unsigned int NUMBATTLEITEMS;
 extern int NUMARMORS;
@@ -184,8 +179,8 @@ public:
     int HEALS_PER_MAN;
 
     int GUARD_REGEN; /* percent */
-    int CITY_GUARD;
-    int GUARD_MONEY;
+    size_t CITY_GUARD;
+    size_t GUARD_MONEY;
     int CITY_POP; /* standard Atlantis is 20000 */
 
     int WMON_FREQUENCY;
@@ -283,7 +278,7 @@ public:
     //
     // How many guards in starting cities?
     //
-    int AMT_START_CITY_GUARDS;
+    size_t AMT_START_CITY_GUARDS;
 
     //
     // Should starting city guards be made tougher than normal city guards?
@@ -535,7 +530,7 @@ public:
 
     // Set MONSTER_NO_SPOILS > 0 to disable spoils from released monsters
     // for that many months.
-    int MONSTER_NO_SPOILS;
+    size_t MONSTER_NO_SPOILS;
     // Set MONSTER_SPOILS_RECOVERY > 0 to set a time in months over which
     // monster spoils are slowly regained.
     // This has no effect unles MONSTER_NO_SPOILS is also set.

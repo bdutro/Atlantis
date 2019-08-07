@@ -146,7 +146,7 @@ class ItemType
         };
         int escape;
         char const *esc_skill;
-        int esc_val; // level for has_skill, constant for all others
+        size_t esc_val; // level for has_skill, constant for all others
 
         char const *grantSkill;
         char const *fromSkills[4];

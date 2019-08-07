@@ -32,12 +32,12 @@
 
 /* TownType */
 // Depends on population and town development
-int TownInfo::TownType()
+TownTypeEnum TownInfo::TownType()
 {
     int prestige = pop * (dev + 220) / 270;
-    if (prestige < Globals->CITY_POP / 4) return TOWN_VILLAGE;
-    if (prestige < Globals->CITY_POP * 4 / 5) return TOWN_TOWN;
-    return TOWN_CITY;
+    if (prestige < Globals->CITY_POP / 4) return TownTypeEnum::TOWN_VILLAGE;
+    if (prestige < Globals->CITY_POP * 4 / 5) return TownTypeEnum::TOWN_TOWN;
+    return TownTypeEnum::TOWN_CITY;
 }
 
 int ARegion::Population()
@@ -62,7 +62,7 @@ int ARegion::Wages()
     // Note: earthlore and clearskies represent LEVEL of the spell
     // Adjust for TownType
     if (town) {
-        int tsize = town->TownType();
+        int tsize = static_cast<int>(town->TownType());
         dv += (tsize * tsize + 1);
     }
     while (dv >= level) {
@@ -772,19 +772,19 @@ void ARegion::SetupProds()
 void ARegion::AddTown()
 {
     AString *tname = new AString(AGetNameString(AGetName(1, shared_from_this())));
-    int size = DetermineTownSize();
+    const auto size = DetermineTownSize();
     AddTown(size, tname);
 }
 
 /* Create a town of any type with given name */
 void ARegion::AddTown(AString * tname)
 {
-    int size = DetermineTownSize();
+    const auto size = DetermineTownSize();
     AddTown(size, tname);    
 }
 
 /* Create a town of given Town Type */
-void ARegion::AddTown(int size)
+void ARegion::AddTown(TownTypeEnum size)
 {
     AString *tname = new AString(AGetNameString(AGetName(1, shared_from_this())));
     AddTown(size, tname);    
@@ -793,7 +793,7 @@ void ARegion::AddTown(int size)
 /* Create a town of specific type with name
  * All other town creation functions call this one
  * in the last instance. */
-void ARegion::AddTown(int size, AString * name)
+void ARegion::AddTown(TownTypeEnum size, AString * name)
 {
     town = new TownInfo;
     town->name = name;
@@ -817,22 +817,22 @@ void ARegion::AddTown(int size, AString * name)
 }
 
 // Used at start to set initial town's size
-int ARegion::DetermineTownSize()
+TownTypeEnum ARegion::DetermineTownSize()
 {
     // is it a city?
     if (getrandom(300U) < Globals->TOWN_DEVELOPMENT) {
-        return TOWN_CITY;
+        return TownTypeEnum::TOWN_CITY;
     }
     // is it a town?
     if (getrandom(220U) < Globals->TOWN_DEVELOPMENT + 10) {
-        return TOWN_TOWN;
+        return TownTypeEnum::TOWN_TOWN;
     }
     // ... then it's a village!
-    return TOWN_VILLAGE;
+    return TownTypeEnum::TOWN_VILLAGE;
 }
 
 // Set an existing town to a specific town type
-void ARegion::SetTownType(int level)
+void ARegion::SetTownType(TownTypeEnum type)
 {
     if (!town) return;
     // set some basics
@@ -841,8 +841,9 @@ void ARegion::SetTownType(int level)
     town->dev = TownDevelopment();
     
     // Sanity check
-    if ((level < TOWN_VILLAGE) || (level > TOWN_CITY)) return;
-    
+    if ((type < TownTypeEnum::TOWN_VILLAGE) || (type > TownTypeEnum::TOWN_CITY)) return;
+
+    int level = static_cast<int>(type);
     // increment values
     int poptown = getrandom((level -1) * (level -1) * Globals->CITY_POP/12) + level * level * Globals->CITY_POP/12;
     town->hab += poptown;
@@ -851,9 +852,9 @@ void ARegion::SetTownType(int level)
     town->dev = TownDevelopment();
 
     // now increment until we reach the right size
-    while(town->TownType() != level) {
+    while(town->TownType() != type) {
         // Increase?
-        if (level > town->TownType()) {
+        if (type > town->TownType()) {
             development += static_cast<int>(getrandom(Globals->TOWN_DEVELOPMENT / 10 + 5));
             int poplus = getrandom(Globals->CITY_POP/3) + getrandom(Globals->CITY_POP/3);
             // don't overgrow!

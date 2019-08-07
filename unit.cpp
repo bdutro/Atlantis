@@ -98,7 +98,7 @@ Unit::Unit()
     raised = 0;
 }
 
-Unit::Unit(int seq, Faction *f, int a)
+Unit::Unit(int seq, const Faction::Handle& f, int a)
 {
     num = seq;
     type = U_NORMAL;
@@ -157,7 +157,7 @@ void Unit::SetMonFlags()
     SetFlag(FLAG_HOLDING, 1);
 }
 
-void Unit::MakeWMon(char const *monname, int mon, int num)
+void Unit::MakeWMon(char const *monname, int mon, size_t num)
 {
     AString *temp = new AString(monname);
     SetName(temp);
@@ -886,6 +886,11 @@ size_t Unit::GetLeaders()
 size_t Unit::GetSoldiers()
 {
     return items.GetNumSoldiers();
+}
+
+void Unit::SetMoney(size_t n)
+{
+    SetMoney(static_cast<int>(n));
 }
 
 void Unit::SetMoney(int n)

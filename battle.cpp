@@ -871,7 +871,7 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
         tmp += " from the grave to seek vengeance.";
         Faction::Handle monfac = GetFaction(factions, monfaction);
         Unit::Handle u = GetNewUnit(monfac, 0);
-        u->MakeWMon("Undead", I_SKELETON, static_cast<int>(skel));
+        u->MakeWMon("Undead", I_SKELETON, skel);
         u->items.SetNum(I_UNDEAD, undead);
         u->MoveUnit(r->GetDummy());
         b->AddLine(tmp);

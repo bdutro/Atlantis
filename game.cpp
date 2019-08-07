@@ -375,7 +375,7 @@ int Game::OpenGame()
     factionseq = f.GetInt<size_t>();
     unitseq = f.GetInt<unsigned int>();
     shipseq = f.GetInt<int>();
-    guardfaction = f.GetInt<int>();
+    guardfaction = f.GetInt<size_t>();
     monfaction = f.GetInt<size_t>();
 
     //
@@ -985,7 +985,7 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
 
 void Game::WriteNewFac(const Faction::Handle& pFac)
 {
-    newfactions.emplace_back(std::make_shared<AString>(AString("Adding ") + *(pFac->address) + "."));
+    newfactions.emplace_back(AString("Adding ") + *(pFac->address) + ".");
 }
 
 int Game::DoOrdersCheck(const AString &strOrders, const AString &strCheck)
@@ -1307,7 +1307,21 @@ Unit::Handle Game::GetNewUnit(const Faction::Handle& fac, int an)
 
 Unit::WeakHandle Game::GetUnit(int num)
 {
-    if (num < 0 || (unsigned int)num >= maxppunits) return Unit::WeakHandle();
+    if(num < 0)
+    {
+        return Unit::WeakHandle();
+    }
+
+    return GetUnit(static_cast<size_t>(num));
+}
+
+Unit::WeakHandle Game::GetUnit(size_t num)
+{
+    if (num >= maxppunits)
+    {
+        return Unit::WeakHandle();
+    }
+
     return ppUnits[num];
 }
 
@@ -1449,83 +1463,66 @@ size_t Game::CountTacticians(const Faction::Handle& pFac)
     return i;
 }
 
-int Game::CountApprentices(Faction *pFac)
+size_t Game::CountApprentices(const Faction::Handle& pFac)
 {
-    int i = 0;
-    forlist(&regions) {
-        ARegion *r = (ARegion *)elem;
-        forlist(&r->objects) {
-            Object *o = (Object *)elem;
-            forlist(&o->units) {
-                Unit *u = (Unit *)elem;
-                if (u->faction == pFac && u->type == U_APPRENTICE) i++;
+    size_t i = 0;
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(const auto& u: o->units) {
+                if (u->faction.lock() == pFac && u->type == U_APPRENTICE)
+                {
+                    i++;
+                }
             }
         }
     }
     return i;
 }
 
-int Game::AllowedMages(Faction *pFac)
+int Game::getAllowedPoints(int p, const std::vector<int>& allowed)
 {
-    int points = pFac->type[F_MAGIC];
+    if(p < 0)
+    {
+        return allowed.front();
+    }
 
-    if (points < 0) points = 0;
-    if (points > allowedMagesSize - 1) points = allowedMagesSize - 1;
+    size_t points = static_cast<size_t>(p);
+    if(points >= allowed.size())
+    {
+        return allowed.back();
+    }
 
-    return allowedMages[points];
+    return allowed[points];
 }
 
-int Game::AllowedQuarterMasters(Faction *pFac)
+int Game::AllowedMages(const Faction& pFac)
 {
-    int points = pFac->type[F_TRADE];
-
-    if (points < 0) points = 0;
-    if (points > allowedQuartermastersSize - 1)
-        points = allowedQuartermastersSize - 1;
-
-    return allowedQuartermasters[points];
+    return getAllowedPoints(pFac.type[F_MAGIC], allowedMages);
 }
 
-int Game::AllowedTacticians(Faction *pFac)
+int Game::AllowedQuarterMasters(const Faction& pFac)
 {
-    int points = pFac->type[F_WAR];
-
-    if (points < 0) points = 0;
-    if (points > allowedTacticiansSize - 1)
-        points = allowedTacticiansSize - 1;
-
-    return allowedTacticians[points];
+    return getAllowedPoints(pFac.type[F_TRADE], allowedQuartermasters);
 }
 
-int Game::AllowedApprentices(Faction *pFac)
+int Game::AllowedTacticians(const Faction& pFac)
 {
-    int points = pFac->type[F_MAGIC];
-
-    if (points < 0) points = 0;
-    if (points > allowedApprenticesSize - 1)
-        points = allowedApprenticesSize - 1;
-
-    return allowedApprentices[points];
+    return getAllowedPoints(pFac.type[F_WAR], allowedTacticians);
 }
 
-int Game::AllowedTaxes(Faction *pFac)
+int Game::AllowedApprentices(const Faction& pFac)
 {
-    int points = pFac->type[F_WAR];
-
-    if (points < 0) points = 0;
-    if (points > allowedTaxesSize - 1) points = allowedTaxesSize - 1;
-
-    return allowedTaxes[points];
+    return getAllowedPoints(pFac.type[F_MAGIC], allowedApprentices);
 }
 
-int Game::AllowedTrades(Faction *pFac)
+int Game::AllowedTaxes(const Faction& pFac)
 {
-    int points = pFac->type[F_TRADE];
+    return getAllowedPoints(pFac.type[F_WAR], allowedTaxes);
+}
 
-    if (points < 0) points = 0;
-    if (points > allowedTradesSize - 1) points = allowedTradesSize - 1;
-
-    return allowedTrades[points];
+int Game::AllowedTrades(const Faction& pFac)
+{
+    return getAllowedPoints(pFac.type[F_TRADE], allowedTrades);
 }
 
 int Game::UpgradeMajorVersion(ATL_VER)
@@ -1558,18 +1555,17 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
     AString tmp;
     int skill;
     int linked = 0;
-    map< int, int > chances;
+    std::map<int, int> chances;
 
     if (u->type != U_WMON) {
 
-        forlist (&u->items) {
-            Item *i = (Item *) elem;
+        for (const auto& i: u->items) {
             if (!i->num) continue;
             if (!ItemDefs[i->type].escape) continue;
 
             // Okay, check flat loss.
             if (ItemDefs[i->type].escape & ItemType::LOSS_CHANCE) {
-                int losses = (i->num +
+                size_t losses = (i->num +
                         getrandom(ItemDefs[i->type].esc_val)) /
                     ItemDefs[i->type].esc_val;
                 // LOSS_CHANCE and HAS_SKILL together mean the
@@ -1579,11 +1575,11 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                 if (ItemDefs[i->type].escape & ItemType::HAS_SKILL) {
                     tmp = ItemDefs[i->type].esc_skill;
                     skill = LookupSkill(&tmp);
-                    if (u->GetSkill(skill) >= ItemDefs[i->type].esc_val)
+                    if (u->GetSkill(skill) >= static_cast<int>(ItemDefs[i->type].esc_val))
                         losses = 0;
                 }
                 if (losses) {
-                    tmp = ItemString(i->type, losses);
+                    tmp = ItemString(i->type, static_cast<int>(losses));
                     tmp += " decay";
                     if (losses == 1)
                         tmp += "s";
@@ -1594,10 +1590,10 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
             } else if (ItemDefs[i->type].escape & ItemType::HAS_SKILL) {
                 tmp = ItemDefs[i->type].esc_skill;
                 skill = LookupSkill(&tmp);
-                if (u->GetSkill(skill) < ItemDefs[i->type].esc_val) {
+                if (u->GetSkill(skill) < static_cast<int>(ItemDefs[i->type].esc_val)) {
                     if (Globals->WANDERING_MONSTERS_EXIST) {
-                        Faction *mfac = GetFaction(&factions, monfaction);
-                        Unit *mon = GetNewUnit(mfac, 0);
+                        const auto mfac = GetFaction(factions, monfaction);
+                        const auto mon = GetNewUnit(mfac, 0);
                         MonType *mp = FindMonster(ItemDefs[i->type].abr,
                                 (ItemDefs[i->type].type & IT_ILLUSION));
                         mon->MakeWMon(mp->name, i->type, i->num);
@@ -1608,7 +1604,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                             Globals->MONSTER_SPOILS_RECOVERY;
                     }
                     u->Event(AString("Loses control of ") +
-                            ItemString(i->type, i->num) + ".");
+                            ItemString(i->type, static_cast<int>(i->num)) + ".");
                     u->items.SetNum(i->type, 0);
                 }
             } else {
@@ -1622,10 +1618,11 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                     chance = 10000;
                 else {
                     int top;
+                    int i_num = static_cast<int>(i->num);
                     if (ItemDefs[i->type].escape & ItemType::ESC_NUM_SQUARE)
-                        top = i->num * i->num;
+                        top = i_num * i_num;
                     else
-                        top = i->num;
+                        top = i_num;
                     int bottom = 0;
                     if (ItemDefs[i->type].escape & ItemType::ESC_LEV_LINEAR)
                         bottom = level;
@@ -1637,7 +1634,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                         bottom = level * level * level * level;
                     else
                         bottom = 1;
-                    bottom = bottom * ItemDefs[i->type].esc_val;
+                    bottom = bottom * static_cast<int>(ItemDefs[i->type].esc_val);
                     chance = (top * 10000)/bottom;
                 }
 
@@ -1647,8 +1644,8 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                     linked = 1;
                 } else if (chance > getrandom(10000)) {
                     if (Globals->WANDERING_MONSTERS_EXIST) {
-                        Faction *mfac = GetFaction(&factions, monfaction);
-                        Unit *mon = GetNewUnit(mfac, 0);
+                        const auto mfac = GetFaction(factions, monfaction);
+                        const auto mon = GetNewUnit(mfac, 0);
                         MonType *mp = FindMonster(ItemDefs[i->type].abr,
                                 (ItemDefs[i->type].type & IT_ILLUSION));
                         mon->MakeWMon(mp->name, i->type, i->num);
@@ -1659,25 +1656,24 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                             Globals->MONSTER_SPOILS_RECOVERY;
                     }
                     u->Event(AString("Loses control of ") +
-                            ItemString(i->type, i->num) + ".");
+                            ItemString(i->type, static_cast<int>(i->num)) + ".");
                     u->items.SetNum(i->type, 0);
                 }
             }
         }
 
         if (linked) {
-            map < int, int >::iterator i;
+            std::map<int, int>::iterator i;
             for (i = chances.begin(); i != chances.end(); i++) {
                 // walk the chances list and for each chance, see if
                 // escape happens and if escape happens then walk all items
                 // and everything that is that type, get rid of it.
                 if ((*i).second < getrandom(10000)) continue;
-                forlist (&u->items) {
-                    Item *it = (Item *)elem;
+                for(const auto& it: u->items) {
                     if (ItemDefs[it->type].type == (*i).first) {
                         if (Globals->WANDERING_MONSTERS_EXIST) {
-                            Faction *mfac = GetFaction(&factions, monfaction);
-                            Unit *mon = GetNewUnit(mfac, 0);
+                            const auto mfac = GetFaction(factions, monfaction);
+                            const auto mon = GetNewUnit(mfac, 0);
                             MonType *mp = FindMonster(ItemDefs[it->type].abr,
                                     (ItemDefs[it->type].type & IT_ILLUSION));
                             mon->MakeWMon(mp->name, it->type, it->num);
@@ -1688,7 +1684,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                                 Globals->MONSTER_SPOILS_RECOVERY;
                         }
                         u->Event(AString("Loses control of ") +
-                                ItemString(it->type, it->num) + ".");
+                                ItemString(it->type, static_cast<int>(it->num)) + ".");
                         u->items.SetNum(it->type, 0);
                     }
                 }
@@ -1746,7 +1742,7 @@ void Game::CheckAllyHunger()
     CheckAllyHungerItem(I_FISH, Globals->UPKEEP_FOOD_VALUE);
 }
 
-char Game::GetRChar(ARegion *r)
+char Game::GetRChar(const ARegion::Handle& r)
 {
     int t;
 
@@ -1763,52 +1759,49 @@ char Game::GetRChar(ARegion *r)
 
 void Game::CreateNPCFactions()
 {
-    Faction *f;
     AString *temp;
     if (Globals->CITY_MONSTERS_EXIST) {
-        f = new Faction(factionseq++);
+        auto& f = factions.emplace_back(std::make_shared<Faction>(factionseq++));
         guardfaction = f->num;
         temp = new AString("The Guardsmen");
         f->SetName(temp);
         f->SetNPC();
         f->lastorders = 0;
-        factions.Add(f);
     } else
         guardfaction = 0;
     // Only create the monster faction if wandering monsters or lair
     // monsters exist.
     if (Globals->LAIR_MONSTERS_EXIST || Globals->WANDERING_MONSTERS_EXIST) {
-        f = new Faction(factionseq++);
+        auto& f = factions.emplace_back(std::make_shared<Faction>(factionseq++));
         monfaction = f->num;
         temp = new AString("Creatures");
         f->SetName(temp);
         f->SetNPC();
         f->lastorders = 0;
-        factions.Add(f);
     } else
         monfaction = 0;
 }
 
-void Game::CreateCityMon(ARegion *pReg, int percent, int needmage)
+void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needmage)
 {
     int skilllevel;
     int AC = 0;
     int IV = 0;
-    int num;
+    size_t num;
     if (pReg->type == R_NEXUS || pReg->IsStartingCity()) {
-        skilllevel = TOWN_CITY + 1;
+        skilllevel = static_cast<int>(TownTypeEnum::TOWN_CITY) + 1;
         if (Globals->SAFE_START_CITIES || (pReg->type == R_NEXUS))
             IV = 1;
         AC = 1;
         num = Globals->AMT_START_CITY_GUARDS;
     } else {
-        skilllevel = pReg->town->TownType() + 1;
-        num = Globals->CITY_GUARD * skilllevel;
+        skilllevel = static_cast<int>(pReg->town->TownType()) + 1;
+        num = Globals->CITY_GUARD * static_cast<size_t>(skilllevel);
     }
     num = num * percent / 100;
-    Faction *pFac = GetFaction(&factions, guardfaction);
-    Unit *u = GetNewUnit(pFac);
-    Unit *u2;
+    const auto pFac = GetFaction(factions, guardfaction);
+    Unit::Handle u = GetNewUnit(pFac);
+    Unit::Handle u2;
     AString *s = new AString("City Guard");
     
     /*
@@ -1826,15 +1819,15 @@ void Game::CreateCityMon(ARegion *pReg, int percent, int needmage)
         u->SetMen(I_LEADERS,num);
         u->items.SetNum(I_SWORD,num);
         if (IV) u->items.SetNum(I_AMULETOFI,num);
-        u->SetMoney(num * Globals->GUARD_MONEY);
-        u->SetSkill(S_COMBAT,skilllevel);
+        u->SetMoney(static_cast<int>(num * Globals->GUARD_MONEY));
+        u->SetSkill(S_COMBAT, skilllevel);
         u->SetName(s);
         u->type = U_GUARD;
         u->guard = GUARD_GUARD;
         u->reveal = REVEAL_FACTION;
     } else {
         /* non-leader guards */
-        int n = 3 * num / 4;
+        size_t n = 3 * num / 4;
         int plate = 0;
         if ((AC) && (Globals->START_CITY_GUARDS_PLATE)) plate = 1;
         u = MakeManUnit(pFac, pReg->race, n, skilllevel, 1,
@@ -1899,14 +1892,12 @@ void Game::CreateCityMon(ARegion *pReg, int percent, int needmage)
     }
 }
 
-void Game::AdjustCityMons(ARegion *r)
+void Game::AdjustCityMons(const ARegion::Handle& r)
 {
     int needguard = 1;
     int needmage = 1;
-    forlist(&r->objects) {
-        Object *o = (Object *) elem;
-        forlist(&o->units) {
-            Unit *u = (Unit *) elem;
+    for(const auto& o: r->objects) {
+        for(const auto& u: o->units) {
             if (u->type == U_GUARD || u->type == U_GUARDMAGE) {
                 AdjustCityMon(r, u);
                 /* Don't create new city guards if we have some */
@@ -1923,20 +1914,20 @@ void Game::AdjustCityMons(ARegion *r)
     }
 }
 
-void Game::AdjustCityMon(ARegion *r, Unit *u)
+void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    int towntype;
+    TownTypeEnum towntype;
     int AC = 0;
-    int men;
+    size_t men;
     int IV = 0;
     int mantype;
-    int maxmen;
+    size_t maxmen;
     int weapon = -1;
-    int maxweapon = 0;
+    size_t maxweapon = 0;
     int armor = -1;
-    int maxarmor = 0;
+    size_t maxarmor = 0;
     for (int i=0; i<NITEMS; i++) {
-        int num = u->items.GetNum(i);
+        size_t num = u->items.GetNum(i);
         if (num == 0) continue;
         if (ItemDefs[i].type & IT_MAN) mantype = i;
         if ((ItemDefs[i].type & IT_WEAPON)
@@ -1958,10 +1949,10 @@ void Game::AdjustCityMon(ARegion *r, Unit *u)
         if (FindSkill(wp->baseSkill) == FindSkill("LBOW")) skill = S_LONGBOW;
     }
     
-    int sl = u->GetRealSkill(skill);
+    size_t sl = u->GetRealSkill(skill);
         
     if (r->type == R_NEXUS || r->IsStartingCity()) {
-        towntype = TOWN_CITY;
+        towntype = TownTypeEnum::TOWN_CITY;
         AC = 1;
         if (Globals->SAFE_START_CITIES || (r->type == R_NEXUS))
             IV = 1;
@@ -1977,7 +1968,7 @@ void Game::AdjustCityMon(ARegion *r, Unit *u)
         }
     } else {
         towntype = r->town->TownType();
-        maxmen = Globals->CITY_GUARD * (towntype+1);
+        maxmen = Globals->CITY_GUARD * (static_cast<size_t>(towntype)+1);
         if (!Globals->LEADERS_EXIST) maxmen = 3 * maxmen / 4;
         men = u->GetMen() + (maxmen/10);
         if (men > maxmen)
@@ -1996,9 +1987,9 @@ void Game::AdjustCityMon(ARegion *r, Unit *u)
         u->SetFlag(FLAG_BEHIND, 1);
         u->SetMoney(Globals->GUARD_MONEY);
     } else {
-        int money = men * (Globals->GUARD_MONEY * men / maxmen);
+        size_t money = men * (Globals->GUARD_MONEY * men / maxmen);
         u->SetMoney(money);
-        u->SetSkill(skill, sl);
+        u->SetSkill(skill, static_cast<int>(sl));
         if (AC) {
             u->SetSkill(S_OBSERVATION,10);
             if (Globals->START_CITY_TACTICS)
@@ -2006,7 +1997,7 @@ void Game::AdjustCityMon(ARegion *r, Unit *u)
             if (Globals->START_CITY_GUARDS_PLATE)
                 u->items.SetNum(armor,men);
         } else {
-            u->SetSkill(S_OBSERVATION,towntype + 1);
+            u->SetSkill(S_OBSERVATION, static_cast<int>(towntype) + 1);
         }
         if (weapon!= -1) {
             u->items.SetNum(weapon,men);
@@ -2020,9 +2011,8 @@ void Game::Equilibrate()
     for (int a=0; a<25; a++) {
         Adot();
         ProcessMigration();
-        forlist(&regions) {
-            ARegion *r = (ARegion *) elem;
-            r->PostTurn(&regions);
+        for(const auto& r: regions) {
+            r->PostTurn(regions);
         }
     }
     Awrite("");

@@ -45,7 +45,7 @@ class Location;
 class Soldier {
     public:
         using Handle = std::shared_ptr<Soldier>;
-        Soldier(const Unit::Handle& unit, const Object::Handle& object, int regType, int race, int ass=0);
+        Soldier(const Unit::Handle& unit, const std::shared_ptr<Object>& object, int regType, int race, int ass=0);
 
         void SetupSpell();
         void SetupCombatItems();

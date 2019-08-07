@@ -33,30 +33,17 @@
 // the html file containing the rules to correctly reflect the changes!
 //
 
-static int am[] = { 0, 1, 2, 3, 5, 7 };
-int *allowedMages = am;
-int allowedMagesSize = sizeof(am) / sizeof(am[0]);
+const std::vector<int> allowedMages = { 0, 1, 2, 3, 5, 7 };
 
-static int aa[] = { 0, 2, 4, 6, 10, 14 };
-int *allowedApprentices = aa;
-int allowedApprenticesSize = sizeof(aa) / sizeof(aa[0]);
+const std::vector<int> allowedApprentices = { 0, 2, 4, 6, 10, 14 };
 
-static int aw[] = { 0, 10, 24, 40, 60, 100 };
-int *allowedTaxes = aw;
-int allowedTaxesSize = sizeof(aw) / sizeof(aw[0]);
+const std::vector<int> allowedTaxes = { 0, 10, 24, 40, 60, 100 };
 
-static int at[] = { 0, 10, 24, 40, 60, 100 };
-int *allowedTrades = at;
-int allowedTradesSize = sizeof(at) / sizeof(at[0]);
+const std::vector<int> allowedTrades = { 0, 10, 24, 40, 60, 100 };
 
-static int aq[] = { 0, 2, 4, 8, 12, 20 };
-int *allowedQuartermasters = aq;
-int allowedQuartermastersSize = sizeof(aq) / sizeof(aq[0]);
+const std::vector<int> allowedQuartermasters = { 0, 2, 4, 8, 12, 20 };
 
-// at is already taken up for allowedtaxes, so I'll use ag (allowedgenghises) ;)
-static int ag[] = { 0, 1, 2, 4, 6, 10 };
-int *allowedTacticians = ag;
-int allowedTacticiansSize = sizeof(ag) / sizeof(ag[0]);
+const std::vector<int> allowedTacticians = { 0, 1, 2, 4, 6, 10 };
 
 static GameDefs g = {
     "Wyreth",                // RULESET_NAME

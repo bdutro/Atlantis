@@ -59,7 +59,7 @@ typedef struct randctx randctx;
 ------------------------------------------------------------------------------
 */
 
-void randinit(randctx *ctx, word flag);
+void randinit(randctx *ctx, bool flag);
 void isaac(randctx *ctx);
 
 /*

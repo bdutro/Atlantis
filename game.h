@@ -110,6 +110,7 @@ public:
     // Get a unit by its number.
     //
     Unit::WeakHandle GetUnit(int num);
+    Unit::WeakHandle GetUnit(size_t num);
 
     // Handle special gm unit modification functions
     Unit::WeakHandle ParseGMUnit(AString *tag, const Faction::Handle& pFac);
@@ -160,14 +161,14 @@ private:
     void CreateWMons();
     void CreateLMons();
     void CreateVMons();
-    Unit *MakeManUnit(Faction*, int, int, int, int, int, int);
+    Unit::Handle MakeManUnit(const Faction::Handle&, int, size_t, int, int, int, int);
 
     //
     // Game-specific creation functions (see world.cpp).
     //
     void CreateWorld();
     void CreateNPCFactions();
-    void CreateCityMon(ARegion *pReg, int percent, int needmage);
+    void CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needmage);
     int MakeWMon(ARegion *pReg);
     void MakeLMon(Object *pObj);
 
@@ -287,9 +288,9 @@ private:
     std::list<Battle::Handle> battles;
     ARegionList regions;
     size_t factionseq;
-    unsigned int unitseq;
+    size_t unitseq;
     std::vector<Unit::Handle> ppUnits;
-    unsigned int maxppunits;
+    size_t maxppunits;
     int shipseq;
     int year;
     int month;
@@ -302,7 +303,7 @@ private:
     };
     int gameStatus;
 
-    int guardfaction;
+    size_t guardfaction;
     size_t monfaction;
     int doExtraInit;
     
@@ -315,7 +316,7 @@ private:
     int ParseDir(AString *token);
 
 
-    void ParseOrders(int faction, Aorders *ordersFile, OrdersCheck *pCheck);
+    void ParseOrders(size_t faction, Aorders *ordersFile, OrdersCheck *pCheck);
     void ProcessOrder(int orderNum, const Unit::Handle& unit, AString *order,
                        OrdersCheck *pCheck);
     void ProcessMoveOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
@@ -413,6 +414,7 @@ private:
     // The first 4 are game specific and can be found in extra.cpp. They
     // may return -1 to indicate no limit.
     //
+    static int getAllowedPoints(int p, const std::vector<int>& allowed);
     int AllowedMages(const Faction& pFac);
     int AllowedApprentices(const Faction& pFact);
     int AllowedQuarterMasters(const Faction& pFact);
@@ -532,11 +534,11 @@ private:
     void RunStealOrders();
     void RunTransportOrders();
     void CheckTransportOrders();
-    AList *CanSeeSteal(ARegion *, Unit *);
-    void Do1Steal(ARegion *, Object *, Unit *);
-    void Do1Assassinate(ARegion *, Object *, Unit *);
-    void AdjustCityMons(ARegion *pReg);
-    void AdjustCityMon(ARegion *pReg, Unit *u);
+    std::list<Faction::WeakHandle> CanSeeSteal(const ARegion::Handle&, const Unit::Handle&);
+    void Do1Steal(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
+    void Do1Assassinate(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
+    void AdjustCityMons(const ARegion::Handle& pReg);
+    void AdjustCityMon(const ARegion::Handle& pReg, const Unit::Handle& u);
 
     //
     // Month long orders

@@ -271,16 +271,13 @@ void Game::RunStealOrders()
     }
 }
 
-AList *Game::CanSeeSteal(ARegion *r, Unit *u)
+std::list<Faction::WeakHandle> Game::CanSeeSteal(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    AList *retval = new AList;
-    forlist(&factions) {
-        Faction *f = (Faction *) elem;
+    std::list<Faction::WeakHandle> retval;
+    for(const auto& f: factions) {
         if (r->Present(f)) {
             if (f->CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) {
-                FactionPtr *p = new FactionPtr;
-                p->ptr = f;
-                retval->Add(p);
+                retval.push_back(f);
             }
         }
     }

@@ -2525,7 +2525,7 @@ void ARegion::MakeStartingCity()
     
     if (town) delete town;
     
-    AddTown(TOWN_CITY);
+    AddTown(TownTypeEnum::TOWN_CITY);
 
     if (!Globals->START_CITIES_EXIST) return;
 

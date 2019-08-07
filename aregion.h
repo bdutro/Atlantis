@@ -109,7 +109,7 @@ class Location
         using WeakHandle = std::weak_ptr<Location>;
 
         std::weak_ptr<Unit> unit;
-        Object::WeakHandle obj;
+        std::weak_ptr<Object> obj;
         std::weak_ptr<ARegion> region;
 };
 
@@ -134,7 +134,7 @@ class Farsight
 
 Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>&, const Faction&);
 
-enum {
+enum class TownTypeEnum {
     TOWN_VILLAGE = 0,
     TOWN_TOWN = 1,
     TOWN_CITY = 2,
@@ -149,7 +149,7 @@ class TownInfo
 
         void Readin(Ainfile *, ATL_VER &);
         void Writeout(Aoutfile *);
-        int TownType();
+        TownTypeEnum TownType();
 
         AString *name;
         int pop;
@@ -211,8 +211,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int GetObservation(const Faction&, bool);
         int GetTrueSight(const Faction&, bool);
 
-        Object::WeakHandle GetObject(int);
-        Object::WeakHandle GetDummy();
+        std::weak_ptr<Object> GetObject(int);
+        std::weak_ptr<Object> GetDummy();
         void CheckFleets();
 
         int MoveCost(int, ARegion *, Directions, AString *road);
@@ -221,7 +221,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         bool CanTax(const std::shared_ptr<Unit>&);
         bool CanPillage(const std::shared_ptr<Unit>&);
         void Pillage();
-        bool ForbiddenShip(const Object::Handle&);
+        bool ForbiddenShip(const std::shared_ptr<Object>&);
         bool HasCityGuard();
         bool NotifySpell(const std::shared_ptr<Unit>&, char const *, const ARegionList& pRegs);
         void NotifyCity(const std::shared_ptr<Unit>&, AString& oldname, AString& newname);
@@ -247,8 +247,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int GetRoadDirection(Directions realDirection);
         Directions GetRealDirComp(Directions realDirection);
         void DoDecayCheck(const ARegionList& pRegs);
-        void DoDecayClicks(const Object::Handle& o, const ARegionList& pRegs);
-        void RunDecayEvent(const Object::Handle& o, const ARegionList& pRegs);
+        void DoDecayClicks(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
+        void RunDecayEvent(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
         AString GetDecayFlavor();
         int GetMaxClicks();
         int PillageCheck();
@@ -263,8 +263,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void FindMigrationDestination(int round);
         int MigrationAttractiveness(int, int, int);
         void Migrate();
-        void SetTownType(int);
-        int DetermineTownSize();
+        void SetTownType(TownTypeEnum);
+        TownTypeEnum DetermineTownSize();
         int TraceConnectedRoad(Directions, int, std::list<std::weak_ptr<ARegion>>&, int, int);
         int RoadDevelopmentBonus(int, int);
         int BaseDev();
@@ -279,7 +279,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int Winds();
         int TerrainFactor(int, int);
         int TerrainProbability(int);
-        void AddFleet(const Object::Handle&);
+        void AddFleet(const std::shared_ptr<Object>&);
         int ResolveFleetAlias(int);
 
         int CountWMons();
@@ -330,7 +330,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int earthlore;
 
         std::array<ARegion::WeakHandle, static_cast<size_t>(Directions::NDIRS)> neighbors;
-        std::list<Object::Handle> objects;
+        std::list<std::shared_ptr<Object>> objects;
         std::map<int,int> newfleets;
         int fleetalias;
         std::list<std::shared_ptr<Unit>> hell; /* Where dead units go */
@@ -359,10 +359,10 @@ class ARegion : std::enable_shared_from_this<ARegion>
         unsigned int GetNearestProd(int);
         void SetupCityMarket();
         void AddTown();
-        void AddTown(int);
+        void AddTown(TownTypeEnum);
         void AddTown(AString *);
-        void AddTown(int, AString *);
-        Object::Handle& AddObject();
+        void AddTown(TownTypeEnum, AString *);
+        std::shared_ptr<Object>& AddObject();
         void MakeLair(int);
         void LairCheck();
 

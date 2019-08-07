@@ -90,7 +90,7 @@ void isaac(randctx *ctx)
 }
 
 /* if (flag==TRUE), then use the contents of randrsl[] to initialize mm[]. */
-void randinit(randctx *ctx, word flag)
+void randinit(randctx *ctx, bool flag)
 {
     word i;
     ub4 a,b,c,d,e,f,g,h;

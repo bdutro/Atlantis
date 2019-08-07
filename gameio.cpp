@@ -31,17 +31,19 @@
 #include <stdio.h>
 #include <time.h>
 
-static randctx isaac_ctx;
+randctx isaac_ctx;
 
 #define ENDLINE '\n'
 char buf[256];
 
+void cleartoendl();
+
 void cleartoendl()
 {
     char ch = ' ';
-    while (!(cin.eof()) && (ch != ENDLINE))
+    while (!(std::cin.eof()) && (ch != ENDLINE))
     {
-        ch = static_cast<char>(cin.get());
+        ch = static_cast<char>(std::cin.get());
     }
 }
 
@@ -57,12 +59,12 @@ void doneIO()
 void seedrandom(int num)
 {
     ub4 i;
-    isaac_ctx.randa = isaac_ctx.randb = isaac_ctx.randc = (ub4)0;
+    isaac_ctx.randa = isaac_ctx.randb = isaac_ctx.randc = static_cast<ub4>(0);
     for (i=0; i<256; ++i)
     {
-        isaac_ctx.randrsl[i]=(ub4)num+i;
+        isaac_ctx.randrsl[i]=static_cast<ub4>(num)+i;
     }
-    randinit( &isaac_ctx, TRUE );
+    randinit(&isaac_ctx, true);
 }
 
 void seedrandomrandom()
@@ -73,43 +75,43 @@ void seedrandomrandom()
 int Agetint()
 {
     int x;
-    cin >> x;
+    std::cin >> x;
     cleartoendl();
     return x;
 }
 
 void Awrite(const AString & s)
 {
-    cout << s << ENDLINE;
+    std::cout << s << std::endl;
 }
 
 void Adot()
 {
-    cout << ".";
+    std::cout << ".";
 }
 
 void message(char * c)
 {
-    cout << c << ENDLINE;
+    std::cout << c << std::endl;
     morewait();
 }
 
 void morewait()
 {
-    cout << ENDLINE;
-    cin.getline(buf,256,ENDLINE);
-    cout << ENDLINE;
+    std::cout << std::endl;
+    std::cin.getline(buf, 256, '\n');
+    std::cout << std::endl;
 }
 
 
 AString * getfilename(const AString & s)
 {
-    cout << s;
+    std::cout << s;
     return( AGetString() );
 }
 
 AString *AGetString()
 {
-    cin.getline( buf, 256, ENDLINE );
+    std::cin.getline( buf, 256, '\n' );
     return( new AString( buf ));
 }

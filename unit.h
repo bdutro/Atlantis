@@ -108,11 +108,11 @@ class Unit
         using WeakHandle = std::weak_ptr<Unit>;
 
         Unit();
-        Unit(int,Faction *,int = 0);
+        Unit(int, const std::shared_ptr<Faction>&, int = 0);
         ~Unit();
 
         void SetMonFlags();
-        void MakeWMon(char const *,int,int);
+        void MakeWMon(char const *,int,size_t);
 
         void Writeout( Aoutfile *f );
         void Readin( Ainfile *f, AList *, ATL_VER v );
@@ -143,6 +143,7 @@ class Unit
         size_t GetMen(int);
         void SetMen(int, size_t);
         int GetMoney();
+        void SetMoney(size_t);
         void SetMoney(int);
         int GetSharedNum(int);
         void ConsumeShared(int,int);

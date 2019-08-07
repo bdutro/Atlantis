@@ -281,7 +281,7 @@ void Game::MakeLMon(Object *pObj)
     u->MoveUnit(pObj);
 }
 
-Unit *Game::MakeManUnit(Faction *fac, int mantype, int num, int level, int weaponlevel, int armor, int behind)
+Unit *Game::MakeManUnit(Faction *fac, int mantype, size_t num, int level, int weaponlevel, int armor, int behind)
 {
     Unit *u = GetNewUnit(fac);
     ManType *men = FindRace(ItemDefs[mantype].abr);
