@@ -58,6 +58,11 @@ class ValidValue
             }
             return val_;
         }
+
+        bool equals(const ValidValue& rhs) const
+        {
+            return (valid_ == rhs.valid_) && (val_ == rhs.val_);
+        }
 };
 
 #endif

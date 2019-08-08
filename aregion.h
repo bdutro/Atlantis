@@ -49,6 +49,7 @@ class ARegionArray;
 #include "production.h"
 #include "market.h"
 #include "object.h"
+#include "regiontype.h"
 #include "validvalue.h"
 
 /* Weather Types */
@@ -72,7 +73,7 @@ class TerrainType
         char const *name;
         char const *type;
         char marker;
-        int similar_type;
+        Regions similar_type;
 
         enum {
             RIDINGMOUNTS = 0x1,
@@ -90,17 +91,17 @@ class TerrainType
         // A hex near water will have either one of the normal races or one
         // of the coastal races in it.   Non-coastal hexes will only have one
         // of the normal races.
-        std::array<int, 4> races;
-        std::array<int, 3> coastal_races;
+        std::array<Items, 4> races;
+        std::array<Items, 3> coastal_races;
         int wmonfreq;
         int smallmon;
         int bigmon;
         int humanoid;
         int lairChance;
-        std::array<int, 6> lairs;
+        std::array<Objects, 6> lairs;
 };
 
-extern TerrainType *TerrainDefs;
+extern const std::vector<TerrainType> TerrainDefs;
 
 class Location
 {
@@ -180,8 +181,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Writeout(Aoutfile *);
         void Readin(Ainfile *, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
 
-        bool CanMakeAdv(const Faction&, int);
-        bool HasItem(const Faction&, int);
+        bool CanMakeAdv(const Faction&, const Items&);
+        bool HasItem(const Faction&, const Items&);
         void WriteProducts(Areport *, const Faction&, bool);
         void WriteMarkets(Areport *, const Faction&, bool);
         void WriteEconomy(Areport *, const Faction&, bool);
@@ -244,7 +245,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         bool HasExitRoad(Directions realDirection);
         int CountConnectingRoads();
         bool HasConnectingRoad(Directions realDirection);
-        int GetRoadDirection(Directions realDirection);
+        Objects GetRoadDirection(Directions realDirection);
         Directions GetRealDirComp(Directions realDirection);
         void DoDecayCheck(const ARegionList& pRegs);
         void DoDecayClicks(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
@@ -258,7 +259,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void SetGateStatus(int month);
         void DisbandInRegion(int, int);
         void Recruit(int);
-        bool IsNativeRace(int);
+        bool IsNativeRace(const Items&);
         void AdjustPop(int);
         void FindMigrationDestination(int round);
         int MigrationAttractiveness(int, int, int);
@@ -293,7 +294,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         AString *name;
         size_t num;
-        int type;
+        Regions type;
         int buildingseq;
         int weather;
         int gate;
@@ -301,7 +302,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int gateopen;
 
         TownInfo *town;
-        int race;
+        Items race;
         int population;
         int basepopulation;
         int wages;
@@ -356,14 +357,14 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void SetupProds();
         void SetIncome();
         void Grow();
-        unsigned int GetNearestProd(int);
+        unsigned int GetNearestProd(const Items&);
         void SetupCityMarket();
         void AddTown();
         void AddTown(TownTypeEnum);
         void AddTown(AString *);
         void AddTown(TownTypeEnum, AString *);
         std::shared_ptr<Object>& AddObject();
-        void MakeLair(int);
+        void MakeLair(const Objects&);
         void LairCheck();
 
 };
@@ -525,7 +526,7 @@ class ARegionList
         void SetupIcosahedralNeighbors(const ARegionArray::Handle& pRegs);
         void IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionArray::Handle& ar);
 
-        void SetRegTypes(const ARegionArray::Handle& pRegs, int newType);
+        void SetRegTypes(const ARegionArray::Handle& pRegs, const Regions& newType);
         void MakeLand(const ARegionArray::Handle& pRegs, unsigned int percentOcean, unsigned int continentSize);
         void MakeCentralLand(const ARegionArray::Handle& pRegs);
 
@@ -544,7 +545,7 @@ class ARegionList
         //
         // Game-specific world stuff (see world.cpp)
         //
-        int GetRegType(const ARegion::Handle& pReg);
+        Regions GetRegType(const ARegion::Handle& pReg);
         int CheckRegionExit(const ARegion::Handle& pFrom, const ARegion::Handle& pTo);
         std::list<ARegion::Handle> regions_;
 };
@@ -555,7 +556,7 @@ T absdiff(const T& a, const T& b)
     return (a > b) ? (a - b) : (b - a);
 }
 
-int LookupRegionType(AString *);
-int ParseTerrain(AString *);
+Regions LookupRegionType(AString *);
+Regions ParseTerrain(AString *);
 
 #endif

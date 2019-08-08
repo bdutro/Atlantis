@@ -145,19 +145,19 @@ void ARegion::SetName(char const *c)
 }
 
 
-bool ARegion::IsNativeRace(int item)
+bool ARegion::IsNativeRace(const Items& item)
 {
-    TerrainType *typer = &(TerrainDefs[type]);
+    const auto& typer = TerrainDefs[type];
     if (IsCoastal()) {
-        for (const auto& r: typer->coastal_races) {
-            if (item == r)
+        for (const auto& r: typer.coastal_races) {
+            if (item.equals(r))
             {
                 return true;
             }
         }
     }
-    for (const auto& r: typer->races) {
-        if (item == r)
+    for (const auto& r: typer.races) {
+        if (item.equals(r))
         {
             return true;
         }
@@ -165,7 +165,7 @@ bool ARegion::IsNativeRace(int item)
     return false;
 }
 
-unsigned int ARegion::GetNearestProd(int item)
+unsigned int ARegion::GetNearestProd(const Items& item)
 {
     //AList regs, regs2;
     //AList *rptr = &regs;
@@ -215,17 +215,17 @@ void ARegion::LairCheck()
     if (town) return;
 
 
-    TerrainType *tt = &TerrainDefs[type];
+    const auto& tt = TerrainDefs[type];
 
-    if (!tt->lairChance) return;
+    if (!tt.lairChance) return;
 
     int check = getrandom(100);
-    if (check >= tt->lairChance) return;
+    if (check >= tt.lairChance) return;
 
     int count = 0;
-    for(const auto& l: tt->lairs)
+    for(const auto& l: tt.lairs)
     {
-        if (l != -1) {
+        if (l.isValid()) {
             if (!(ObjectDefs[l].flags & ObjectType::DISABLED)) {
                 count++;
             }
@@ -233,10 +233,10 @@ void ARegion::LairCheck()
     }
     count = getrandom(count);
 
-    int lair = -1;
-    for(const auto& l: tt->lairs)
+    Objects lair;
+    for(const auto& l: tt.lairs)
     {
-        if (l != -1) {
+        if (l.isValid()) {
             if (!(ObjectDefs[l].flags & ObjectType::DISABLED)) {
                 if (!count) {
                     lair = l;
@@ -247,7 +247,7 @@ void ARegion::LairCheck()
         }
     }
 
-    if (lair != -1) {
+    if (lair.isValid()) {
         MakeLair(lair);
         return;
     }
@@ -258,7 +258,7 @@ Object::Handle& ARegion::AddObject()
     return objects.emplace_back(std::make_shared<Object>(weak_from_this()));
 }
 
-void ARegion::MakeLair(int t)
+void ARegion::MakeLair(const Objects& t)
 {
     Object::Handle& o = AddObject();
     o->num = buildingseq++;
@@ -414,86 +414,86 @@ AString ARegion::GetDecayFlavor()
     int badWeather = 0;
     if (weather != W_NORMAL && !clearskies) badWeather = 1;
     if (!Globals->WEATHER_EXISTS) badWeather = 0;
-    switch (type) {
-        case R_PLAIN:
-        case R_ISLAND_PLAIN:
-        case R_CERAN_PLAIN1:
-        case R_CERAN_PLAIN2:
-        case R_CERAN_PLAIN3:
-        case R_CERAN_LAKE:
+    switch (type.asEnum()) {
+        case Regions::Types::R_PLAIN:
+        case Regions::Types::R_ISLAND_PLAIN:
+        case Regions::Types::R_CERAN_PLAIN1:
+        case Regions::Types::R_CERAN_PLAIN2:
+        case Regions::Types::R_CERAN_PLAIN3:
+        case Regions::Types::R_CERAN_LAKE:
             flavor = AString("Floods have damaged ");
             break;
-        case R_DESERT:
-        case R_CERAN_DESERT1:
-        case R_CERAN_DESERT2:
-        case R_CERAN_DESERT3:
+        case Regions::Types::R_DESERT:
+        case Regions::Types::R_CERAN_DESERT1:
+        case Regions::Types::R_CERAN_DESERT2:
+        case Regions::Types::R_CERAN_DESERT3:
             flavor = AString("Flashfloods have damaged ");
             break;
-        case R_CERAN_WASTELAND:
-        case R_CERAN_WASTELAND1:
+        case Regions::Types::R_CERAN_WASTELAND:
+        case Regions::Types::R_CERAN_WASTELAND1:
             flavor = AString("Magical radiation has damaged ");
             break;
-        case R_TUNDRA:
-        case R_CERAN_TUNDRA1:
-        case R_CERAN_TUNDRA2:
-        case R_CERAN_TUNDRA3:
+        case Regions::Types::R_TUNDRA:
+        case Regions::Types::R_CERAN_TUNDRA1:
+        case Regions::Types::R_CERAN_TUNDRA2:
+        case Regions::Types::R_CERAN_TUNDRA3:
             if (badWeather) {
                 flavor = AString("Ground freezing has damaged ");
             } else {
                 flavor = AString("Ground thaw has damaged ");
             }
             break;
-        case R_MOUNTAIN:
-        case R_ISLAND_MOUNTAIN:
-        case R_CERAN_MOUNTAIN1:
-        case R_CERAN_MOUNTAIN2:
-        case R_CERAN_MOUNTAIN3:
+        case Regions::Types::R_MOUNTAIN:
+        case Regions::Types::R_ISLAND_MOUNTAIN:
+        case Regions::Types::R_CERAN_MOUNTAIN1:
+        case Regions::Types::R_CERAN_MOUNTAIN2:
+        case Regions::Types::R_CERAN_MOUNTAIN3:
             if (badWeather) {
                 flavor = AString("Avalanches have damaged ");
             } else {
                 flavor = AString("Rockslides have damaged ");
             }
             break;
-        case R_CERAN_HILL:
-        case R_CERAN_HILL1:
-        case R_CERAN_HILL2:
+        case Regions::Types::R_CERAN_HILL:
+        case Regions::Types::R_CERAN_HILL1:
+        case Regions::Types::R_CERAN_HILL2:
             flavor = AString("Quakes have damaged ");
             break;
-        case R_FOREST:
-        case R_SWAMP:
-        case R_ISLAND_SWAMP:
-        case R_JUNGLE:
-        case R_CERAN_FOREST1:
-        case R_CERAN_FOREST2:
-        case R_CERAN_FOREST3:
-        case R_CERAN_MYSTFOREST:
-        case R_CERAN_MYSTFOREST1:
-        case R_CERAN_MYSTFOREST2:
-        case R_CERAN_SWAMP1:
-        case R_CERAN_SWAMP2:
-        case R_CERAN_SWAMP3:
-        case R_CERAN_JUNGLE1:
-        case R_CERAN_JUNGLE2:
-        case R_CERAN_JUNGLE3:
+        case Regions::Types::R_FOREST:
+        case Regions::Types::R_SWAMP:
+        case Regions::Types::R_ISLAND_SWAMP:
+        case Regions::Types::R_JUNGLE:
+        case Regions::Types::R_CERAN_FOREST1:
+        case Regions::Types::R_CERAN_FOREST2:
+        case Regions::Types::R_CERAN_FOREST3:
+        case Regions::Types::R_CERAN_MYSTFOREST:
+        case Regions::Types::R_CERAN_MYSTFOREST1:
+        case Regions::Types::R_CERAN_MYSTFOREST2:
+        case Regions::Types::R_CERAN_SWAMP1:
+        case Regions::Types::R_CERAN_SWAMP2:
+        case Regions::Types::R_CERAN_SWAMP3:
+        case Regions::Types::R_CERAN_JUNGLE1:
+        case Regions::Types::R_CERAN_JUNGLE2:
+        case Regions::Types::R_CERAN_JUNGLE3:
             flavor = AString("Encroaching vegetation has damaged ");
             break;
-        case R_CAVERN:
-        case R_UFOREST:
-        case R_TUNNELS:
-        case R_CERAN_CAVERN1:
-        case R_CERAN_CAVERN2:
-        case R_CERAN_CAVERN3:
-        case R_CERAN_UFOREST1:
-        case R_CERAN_UFOREST2:
-        case R_CERAN_UFOREST3:
-        case R_CERAN_TUNNELS1:
-        case R_CERAN_TUNNELS2:
-        case R_CHASM:
-        case R_CERAN_CHASM1:
-        case R_GROTTO:
-        case R_CERAN_GROTTO1:
-        case R_DFOREST:
-        case R_CERAN_DFOREST1:
+        case Regions::Types::R_CAVERN:
+        case Regions::Types::R_UFOREST:
+        case Regions::Types::R_TUNNELS:
+        case Regions::Types::R_CERAN_CAVERN1:
+        case Regions::Types::R_CERAN_CAVERN2:
+        case Regions::Types::R_CERAN_CAVERN3:
+        case Regions::Types::R_CERAN_UFOREST1:
+        case Regions::Types::R_CERAN_UFOREST2:
+        case Regions::Types::R_CERAN_UFOREST3:
+        case Regions::Types::R_CERAN_TUNNELS1:
+        case Regions::Types::R_CERAN_TUNNELS2:
+        case Regions::Types::R_CHASM:
+        case Regions::Types::R_CERAN_CHASM1:
+        case Regions::Types::R_GROTTO:
+        case Regions::Types::R_CERAN_GROTTO1:
+        case Regions::Types::R_DFOREST:
+        case Regions::Types::R_CERAN_DFOREST1:
             if (badWeather) {
                 flavor = AString("Lava flows have damaged ");
             } else {
@@ -517,75 +517,75 @@ int ARegion::GetMaxClicks()
     int maxClicks;
     if (weather != W_NORMAL && !clearskies) badWeather = 1;
     if (!Globals->WEATHER_EXISTS) badWeather = 0;
-    switch (type) {
-        case R_PLAIN:
-        case R_ISLAND_PLAIN:
-        case R_TUNDRA:
-        case R_CERAN_PLAIN1:
-        case R_CERAN_PLAIN2:
-        case R_CERAN_PLAIN3:
-        case R_CERAN_LAKE:
-        case R_CERAN_TUNDRA1:
-        case R_CERAN_TUNDRA2:
-        case R_CERAN_TUNDRA3:
+    switch (type.asEnum()) {
+        case Regions::Types::R_PLAIN:
+        case Regions::Types::R_ISLAND_PLAIN:
+        case Regions::Types::R_TUNDRA:
+        case Regions::Types::R_CERAN_PLAIN1:
+        case Regions::Types::R_CERAN_PLAIN2:
+        case Regions::Types::R_CERAN_PLAIN3:
+        case Regions::Types::R_CERAN_LAKE:
+        case Regions::Types::R_CERAN_TUNDRA1:
+        case Regions::Types::R_CERAN_TUNDRA2:
+        case Regions::Types::R_CERAN_TUNDRA3:
             terrainAdd = -1;
             if (badWeather) weatherAdd = 4;
             break;
-        case R_MOUNTAIN:
-        case R_ISLAND_MOUNTAIN:
-        case R_CERAN_MOUNTAIN1:
-        case R_CERAN_MOUNTAIN2:
-        case R_CERAN_MOUNTAIN3:
-        case R_CERAN_HILL:
-        case R_CERAN_HILL1:
-        case R_CERAN_HILL2:
+        case Regions::Types::R_MOUNTAIN:
+        case Regions::Types::R_ISLAND_MOUNTAIN:
+        case Regions::Types::R_CERAN_MOUNTAIN1:
+        case Regions::Types::R_CERAN_MOUNTAIN2:
+        case Regions::Types::R_CERAN_MOUNTAIN3:
+        case Regions::Types::R_CERAN_HILL:
+        case Regions::Types::R_CERAN_HILL1:
+        case Regions::Types::R_CERAN_HILL2:
             terrainMult = 2;
             if (badWeather) weatherAdd = 4;
             break;
-        case R_FOREST:
-        case R_SWAMP:
-        case R_ISLAND_SWAMP:
-        case R_JUNGLE:
-        case R_CERAN_FOREST1:
-        case R_CERAN_FOREST2:
-        case R_CERAN_FOREST3:
-        case R_CERAN_MYSTFOREST:
-        case R_CERAN_MYSTFOREST1:
-        case R_CERAN_MYSTFOREST2:
-        case R_CERAN_SWAMP1:
-        case R_CERAN_SWAMP2:
-        case R_CERAN_SWAMP3:
-        case R_CERAN_JUNGLE1:
-        case R_CERAN_JUNGLE2:
-        case R_CERAN_JUNGLE3:
+        case Regions::Types::R_FOREST:
+        case Regions::Types::R_SWAMP:
+        case Regions::Types::R_ISLAND_SWAMP:
+        case Regions::Types::R_JUNGLE:
+        case Regions::Types::R_CERAN_FOREST1:
+        case Regions::Types::R_CERAN_FOREST2:
+        case Regions::Types::R_CERAN_FOREST3:
+        case Regions::Types::R_CERAN_MYSTFOREST:
+        case Regions::Types::R_CERAN_MYSTFOREST1:
+        case Regions::Types::R_CERAN_MYSTFOREST2:
+        case Regions::Types::R_CERAN_SWAMP1:
+        case Regions::Types::R_CERAN_SWAMP2:
+        case Regions::Types::R_CERAN_SWAMP3:
+        case Regions::Types::R_CERAN_JUNGLE1:
+        case Regions::Types::R_CERAN_JUNGLE2:
+        case Regions::Types::R_CERAN_JUNGLE3:
             terrainAdd = -1;
             terrainMult = 2;
             if (badWeather) weatherAdd = 1;
             break;
-        case R_DESERT:
-        case R_CERAN_DESERT1:
-        case R_CERAN_DESERT2:
-        case R_CERAN_DESERT3:
+        case Regions::Types::R_DESERT:
+        case Regions::Types::R_CERAN_DESERT1:
+        case Regions::Types::R_CERAN_DESERT2:
+        case Regions::Types::R_CERAN_DESERT3:
             terrainAdd = -1;
             if (badWeather) weatherAdd = 5;
             break;
-        case R_CAVERN:
-        case R_UFOREST:
-        case R_TUNNELS:
-        case R_CERAN_CAVERN1:
-        case R_CERAN_CAVERN2:
-        case R_CERAN_CAVERN3:
-        case R_CERAN_UFOREST1:
-        case R_CERAN_UFOREST2:
-        case R_CERAN_UFOREST3:
-        case R_CERAN_TUNNELS1:
-        case R_CERAN_TUNNELS2:
-        case R_CHASM:
-        case R_CERAN_CHASM1:
-        case R_GROTTO:
-        case R_CERAN_GROTTO1:
-        case R_DFOREST:
-        case R_CERAN_DFOREST1:
+        case Regions::Types::R_CAVERN:
+        case Regions::Types::R_UFOREST:
+        case Regions::Types::R_TUNNELS:
+        case Regions::Types::R_CERAN_CAVERN1:
+        case Regions::Types::R_CERAN_CAVERN2:
+        case Regions::Types::R_CERAN_CAVERN3:
+        case Regions::Types::R_CERAN_UFOREST1:
+        case Regions::Types::R_CERAN_UFOREST2:
+        case Regions::Types::R_CERAN_UFOREST3:
+        case Regions::Types::R_CERAN_TUNNELS1:
+        case Regions::Types::R_CERAN_TUNNELS2:
+        case Regions::Types::R_CHASM:
+        case Regions::Types::R_CERAN_CHASM1:
+        case Regions::Types::R_GROTTO:
+        case Regions::Types::R_CERAN_GROTTO1:
+        case Regions::Types::R_DFOREST:
+        case Regions::Types::R_CERAN_DFOREST1:
             terrainAdd = 1;
             terrainMult = 2;
             if (badWeather) weatherAdd = 6;
@@ -622,7 +622,10 @@ bool ARegion::HasExitRoad(Directions realDirection)
     for(const auto& o: objects)
     {
         if (o->IsRoad() && o->incomplete < 1) {
-            if (o->type == GetRoadDirection(realDirection)) return true;
+            if (o->type.equals(GetRoadDirection(realDirection)))
+            {
+                return true;
+            }
         }
     }
     return false;
@@ -654,27 +657,27 @@ bool ARegion::HasConnectingRoad(Directions realDirection)
 }
 
 // AS
-int ARegion::GetRoadDirection(Directions realDirection)
+Objects ARegion::GetRoadDirection(Directions realDirection)
 {
-    int roadDirection = 0;
+    Objects roadDirection;
     switch (realDirection) {
         case Directions::D_NORTH:
-            roadDirection = O_ROADN;
+            roadDirection = Objects::Types::O_ROADN;
             break;
         case Directions::D_NORTHEAST:
-            roadDirection = O_ROADNE;
+            roadDirection = Objects::Types::O_ROADNE;
             break;
         case Directions::D_NORTHWEST:
-            roadDirection = O_ROADNW;
+            roadDirection = Objects::Types::O_ROADNW;
             break;
         case Directions::D_SOUTH:
-            roadDirection = O_ROADS;
+            roadDirection = Objects::Types::O_ROADS;
             break;
         case Directions::D_SOUTHEAST:
-            roadDirection = O_ROADSE;
+            roadDirection = Objects::Types::O_ROADSE;
             break;
         case Directions::D_SOUTHWEST:
-            roadDirection = O_ROADSW;
+            roadDirection = Objects::Types::O_ROADSW;
             break;
         default:
             throw std::runtime_error("Invalid direction specified");
@@ -783,7 +786,7 @@ void ARegion::SetLoc(unsigned int x, unsigned int y, unsigned int z)
 
 void ARegion::SetGateStatus(int month)
 {
-    if ((type == R_NEXUS) || (Globals->START_GATES_OPEN && IsStartingCity())) {
+    if ((type == Regions::Types::R_NEXUS) || (Globals->START_GATES_OPEN && IsStartingCity())) {
         gateopen = 1;
         return;
     }
@@ -815,7 +818,7 @@ void ARegion::Kill(const Unit::Handle& u)
     if (first) {
         // give u's stuff to first
         for(const auto& i: u->items) {
-            if (ItemDefs[i->type].type & IT_SHIP &&
+            if (ItemDefs[static_cast<size_t>(i->type)].type & IT_SHIP &&
                     first->items.GetNum(i->type) > 0) {
                 if (first->items.GetNum(i->type) > i->num)
                     first->items.SetNum(i->type, i->num);
@@ -828,8 +831,8 @@ void ARegion::Kill(const Unit::Handle& u)
                 // the first unit can actually hold the stuff and not drown
                 // If the item would cause them to drown then they won't
                 // pick it up.
-                if (TerrainDefs[type].similar_type == R_OCEAN) {
-                    if (first->object.lock()->type == O_DUMMY) {
+                if (TerrainDefs[type].similar_type.equals(Regions::Types::R_OCEAN)) {
+                    if (first->object.lock()->type.equals(Objects::Types::O_DUMMY)) {
                         if (!first->CanReallySwim()) {
                             first->items.SetNum(i->type,
                                     first->items.GetNum(i->type) - i->num);
@@ -861,7 +864,7 @@ Object::WeakHandle ARegion::GetObject(int num)
 Object::WeakHandle ARegion::GetDummy()
 {
     for(const auto& o: objects) {
-        if (o->type == O_DUMMY) return o;
+        if (o->type.equals(Objects::Types::O_DUMMY)) return o;
     }
     return Object::WeakHandle();
 }
@@ -889,7 +892,7 @@ void ARegion::CheckFleets()
             }
             // don't remove fleets when no living units are
             // aboard when they're not at sea.
-            if (TerrainDefs[type].similar_type != R_OCEAN) alive = true;
+            if (TerrainDefs[type].similar_type != Regions::Types::R_OCEAN) alive = true;
             if (!alive || bail) {
                 o_it = objects.erase(o_it);
                 continue;
@@ -1043,13 +1046,28 @@ void ARegion::Writeout(Aoutfile *f)
 {
     f->PutStr(*name);
     f->PutInt(num);
-    if (type != -1) f->PutStr(TerrainDefs[type].type);
-    else f->PutStr("NO_TERRAIN");
+    if (type.isValid())
+    {
+        f->PutStr(TerrainDefs[type].type);
+    }
+    else
+    {
+        f->PutStr("NO_TERRAIN");
+    }
     f->PutInt(buildingseq);
     f->PutInt(gate);
-    if (gate > 0) f->PutInt(gatemonth);
-    if (race != -1) f->PutStr(ItemDefs[race].abr);
-    else f->PutStr("NO_RACE");
+    if (gate > 0)
+    {
+        f->PutInt(gatemonth);
+    }
+    if (race.isValid())
+    {
+        f->PutStr(ItemDefs[race].abr);
+    }
+    else
+    {
+        f->PutStr("NO_RACE");
+    }
     f->PutInt(population);
     f->PutInt(basepopulation);
     f->PutInt(wages);
@@ -1087,12 +1105,15 @@ void ARegion::Writeout(Aoutfile *f)
     }
 }
 
-int LookupRegionType(AString *token)
+Regions LookupRegionType(AString *token)
 {
-    for (int i = 0; i < R_NUM; i++) {
-        if (*token == TerrainDefs[i].type) return i;
+    for (auto i = Regions::begin(); i != Regions::end(); ++i) {
+        if (*token == TerrainDefs[*i].type)
+        {
+            return *i;
+        }
     }
-    return -1;
+    return Regions();
 }
 
 void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER v)
@@ -1158,7 +1179,7 @@ void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER
     newfleets.clear();
 }
 
-bool ARegion::CanMakeAdv(const Faction& fac, int item)
+bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
 {
     AString skname;
     int sk;
@@ -1218,7 +1239,7 @@ void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
                 }
             }
         } else {
-            if (p->itemtype == I_SILVER) {
+            if (p->itemtype == Items::Types::I_SILVER) {
                 if (p->skill == S_ENTERTAINMENT) {
                     if ((Globals->TRANSIT_REPORT &
                             GameDefs::REPORT_SHOW_ENTERTAINMENT) || present) {
@@ -1251,7 +1272,7 @@ void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
     f->PutStr(temp);
 }
 
-bool ARegion::HasItem(const Faction& fac, int item)
+bool ARegion::HasItem(const Faction& fac, const Items& item)
 {
     for(const auto& o: objects)
     {
@@ -1259,7 +1280,10 @@ bool ARegion::HasItem(const Faction& fac, int item)
         {
             if (u->faction.lock().get() == &fac)
             {
-                if (u->items.GetNum(item)) return true;
+                if (u->items.GetNum(item))
+                {
+                    return true;
+                }
             }
         }
     }
@@ -1422,7 +1446,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
         f->PutStr(temp + temperature);
 #endif
 
-        if (type == R_NEXUS) {
+        if (type == Regions::Types::R_NEXUS) {
             size_t len = strlen(AC_STRING) + 2*strlen(Globals->WORLD_NAME);
             char *nexus_desc = new char[len];
             sprintf(nexus_desc, AC_STRING, Globals->WORLD_NAME,
@@ -1765,18 +1789,18 @@ void ARegion::SetWeather(int newWeather)
 
 unsigned int ARegion::IsCoastal()
 {
-    if (type == R_LAKE) {
+    if (type == Regions::Types::R_LAKE) {
         if (Globals->LAKESIDE_IS_COASTAL)
             return 1;
-    } else if (TerrainDefs[type].similar_type == R_OCEAN)
+    } else if (TerrainDefs[type].similar_type == Regions::Types::R_OCEAN)
         return 1;
     unsigned int seacount = 0;
     for (const auto& n: neighbors) {
         if (!n.expired())
         {
-            int n_type = n.lock()->type;
-            if(TerrainDefs[n_type].similar_type == R_OCEAN) {
-                if (!Globals->LAKESIDE_IS_COASTAL && n_type == R_LAKE) continue;
+            const auto& n_type = n.lock()->type;
+            if(TerrainDefs[n_type].similar_type.equals(Regions::Types::R_OCEAN)) {
+                if (!Globals->LAKESIDE_IS_COASTAL && n_type.equals(Regions::Types::R_LAKE)) continue;
                 seacount++;
             }
         }
@@ -1786,12 +1810,12 @@ unsigned int ARegion::IsCoastal()
 
 unsigned int ARegion::IsCoastalOrLakeside()
 {
-    if (TerrainDefs[type].similar_type == R_OCEAN) return true;
+    if (TerrainDefs[type].similar_type == Regions::Types::R_OCEAN) return true;
     unsigned int seacount = 0;
     for (const auto& n: neighbors) {
         if(!n.expired())
         {
-            if (TerrainDefs[n.lock()->type].similar_type == R_OCEAN) {
+            if (TerrainDefs[n.lock()->type].similar_type == Regions::Types::R_OCEAN) {
                 seacount++;
             }
         }
@@ -2374,15 +2398,20 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
 void ARegionList::CalcDensities()
 {
     Awrite("Densities:");
-    int arr[R_NUM];
-    int i;
-    for (i=0; i<R_NUM; i++)
-        arr[i] = 0;
-    for(const auto& reg: regions_) {
+    std::array<int, Regions::size()> arr = {0};
+
+    for(const auto& reg: regions_)
+    {
         arr[reg->type]++;
     }
-    for (i=0; i<R_NUM; i++)
-        if (arr[i]) Awrite(AString(TerrainDefs[i].name) + " " + arr[i]);
+
+    for (size_t i=0; i < arr.size(); ++i)
+    {
+        if (arr[i])
+        {
+            Awrite(AString(TerrainDefs[i].name) + " " + arr[i]);
+        }
+    }
 
     Awrite("");
 }
@@ -2738,16 +2767,24 @@ ARegion::WeakHandle ARegionFlatArray::GetRegion(size_t x) {
     return regions[x];
 }
 
-int ParseTerrain(AString *token)
+Regions ParseTerrain(AString *token)
 {
-    for (int i = 0; i < R_NUM; i++) {
-        if (*token == TerrainDefs[i].type) return i;
+    for (auto i = Regions::begin(); i != Regions::end(); ++i)
+    {
+        if (*token == TerrainDefs[*i].type)
+        {
+            return *i;
+        }
     }
-    
-    for (int i = 0; i < R_NUM; i++) {
-        if (*token == TerrainDefs[i].name) return i;
+
+    for (auto i = Regions::begin(); i != Regions::end(); ++i)
+    {
+        if (*token == TerrainDefs[*i].name)
+        {
+            return *i;
+        }
     }
-    
-    return (-1);
+
+    return Regions();
 }
 

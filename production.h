@@ -30,6 +30,7 @@
 #include "gamedefs.h"
 #include "alist.h"
 #include "fileio.h"
+#include "itemtype.h"
 
 #define P_BIG 40
 #define P_SMALL 20
@@ -46,7 +47,7 @@ public:
     void Readin(Ainfile *);
     AString WriteReport();
     
-    int itemtype;
+    Items itemtype;
     int baseamount;
     int amount;
     int skill;
@@ -59,7 +60,7 @@ public:
     using iterator = std::list<Production::Handle>::iterator;
     using const_iterator = std::list<Production::Handle>::const_iterator;
 
-    Production::WeakHandle GetProd(int,int); /* item type, skill */
+    Production::WeakHandle GetProd(const Items&,int); /* item type, skill */
     void AddProd(Production *);
 
     void Writeout(Aoutfile *);

@@ -65,13 +65,6 @@ extern const std::vector<int> allowedTrades;
 extern const std::vector<int> allowedQuartermasters;
 extern const std::vector<int> allowedTacticians;
 
-extern unsigned int NUMBATTLEITEMS;
-extern int NUMARMORS;
-extern int NUMWEAPONS;
-extern int NUMMOUNTS;
-extern int NUMMONSTERS;
-extern int NUMMAN;
-
 class GameDefs {
 public:
     char const *RULESET_NAME;

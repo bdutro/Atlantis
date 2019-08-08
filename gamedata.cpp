@@ -44,7 +44,7 @@
 // granted skill, granted from array, minGrant, maxGrant
 
 
-ItemType id[] =
+const std::vector<ItemType> ItemDefs =
 {
     {"leader", "leaders", "LEAD",
      ItemType::NOTRANSPORT,
@@ -2307,7 +2307,7 @@ ItemType *ItemDefs = id;
 // abbr, Favourite terrain,
 // Special level, default, 1st skill, 2nd, 3rd, 4th,
 //
-ManType mt[] = {
+const std::vector<ManType> ManDefs = {
     {NULL, R_NEXUS,
      0,0,{NULL, NULL, NULL, NULL, NULL, NULL}},
     {"PEAS", R_NEXUS,
@@ -2385,9 +2385,6 @@ ManType mt[] = {
      3,2,{"HORS", "RANC", "RIDI", NULL, NULL, NULL}},
 };
 
-ManType *ManDefs = mt;
-int NUMMAN = sizeof(mt) / sizeof(mt[0]);
-
 //
 // Table of monsters.
 //
@@ -2396,7 +2393,7 @@ int NUMMAN = sizeof(mt) / sizeof(mt[0]);
 // tactics, stealth, obs
 // special, specialLevel,
 // silver spoiltype, hostile, number, name, abbr
-MonType md[] = {
+const std::vector<MonType> MonDefs = {
     {0,{0,0,0,0,0,0},
      0,0,0,
      0,0,0,
@@ -2706,9 +2703,6 @@ MonType md[] = {
      8000,IT_MAGIC,50,1,"Ice Dragon", "IDRA"},
 };
 
-MonType *MonDefs = md;
-int NUMMONSTERS = sizeof(md) / sizeof(md[0]);
-
 //
 // Table of weapons.
 //
@@ -2718,7 +2712,7 @@ int NUMMONSTERS = sizeof(md) / sizeof(md[0]);
 //  weapClass, attackType, numAttacks
 //  attackBonus, defenseBonus, mountBonus
 //
-WeaponType wepd[] = {
+const std::vector<WeaponType> WeaponDefs = {
     // WEAPON_NONE
     {NULL,
      0,
@@ -2908,16 +2902,13 @@ WeaponType wepd[] = {
      1, 1, 0},
 };
 
-WeaponType *WeaponDefs = wepd;
-int NUMWEAPONS = sizeof(wepd) / sizeof(wepd[0]);
-
 //
 // Table of armor.
 //
 // abbr, flags, from, slashChance, pierceChance, crushChance, cleaveChance,
 // armorpiercingChance, energyChance, spiritChance, weatherChance;
 //
-ArmorType armd[] = {
+const std::vector<ArmorType> ArmorDefs = {
     // ARMOR_NONE
     { NULL, 0, 100, {0, 0, 0, 0, 0, 0, 0, 0}},
     // ARMOR_CLOAKOFI
@@ -2944,14 +2935,11 @@ ArmorType armd[] = {
     { "CLAR", ArmorType::USEINASSASSINATE, 6, {1, 1, 1, 1, 0, 0, 0, 0}},
 };
 
-ArmorType *ArmorDefs = armd;
-int NUMARMORS = sizeof(armd) / sizeof(armd[0]);
-
 //
 // Table of mounts
 // skill,minBonus,maxBonus,maxHamperedBonus
 //
-MountType mountd[] = {
+const std::vector<MountType> MountDefs = {
     // MOUNT_NONE
     { NULL, NULL, 0, 0, 0, NULL, 0},
     // MOUNT_WHORSE
@@ -2970,13 +2958,10 @@ MountType mountd[] = {
     { "CTAU", "RIDI", 1, 3, 3, NULL, 0},
 };
 
-MountType *MountDefs = mountd;
-int NUMMOUNTS = sizeof(mountd) / sizeof(mountd[0]);
-
 //
 // Table of other battle items
 //
-BattleItemType bitd[] = {
+const std::vector<BattleItemType> BattleItemDefs = {
     // BATTLE_NONE
     { NULL, 0, 0, 0 },
     // BATTLE_STAFFOFL
@@ -3014,9 +2999,6 @@ BattleItemType bitd[] = {
      "force_shield", 3 },
 };
 
-BattleItemType *BattleItemDefs = bitd;
-unsigned int NUMBATTLEITEMS = sizeof(bitd) / sizeof(bitd[0]);
-
 //
 // Table of skills.
 //
@@ -3026,7 +3008,7 @@ unsigned int NUMBATTLEITEMS = sizeof(bitd) / sizeof(bitd[0]);
 // special, rangeindex
 // skill dependancy array
 //
-static SkillType sd[] = {
+const std::vector<SkillType> SkillDefs = {
     {"mining","MINI",10,
      0,
      NULL, NULL,
@@ -3454,12 +3436,10 @@ static SkillType sd[] = {
      {{"COMB",3},{NULL,0},{NULL,0}}},
 };
 
-SkillType *SkillDefs = sd;
-
 //
 // Table of objects.
 //
-static ObjectType ot[] =
+const std::vector<ObjectType> ObjectDefs =
 {
     //
     // name,
@@ -4020,12 +4000,10 @@ static ObjectType ot[] =
      {0,0,0,0,0,0}},
 };
 
-ObjectType *ObjectDefs = ot;
-
 //
 // Table of terrain types.
 //
-static TerrainType td[] = {
+const std::vector<TerrainType> TerrainDefs = {
     //
     // name, type_name, similar_type,
     // flags,
@@ -4590,9 +4568,7 @@ static TerrainType td[] = {
      5,{O_ISLE,-1,O_OCAVE,-1,-1,-1}},
 };
 
-TerrainType *TerrainDefs = td;
-
-static HealType hd[] = {
+const std::vector<HealType> HealDefs = {
     {0, 0},
     {10, 50},
     {10, 50}, // {15, 60},
@@ -4600,9 +4576,8 @@ static HealType hd[] = {
     {25, 75}, // {60, 80},
     {100, 90}
 };
-HealType *HealDefs = hd;
 
-static SpecialType spd[] = {
+const std::vector<SpecialType> SpecialDefs = {
     // NONE
     {NULL, "an unknown attack",
      0,
@@ -4951,10 +4926,7 @@ static SpecialType spd[] = {
      "casts something that is not a spell", "annoying ", ""},
 };
 
-SpecialType *SpecialDefs = spd;
-int NUMSPECIALS = sizeof(spd) / sizeof(spd[0]);
-
-static EffectType efd[] = {
+const std::vector<EffectType> EffectDefs = {
     // EFFECT_DAZZLE
     {"dazzle", -2,
      {{-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}},
@@ -4969,12 +4941,9 @@ static EffectType efd[] = {
      NULL, 0},
 };
 
-EffectType *EffectDefs = efd;
-int NUMEFFECTS = sizeof(efd) / sizeof(efd[0]);
-
 // Range definitions
 // flags, rangeclass, rangemult, crosslevelpenalty
-static RangeType rtd[] = {
+const std::vector<RangeType> RangeDefs = {
     {"rng_teleport", 0, RangeType::RNG_LEVEL2, 2, 4},
     {"rng_portal", 0, RangeType::RNG_LEVEL2, 2, 4},
     {"rng_farsight", 0, RangeType::RNG_LEVEL2, 4, 4},
@@ -4983,10 +4952,7 @@ static RangeType rtd[] = {
     {"rng_transport", 0, RangeType::RNG_ABSOLUTE, 1, 10000000},
 };
 
-RangeType *RangeDefs = rtd;
-int NUMRANGES = sizeof(rtd) / sizeof(rtd[0]);
-
-static AttribModType atd[] = {
+const std::vector<AttribModType> AttribDefs = {
     {"tactics", AttribModType::CHECK_MONSTERS,
      {{AttribModItem::SKILL | AttribModItem::CUMULATIVE,
        "TACT", AttribModItem::UNIT_LEVEL, 1 },
@@ -5065,7 +5031,4 @@ static AttribModType atd[] = {
       {0,
        NULL, 0, 0}}},
 };
-
-AttribModType *AttribDefs = atd;
-int NUMATTRIBMODS = sizeof(atd) / sizeof(atd[0]);
 

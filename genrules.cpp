@@ -29,6 +29,8 @@
 #include "gamedata.h"
 #include "fileio.h"
 
+AString NumToWord(int n);
+
 AString NumToWord(int n)
 {
     if (n > 20) return AString(n);
@@ -58,7 +60,9 @@ AString NumToWord(int n)
     return AString("error");
 }
 
-int StudyRate(int days, int exp)
+int StudyRate(size_t days, int exp);
+
+int StudyRate(size_t days, int exp)
 {
     SkillList *sl = new SkillList;
     sl->SetDays(1,days);
@@ -76,7 +80,6 @@ int Game::GenRules(const AString &rules, const AString &css,
     Arules f;
     AString temp, temp2;
     int cap;
-    int i, j, k, l;
     int last = -1;
     AString skname;
     SkillType *pS;
@@ -98,7 +101,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     int found = 0;
     if (qm_exist) {
         /* Make there is an enabled building with transport set */
-        for (i = 0; i < NOBJECTS; i++) {
+        for (int i = 0; i < NOBJECTS; i++) {
             if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
             if (ObjectDefs[i].flags & ObjectType::TRANSPORT) {
                 found = 1;
@@ -231,7 +234,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     if (app_exist) {
         found = 0;
         /* Make sure we have a skill with the APPRENTICE flag */
-        for (i = 0; i < NSKILLS; i++) {
+        for (int i = 0; i < NSKILLS; i++) {
             if (SkillDefs[i].flags & SkillType::DISABLED) continue;
             if (SkillDefs[i].flags & SkillType::APPRENTICE) {
                 found = 1;
@@ -270,7 +273,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         temp = "#magic_";
         temp += Globals->APPRENTICE_NAME;
         temp += "s";
-        temp2 = (char) toupper(Globals->APPRENTICE_NAME[0]);
+        temp2 = static_cast<char>(toupper(Globals->APPRENTICE_NAME[0]));
         temp2 += Globals->APPRENTICE_NAME + 1;
         temp2 += "s";
         f.TagText("li", f.Link(temp, temp2));
@@ -343,7 +346,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     if (Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE)
         move_over_water = 1;
     if (!move_over_water) {
-        for (i = 0; i < NITEMS; i++) {
+        for (int i = 0; i < NITEMS; i++) {
             if (ItemDefs[i].flags & ItemType::DISABLED) continue;
             if (ItemDefs[i].swim > 0) move_over_water = 1;
         }
@@ -482,9 +485,9 @@ int Game::GenRules(const AString &rules, const AString &css,
 
     if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_MAGE_COUNT) {
         temp = "A faction has one pre-set limit; it may not contain more than ";
-        temp += AString(AllowedMages(&fac)) + " mages";
+        temp += AString(AllowedMages(fac)) + " mages";
         if (app_exist) {
-            temp += AString("and ") + AllowedApprentices(&fac)
+            temp += AString("and ") + AllowedApprentices(fac)
                 + " " + Globals->APPRENTICE_NAME + "s";
         }
         temp += ". Magic is a rare art, and only a few in the world can "
@@ -558,21 +561,21 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.PutStr(i);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"center\" nowrap");
-            temp = AllowedTaxes(&fac);
+            temp = AllowedTaxes(fac);
             if (Globals->TACTICS_NEEDS_WAR)
-                temp+= AString(" / ") + AllowedTacticians(&fac);
+                temp+= AString(" / ") + AllowedTacticians(fac);
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"center\" nowrap");
-            temp = AllowedTrades(&fac);
+            temp = AllowedTrades(fac);
             if (qm_exist)
-                temp += AString(" / ") + AllowedQuarterMasters(&fac);
+                temp += AString(" / ") + AllowedQuarterMasters(fac);
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"center\" nowrap");
-            temp = AllowedMages(&fac);
+            temp = AllowedMages(fac);
             if (app_exist)
-                temp += AString(" / ") + AllowedApprentices(&fac);
+                temp += AString(" / ") + AllowedApprentices(fac);
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(0, "tr");
@@ -585,11 +588,11 @@ int Game::GenRules(const AString &rules, const AString &css,
         fac.type[F_TRADE] = t = Globals->FACTION_POINTS/3;
         fac.type[F_MAGIC] = m = (Globals->FACTION_POINTS+2)/3;
         int nm, na, nw, nt, nq;
-        nm = AllowedMages(&fac);
-        na = AllowedApprentices(&fac);
-        nq = AllowedQuarterMasters(&fac);
-        nt = AllowedTrades(&fac);
-        nw = AllowedTaxes(&fac);
+        nm = AllowedMages(fac);
+        na = AllowedApprentices(fac);
+        nq = AllowedQuarterMasters(fac);
+        nt = AllowedTrades(fac);
+        nw = AllowedTaxes(fac);
         temp = "For example, a well rounded faction might spend ";
         temp += AString(w) + " point" + (w==1?"":"s") + " on War, ";
         temp += AString(t) + " point" + (t==1?"":"s") + " on Trade, and ";
@@ -616,11 +619,11 @@ int Game::GenRules(const AString &rules, const AString &css,
         fac.type[F_WAR] = w = Globals->FACTION_POINTS;
         fac.type[F_MAGIC] = m = 0;
         fac.type[F_TRADE] = t = 0;
-        nw = AllowedTaxes(&fac);
-        nq = AllowedQuarterMasters(&fac);
-        nt = AllowedTrades(&fac);
-        nm = AllowedMages(&fac);
-        na = AllowedApprentices(&fac);
+        nw = AllowedTaxes(fac);
+        nq = AllowedQuarterMasters(fac);
+        nt = AllowedTrades(fac);
+        nm = AllowedMages(fac);
+        na = AllowedApprentices(fac);
         temp = "As another example, a specialized faction might spend all ";
         temp += AString(w) + " point" + (w==1?"":"s") + " on War. ";
         temp += "This faction's type would appear as \"War ";
@@ -825,7 +828,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     int manidx = -1;
     int leadidx = -1;
 
-    for (i = 0; i < NITEMS; i++) {
+    for (int i = 0; i < NITEMS; i++) {
         if (!(ItemDefs[i].type & IT_MAN)) continue;
         if (ItemDefs[i].type & IT_LEADER) {
             if (leadidx == -1) leadidx = i;
@@ -856,7 +859,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     temp += " at $";
     float ratio = static_cast<float>(ItemDefs[(Globals->RACES_EXIST ? I_NOMAD : I_MAN)].baseprice) /
                   static_cast<float>(Globals->BASE_MAN_COST);
-    temp += (int)(60*ratio);
+    temp += static_cast<int>(60*ratio);
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[leadidx].baseprice) / static_cast<float>(Globals->BASE_MAN_COST);
         temp += AString(", 10 ") + ItemDefs[leadidx].names + " [" +
@@ -1257,15 +1260,14 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.TagText("th", "Weight");
     f.TagText("th", "Capacity");
     f.Enclose(0, "tr");
-    for (i = 0; i < NITEMS; i++) {
+    for (int i = 0; i < NITEMS; i++) {
         if (ItemDefs[i].flags & ItemType::DISABLED) continue;
         if (!(ItemDefs[i].type & IT_NORMAL)) continue;
         pS = FindSkill(ItemDefs[i].pSkill);
         if (pS && (pS->flags & SkillType::DISABLED)) continue;
         last = 0;
-        for (j = 0; j < (int) (sizeof(ItemDefs->pInput) /
-                sizeof(ItemDefs->pInput[0])); j++) {
-            k = ItemDefs[i].pInput[j].item;
+        for (const auto& input: ItemDefs[i].pInput) {
+            int k = input.item;
             if (k != -1 && (ItemDefs[k].flags & ItemType::DISABLED))
                 last = 1;
             if (k != -1 && !(ItemDefs[k].type & IT_NORMAL)) last = 1;
@@ -1498,12 +1500,12 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("th", "Sailors");
         f.TagText("th", "Skill");
         f.Enclose(0, "tr");
-        for (i = 0; i < NITEMS; i++) {
+        for (int i = 0; i < NITEMS; i++) {
             if (ItemDefs[i].flags & ItemType::DISABLED) continue;
             if (!(ItemDefs[i].type & IT_SHIP)) continue;
             int pub = 1;
-            for (int c = 0; c < (int) sizeof(ItemDefs->pInput)/(int) sizeof(Materials); c++) {
-                int m = ItemDefs[i].pInput[c].item;
+            for (const auto& c: ItemDefs[i].pInput) {
+                int m = c.item;
                 if (m != -1) {
                     if (ItemDefs[m].flags & ItemType::DISABLED) pub = 0;
                     if ((ItemDefs[m].type & IT_ADVANCED) ||
@@ -1532,7 +1534,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.Enclose(0, "td");
             f.Enclose(0, "tr");
         }                    
-        for (i = 0; i < NOBJECTS; i++) {
+        for (int i = 0; i < NOBJECTS; i++) {
             if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
             if (!ObjectIsShip(i)) continue;
             if (ItemDefs[ObjectDefs[i].item].flags & ItemType::DISABLED)
@@ -1626,11 +1628,11 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.Enclose(0, "td");
     f.Enclose(0, "tr");
     f.Enclose(1, "tr");
-    for (i = 0; i < Globals->MAX_SPEED; i++) {
+    for (int i = 0; i < Globals->MAX_SPEED; i++) {
         f.TagText("th", i + 1);
     }
     f.Enclose(0, "tr");
-    for (i = 0; i < Globals->MAX_SPEED; i++) {
+    for (int i = 0; i < Globals->MAX_SPEED; i++) {
         f.Enclose(1, "tr");
         if (!i) {
             f.Enclose(1, AString("td rowspan=\"") + Globals->MAX_SPEED + "\"");
@@ -1638,8 +1640,8 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.Enclose(0, "td");
         }
         f.TagText("th", i + 1);
-        k = Globals->PHASED_MOVE_OFFSET;
-        for (j = 0; j < Globals->MAX_SPEED; j++) {
+        int k = Globals->PHASED_MOVE_OFFSET;
+        for (int j = 0; j < Globals->MAX_SPEED; j++) {
             k += i + 1;
             if (k >= Globals->MAX_SPEED) {
                 f.TagText("td", "x");
@@ -1663,12 +1665,12 @@ int Game::GenRules(const AString &rules, const AString &css,
     int comma = 0;
     found = 0;
     last = -1;
-    for (i = 0; i < NSKILLS; i++) {
+    for (int i = 0; i < NSKILLS; i++) {
         if (SkillDefs[i].flags & SkillType::DISABLED) continue;
         if (SkillDefs[i].flags & SkillType::APPRENTICE) continue;
         if (SkillDefs[i].flags & SkillType::MAGIC) continue;
         found = 0;
-        for (j = 0; j < 3; j++) {
+        for (int j = 0; j < 3; j++) {
             SkillType *pS = FindSkill(SkillDefs[i].depends[j].skill);
             if (pS && !(pS->flags & SkillType::DISABLED)) {
                 found = 1;
@@ -1746,7 +1748,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("th", "Max Level (non-specialized skills)");
         f.Enclose(0, "tr");
         temp2 = "MANI";
-        for (i = 0; i < NITEMS; i++) {
+        for (int i = 0; i < NITEMS; i++) {
             if (ItemDefs[i].flags & ItemType::DISABLED) continue;
             if (!(ItemDefs[i].type & IT_MAN)) continue;
             f.Enclose(1, "tr");
@@ -1758,8 +1760,9 @@ int Game::GenRules(const AString &rules, const AString &css,
             int spec = 0;
             comma = 0;
             temp = "";
-            for (j=0; j<(int)(sizeof(mt->skills)/sizeof(mt->skills[0])); j++) {
-                pS = FindSkill(mt->skills[j]);
+            for(const auto& skill: mt->skills)
+            {
+                pS = FindSkill(skill);
                 if (!pS) continue;
                 if (temp2 == pS->abbr &&
                         Globals->MAGE_NONLEADERS) {
@@ -2213,6 +2216,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     temp += ".";
     if (Globals->FOOD_ITEMS_EXIST) {
         temp += " Units may substitute one unit of ";
+        int i, j;
         for (last = -1, i = 0, j = 0; i < NITEMS; i++) {
             if (ItemDefs[i].flags & ItemType::DISABLED) continue;
             if (!(ItemDefs[i].type & IT_FOOD)) continue;
@@ -2280,15 +2284,14 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.TagText("th", "Weight (capacity)");
     f.TagText("th", "Extra Information");
     f.Enclose(0, "tr");
-    for (i = 0; i < NITEMS; i++) {
+    for (int i = 0; i < NITEMS; i++) {
         if (ItemDefs[i].flags & ItemType::DISABLED) continue;
         if (!(ItemDefs[i].type & IT_NORMAL)) continue;
         pS = FindSkill(ItemDefs[i].pSkill);
         if (pS && (pS->flags & SkillType::DISABLED)) continue;
         last = 0;
-        for (j = 0; j < (int) (sizeof(ItemDefs->pInput) /
-                        sizeof(ItemDefs->pInput[0])); j++) {
-            k = ItemDefs[i].pInput[j].item;
+        for (const auto& j: ItemDefs[i].pInput) {
+            int k = j.item;
             if (k != -1 &&
                     !(ItemDefs[k].flags & ItemType::DISABLED) &&
                     !(ItemDefs[k].type & IT_NORMAL))
@@ -2311,15 +2314,14 @@ int Game::GenRules(const AString &rules, const AString &css,
         temp = "";
         if (ItemDefs[i].flags & ItemType::ORINPUTS)
             temp = "Any of : ";
-        for (j = 0; j < (int) (sizeof(ItemDefs->pInput) /
-                        sizeof(ItemDefs->pInput[0])); j++) {
-            k = ItemDefs[i].pInput[j].item;
+        for (const auto& j: ItemDefs[i].pInput) {
+            int k = j.item;
             if (k < 0 || (ItemDefs[k].flags&ItemType::DISABLED))
                 continue;
             if (comma) temp += ", ";
-            temp += ItemDefs[i].pInput[j].amt;
+            temp += j.amt;
             temp += " ";
-            if (ItemDefs[i].pInput[j].amt > 1)
+            if (j.amt > 1)
                 temp += ItemDefs[k].names;
             else
                 temp += ItemDefs[k].name;
@@ -2409,16 +2411,15 @@ int Game::GenRules(const AString &rules, const AString &css,
             }
         }
         if (ItemDefs[i].type & IT_TOOL) {
-            for (j = 0; j < NITEMS; j++) {
+            for (int j = 0; j < NITEMS; j++) {
                 if (ItemDefs[j].flags & ItemType::DISABLED) continue;
                 if (ItemDefs[j].mult_item != i) continue;
                 if (!(ItemDefs[j].type & IT_NORMAL)) continue;
                 pS = FindSkill(ItemDefs[j].pSkill);
                 if (!pS || (pS->flags & SkillType::DISABLED)) continue;
                 last = 0;
-                for (k = 0; k < (int) (sizeof(ItemDefs->pInput) /
-                        sizeof(ItemDefs->pInput[0])); k++) {
-                    l = ItemDefs[j].pInput[k].item;
+                for (const auto& k: ItemDefs[j].pInput) {
+                    int l = k.item;
                     if (l != -1 &&
                             !(ItemDefs[l].flags & ItemType::DISABLED) &&
                             !(ItemDefs[l].type & IT_NORMAL))
@@ -2550,14 +2551,14 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("th", "Mages");
     }
     f.Enclose(0, "tr");
-    for (i = 0; i < NOBJECTS; i++) {
+    for (int i = 0; i < NOBJECTS; i++) {
         if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
         if (!ObjectDefs[i].protect) continue;
         pS = FindSkill(ObjectDefs[i].skill);
         if (pS == NULL) continue;
         if (pS->flags & SkillType::MAGIC) continue;
         if (ObjectIsShip(i)) continue;
-        j = ObjectDefs[i].item;
+        int j = ObjectDefs[i].item;
         if (j == -1) continue;
         /* Need the >0 since item could be WOOD_OR_STONE (-2) */
         if (j > 0 && (ItemDefs[j].flags & ItemType::DISABLED)) continue;
@@ -2639,11 +2640,11 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.TagText("th", "Skill (level)");
     f.TagText("th", "Production Aided");
     f.Enclose(0, "tr");
-    for (i = 0; i < NOBJECTS; i++) {
+    for (int i = 0; i < NOBJECTS; i++) {
         if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
         if (ObjectDefs[i].protect) continue;
         if (ObjectIsShip(i)) continue;
-        j = ObjectDefs[i].productionAided;
+        int j = ObjectDefs[i].productionAided;
         if (j == -1) continue;
         if (ItemDefs[j].flags & ItemType::DISABLED) continue;
         if (!(ItemDefs[j].type & IT_NORMAL)) continue;
@@ -2736,7 +2737,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("th", "Material");
         f.TagText("th", "Skill (min level)");
         f.Enclose(0, "tr");
-        for (i = 0; i < NOBJECTS; i++) {
+        for (int i = 0; i < NOBJECTS; i++) {
             if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
             if (ObjectDefs[i].productionAided != -1) continue;
             if (ObjectDefs[i].protect) continue;
@@ -2744,7 +2745,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             pS = FindSkill(ObjectDefs[i].skill);
             if (pS == NULL) continue;
             if (pS->flags & SkillType::MAGIC) continue;
-            j = ObjectDefs[i].item;
+            int j = ObjectDefs[i].item;
             if (j == -1) continue;
             /* Need the >0 since item could be WOOD_OR_STONE (-2) */
             if (j > 0 && (ItemDefs[j].flags & ItemType::DISABLED)) continue;
@@ -2832,12 +2833,12 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("th", "Sailors");
         f.TagText("th", "Skill");
         f.Enclose(0, "tr");
-        for (i = 0; i < NITEMS; i++) {
+        for (int i = 0; i < NITEMS; i++) {
             if (ItemDefs[i].flags & ItemType::DISABLED) continue;
             if (!(ItemDefs[i].type & IT_SHIP)) continue;
             int pub = 1;
-            for (int c = 0; c < (int) sizeof(ItemDefs->pInput)/(int) sizeof(Materials); c++) {
-                int m = ItemDefs[i].pInput[c].item;
+            for (const auto& c: ItemDefs[i].pInput) {
+                int m = c.item;
                 if (m != -1) {
                     if (ItemDefs[m].flags & ItemType::DISABLED) pub = 0;
                     if ((ItemDefs[m].type & IT_ADVANCED) ||
@@ -2866,7 +2867,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.Enclose(0, "td");
             f.Enclose(0, "tr");
         }                    
-        for (i = 0; i < NOBJECTS; i++) {
+        for (int i = 0; i < NOBJECTS; i++) {
             if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
             if (!ObjectIsShip(i)) continue;
             if (ItemDefs[ObjectDefs[i].item].flags & ItemType::DISABLED)
@@ -3239,8 +3240,8 @@ int Game::GenRules(const AString &rules, const AString &css,
             "of items.  The structures which allow this are: ";
         last = -1;
         comma = 0;
-        j = 0;
-        for (i = 0; i < NOBJECTS; i++) {
+        int j = 0;
+        for (int i = 0; i < NOBJECTS; i++) {
             if (!(ObjectDefs[i].flags & ObjectType::TRANSPORT)) continue;
             j++;
             if (last == -1) {
@@ -3834,7 +3835,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             temp2 = "";
             last = -1;
             comma = 0;
-            for (i = 0; i < NITEMS; i++) {
+            for (int i = 0; i < NITEMS; i++) {
                 if (!(ItemDefs[i].type & IT_ARMOR)) continue;
                 if (!(ItemDefs[i].type & IT_NORMAL)) continue;
                 if (ItemDefs[i].flags & ItemType::DISABLED) continue;
@@ -3912,8 +3913,8 @@ int Game::GenRules(const AString &rules, const AString &css,
         "differences.  The basic magic skills, called Foundations, are ";
     last = -1;
     comma = 0;
-    j = 0;
-    for (i = 0; i < NSKILLS; i++) {
+    int j = 0;
+    for (int i = 0; i < NSKILLS; i++) {
         if (SkillDefs[i].flags & SkillType::DISABLED) continue;
         if (!(SkillDefs[i].flags & SkillType::FOUNDATION)) continue;
         j++;
@@ -3972,13 +3973,13 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("td", "");
         f.TagText("th", "Mages");
         f.Enclose(0, "tr");
-        for (i = 0; i < NOBJECTS; i++) {
+        for (int i = 0; i < NOBJECTS; i++) {
             if (ObjectDefs[i].flags & ObjectType::DISABLED) continue;
             if (!ObjectDefs[i].maxMages) continue;
             pS = FindSkill(ObjectDefs[i].skill);
             if (pS == NULL) continue;
             if (pS->flags & SkillType::MAGIC) continue;
-            k = ObjectDefs[i].item;
+            int k = ObjectDefs[i].item;
             if (k == -1) continue;
             /* Need the >0 since item could be WOOD_OR_STONE (-2) */
             if (k > 0 && (ItemDefs[k].flags & ItemType::DISABLED)) continue;
@@ -4003,7 +4004,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     temp += " Foundation skills are called ";
     last = -1;
     comma = 0;
-    for (i = 0; i < NSKILLS; i++) {
+    for (int i = 0; i < NSKILLS; i++) {
         if (SkillDefs[i].flags & SkillType::DISABLED) continue;
         if (!(SkillDefs[i].flags & SkillType::FOUNDATION)) continue;
         if (last == -1) {
@@ -4143,7 +4144,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         temp += "s may be created by having a unit study ";
         comma = 0;
         last = -1;
-        for (i = 0; i < NSKILLS; i++) {
+        for (int i = 0; i < NSKILLS; i++) {
             if (SkillDefs[i].flags & SkillType::DISABLED) continue;
             if (!(SkillDefs[i].flags & SkillType::APPRENTICE)) continue;
             if (last == -1) {

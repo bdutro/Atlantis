@@ -31,6 +31,8 @@ class ItemType;
 #include <list>
 #include <memory>
 
+#include "itemtype.h"
+#include "regiontype.h"
 #include "fileio.h"
 #include "gamedefs.h"
 #include "alist.h"
@@ -105,15 +107,15 @@ class ItemType
         int pLevel; // production skill level
         int pMonths; // Man months required for production
         int pOut; // How many of the item we get
-        Materials pInput[4];
+        std::array<Materials, 4> pInput;
 
         char const *mSkill; // magical production skill
         int mLevel; // magical production skill level
         int mOut; // How many of the item are conjured
-        Materials mInput[4];
+        std::array<Materials, 4> mInput;
 
         size_t weight;
-        int type;
+        Items type;
         size_t baseprice;
         int combat;
 
@@ -153,22 +155,22 @@ class ItemType
         size_t minGrant, maxGrant;
 };
 
-extern ItemType *ItemDefs;
+extern std::vector<ItemType> ItemDefs;
 
 class ManType
 {
     public:
         char const *abbr;
-        int terrain;
+        Regions terrain;
         int speciallevel;
         int defaultlevel;
-        char const *skills[6];
-        
+        std::array<char const *, 6> skills;
+
         int CanProduce(int);
         int CanUse(int);
 };
 
-extern ManType *ManDefs;
+extern const std::vector<ManType> ManDefs;
 
 class MonType
 {
@@ -195,7 +197,7 @@ class MonType
         char const *abbr;
 };
 
-extern MonType *MonDefs;
+extern const std::vector<MonType> MonDefs;
 
 enum {
     SLASHING,        // e.g. sword attack (This is default)
@@ -259,7 +261,7 @@ class WeaponType
         int mountBonus;
 };
 
-extern WeaponType *WeaponDefs;
+extern const std::vector<WeaponType> WeaponDefs;
 
 class ArmorType
 {
@@ -279,7 +281,7 @@ class ArmorType
         int saves[NUM_WEAPON_CLASSES];
 };
 
-extern ArmorType *ArmorDefs;
+extern const std::vector<ArmorType> ArmorDefs;
 
 class MountType
 {
@@ -312,7 +314,7 @@ class MountType
         int specialLev;
 };
 
-extern MountType *MountDefs;
+extern const std::vector<MountType> MountDefs;
 
 class BattleItemType
 {
@@ -331,13 +333,13 @@ class BattleItemType
         int skillLevel;
 };
 
-extern BattleItemType *BattleItemDefs;
+extern const std::vector<BattleItemType> BattleItemDefs;
 
 extern int ParseGiveableItem(AString *);
 extern int ParseAllItems(AString *);
 extern int ParseEnabledItem(AString *);
 extern int ParseTransportableItem(AString *);
-extern int LookupItem(AString *);
+extern Items LookupItem(AString *);
 
 extern BattleItemType *FindBattleItem(char const *abbr);
 extern ArmorType *FindArmor(char const *abbr);
@@ -388,10 +390,10 @@ class ItemList
         AString ReportByType(int, int, int, int);
 
         int Weight();
-        size_t GetNum(int) const;
+        size_t GetNum(const Items&) const;
         size_t GetNumMatching(int t) const;
         size_t GetNumSoldiers() const;
-        void SetNum(int, size_t); /* type, number */
+        void SetNum(const Items&, size_t); /* type, number */
         int CanSell(int);
         void Selling(int, int); /* type, number */
         void UncheckAll(); // re-set checked flag for all

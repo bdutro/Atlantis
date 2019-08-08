@@ -37,6 +37,7 @@ class Game;
 #include <list>
 #include <vector>
 
+#include "itemtype.h"
 #include "gameio.h"
 #include "aregion.h"
 #include "fileio.h"
@@ -149,7 +150,7 @@ public:
     void SetNPC();
     bool IsNPC() const;
 
-    void DiscoverItem(int item, int force, int full);
+    void DiscoverItem(const Items& item, int force, int full);
 
     size_t num;
 

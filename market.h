@@ -28,6 +28,7 @@
 #include <memory>
 #include <list>
 #include "fileio.h"
+#include "itemtype.h"
 
 enum {
     M_BUY,
@@ -43,7 +44,7 @@ public:
     Market(int, int, int, int, int, int, int, int);
 
     int type;
-    int item;
+    Items item;
     int price;
     int amount;
     
@@ -70,7 +71,7 @@ public:
     void Writeout(Aoutfile * f);
     void Readin(Ainfile * f);
     void DeleteAll();
-    void Add(int, int, int, int, int, int, int, int);
+    void Add(int, const Items&, int, int, int, int, int, int);
     void Add(const Market::Handle&);
     iterator begin() { return markets_.begin(); }
     iterator end() { return markets_.end(); }

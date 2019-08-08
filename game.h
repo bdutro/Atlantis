@@ -31,6 +31,9 @@ class Game;
 #include <vector>
 
 #include "aregion.h"
+#include "regiontype.h"
+#include "itemtype.h"
+#include "objecttype.h"
 #include "alist.h"
 #include "faction.h"
 #include "production.h"
@@ -193,15 +196,15 @@ private:
     void ModifySkillSpecial(int sk, char const *special);
     void ModifySkillRange(int sk, char const *range);
 
-    void EnableItem(int it); // Enables a disabled item
-    void DisableItem(int it); // Prevents item being generated/produced
+    void EnableItem(const Items& it); // Enables a disabled item
+    void DisableItem(const Items& it); // Prevents item being generated/produced
     void ModifyItemFlags(int it, int flags);
     void ModifyItemType(int it, int type);
     void ModifyItemWeight(int it, int weight);
     void ModifyItemBasePrice(int it, int price);
     void ModifyItemCapacities(int it, int walk, int ride, int fly, int swim);
     void ModifyItemSpeed(int it, int speed);
-    void ModifyItemProductionBooster(int it, int item, int bonus);
+    void ModifyItemProductionBooster(const Items& it, const Items& item, int bonus);
     void ModifyItemHitch(int it, int item, int bonus);
     void ModifyItemProductionSkill(int it, char *sk, int lev);
     void ModifyItemProductionOutput(int it, int months, int count);
@@ -235,8 +238,8 @@ private:
     void ModifyMountBonuses(char const *mount, int min, int max, int hampered);
     void ModifyMountSpecial(char const *mount, char const *special, int level);
 
-    void EnableObject(int ob); // Enables a disabled object
-    void DisableObject(int ob); // Prevents object being built
+    void EnableObject(const Objects& ob); // Enables a disabled object
+    void DisableObject(const Objects& ob); // Prevents object being built
     void ModifyObjectFlags(int ob, int flags);
     void ModifyObjectDecay(int ob, int maxMaint, int maxMonthDecay, int mFact);
     void ModifyObjectProduction(int ob, int it);
@@ -246,15 +249,15 @@ private:
     void ModifyObjectDefence(int ob, int co, int en, int sp, int we, int ri, int ra);
     void ModifyObjectName(int ob, char const *name);
 
-    void ClearTerrainRaces(int t);
-    void ModifyTerrainRace(int t, int i, int r);
-    void ModifyTerrainCoastRace(int t, int i, int r);
-    void ClearTerrainItems(int t);
-    void ModifyTerrainItems(int t, int i, int p, int c, int a);
-    void ModifyTerrainWMons(int t, int freq, int smon, int bigmon, int hum);
-    void ModifyTerrainLairChance(int t, int chance);
-    void ModifyTerrainLair(int t, int i, int lair);
-    void ModifyTerrainEconomy(int t, int pop, int wages, int econ, int move);
+    void ClearTerrainRaces(const Regions& t);
+    void ModifyTerrainRace(const Regions& t, int i, const Items& r);
+    void ModifyTerrainCoastRace(const Regions& t, int i, int r);
+    void ClearTerrainItems(const Regions& t);
+    void ModifyTerrainItems(const Regions& t, int i, const Items& p, int c, int a);
+    void ModifyTerrainWMons(const Regions& t, int freq, int smon, int bigmon, int hum);
+    void ModifyTerrainLairChance(const Regions& t, int chance);
+    void ModifyTerrainLair(const Regions& t, int i, int lair);
+    void ModifyTerrainEconomy(const Regions& t, int pop, int wages, int econ, int move);
 
     void ModifyBattleItemFlags(char const *item, int flags);
     void ModifyBattleItemSpecial(char const *item, char const *special, int level);

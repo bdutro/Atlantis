@@ -29,6 +29,7 @@
 class Object;
 
 #include <memory>
+#include "objecttype.h"
 #include "alist.h"
 #include "fileio.h"
 #include "gamedefs.h"
@@ -72,7 +73,7 @@ class ObjectType {
         int defenceArray[NUM_ATTACK_TYPES];
 };
 
-extern ObjectType *ObjectDefs;
+extern const std::vector<ObjectType> ObjectDefs;
 
 AString *ObjectDescription(int obj);
 
@@ -134,7 +135,7 @@ class Object
         std::weak_ptr<ARegion> region;
         ssize_t inner;
         int num;
-        int type;
+        Objects type;
         int incomplete;
         int capacity;
         int flying;

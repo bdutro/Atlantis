@@ -51,6 +51,7 @@ class Object;
 #include "fileio.h"
 #include "skills.h"
 #include "items.h"
+#include "itemtype.h"
 
 enum {
     GUARD_NONE,
@@ -112,7 +113,7 @@ class Unit
         ~Unit();
 
         void SetMonFlags();
-        void MakeWMon(char const *,int,size_t);
+        void MakeWMon(char const *, const Items&, size_t);
 
         void Writeout( Aoutfile *f );
         void Readin( Ainfile *f, AList *, ATL_VER v );
@@ -140,8 +141,8 @@ class Unit
         size_t GetMen();
         size_t GetLeaders();
         size_t GetSoldiers();
-        size_t GetMen(int);
-        void SetMen(int, size_t);
+        size_t GetMen(const Items&);
+        void SetMen(const Items&, size_t);
         int GetMoney();
         void SetMoney(size_t);
         void SetMoney(int);

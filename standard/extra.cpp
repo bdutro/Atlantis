@@ -39,8 +39,8 @@ int Game::SetupFaction( const Faction::Handle& pFac )
     // Set up first unit.
     //
     Unit::Handle temp2 = GetNewUnit( pFac );
-    temp2->SetMen(I_LEADERS, 1);
-    pFac->DiscoverItem(I_LEADERS, 0, 1);
+    temp2->SetMen(Items::Types::I_LEADERS, 1);
+    pFac->DiscoverItem(Items::Types::I_LEADERS, 0, 1);
     temp2->reveal = REVEAL_FACTION;
 
     temp2->type = U_MAGE;
@@ -57,20 +57,20 @@ int Game::SetupFaction( const Faction::Handle& pFac )
 
     if (Globals->UPKEEP_MINIMUM_FOOD > 0)
     {
-        if (!(ItemDefs[I_FOOD].flags & ItemType::DISABLED)) {
-            temp2->items.SetNum(I_FOOD, 6);
-            pFac->DiscoverItem(I_FOOD, 0, 1);
-        } else if (!(ItemDefs[I_FISH].flags & ItemType::DISABLED)) {
-            temp2->items.SetNum(I_FISH, 6);
-            pFac->DiscoverItem(I_FISH, 0, 1);
-        } else if (!(ItemDefs[I_LIVESTOCK].flags & ItemType::DISABLED)) {
-            temp2->items.SetNum(I_LIVESTOCK, 6);
-            pFac->DiscoverItem(I_LIVESTOCK, 0, 1);
-        } else if (!(ItemDefs[I_GRAIN].flags & ItemType::DISABLED)) {
-            temp2->items.SetNum(I_GRAIN, 2);
-            pFac->DiscoverItem(I_GRAIN, 0, 1);
+        if (!(ItemDefs[static_cast<size_t>(Items::Types::I_FOOD)].flags & ItemType::DISABLED)) {
+            temp2->items.SetNum(Items::Types::I_FOOD, 6);
+            pFac->DiscoverItem(Items::Types::I_FOOD, 0, 1);
+        } else if (!(ItemDefs[static_cast<size_t>(Items::Types::I_FISH)].flags & ItemType::DISABLED)) {
+            temp2->items.SetNum(Items::Types::I_FISH, 6);
+            pFac->DiscoverItem(Items::Types::I_FISH, 0, 1);
+        } else if (!(ItemDefs[static_cast<size_t>(Items::Types::I_LIVESTOCK)].flags & ItemType::DISABLED)) {
+            temp2->items.SetNum(Items::Types::I_LIVESTOCK, 6);
+            pFac->DiscoverItem(Items::Types::I_LIVESTOCK, 0, 1);
+        } else if (!(ItemDefs[static_cast<size_t>(Items::Types::I_GRAIN)].flags & ItemType::DISABLED)) {
+            temp2->items.SetNum(Items::Types::I_GRAIN, 2);
+            pFac->DiscoverItem(Items::Types::I_GRAIN, 0, 1);
         }
-        temp2->items.SetNum(I_SILVER, 10);
+        temp2->items.SetNum(Items::Types::I_SILVER, 10);
     }
 
     ARegion::WeakHandle reg;
@@ -99,7 +99,7 @@ Faction::WeakHandle Game::CheckVictory()
 {
     for(const auto& region: regions) {
         for(const auto& obj: region->objects) {
-            if (obj->type != O_BKEEP){
+            if (obj->type != Objects::Types::O_BKEEP){
                 continue;
             }
             if (!obj->units.empty()){
@@ -141,68 +141,68 @@ void Game::ModifyTablesPerRuleset(void)
     }
 
     if (Globals->NEXUS_IS_CITY && Globals->TOWNS_EXIST) {
-        ClearTerrainRaces(R_NEXUS);
-        ModifyTerrainRace(R_NEXUS, 0, I_HIGHELF);
-        ModifyTerrainRace(R_NEXUS, 1, I_VIKING);
-        ModifyTerrainRace(R_NEXUS, 2, I_PLAINSMAN);
-        ClearTerrainItems(R_NEXUS);
-        ModifyTerrainItems(R_NEXUS, 0, I_IRON, 100, 10);
-        ModifyTerrainItems(R_NEXUS, 1, I_WOOD, 100, 10);
-        ModifyTerrainItems(R_NEXUS, 2, I_STONE, 100, 10);
-        ModifyTerrainEconomy(R_NEXUS, 1000, 15, 50, 2);
+        ClearTerrainRaces(Regions::Types::R_NEXUS);
+        ModifyTerrainRace(Regions::Types::R_NEXUS, 0, Items::Types::I_HIGHELF);
+        ModifyTerrainRace(Regions::Types::R_NEXUS, 1, Items::Types::I_VIKING);
+        ModifyTerrainRace(Regions::Types::R_NEXUS, 2, Items::Types::I_PLAINSMAN);
+        ClearTerrainItems(Regions::Types::R_NEXUS);
+        ModifyTerrainItems(Regions::Types::R_NEXUS, 0, Items::Types::I_IRON, 100, 10);
+        ModifyTerrainItems(Regions::Types::R_NEXUS, 1, Items::Types::I_WOOD, 100, 10);
+        ModifyTerrainItems(Regions::Types::R_NEXUS, 2, Items::Types::I_STONE, 100, 10);
+        ModifyTerrainEconomy(Regions::Types::R_NEXUS, 1000, 15, 50, 2);
     }
 
-    EnableItem(I_PICK);
-    EnableItem(I_SPEAR);
-    EnableItem(I_AXE);
-    EnableItem(I_HAMMER);
-    EnableItem(I_MCROSSBOW);
-    EnableItem(I_MWAGON);
-    EnableItem(I_GLIDER);
-    EnableItem(I_NET);
-    EnableItem(I_LASSO);
-    EnableItem(I_BAG);
-    EnableItem(I_SPINNING);
-    EnableItem(I_LEATHERARMOR);
-    EnableItem(I_CLOTHARMOR);
-    EnableItem(I_BOOTS);
-    EnableItem(I_BAXE);
-    EnableItem(I_MBAXE);
-    EnableItem(I_IMARM);
-    EnableItem(I_SUPERBOW);
-    EnableItem(I_LANCE);
-    EnableItem(I_JAVELIN);
-    EnableItem(I_PIKE);
+    EnableItem(Items::Types::I_PICK);
+    EnableItem(Items::Types::I_SPEAR);
+    EnableItem(Items::Types::I_AXE);
+    EnableItem(Items::Types::I_HAMMER);
+    EnableItem(Items::Types::I_MCROSSBOW);
+    EnableItem(Items::Types::I_MWAGON);
+    EnableItem(Items::Types::I_GLIDER);
+    EnableItem(Items::Types::I_NET);
+    EnableItem(Items::Types::I_LASSO);
+    EnableItem(Items::Types::I_BAG);
+    EnableItem(Items::Types::I_SPINNING);
+    EnableItem(Items::Types::I_LEATHERARMOR);
+    EnableItem(Items::Types::I_CLOTHARMOR);
+    EnableItem(Items::Types::I_BOOTS);
+    EnableItem(Items::Types::I_BAXE);
+    EnableItem(Items::Types::I_MBAXE);
+    EnableItem(Items::Types::I_IMARM);
+    EnableItem(Items::Types::I_SUPERBOW);
+    EnableItem(Items::Types::I_LANCE);
+    EnableItem(Items::Types::I_JAVELIN);
+    EnableItem(Items::Types::I_PIKE);
 
     EnableSkill(S_ARMORCRAFT);
     EnableSkill(S_WEAPONCRAFT);
 
-    EnableObject(O_ROADN);
-    EnableObject(O_ROADNE);
-    EnableObject(O_ROADNW);
-    EnableObject(O_ROADS);
-    EnableObject(O_ROADSE);
-    EnableObject(O_ROADSW);
-    EnableObject(O_TEMPLE);
-    EnableObject(O_MQUARRY);
-    EnableObject(O_AMINE);
-    EnableObject(O_PRESERVE);
-    EnableObject(O_SACGROVE);
+    EnableObject(Objects::Types::O_ROADN);
+    EnableObject(Objects::Types::O_ROADNE);
+    EnableObject(Objects::Types::O_ROADNW);
+    EnableObject(Objects::Types::O_ROADS);
+    EnableObject(Objects::Types::O_ROADSE);
+    EnableObject(Objects::Types::O_ROADSW);
+    EnableObject(Objects::Types::O_TEMPLE);
+    EnableObject(Objects::Types::O_MQUARRY);
+    EnableObject(Objects::Types::O_AMINE);
+    EnableObject(Objects::Types::O_PRESERVE);
+    EnableObject(Objects::Types::O_SACGROVE);
 
-    EnableObject(O_ISLE);
-    EnableObject(O_DERELICT);
-    EnableObject(O_OCAVE);
-    EnableObject(O_WHIRL);
-    EnableItem(I_PIRATES);
-    EnableItem(I_KRAKEN);
-    EnableItem(I_MERFOLK);
-    EnableItem(I_ELEMENTAL);
+    EnableObject(Objects::Types::O_ISLE);
+    EnableObject(Objects::Types::O_DERELICT);
+    EnableObject(Objects::Types::O_OCAVE);
+    EnableObject(Objects::Types::O_WHIRL);
+    EnableItem(Items::Types::I_PIRATES);
+    EnableItem(Items::Types::I_KRAKEN);
+    EnableItem(Items::Types::I_MERFOLK);
+    EnableItem(Items::Types::I_ELEMENTAL);
 
     if ((Globals->UNDERDEEP_LEVELS > 0) || (Globals->UNDERWORLD_LEVELS > 1)) {
-        EnableItem(I_MUSHROOM);
-        EnableItem(I_HEALPOTION);
-        EnableItem(I_ROUGHGEM);
-        EnableItem(I_GEMS);
+        EnableItem(Items::Types::I_MUSHROOM);
+        EnableItem(Items::Types::I_HEALPOTION);
+        EnableItem(Items::Types::I_ROUGHGEM);
+        EnableItem(Items::Types::I_GEMS);
         EnableSkill(S_GEMCUTTING);
     }
 
@@ -216,9 +216,9 @@ void Game::ModifyTablesPerRuleset(void)
 
     if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
         EnableSkill(S_QUARTERMASTER);
-        EnableObject(O_CARAVANSERAI);
+        EnableObject(Objects::Types::O_CARAVANSERAI);
     }
     // XXX -- This is just here to preserve existing behavior
-    ModifyItemProductionBooster(I_AXE, I_HAMMER, 1);
+    ModifyItemProductionBooster(Items::Types::I_AXE, Items::Types::I_HAMMER, 1);
     return;
 }

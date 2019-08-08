@@ -99,7 +99,7 @@ class SkillType
 
         SkillDepend depends[3];
 };
-extern SkillType *SkillDefs;
+extern const std::vector<SkillType> SkillDefs;
 
 SkillType *FindSkill(char const *skname);
 int LookupSkill(AString *);
@@ -113,7 +113,7 @@ class ShowType {
         int level;
         char const * desc;
 };
-extern ShowType * ShowDefs;
+extern const std::vector<ShowType> ShowDefs;
 
 int SkillCost(int);
 int SkillMax(char const *,int); /* skill, race */
@@ -165,7 +165,7 @@ class HealType {
         unsigned int num;
         unsigned int rate;
 };
-extern HealType * HealDefs;
+extern const std::vector<HealType> HealDefs;
 
 class DamageType {
     public:
@@ -233,8 +233,7 @@ class SpecialType {
         char const *spelldesc2;
         char const *spelltarget;
 };
-extern SpecialType *SpecialDefs;
-extern int NUMSPECIALS;
+extern const std::vector<SpecialType> SpecialDefs;
 
 extern SpecialType *FindSpecial(char const *key);
 
@@ -251,8 +250,7 @@ class EffectType {
         };
         int flags;
 };
-extern EffectType *EffectDefs;
-extern int NUMEFFECTS;
+extern const std::vector<EffectType> EffectDefs;
 
 extern EffectType *FindEffect(char const *effect);
 
@@ -280,8 +278,7 @@ class RangeType {
 
         int crossLevelPenalty;    // How much extra distance to cross levels?
 };
-extern RangeType *RangeDefs;
-extern int NUMRANGES;
+extern const std::vector<RangeType> RangeDefs;
 
 extern RangeType *FindRange(char const *range);
 
@@ -324,8 +321,7 @@ class AttribModType {
         AttribModItem mods[5];
 };
 
-extern AttribModType *AttribDefs;
-extern int NUMATTRIBMODS;
+extern const std::vector<AttribModType> AttribDefs;
 
 extern AttribModType *FindAttrib(char const *attrib);
 

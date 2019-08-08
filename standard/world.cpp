@@ -2260,7 +2260,7 @@ void Game::CreateWorld()
     regions.TownStatistics();
 }
 
-int ARegionList::GetRegType(const ARegion::Handle& pReg)
+Regions ARegionList::GetRegType(const ARegion::Handle& pReg)
 {
     //
     // Figure out the distance from the equator, from 0 to 3.
@@ -2276,13 +2276,13 @@ int ARegionList::GetRegType(const ARegion::Handle& pReg)
         int r = getrandom(4);
         switch (r) {
             case 0:
-                return R_OCEAN;
+                return Regions::Types::R_OCEAN;
             case 1:
-                return R_CAVERN;
+                return Regions::Types::R_CAVERN;
             case 2:
-                return R_UFOREST;
+                return Regions::Types::R_UFOREST;
             case 3:
-                return R_TUNNELS;
+                return Regions::Types::R_TUNNELS;
             default:
                 return( 0 );
         }
@@ -2295,13 +2295,13 @@ int ARegionList::GetRegType(const ARegion::Handle& pReg)
         int r = getrandom(4);
         switch(r) {
             case 0:
-                return R_OCEAN;
+                return Regions::Types::R_OCEAN;
             case 1:
-                return R_CHASM;
+                return Regions::Types::R_CHASM;
             case 2:
-                return R_DFOREST;
+                return Regions::Types::R_DFOREST;
             case 3:
-                return R_GROTTO;
+                return Regions::Types::R_GROTTO;
             default:
                 return (0);
         }
@@ -2313,30 +2313,30 @@ int ARegionList::GetRegType(const ARegion::Handle& pReg)
         switch (lat)
         {
         case 0: /* Arctic regions */
-            if (r < 24) return R_TUNDRA;
-            if (r < 32) return R_MOUNTAIN;
-            if (r < 40) return R_FOREST;
-            return R_PLAIN;
+            if (r < 24) return Regions::Types::R_TUNDRA;
+            if (r < 32) return Regions::Types::R_MOUNTAIN;
+            if (r < 40) return Regions::Types::R_FOREST;
+            return Regions::Types::R_PLAIN;
         case 1: /* Colder regions */
-            if (r < 16) return R_PLAIN;
-            if (r < 40) return R_FOREST;
-            if (r < 48) return R_MOUNTAIN;
-            return R_SWAMP;
+            if (r < 16) return Regions::Types::R_PLAIN;
+            if (r < 40) return Regions::Types::R_FOREST;
+            if (r < 48) return Regions::Types::R_MOUNTAIN;
+            return Regions::Types::R_SWAMP;
         case 2: /* Warmer regions */
-            if (r < 20) return R_PLAIN;
-            if (r < 28) return R_FOREST;
-            if (r < 36) return R_MOUNTAIN;
-            if (r < 44) return R_SWAMP;
-            if (r < 52) return R_JUNGLE;
-            return R_DESERT;
+            if (r < 20) return Regions::Types::R_PLAIN;
+            if (r < 28) return Regions::Types::R_FOREST;
+            if (r < 36) return Regions::Types::R_MOUNTAIN;
+            if (r < 44) return Regions::Types::R_SWAMP;
+            if (r < 52) return Regions::Types::R_JUNGLE;
+            return Regions::Types::R_DESERT;
         case 3: /* tropical */
-            if (r < 16) return R_PLAIN;
-            if (r < 24) return R_MOUNTAIN;
-            if (r < 36) return R_SWAMP;
-            if (r < 48) return R_JUNGLE;
-            return R_DESERT;
+            if (r < 16) return Regions::Types::R_PLAIN;
+            if (r < 24) return Regions::Types::R_MOUNTAIN;
+            if (r < 36) return Regions::Types::R_SWAMP;
+            if (r < 48) return Regions::Types::R_JUNGLE;
+            return Regions::Types::R_DESERT;
         }
-        return R_OCEAN;
+        return Regions::Types::R_OCEAN;
     }
 
     if ( pReg->zloc == 0 )
@@ -2344,13 +2344,13 @@ int ARegionList::GetRegType(const ARegion::Handle& pReg)
         //
         // This really shouldn't ever get called.
         //
-        return( R_NEXUS );
+        return( Regions::Types::R_NEXUS );
     }
 
     //
     // This really shouldn't get called either
     //
-    return( R_OCEAN );
+    return( Regions::Types::R_OCEAN );
 }
 
 unsigned int ARegionList::GetLevelXScale(unsigned int level)
@@ -2415,21 +2415,21 @@ int ARegionList::CheckRegionExit(const ARegion::Handle& pFrom, const ARegion::Ha
     }
 
     int chance = 0;
-    if ( pFrom->type == R_CAVERN || pFrom->type == R_UFOREST ||
-        pTo->type == R_CAVERN || pTo->type == R_UFOREST )
+    if ( pFrom->type == Regions::Types::R_CAVERN || pFrom->type == Regions::Types::R_UFOREST ||
+        pTo->type == Regions::Types::R_CAVERN || pTo->type == Regions::Types::R_UFOREST )
     {
         chance = 25;
     }
-    if ( pFrom->type == R_TUNNELS || pTo->type == R_TUNNELS)
+    if ( pFrom->type == Regions::Types::R_TUNNELS || pTo->type == Regions::Types::R_TUNNELS)
     {
         chance = 50;
     }
-    if (pFrom->type == R_GROTTO || pFrom->type == R_DFOREST ||
-       pTo->type == R_GROTTO || pTo->type == R_DFOREST) {
+    if (pFrom->type == Regions::Types::R_GROTTO || pFrom->type == Regions::Types::R_DFOREST ||
+       pTo->type == Regions::Types::R_GROTTO || pTo->type == Regions::Types::R_DFOREST) {
         // better connected underdeeps
         chance = 40;
     }
-    if (pFrom->type == R_CHASM || pTo->type == R_CHASM) {
+    if (pFrom->type == Regions::Types::R_CHASM || pTo->type == Regions::Types::R_CHASM) {
         chance = 60;
     }
     if (getrandom(100) < chance) {
@@ -2491,7 +2491,7 @@ int ARegionList::GetWeather(const ARegion& pReg, int month ) const
 
 bool ARegion::CanBeStartingCity(const ARegionArray &)
 {
-    if (type == R_OCEAN) return false;
+    if (type == Regions::Types::R_OCEAN) return false;
     if (!IsCoastal()) return false;
     if (town && town->pop == 5000) return false;
 
@@ -2505,7 +2505,7 @@ bool ARegion::CanBeStartingCity(const ARegionArray &)
         for (const auto& r2_w: reg.lock()->neighbors) {
             if (r2_w.expired()) continue;
             auto r2 = r2_w.lock();
-            if (r2->type == R_OCEAN) continue;
+            if (r2->type == Regions::Types::R_OCEAN) continue;
             if (!GetRegion(inlist, r2->num).expired()) continue;
             if (!GetRegion(donelist, r2->num).expired()) continue;
             regs++;
@@ -2536,19 +2536,19 @@ void ARegion::MakeStartingCity()
     float ratio;
     markets.DeleteAll();
     if (Globals->START_CITIES_START_UNLIMITED) {
-        for (int i=0; i<NITEMS; i++) {
-            if ( ItemDefs[i].flags & ItemType::DISABLED )
+        for (auto i = Items::begin(); i != Items::end(); ++i) {
+            if ( ItemDefs[*i].flags & ItemType::DISABLED )
             {
                 continue;
             }
-            if ( ItemDefs[ i ].type & IT_NORMAL ) {
-                if (i==I_SILVER || i==I_LIVESTOCK || i==I_FISH || i==I_GRAIN)
+            if ( ItemDefs[*i].type & IT_NORMAL ) {
+                if (i==Items::Types::I_SILVER || i==Items::Types::I_LIVESTOCK || i==Items::Types::I_FISH || i==Items::Types::I_GRAIN)
                 {
                     continue;
                 }
                 markets.Add(M_BUY,
-                            i,
-                            static_cast<int>(ItemDefs[i].baseprice*5/2),
+                            *i,
+                            static_cast<int>(ItemDefs[*i].baseprice*5/2),
                             -1,
                             5000,
                             5000,
@@ -2560,10 +2560,10 @@ void ARegion::MakeStartingCity()
         // hack: include wage factor of 10 in float calculation above
         markets.Add(M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
         if (Globals->LEADERS_EXIST) {
-            ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
+            ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
             markets.Add(M_BUY,
-                        I_LEADERS,
+                        Items::Types::I_LEADERS,
                         calculateWagesWithRatio(ratio),
                         -1,
                         5000,
@@ -2585,10 +2585,10 @@ void ARegion::MakeStartingCity()
                     0,
                     2000);
         if ( Globals->LEADERS_EXIST ) {
-            ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
+            ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
             markets.Add(M_BUY,
-                        I_LEADERS,
+                        Items::Types::I_LEADERS,
                         calculateWagesWithRatio(ratio),
                         Population() / 25,
                         0,
@@ -2609,7 +2609,7 @@ bool ARegion::IsStartingCity() {
 
 bool ARegion::IsSafeRegion()
 {
-    if (type == R_NEXUS)
+    if (type == Regions::Types::R_NEXUS)
     {
         return true;
     }
@@ -2669,7 +2669,7 @@ ARegion::WeakHandle ARegionList::GetStartingCity(const ARegion& AC,
         unsigned int x = getrandom( maxX );
         unsigned int y = 2 * getrandom( maxY / 2 ) + x % 2;
         reg = pArr->GetRegion( x, y);
-        if (reg.expired() || reg.lock()->type == R_OCEAN) {
+        if (reg.expired() || reg.lock()->type == Regions::Types::R_OCEAN) {
             tries++;
             reg.reset();
             continue;

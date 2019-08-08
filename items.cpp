@@ -118,7 +118,7 @@ static AString DefType(int atype)
     return AttType(atype);
 }
 
-int LookupItem(AString *token)
+Items LookupItem(AString *token)
 {
     for (int i = 0; i < NITEMS; i++) {
         if (ItemDefs[i].type & IT_ILLUSION) {
@@ -702,10 +702,8 @@ AString *ItemDescription(int item, int full)
         AString last = "";
         int found = 0;
         *temp += " This race may study ";
-        unsigned int c;
-        unsigned int len = sizeof(mt->skills) / sizeof(mt->skills[0]);
-        for (c = 0; c < len; c++) {
-            pS = FindSkill(mt->skills[c]);
+        for (const auto& c: mt->skills) {
+            pS = FindSkill(c);
             if (!pS) continue;
             if (mani == pS->abbr && Globals->MAGE_NONLEADERS) {
                 if (!(last == "")) {
@@ -1309,10 +1307,10 @@ void ItemList::Readin(Ainfile *f)
     }
 }
 
-size_t ItemList::GetNum(int t) const
+size_t ItemList::GetNum(const Items& t) const
 {
     for(const auto& i: *this) {
-        if (i->type == t)
+        if (i->type.equals(t))
         {
             return i->num;
         }

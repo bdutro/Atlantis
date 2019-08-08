@@ -1,0 +1,78 @@
+#ifndef REGION_TYPE_H
+#define REGION_TYPE_H
+
+#include "validenum.h"
+
+//
+// Types of terrain
+//
+/* ARegion Types */
+
+enum class _RegionTypes : size_t {
+    R_OCEAN,
+    R_PLAIN,
+    R_FOREST,
+    R_MOUNTAIN,
+    R_SWAMP,
+    R_JUNGLE,
+    R_DESERT,
+    R_TUNDRA,
+    R_CAVERN,
+    R_UFOREST,
+    R_TUNNELS,
+    R_NEXUS,
+    R_ISLAND_PLAIN,
+    R_ISLAND_SWAMP,
+    R_ISLAND_MOUNTAIN,
+    R_CERAN_PLAIN1,
+    R_CERAN_PLAIN2,
+    R_CERAN_PLAIN3,
+    R_CERAN_FOREST1,
+    R_CERAN_FOREST2,
+    R_CERAN_FOREST3,
+    R_CERAN_MYSTFOREST,
+    R_CERAN_MYSTFOREST1,
+    R_CERAN_MYSTFOREST2,
+    R_CERAN_MOUNTAIN1,
+    R_CERAN_MOUNTAIN2,
+    R_CERAN_MOUNTAIN3,
+    R_CERAN_HILL,
+    R_CERAN_HILL1,
+    R_CERAN_HILL2,
+    R_CERAN_SWAMP1,
+    R_CERAN_SWAMP2,
+    R_CERAN_SWAMP3,
+    R_CERAN_JUNGLE1,
+    R_CERAN_JUNGLE2,
+    R_CERAN_JUNGLE3,
+    R_CERAN_DESERT1,
+    R_CERAN_DESERT2,
+    R_CERAN_DESERT3,
+    R_CERAN_WASTELAND,
+    R_CERAN_WASTELAND1,
+    R_CERAN_LAKE,
+    R_CERAN_TUNDRA1,
+    R_CERAN_TUNDRA2,
+    R_CERAN_TUNDRA3,
+    R_CERAN_CAVERN1,
+    R_CERAN_CAVERN2,
+    R_CERAN_CAVERN3,
+    R_CERAN_UFOREST1,
+    R_CERAN_UFOREST2,
+    R_CERAN_UFOREST3,
+    R_CERAN_TUNNELS1,
+    R_CERAN_TUNNELS2,
+    R_GROTTO,
+    R_DFOREST,
+    R_CHASM,
+    R_CERAN_GROTTO1,
+    R_CERAN_DFOREST1,
+    R_CERAN_CHASM1,
+    R_VOLCANO,
+    R_LAKE,
+    R_NUM
+};
+
+using Regions = ValidEnum<_RegionTypes, _RegionTypes::R_NUM>;
+
+#endif

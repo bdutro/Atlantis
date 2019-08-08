@@ -31,7 +31,7 @@
 int ARegion::CheckSea(Directions dir, unsigned int range, int remainocean)
 {
     static constexpr int NDIRS = static_cast<int>(ALL_DIRECTIONS.size());
-    if (type != R_OCEAN) return 0;
+    if (type != Regions::Types::R_OCEAN) return 0;
     if (range-- < 1) return 1;
     for (int d2 = -1; d2< 2; d2++) {
         size_t direc = static_cast<size_t>((static_cast<int>(dir) + d2 + NDIRS) % NDIRS);
@@ -57,7 +57,7 @@ void ARegionList::CreateAbyssLevel(unsigned int level, char const *name)
             if (reg.expired()) continue;
             const auto reg_sp = reg.lock();
             reg_sp->SetName("Abyssal Plains");
-            reg_sp->type = R_DESERT;
+            reg_sp->type = Regions::Types::R_DESERT;
             reg_sp->wages = -2;
         }
     }
@@ -89,8 +89,8 @@ void ARegionList::CreateAbyssLevel(unsigned int level, char const *name)
     const auto lair_sp = lair.lock();
     auto& o = lair_sp->objects.emplace_back(std::make_shared<Object>(lair));
     o->num = lair_sp->buildingseq++;
-    o->name = new AString(AString(ObjectDefs[O_BKEEP].name)+" ["+o->num+"]");
-    o->type = O_BKEEP;
+    o->name = new AString(AString(ObjectDefs[static_cast<size_t>(Objects::Types::O_BKEEP)].name)+" ["+o->num+"]");
+    o->type = Objects::Types::O_BKEEP;
     o->incomplete = 0;
     o->inner = -1;
 }
@@ -112,7 +112,7 @@ void ARegionList::CreateNexusLevel(unsigned int level, unsigned int xSize, unsig
             if (!reg.expired()) {
                 const auto reg_sp = reg.lock();
                 reg_sp->SetName(nex_name.Str());
-                reg_sp->type = R_NEXUS;
+                reg_sp->type = Regions::Types::R_NEXUS;
             }
         }
     }
@@ -200,7 +200,7 @@ void ARegionList::CreateUnderworldLevel(unsigned int level, unsigned int xSize, 
     pRegionArrays[level]->SetName(name);
     pRegionArrays[level]->levelType = ARegionArray::LEVEL_UNDERWORLD;
 
-    SetRegTypes(pRegionArrays[level], R_NUM);
+    SetRegTypes(pRegionArrays[level], Regions::Types::R_NUM);
 
     SetupAnchors(pRegionArrays[level]);
 
@@ -227,7 +227,7 @@ void ARegionList::CreateUnderdeepLevel(unsigned int level, unsigned int xSize, u
     pRegionArrays[level]->SetName(name);
     pRegionArrays[level]->levelType = ARegionArray::LEVEL_UNDERDEEP;
 
-    SetRegTypes(pRegionArrays[level], R_NUM);
+    SetRegTypes(pRegionArrays[level], Regions::Types::R_NUM);
 
     SetupAnchors(pRegionArrays[level]);
 
@@ -262,8 +262,8 @@ void ARegionList::MakeRegions(unsigned int level, unsigned int xSize, unsigned i
                 //
                 // Some initial values; these will get reset
                 //
-                reg->type = -1;
-                reg->race = -1;
+                reg->type.invalidate();
+                reg->race.invalidate();
                 reg->wages = -1;
 
                 arr->SetRegion(x, y, reg);
@@ -353,8 +353,8 @@ void ARegionList::MakeIcosahedralRegions(unsigned int level, unsigned int xSize,
                 //
                 // Some initial values; these will get reset
                 //
-                reg->type = -1;
-                reg->race = -1; // 
+                reg->type.invalidate();
+                reg->race.invalidate(); // 
                 reg->wages = -1; // initially store: name
                 reg->population = -1; // initially used as flag
                 reg->elevation = -1;
@@ -450,10 +450,10 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                     seareg = reg;
                     first = false;
                 }
-                if (seareg.lock()->type == -1) {
+                if (!seareg.lock()->type.isValid()) {
                     reg = seareg.lock();
                     tries = 0;
-                    reg->type = R_NUM;
+                    reg->type = Regions::Types::R_NUM;
                     ocean--;
                 } else {
                     if (tries > 5)
@@ -487,8 +487,8 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                     if (newreg.expired()) continue;
                     reg = newreg.lock();
                     tries = 0;
-                    if (reg->type == -1) {
-                        reg->type = R_NUM;
+                    if (!reg->type.isValid()) {
+                        reg->type = Regions::Types::R_NUM;
                         growth++;
                         if (growth > growch) growch = growth;
                         ocean--;
@@ -497,8 +497,8 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
             }
         } else {
             // make a continent
-            if (reg->type == -1) {
-                reg->type = R_NUM;
+            if (!reg->type.isValid()) {
+                reg->type = Regions::Types::R_NUM;
                 ocean--;
             }
             for (unsigned int i=0; i<sz; i++) {
@@ -531,8 +531,8 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                     break;
                 }
                 reg = newreg;
-                if (reg->type == -1) {
-                    reg->type = R_NUM;
+                if (!reg->type.isValid()) {
+                    reg->type = Regions::Types::R_NUM;
                     ocean--;
                 }
             }
@@ -540,7 +540,7 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
     }
 
     // At this point, go back through and set all the rest to ocean
-    SetRegTypes(pRegs, R_OCEAN);
+    SetRegTypes(pRegs, Regions::Types::R_OCEAN);
     Awrite("");
 }
 
@@ -552,7 +552,7 @@ void ARegionList::MakeCentralLand(const ARegionArray::Handle& pRegs)
             if (reg_w.expired()) continue;
             const auto reg = reg_w.lock();
             // Initialize region to ocean.
-            reg->type = R_OCEAN;
+            reg->type = Regions::Types::R_OCEAN;
             // If the region is close to the edges, it stays ocean
             if (i < 8 || i >= pRegs->x - 8 || j < 8 || j >= pRegs->y - 8)
                 continue;
@@ -563,7 +563,7 @@ void ARegionList::MakeCentralLand(const ARegionArray::Handle& pRegs)
             }
 
             // Otherwise, set the region to land.
-            reg->type = R_NUM;
+            reg->type = Regions::Types::R_NUM;
         }
     }
 }
@@ -602,7 +602,7 @@ void ARegionList::MakeOneIsland(const ARegionArray::Handle& pRegs, unsigned int 
         for (unsigned int j = 0; j < 4; j++) {
             ARegion::WeakHandle pReg = pRegs->GetRegion(i + xx, j + yy);
             if (pReg.expired()) continue;
-            pReg.lock()->type = R_NUM;
+            pReg.lock()->type = Regions::Types::R_NUM;
         }
     }
 }
@@ -621,7 +621,7 @@ void ARegionList::CleanUpWater(const ARegionArray::Handle& pRegs)
                     continue;
                 }
                 const auto reg = reg_w.lock();
-                if(reg->type != R_OCEAN)
+                if(reg->type != Regions::Types::R_OCEAN)
                 {
                     continue;
                 }
@@ -632,8 +632,8 @@ void ARegionList::CleanUpWater(const ARegionArray::Handle& pRegs)
                 if (remainocean > 0) continue;
                 reg->wages = 0;
                 if (getrandom(100) < Globals->LAKES) {
-                        reg->type = R_LAKE;
-                } else reg->type = R_NUM;
+                        reg->type = Regions::Types::R_LAKE;
+                } else reg->type = Regions::Types::R_NUM;
             }
         }
     }
@@ -652,12 +652,12 @@ void ARegionList::RemoveCoastalLakes(const ARegionArray::Handle& pRegs)
                     continue;
                 }
                 const auto reg = reg_w.lock();
-                if (reg->type != R_LAKE)
+                if (reg->type != Regions::Types::R_LAKE)
                 {
                     continue;
                 }
                 if (reg->IsCoastal() > 0) {
-                    reg->type = R_OCEAN;
+                    reg->type = Regions::Types::R_OCEAN;
                     reg->wages = -1;
                     Adot();
                 } else if (reg->wages <= 0) { // name the Lake
@@ -675,13 +675,13 @@ void ARegionList::RemoveCoastalLakes(const ARegionArray::Handle& pRegs)
                         const auto newregion = newregion_w.lock();
                         // name after neighboring lake regions preferrentially
                         if ((newregion->wages > 0) &&
-                                (newregion->type == R_LAKE)) {
+                                (newregion->type == Regions::Types::R_LAKE)) {
                             count1 = 1;
                             wage1 = newregion->wages;
                             break;
                         }
                         if ((TerrainDefs[newregion->type].similar_type !=
-                                    R_OCEAN) && (newregion->wages > -1)) {
+                                    Regions::Types::R_OCEAN) && (newregion->wages > -1)) {
                             if (newregion->wages == wage1) count1++;
                             else if (newregion->wages == wage2) count2++;
                             else if (count2 == 0) {
@@ -718,7 +718,7 @@ void ARegionList::SeverLandBridges(const ARegionArray::Handle& pRegs)
                 continue;
             }
             const auto reg = reg_w.lock();
-            if (TerrainDefs[reg->type].similar_type == R_OCEAN)
+            if (TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN)
             {
                 continue;
             }
@@ -734,7 +734,7 @@ void ARegionList::SeverLandBridges(const ARegionArray::Handle& pRegs)
                     continue;
                 }
                 const auto newregion = newregion_w.lock();
-                if (TerrainDefs[newregion->type].similar_type == R_OCEAN)
+                if (TerrainDefs[newregion->type].similar_type == Regions::Types::R_OCEAN)
                 {
                     continue;
                 }
@@ -762,7 +762,7 @@ void ARegionList::SeverLandBridges(const ARegionArray::Handle& pRegs)
             {
                 continue;
             }
-            reg->type = R_OCEAN;
+            reg->type = Regions::Types::R_OCEAN;
             reg->wages = -1;
             Adot();
         }
@@ -770,7 +770,7 @@ void ARegionList::SeverLandBridges(const ARegionArray::Handle& pRegs)
     Awrite("");
 }
 
-void ARegionList::SetRegTypes(const ARegionArray::Handle& pRegs, int newType)
+void ARegionList::SetRegTypes(const ARegionArray::Handle& pRegs, const Regions& newType)
 {
     for (unsigned int i = 0; i < pRegs->x; i++) {
         for (unsigned int j = 0; j < pRegs->y; j++) {
@@ -780,7 +780,7 @@ void ARegionList::SetRegTypes(const ARegionArray::Handle& pRegs, int newType)
                 continue;
             }
             const auto reg = reg_w.lock();
-            if (reg->type == -1)
+            if (!reg->type.isValid())
             {
                 reg->type = newType;
             }
@@ -815,10 +815,10 @@ void ARegionList::SetupAnchors(const ARegionArray::Handle& ta)
                     continue;
                 }
                 const auto reg = reg_w.lock();
-                if (reg->type == R_NUM) {
+                if (reg->type == Regions::Types::R_NUM) {
                     reg->type = GetRegType(reg);
                     reg->population = 1;
-                    if (TerrainDefs[reg->type].similar_type != R_OCEAN)
+                    if (TerrainDefs[reg->type].similar_type != Regions::Types::R_OCEAN)
                     {
                         reg->wages = AGetName(0, reg);
                     }
@@ -855,18 +855,18 @@ void ARegionList::GrowTerrain(const ARegionArray::Handle& pArr, bool growOcean)
                 }
                 const auto reg = reg_w.lock();
                 if ((j > 0) && (j < 21) && (getrandom(3) < 2)) continue;
-                if (reg->type == R_NUM) {
+                if (reg->type == Regions::Types::R_NUM) {
                 
                     // Check for Lakes
                     if (Globals->LAKES &&
                         (getrandom(100) < ((Globals->LAKES + 10)/10))) {
-                            reg->type = R_LAKE;
+                            reg->type = Regions::Types::R_LAKE;
                             break;
                     }
                     // Check for Odd Terrain
                     if (getrandom(1000) < Globals->ODD_TERRAIN) {
                         reg->type = GetRegType(reg);
-                        if (TerrainDefs[reg->type].similar_type != R_OCEAN)
+                        if (TerrainDefs[reg->type].similar_type != Regions::Types::R_OCEAN)
                             reg->wages = AGetName(0, reg);
                         break;
                     }
@@ -883,15 +883,15 @@ void ARegionList::GrowTerrain(const ARegionArray::Handle& pArr, bool growOcean)
                             {
                                 continue;
                             }
-                            if (t->type != R_NUM &&
-                                (TerrainDefs[t->type].similar_type!=R_OCEAN ||
-                                 (growOcean && (t->type != R_LAKE)))) {
+                            if (t->type != Regions::Types::R_NUM &&
+                                (TerrainDefs[t->type].similar_type!=Regions::Types::R_OCEAN ||
+                                 (growOcean && (t->type != Regions::Types::R_LAKE)))) {
                                 if (j == 0)
                                 {
                                     t->population = 0;
                                 }
                                 reg->population = 0;
-                                reg->race = t->type;
+                                reg->race = static_cast<Items>(t->type);
                                 reg->wages = t->wages;
                                 break;
                             }
@@ -909,9 +909,9 @@ void ARegionList::GrowTerrain(const ARegionArray::Handle& pArr, bool growOcean)
                     continue;
                 }
                 const auto reg = reg_w.lock();
-                if (reg->type == R_NUM && reg->race != -1)
+                if (reg->type == Regions::Types::R_NUM && reg->race.isValid())
                 {
-                    reg->type = reg->race;
+                    reg->type = static_cast<Regions>(reg->race);
                 }
             }
         }
@@ -929,8 +929,8 @@ void ARegionList::RandomTerrain(const ARegionArray::Handle& pArr)
             }
 
             const auto reg = reg_w.lock();
-            if (reg->type == R_NUM) {
-                int adjtype = 0;
+            if (reg->type == Regions::Types::R_NUM) {
+                Regions adjtype;
                 int adjname = -1;
                 for (size_t d = 0; d < ALL_DIRECTIONS.size(); d++) {
                     ARegion::WeakHandle newregion_w = reg->neighbors[d];
@@ -940,13 +940,13 @@ void ARegionList::RandomTerrain(const ARegionArray::Handle& pArr)
                     }
                     const auto newregion = newregion_w.lock();
                     if ((TerrainDefs[newregion->type].similar_type !=
-                                R_OCEAN) && (newregion->type != R_NUM) &&
+                                Regions::Types::R_OCEAN) && (newregion->type != Regions::Types::R_NUM) &&
                             (newregion->wages > 0)) {
                         adjtype = newregion->type;
                         adjname = newregion->wages;
                     }
                 }
-                if (adjtype && !Globals->CONQUEST_GAME) {
+                if (adjtype.isValid() && !Globals->CONQUEST_GAME) {
                     reg->type = adjtype;
                     reg->wages = adjname;
                 } else {
@@ -1026,7 +1026,7 @@ void ARegionList::UnsetRace(const ARegionArray::Handle& pArr)
             {
                 continue;
             }
-            reg.lock()->race = - 1;
+            reg.lock()->race.invalidate();
         }
     }
 }
@@ -1052,7 +1052,7 @@ void ARegionList::RaceAnchors(const ARegionArray::Handle& pArr)
             }
 
             const auto reg = reg_w.lock();
-            if ((reg->type == R_LAKE) && (!Globals->LAKESIDE_IS_COASTAL))
+            if ((reg->type == Regions::Types::R_LAKE) && (!Globals->LAKESIDE_IS_COASTAL))
             {
                 continue;
             }
@@ -1061,10 +1061,10 @@ void ARegionList::RaceAnchors(const ARegionArray::Handle& pArr)
                 continue;
             }
 
-            reg->race = -1;
+            reg->race.invalidate();
             wigout = 0; // reset sanity
             
-            if (TerrainDefs[reg->type].similar_type == R_OCEAN) {
+            if (TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN) {
                 // setup near coastal race here
                 const size_t n_size = reg->neighbors.size();
                 size_t d = getrandom(n_size);
@@ -1075,11 +1075,11 @@ void ARegionList::RaceAnchors(const ARegionArray::Handle& pArr)
                     continue;
                 }
                 auto nreg = nreg_w.lock();
-                while((ctr++ < 20) && (reg->race == -1)) {
-                    if (TerrainDefs[nreg->type].similar_type != R_OCEAN) {
+                while((ctr++ < 20) && (!reg->race.isValid())) {
+                    if (TerrainDefs[nreg->type].similar_type != Regions::Types::R_OCEAN) {
                         const size_t rnum = TerrainDefs[nreg->type].coastal_races.size();
 
-                        while ( reg->race == -1 || 
+                        while ( !reg->race.isValid() || 
                                 (ItemDefs[reg->race].flags & ItemType::DISABLED)) {
                             reg->race = 
                                 TerrainDefs[nreg->type].coastal_races[getrandom(rnum)];
@@ -1102,7 +1102,7 @@ void ARegionList::RaceAnchors(const ARegionArray::Handle& pArr)
                 // setup noncoastal race here
                 const size_t rnum = TerrainDefs[reg->type].races.size();
 
-                while ( reg->race == -1 || 
+                while ( !reg->race.isValid() || 
                         (ItemDefs[reg->race].flags & ItemType::DISABLED)) {
                     reg->race = TerrainDefs[reg->type].races[getrandom(rnum)];
                     if (++wigout > 100)
@@ -1121,7 +1121,7 @@ void ARegionList::RaceAnchors(const ARegionArray::Handle& pArr)
             }
             */
             
-            if (reg->race == -1) {
+            if (!reg->race.isValid()) {
                 std::cout << "Hey! No race anchor got assigned to the " 
                           << TerrainDefs[reg->type].name 
                           << " at " << x << "," << y << std::endl;
@@ -1143,7 +1143,7 @@ void ARegionList::GrowRaces(const ARegionArray::Handle& pArr)
                     continue;
                 }
                 const auto reg = reg_w.lock();
-                if (reg->race == -1)
+                if (!reg->race.isValid())
                 {
                     continue;
                 }
@@ -1154,36 +1154,36 @@ void ARegionList::GrowRaces(const ARegionArray::Handle& pArr)
                         continue;
                     }
                     const auto nreg = nreg_w.lock();
-                    if(nreg->race != -1)
+                    if(nreg->race.isValid())
                     {
                         continue;
                     }
                     bool iscoastal = false;
                     for (const auto& crace: TerrainDefs[reg->type].coastal_races) {
-                        if (reg->race == crace)
+                        if (reg->race.equals(crace))
                         {
                             iscoastal = true;
                             break;
                         }
                     }
                     // Only coastal races may pass from sea to land
-                    if ((TerrainDefs[nreg->type].similar_type == R_OCEAN) && !iscoastal)
+                    if ((TerrainDefs[nreg->type].similar_type == Regions::Types::R_OCEAN) && !iscoastal)
                     {
                         continue;
                     }
 
                     size_t ch = getrandom(5UL);
                     if (iscoastal) {
-                        if (TerrainDefs[nreg->type].similar_type == R_OCEAN)
+                        if (TerrainDefs[nreg->type].similar_type == Regions::Types::R_OCEAN)
                             ch += 2;
                     } else {
                         ManType *mt = FindRace(ItemDefs[reg->race].abr);
-                        if (mt->terrain == TerrainDefs[nreg->type].similar_type)
+                        if (mt->terrain.equals(TerrainDefs[nreg->type].similar_type))
                         {
                             ch += 2;
                         }
                         for (const auto& race: TerrainDefs[nreg->type].races) {
-                            if (race == reg->race)
+                            if (race.equals(reg->race))
                             {
                                 ch++;
                             }
@@ -1211,7 +1211,7 @@ void ARegionList::FinalSetup(const ARegionArray::Handle& pArr)
 
             const auto reg = reg_w.lock();
 
-            if ((TerrainDefs[reg->type].similar_type == R_OCEAN) && (reg->type != R_LAKE))
+            if ((TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN) && (reg->type != Regions::Types::R_LAKE))
             {
                 if (pArr->levelType == ARegionArray::LEVEL_UNDERWORLD)
                 {
@@ -1251,7 +1251,7 @@ void ARegionList::FinalSetup(const ARegionArray::Handle& pArr)
 
 void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Handle& pFrom, const ARegionArray::Handle& pTo)
 {
-    if (TerrainDefs[reg->type].similar_type == R_OCEAN)
+    if (TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN)
     {
         return;
     }
@@ -1269,7 +1269,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
         return;
     }
     const auto temp = temp_w.lock();
-    if (TerrainDefs[temp->type].similar_type == R_OCEAN)
+    if (TerrainDefs[temp->type].similar_type == Regions::Types::R_OCEAN)
     {
         return;
     }
@@ -1278,7 +1278,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
         auto& o = reg->objects.emplace_back(std::make_shared<Object>(reg));
         o->num = reg->buildingseq++;
         o->name = new AString(AString("Shaft [") + o->num + "]");
-        o->type = O_SHAFT;
+        o->type = Objects::Types::O_SHAFT;
         o->incomplete = 0;
         o->inner = static_cast<ssize_t>(temp->num);
     }
@@ -1286,7 +1286,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
         auto& o = temp->objects.emplace_back(std::make_shared<Object>(reg));
         o->num = temp->buildingseq++;
         o->name = new AString(AString("Shaft [") + o->num + "]");
-        o->type = O_SHAFT;
+        o->type = Objects::Types::O_SHAFT;
         o->incomplete = 0;
         o->inner = static_cast<ssize_t>(reg->num);
     }
@@ -1353,7 +1353,7 @@ void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, un
                 // These will transport the user to a randomly
                 // selected region of the chosen terrain type.
                 const auto& to = GetRegionArray(levelTo);
-                for (int type = R_PLAIN; type <= R_TUNDRA; type++) {
+                for (size_t type = static_cast<size_t>(Regions::Types::R_PLAIN); type <= static_cast<size_t>(Regions::Types::R_TUNDRA); ++type) {
                     bool found = false;
                     for (unsigned int x2 = 0; !found && x2 < maxX; x2++)
                         for (unsigned int y2 = 0; !found && y2 < maxY; y2++) {
@@ -1369,7 +1369,7 @@ void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, un
                                 o->num = AC->buildingseq++;
                                 o->name = new AString(AString("Gateway to ") +
                                     TerrainDefs[type].name + " [" + o->num + "]");
-                                o->type = O_GATEWAY;
+                                o->type = Objects::Types::O_GATEWAY;
                                 o->incomplete = 0;
                                 o->inner = static_cast<ssize_t>(reg->num);
                             }
@@ -1397,7 +1397,7 @@ void ARegionList::InitSetupGates(unsigned int level)
                     continue;
                 }
                 const auto temp = temp_w.lock();
-                if (TerrainDefs[temp->type].similar_type != R_OCEAN && temp->gate != -1) {
+                if (TerrainDefs[temp->type].similar_type != Regions::Types::R_OCEAN && temp->gate != -1) {
                     numberofgates++;
                     temp->gate = -1;
                     break;
