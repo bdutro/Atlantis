@@ -106,7 +106,7 @@ void ProductionList::Readin(Ainfile *f)
     }
 }
     
-Production::WeakHandle ProductionList::GetProd(int t, int s)
+Production::WeakHandle ProductionList::GetProd(const Items& t, const Skills& s)
 {
     Production::WeakHandle p;
     auto it = GetProd_(t, s);
@@ -118,7 +118,7 @@ Production::WeakHandle ProductionList::GetProd(int t, int s)
     return p;
 }
 
-ProductionList::iterator ProductionList::GetProd_(int t, int s)
+ProductionList::iterator ProductionList::GetProd_(const Items& t, const Skills& s)
 {
     ProductionList::iterator found_it = products_.end();
 
@@ -145,7 +145,7 @@ void ProductionList::AddProd(const Production::Handle& p)
     products_.push_back(p);
 }
 
-void ProductionList::Add(int it, int maxamt)
+void ProductionList::Add(const Items& it, int maxamt)
 {
     products_.emplace_back(std::make_shared<Production>(it, maxamt));
 }

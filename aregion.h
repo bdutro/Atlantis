@@ -62,7 +62,7 @@ enum {
 
 struct Product
 {
-    int product;
+    Items product;
     int chance;
     int amount;
 };
@@ -257,7 +257,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         // JR
         unsigned int GetPoleDistance(Directions dir);
         void SetGateStatus(int month);
-        void DisbandInRegion(int, int);
+        void DisbandInRegion(const Items&, int);
         void Recruit(int);
         bool IsNativeRace(const Items&);
         void AdjustPop(int);

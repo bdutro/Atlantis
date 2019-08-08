@@ -41,11 +41,12 @@ class Location;
 #include "object.h"
 #include "shields.h"
 #include "helper.h"
+#include "skilltype.h"
 
 class Soldier {
     public:
         using Handle = std::shared_ptr<Soldier>;
-        Soldier(const Unit::Handle& unit, const std::shared_ptr<Object>& object, int regType, int race, int ass=0);
+        Soldier(const Unit::Handle& unit, const std::shared_ptr<Object>& object, const Regions& regType, const Items& race, int ass=0);
 
         void SetupSpell();
         void SetupCombatItems();
@@ -68,19 +69,19 @@ class Soldier {
         /* Unit info */
         AString name;
         Unit::WeakHandle unit;
-        int race;
-        int riding;
-        int building;
+        Items race;
+        Items riding;
+        Objects building;
 
         /* Healing information */
         unsigned int healing;
         int healtype;
-        int healitem;
+        Items healitem;
         int canbehealed;
         int regen;
 
         /* Attack info */
-        int weapon;
+        Items weapon;
         int attacktype;
         int askill;
         int attacks;
@@ -90,7 +91,7 @@ class Soldier {
         /* Defense info */
         int dskill[NUM_ATTACK_TYPES];
         int protection[NUM_ATTACK_TYPES];
-        int armor;
+        Items armor;
         int hits;
         int maxhits;
         int damage;
@@ -116,10 +117,10 @@ class Army
         void Tie(Battle&);
         bool CanBeHealed();
         void DoHeal(Battle&);
-        void DoHealLevel(Battle&,int,int useItems );
+        void DoHealLevel(Battle&, size_t, int useItems );
         void Regenerate(Battle&);
 
-        void GetMonSpoils(ItemList&, int, size_t);
+        void GetMonSpoils(ItemList&, const Items&, size_t);
 
         bool Broken();
         size_t NumAlive();

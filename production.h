@@ -31,6 +31,7 @@
 #include "alist.h"
 #include "fileio.h"
 #include "itemtype.h"
+#include "skilltype.h"
 
 #define P_BIG 40
 #define P_SMALL 20
@@ -50,7 +51,7 @@ public:
     Items itemtype;
     int baseamount;
     int amount;
-    int skill;
+    Skills skill;
     int productivity;
     int activity;
 };
@@ -60,12 +61,12 @@ public:
     using iterator = std::list<Production::Handle>::iterator;
     using const_iterator = std::list<Production::Handle>::const_iterator;
 
-    Production::WeakHandle GetProd(const Items&,int); /* item type, skill */
+    Production::WeakHandle GetProd(const Items&, const Skills&); /* item type, skill */
     void AddProd(Production *);
 
     void Writeout(Aoutfile *);
     void Readin(Ainfile *);
-    void Add(int it, int maxamt);
+    void Add(const Items& it, int maxamt);
     void Add(const Production::Handle& p);
 
     iterator begin() { return products_.begin(); }
@@ -78,7 +79,7 @@ public:
     void clear() { products_.clear(); }
 
 private:
-    iterator GetProd_(int,int); /* item type, skill */
+    iterator GetProd_(const Items&, const Skills&); /* item type, skill */
     std::list<Production::Handle> products_;
 };
 

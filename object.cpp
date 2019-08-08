@@ -30,12 +30,15 @@
 #include "gamedata.h"
 #include "unit.h"
 
-int LookupObject(AString *token)
+Objects LookupObject(AString *token)
 {
-    for (int i = 0; i < NOBJECTS; i++) {
-        if (*token == ObjectDefs[i].name) return i;
+    for (auto i = Objects::begin(); i != Objects::end(); ++i) {
+        if (*token == ObjectDefs[*i].name)
+        {
+            return *i;
+        }
     }
-    return -1;
+    return Objects();
 }
 
 /* ParseObject checks for matching Object types AND

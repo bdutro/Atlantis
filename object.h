@@ -69,7 +69,7 @@ class ObjectType {
 
         int monster;
 
-        int productionAided;
+        Items productionAided;
         int defenceArray[NUM_ATTACK_TYPES];
 };
 
@@ -77,9 +77,9 @@ extern const std::vector<ObjectType> ObjectDefs;
 
 AString *ObjectDescription(int obj);
 
-int LookupObject(AString *token);
+Objects LookupObject(AString *token);
 
-int ParseObject(AString *, int ships);
+Objects ParseObject(AString *, int ships);
 
 int ObjectIsShip(int);
 

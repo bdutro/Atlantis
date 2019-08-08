@@ -34,6 +34,7 @@ class Game;
 #include "regiontype.h"
 #include "itemtype.h"
 #include "objecttype.h"
+#include "skilltype.h"
 #include "alist.h"
 #include "faction.h"
 #include "production.h"
@@ -188,8 +189,8 @@ private:
 
     // JLT
     // Functions to allow enabling/disabling parts of the data tables
-    void EnableSkill(int sk); // Enabled a disabled skill
-    void DisableSkill(int sk);  // Prevents skill being studied or used
+    void EnableSkill(const Skills& sk); // Enabled a disabled skill
+    void DisableSkill(const Skills& sk);  // Prevents skill being studied or used
     void ModifySkillDependancy(int sk, int i, char const *dep, int lev);
     void ModifySkillFlags(int sk, int flags);
     void ModifySkillCost(int sk, int cost);

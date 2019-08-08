@@ -200,8 +200,8 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                         break;
                     }
 
-                    int objType = ParseObject(pToken, 0);
-                    if ( (objType == -1) || (ObjectDefs[objType].flags & ObjectType::DISABLED) ) {
+                    Objects objType = ParseObject(pToken, 0);
+                    if ( !objType.isValid() || (ObjectDefs[objType].flags & ObjectType::DISABLED) ) {
                         Awrite( "No such object." );
                         break;
                     }
@@ -210,7 +210,7 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                     /*
                     int dir=-1;
                     if (ObjectDefs[objType].hexside && Globals->HEXSIDE_TERRAIN ) {
-                        if (!ObjectIsShip(objType) || !(TerrainDefs[pReg->type].similar_type == R_OCEAN) ) {
+                        if (!ObjectIsShip(objType) || !(TerrainDefs[pReg->type].similar_type == Regions::Types::R_OCEAN) ) {
                             pToken = pStr->gettoken();
                             if (!pToken) {
                                 Awrite( "Specify direction" );
@@ -459,8 +459,8 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     temp += p->WriteReport();
                 }
             } else {
-                if (p->itemtype == I_SILVER) {
-                    if (p->skill == S_ENTERTAINMENT) {
+                if (p->itemtype == Items::Types::I_SILVER) {
+                    if (p->skill == Skills::Types::S_ENTERTAINMENT) {
                         Awrite (AString("Entertainment available: $") +
                                     p->amount + ".");
                     }
@@ -527,8 +527,8 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                         break;
                     }
 
-                    int terType = ParseTerrain(pToken);
-                    if (terType == -1) {
+                    Regions terType = ParseTerrain(pToken);
+                    if (!terType.isValid()) {
                         Awrite( "No such terrain." );
                         break;
                     }
@@ -544,14 +544,13 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                         break;
                     }
 
-                    int prace = 0;
-                    prace = ParseAllItems(pToken);
+                    Items prace = ParseAllItems(pToken);
                     if (!(ItemDefs[prace].type & IT_MAN) || (ItemDefs[prace].flags & ItemType::DISABLED) ) {
                         if (!(*pToken == "none" || *pToken == "None" || *pToken == "0")) {
                             Awrite( "No such race." );
                             break;
                         } else {
-                            prace = -1;
+                            prace.invalidate();
                         }
                     }
                     if (prace != 0) pReg->race = prace;
@@ -643,7 +642,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     auto it = pReg->products.begin();
                     while(it != pReg->products.end()) {
                         const auto& p = *it;
-                        if (p->itemtype!=I_SILVER) {
+                        if (p->itemtype!=Items::Types::I_SILVER) {
                             it = pReg->products.erase(it);
                             continue;
                         }
@@ -690,7 +689,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                 else if (*pToken == "town") {
                     SAFE_DELETE(pToken);
 
-                    if (pReg->race<0) pReg->race = 9;
+                    if (!pReg->race.isValid()) pReg->race = 9;
 
                     AString *townname = new AString("name");
                     if (pReg->town) {
@@ -799,8 +798,8 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite( "Try again." );
                         break;
                     }
-                    int mitem = ParseEnabledItem(pToken);
-                    if (mitem<0) {
+                    Items mitem = ParseEnabledItem(pToken);
+                    if (!mitem.isValid()) {
                         Awrite("No such item");
                         break;
                     }
@@ -858,8 +857,8 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite( "Try again." );
                         break;
                     }
-                    int mitem = ParseEnabledItem(pToken);
-                    if (mitem<0) {
+                    Items mitem = ParseEnabledItem(pToken);
+                    if (!mitem.isValid()) {
                         Awrite("No such item");
                         break;
                     }
@@ -917,8 +916,8 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite( "Try again." );
                         break;
                     }
-                    int mitem = ParseEnabledItem(pToken);
-                    if (mitem<0) {
+                    Items mitem = ParseEnabledItem(pToken);
+                    if (!mitem.isValid()) {
                         Awrite("No such item");
                         break;
                     }
@@ -963,8 +962,8 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite( "Try again." );
                         break;
                     }
-                    int mitem = ParseEnabledItem(pToken);
-                    if (mitem<0) {
+                    Items mitem = ParseEnabledItem(pToken);
+                    if (!mitem.isValid()) {
                         Awrite("No such item");
                         break;
                     }
@@ -996,8 +995,8 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite( "Try again." );
                         break;
                     }
-                    int mitem = ParseEnabledItem(pToken);
-                    if (mitem<0) {
+                    Items mitem = ParseEnabledItem(pToken);
+                    if (!mitem.isValid()) {
                         Awrite("No such item");
                         break;
                     }
@@ -1086,8 +1085,8 @@ void Game::EditGameUnitItems(const Unit::Handle& pUnit)
                     break;
                 }
 
-                int itemNum = ParseAllItems(pToken);
-                if (itemNum == -1) {
+                Items itemNum = ParseAllItems(pToken);
+                if (!itemNum.isValid()) {
                     Awrite("No such item.");
                     break;
                 }
@@ -1139,8 +1138,8 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                     break;
                 }
 
-                int skillNum = ParseSkill(pToken);
-                if (skillNum == -1) {
+                Skills skillNum = ParseSkill(pToken);
+                if (!skillNum.isValid()) {
                     Awrite("No such skill.");
                     break;
                 }
@@ -1291,7 +1290,7 @@ void Game::EditGameCreateUnit()
 {
     Faction::Handle fac = GetFaction(factions, 1);
     Unit::Handle newunit = GetNewUnit(fac);
-    newunit->SetMen(I_LEADERS, 1);
+    newunit->SetMen(Items::Types::I_LEADERS, 1);
     newunit->reveal = REVEAL_FACTION;
     newunit->MoveUnit(regions.front()->GetDummy());
 

@@ -1023,7 +1023,7 @@ int Unit::GetDefenseRiding()
     return riding;
 }
 
-int Unit::GetSkill(int sk)
+int Unit::GetSkill(const Skills& sk)
 {
     if (sk == S_TACTICS) return GetAttribute("tactics");
     if (sk == S_STEALTH) return GetAttribute("stealth");
@@ -1033,13 +1033,13 @@ int Unit::GetSkill(int sk)
     return retval;
 }
 
-void Unit::SetSkill(int sk, int level)
+void Unit::SetSkill(const Skills& sk, int level)
 {
     skills.SetDays(sk, GetDaysByLevel(level) * GetMen());
     skills.SetExp(sk, 0);
 }
 
-int Unit::GetAvailSkill(int sk)
+int Unit::GetAvailSkill(const Skills& sk)
 {
     AString str;
     int retval = GetRealSkill(sk);
@@ -1094,7 +1094,7 @@ int Unit::GetAvailSkill(int sk)
     return retval;
 }
 
-size_t Unit::GetRealSkill(int sk)
+size_t Unit::GetRealSkill(const Skills& sk)
 {
     if (GetMen()) {
         return GetLevelByDays(skills.GetDays(sk)/GetMen());
@@ -1103,7 +1103,7 @@ size_t Unit::GetRealSkill(int sk)
     }
 }
 
-void Unit::ForgetSkill(int sk)
+void Unit::ForgetSkill(const Skills& sk)
 {
     skills.SetDays(sk, 0);
     if (type == U_MAGE) {
@@ -1137,7 +1137,7 @@ bool Unit::CheckDepend(int lev, SkillDepend &dep)
     return true;
 }
 
-bool Unit::CanStudy(int sk)
+bool Unit::CanStudy(const Skills& sk)
 {
     if (skills.GetStudyRate(sk, GetMen()) < 1) return false;
 
@@ -1164,7 +1164,7 @@ bool Unit::CanStudy(int sk)
     return true;
 }
 
-int Unit::Study(int sk, int days)
+int Unit::Study(const Skills& sk, int days)
 {
     Skill *s;
 
@@ -1213,7 +1213,7 @@ int Unit::Study(int sk, int days)
     return 1;
 }
 
-int Unit::GetSkillMax(int sk)
+int Unit::GetSkillMax(const Skills& sk)
 {
     int max = 0;
 
@@ -1229,7 +1229,7 @@ int Unit::GetSkillMax(int sk)
     return max;
 }
 
-int Unit::Practice(int sk)
+int Unit::Practice(const Skills& sk)
 {
     int bonus, men, curlev, reqsk, reqlev, days;
     unsigned int i;
@@ -2156,7 +2156,7 @@ void Unit::CopyFlags(Unit *x)
     reveal = x->reveal;
 }
 
-int Unit::GetBattleItem(AString &itm)
+Items Unit::GetBattleItem(AString &itm)
 {
     int item = LookupItem(&itm);
     if (item == -1) return -1;
@@ -2187,7 +2187,7 @@ int Unit::GetArmor(AString &itm, int ass)
     return item;
 }
 
-int Unit::GetMount(AString &itm, int canFly, int canRide, int &bonus)
+Items Unit::GetMount(AString &itm, int canFly, int canRide, int &bonus)
 {
     bonus = 0;
 
@@ -2238,7 +2238,7 @@ int Unit::GetMount(AString &itm, int canFly, int canRide, int &bonus)
     return item;
 }
 
-int Unit::GetWeapon(AString &itm, int riding, int ridingBonus,
+Items Unit::GetWeapon(AString &itm, const Items& riding, int ridingBonus,
         int &attackBonus, int &defenseBonus, int &attacks)
 {
     int item = LookupItem(&itm);

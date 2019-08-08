@@ -52,6 +52,7 @@ class Object;
 #include "skills.h"
 #include "items.h"
 #include "itemtype.h"
+#include "skilltype.h"
 
 enum {
     GUARD_NONE,
@@ -169,16 +170,16 @@ class Unit
         int PracticeAttribute(char const *ident);
         int GetProductionBonus(int);
 
-        int GetSkill(int);
-        void SetSkill(int,int);
-        int GetSkillMax(int);
-        int GetAvailSkill(int);
-        size_t GetRealSkill(int);
-        void ForgetSkill(int);
+        int GetSkill(const Skills&);
+        void SetSkill(const Skills&, int);
+        int GetSkillMax(const Skills&);
+        int GetAvailSkill(const Skills&);
+        size_t GetRealSkill(const Skills&);
+        void ForgetSkill(const Skills&);
         bool CheckDepend(int,SkillDepend &s);
-        bool CanStudy(int);
-        int Study(int,int); /* Returns 1 if it succeeds */
-        int Practice(int);
+        bool CanStudy(const Skills&);
+        int Study(const Skills&, int); /* Returns 1 if it succeeds */
+        int Practice(const Skills&);
         void AdjustSkills();
 
         /* Return 1 if can see, 2 if can see faction */
@@ -206,10 +207,10 @@ class Unit
         int GetFlag(int);
         void SetFlag(int,int);
         void CopyFlags(Unit *);
-        int GetBattleItem(AString &itm);
-        int GetArmor(AString &itm, int ass);
-        int GetMount(AString &itm, int canFly, int canRide, int &bonus);
-        int GetWeapon(AString &itm, int riding, int ridingBonus,
+        Items GetBattleItem(AString &itm);
+        Items GetArmor(AString &itm, int ass);
+        Items GetMount(AString &itm, int canFly, int canRide, int &bonus);
+        Items GetWeapon(AString &itm, const Items& riding, int ridingBonus,
                 int &attackBonus, int &defenseBonus, int &attacks);
         int CanUseWeapon(WeaponType *pWep, int riding);
         int CanUseWeapon(WeaponType *pWep);
@@ -242,9 +243,9 @@ class Unit
         SkillList skills;
         ItemList items;
         int combat;
-        int readyItem;
-        int readyWeapon[MAX_READY];
-        int readyArmor[MAX_READY];
+        Items readyItem;
+        Items readyWeapon[MAX_READY];
+        Items readyArmor[MAX_READY];
         std::list<AString::Handle> oldorders;
         int needed; /* For assessing maintenance */
         int hunger;

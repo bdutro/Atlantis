@@ -281,7 +281,7 @@ Skill *Skill::Split(int total, int leave)
     return temp;
 }
 
-size_t SkillList::GetDays(int skill)
+size_t SkillList::GetDays(const Skills& skill)
 {
     forlist(this) {
         Skill *s = (Skill *) elem;

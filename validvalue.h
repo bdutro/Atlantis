@@ -59,9 +59,14 @@ class ValidValue
             return val_;
         }
 
-        bool equals(const ValidValue& rhs) const
+        bool operator==(const ValidValue& rhs) const
         {
             return (valid_ == rhs.valid_) && (val_ == rhs.val_);
+        }
+
+        bool operator!=(const ValidValue& rhs) const
+        {
+            return !(*this == rhs);
         }
 };
 

@@ -1160,7 +1160,7 @@ void ARegionList::GrowRaces(const ARegionArray::Handle& pArr)
                     }
                     bool iscoastal = false;
                     for (const auto& crace: TerrainDefs[reg->type].coastal_races) {
-                        if (reg->race.equals(crace))
+                        if (reg->race == crace)
                         {
                             iscoastal = true;
                             break;
@@ -1178,12 +1178,12 @@ void ARegionList::GrowRaces(const ARegionArray::Handle& pArr)
                             ch += 2;
                     } else {
                         ManType *mt = FindRace(ItemDefs[reg->race].abr);
-                        if (mt->terrain.equals(TerrainDefs[nreg->type].similar_type))
+                        if (mt->terrain == TerrainDefs[nreg->type].similar_type)
                         {
                             ch += 2;
                         }
                         for (const auto& race: TerrainDefs[nreg->type].races) {
-                            if (race.equals(reg->race))
+                            if (race == reg->race)
                             {
                                 ch++;
                             }

@@ -39,6 +39,7 @@ class SkillList;
 #include "astring.h"
 #include "gamedefs.h"
 #include "alist.h"
+#include "skilltype.h"
 
 /* For dependencies:
   A value of depend == -1 indicates no more dependencies.
@@ -102,9 +103,9 @@ class SkillType
 extern const std::vector<SkillType> SkillDefs;
 
 SkillType *FindSkill(char const *skname);
-int LookupSkill(AString *);
-int ParseSkill(AString *);
-AString SkillStrs(int);
+Skills LookupSkill(AString *);
+Skills ParseSkill(AString *);
+AString SkillStrs(const Skills&);
 AString SkillStrs(SkillType *);
 
 class ShowType {
@@ -148,12 +149,12 @@ class Skill : public AListElem {
 
 class SkillList : public AList {
     public:
-        size_t GetDays(int); /* Skill */
-        int GetExp(int); /* Skill */
-        void SetDays(int,size_t); /* Skill, days */
-        void SetExp(int,int); /* Skill, exp */
+        size_t GetDays(const Skills&); /* Skill */
+        int GetExp(const Skills&); /* Skill */
+        void SetDays(const Skills&,size_t); /* Skill, days */
+        void SetExp(const Skills&,int); /* Skill, exp */
         void Combine(SkillList *);
-        int GetStudyRate(int, int); /* Skill, num of men */
+        int GetStudyRate(const Skills&, int); /* Skill, num of men */
         SkillList * Split(int,int); /* total men, num to split */
         AString Report(int); /* Number of men */
         void Readin(Ainfile *);

@@ -237,7 +237,7 @@ int ParseTransportableItem(AString *token)
     return r;
 }
 
-AString ItemString(int type, int num, int flags)
+AString ItemString(const Items& type, int num, int flags)
 {
     AString temp;
     if (num == 1) {
@@ -1227,7 +1227,7 @@ AString *ItemDescription(int item, int full)
     return temp;
 }
 
-bool IsSoldier(int item)
+bool IsSoldier(const Items& item)
 {
     if (ItemDefs[item].type & IT_MAN || ItemDefs[item].type & IT_MONSTER)
     {
@@ -1504,22 +1504,22 @@ void ItemList::SetNum(int t, size_t n)
     }
 }
 
-int ManType::CanProduce(int item)
+bool ManType::CanProduce(const Items& item)
 {
-    if (ItemDefs[item].flags & ItemType::DISABLED) return 0;
+    if (ItemDefs[item].flags & ItemType::DISABLED) return false;
     for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
         if (skills[i] == NULL) continue;
-        if (ItemDefs[item].pSkill == skills[i]) return 1;
+        if (ItemDefs[item].pSkill == skills[i]) return true;
     }
-    return 0;
+    return false;
 }
 
-int ManType::CanUse(int item)
+bool ManType::CanUse(const Items& item)
 {
-    if (ItemDefs[item].flags & ItemType::DISABLED) return 0;
+    if (ItemDefs[item].flags & ItemType::DISABLED) return false;
     
     // Check if the item is a mount
-    if (ItemDefs[item].type & IT_MOUNT) return 1;
+    if (ItemDefs[item].type & IT_MOUNT) return true;
 
     // Check if the item is a weapon
     if (ItemDefs[item].type & IT_WEAPON) {
@@ -1527,10 +1527,10 @@ int ManType::CanUse(int item)
         for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
             if (skills[i] == NULL) continue;
             if ((weapon->baseSkill == skills[i]) 
-                || (weapon->orSkill == skills[i])) return 1;
+                || (weapon->orSkill == skills[i])) return true;
         }
     }
-    
+
     // Check if the item is an armor
     if (ItemDefs[item].type & IT_ARMOR) {
         ArmorType *armor = FindArmor(ItemDefs[item].abr);
@@ -1543,9 +1543,9 @@ int ManType::CanUse(int item)
                 if (FindSkill(skills[i]) == FindSkill("COMB"))
                         mayWearArmor = 0;
             }
-            if (mayWearArmor) return 1;
+            if (mayWearArmor) return true;
         } else
-        if (p > 3) return 1;
+        if (p > 3) return true;
         else {
             // heavy armor not be worn by sailors and sneaky races
             int mayWearArmor = 1;
@@ -1557,13 +1557,13 @@ int ManType::CanUse(int item)
                     || (FindSkill(skills[i]) == FindSkill("LBOW")))
                         mayWearArmor = 0;
             }
-            if (mayWearArmor) return 1;
+            if (mayWearArmor) return true;
         }
     }
     
     // Check if the item is a tool
     for (int i=0; i<NITEMS; i++) {
-        if ((ItemDefs[i].mult_item == item) && (CanProduce(i))) return 1;
+        if ((ItemDefs[i].mult_item == item) && (CanProduce(i))) return true;
     }
     
     // Check to see if the item is a base resource
@@ -1573,21 +1573,21 @@ int ManType::CanUse(int item)
         for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
             if (skills[i] == NULL) continue;
             if ((ItemDefs[b].pSkill == skills[i])
-                && (ItemDefs[b].pInput[0].item == item)) return 1;
+                && (ItemDefs[b].pInput[0].item == item)) return true;
         }
     }
     for (int b=0; b<NOBJECTS; b++) {
         for (unsigned int i=0; i<(sizeof(skills)/sizeof(int)); i++) {
             if (skills[i] == NULL) continue;
             if (ObjectDefs[b].skill == skills[i]) {
-                if (ObjectDefs[b].item == item) return 1;
+                if (ObjectDefs[b].item == item) return true;
                 if (ObjectDefs[b].item == I_WOOD_OR_STONE) {
                     if ((item == I_WOOD)
-                        || (item == I_STONE)) return 1;
+                        || (item == I_STONE)) return true;
                 }
             }                
         }
     }
 
-    return 0;
+    return false;
 }

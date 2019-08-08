@@ -76,7 +76,7 @@ enum {
 
 struct Materials
 {
-    int item;
+    Items item;
     int amt;
 };
 
@@ -166,8 +166,8 @@ class ManType
         int defaultlevel;
         std::array<char const *, 6> skills;
 
-        int CanProduce(int);
-        int CanUse(int);
+        bool CanProduce(const Items&);
+        bool CanUse(const Items&);
 };
 
 extern const std::vector<ManType> ManDefs;
@@ -335,10 +335,10 @@ class BattleItemType
 
 extern const std::vector<BattleItemType> BattleItemDefs;
 
-extern int ParseGiveableItem(AString *);
-extern int ParseAllItems(AString *);
-extern int ParseEnabledItem(AString *);
-extern int ParseTransportableItem(AString *);
+extern Items ParseGiveableItem(AString *);
+extern Items ParseAllItems(AString *);
+extern Items ParseEnabledItem(AString *);
+extern Items ParseTransportableItem(AString *);
 extern Items LookupItem(AString *);
 
 extern BattleItemType *FindBattleItem(char const *abbr);
@@ -353,10 +353,10 @@ enum {
     FULLNUM = 0x01,
     ALWAYSPLURAL = 0x02
 };
-extern AString ItemString(int type, int num, int flags=0);
+extern AString ItemString(const Items& type, int num, int flags=0);
 extern AString *ItemDescription(int item, int full);
 
-extern bool IsSoldier(int);
+extern bool IsSoldier(const Items&);
 
 class Item
 {
@@ -370,7 +370,7 @@ class Item
         
         AString Report(int);
 
-        int type;
+        Items type;
         size_t num;
         int selling;
         int checked; // flag whether item has been reported, counted etc.

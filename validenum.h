@@ -124,9 +124,14 @@ class ValidEnum : public ValidValue<size_t>
             return *this;
         }
 
-        bool equals(const Types& rhs) const
+        bool operator==(const Types& rhs) const
         {
-            return equals(ValidEnum(rhs));
+            return *this == ValidEnum(rhs);
+        }
+
+        bool operator!=(const Types& rhs) const
+        {
+            return *this != ValidEnum(rhs);
         }
 
         static constexpr size_t size()

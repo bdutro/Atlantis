@@ -83,7 +83,7 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
     DoSpecialAttack(round, a, attackers, def, behind);
     if (!def->NumAlive()) return;
 
-    if (!behind && (a->riding != -1)) {
+    if (!behind && a->riding.isValid()) {
         MountType *pMt = FindMount(ItemDefs[a->riding].abr);
         if (pMt->mountSpecial != NULL) {
             int i, num, tot = -1;
@@ -124,7 +124,7 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
 
     for (int i = 0; i < numAttacks; i++) {
         WeaponType *pWep = NULL;
-        if (a->weapon != -1)
+        if (a->weapon.isValid())
             pWep = FindWeapon(ItemDefs[a->weapon].abr);
 
         if (behind) {
@@ -222,7 +222,7 @@ void Battle::GetSpoils(const std::list<Location::Handle>& losers, ItemList& spoi
             // New rule:  Assassins with RINGS cannot get AMTS in spoils
             // This rule is only meaningful with Proportional AMTS usage
             // is enabled, otherwise it has no effect.
-            if ((ass == 2) && (i->type == I_AMULETOFTS)) continue;
+            if ((ass == 2) && (i->type == Items::Types::I_AMULETOFTS)) continue;
             float percent = static_cast<float>(numdead)/static_cast<float>(numalive+numdead);
             // incomplete ships:
             if (ItemDefs[i->type].type & IT_SHIP) {
@@ -246,7 +246,7 @@ void Battle::GetSpoils(const std::list<Location::Handle>& losers, ItemList& spoi
         }
     }
     // add incomplete ships to spoils...
-    for (int sh = 0; sh < NITEMS; sh++) {
+    for (size_t sh = 0; sh < Items::size(); sh++) {
         if (ItemDefs[sh].type & IT_SHIP) {
             spoils.SetNum(sh, ships.GetNum(sh));
         }
@@ -770,10 +770,10 @@ size_t Game::KillDead(const Location::Handle& l, const Battle::Handle& b)
         if (l_unit->raised > 0) {
             size_t undead = getrandom(l_unit->raised * 2 / 3 + 1); // This is always <= l_unit->raised as long as l_unit->raised > 0
             size_t skel = l_unit->raised - undead;
-            AString tmp = ItemString(I_SKELETON, static_cast<int>(skel));
+            AString tmp = ItemString(Items::Types::I_SKELETON, static_cast<int>(skel));
             if (undead > 0) {
                 tmp += " and ";
-                tmp += ItemString(I_UNDEAD, static_cast<int>(undead));
+                tmp += ItemString(Items::Types::I_UNDEAD, static_cast<int>(undead));
             }
             tmp += " rise";
             if ((skel + undead) == 1)
@@ -781,8 +781,8 @@ size_t Game::KillDead(const Location::Handle& l, const Battle::Handle& b)
             tmp += " from the grave to join ";
             tmp += *l_unit->name;
             tmp += ".";
-            l_unit->items.SetNum(I_SKELETON, l_unit->items.GetNum(I_SKELETON) + skel);
-            l_unit->items.SetNum(I_UNDEAD, l_unit->items.GetNum(I_UNDEAD) + undead);
+            l_unit->items.SetNum(Items::Types::I_SKELETON, l_unit->items.GetNum(Items::Types::I_SKELETON) + skel);
+            l_unit->items.SetNum(Items::Types::I_UNDEAD, l_unit->items.GetNum(Items::Types::I_UNDEAD) + undead);
             b->AddLine(tmp);
             b->AddLine("");
             l_unit->raised = 0;
@@ -860,10 +860,10 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
     if (uncontrolled > 0 && monfaction > 0) {
         size_t undead = getrandom(uncontrolled * 2 / 3 + 1); // This is always <= uncontrolled as long as uncontrolled > 0
         size_t skel = uncontrolled - undead;
-        AString tmp = ItemString(I_SKELETON, static_cast<int>(skel));
+        AString tmp = ItemString(Items::Types::I_SKELETON, static_cast<int>(skel));
         if (undead > 0) {
             tmp += " and ";
-            tmp += ItemString(I_UNDEAD, static_cast<int>(undead));
+            tmp += ItemString(Items::Types::I_UNDEAD, static_cast<int>(undead));
         }
         tmp += " rise";
         if ((skel + undead) == 1)
@@ -871,8 +871,8 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
         tmp += " from the grave to seek vengeance.";
         Faction::Handle monfac = GetFaction(factions, monfaction);
         Unit::Handle u = GetNewUnit(monfac, 0);
-        u->MakeWMon("Undead", I_SKELETON, skel);
-        u->items.SetNum(I_UNDEAD, undead);
+        u->MakeWMon("Undead", Items::Types::I_SKELETON, skel);
+        u->items.SetNum(Items::Types::I_UNDEAD, undead);
         u->MoveUnit(r->GetDummy());
         b->AddLine(tmp);
         b->AddLine("");

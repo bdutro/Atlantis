@@ -150,14 +150,14 @@ bool ARegion::IsNativeRace(const Items& item)
     const auto& typer = TerrainDefs[type];
     if (IsCoastal()) {
         for (const auto& r: typer.coastal_races) {
-            if (item.equals(r))
+            if (item == r)
             {
                 return true;
             }
         }
     }
     for (const auto& r: typer.races) {
-        if (item.equals(r))
+        if (item == r)
         {
             return true;
         }
@@ -181,7 +181,7 @@ unsigned int ARegion::GetNearestProd(const Items& item)
         for(const auto& rp: regs) {
             ARegion::Handle r = rp.lock();
             AString skname = ItemDefs[item].pSkill;
-            int sk = LookupSkill(&skname);
+            Skills sk = LookupSkill(&skname);
             if (!r->products.GetProd(item, sk).expired()) {
                 regs.clear();
                 regs2.clear();
@@ -622,7 +622,7 @@ bool ARegion::HasExitRoad(Directions realDirection)
     for(const auto& o: objects)
     {
         if (o->IsRoad() && o->incomplete < 1) {
-            if (o->type.equals(GetRoadDirection(realDirection)))
+            if (o->type == GetRoadDirection(realDirection))
             {
                 return true;
             }
@@ -831,8 +831,8 @@ void ARegion::Kill(const Unit::Handle& u)
                 // the first unit can actually hold the stuff and not drown
                 // If the item would cause them to drown then they won't
                 // pick it up.
-                if (TerrainDefs[type].similar_type.equals(Regions::Types::R_OCEAN)) {
-                    if (first->object.lock()->type.equals(Objects::Types::O_DUMMY)) {
+                if (TerrainDefs[type].similar_type == Regions::Types::R_OCEAN) {
+                    if (first->object.lock()->type == Objects::Types::O_DUMMY) {
                         if (!first->CanReallySwim()) {
                             first->items.SetNum(i->type,
                                     first->items.GetNum(i->type) - i->num);
@@ -864,7 +864,7 @@ Object::WeakHandle ARegion::GetObject(int num)
 Object::WeakHandle ARegion::GetDummy()
 {
     for(const auto& o: objects) {
-        if (o->type.equals(Objects::Types::O_DUMMY)) return o;
+        if (o->type == Objects::Types::O_DUMMY) return o;
     }
     return Object::WeakHandle();
 }
@@ -1182,7 +1182,7 @@ void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER
 bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
 {
     AString skname;
-    int sk;
+    Skills sk;
 
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& f: farsees)
@@ -1240,7 +1240,7 @@ void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
             }
         } else {
             if (p->itemtype == Items::Types::I_SILVER) {
-                if (p->skill == S_ENTERTAINMENT) {
+                if (p->skill == Skills::Types::S_ENTERTAINMENT) {
                     if ((Globals->TRANSIT_REPORT &
                             GameDefs::REPORT_SHOW_ENTERTAINMENT) || present) {
                         f->PutStr(AString("Entertainment available: $") +
@@ -1491,7 +1491,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
             if (Globals->IMPROVED_FARSIGHT && has_farsight) {
                 for(const auto& watcher: farsees) {
                     if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
-                        if (watcher->unit.lock()->GetSkill(S_GATE_LORE)) {
+                        if (watcher->unit.lock()->GetSkill(Skills::Types::S_GATE_LORE)) {
                             sawgate = true;
                         }
                     }
@@ -1500,7 +1500,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
             if (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) {
                 for(const auto& watcher: passers) {
                     if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
-                        if (watcher->unit.lock()->GetSkill(S_GATE_LORE)) {
+                        if (watcher->unit.lock()->GetSkill(Skills::Types::S_GATE_LORE)) {
                             sawgate = true;
                         }
                     }
@@ -1510,7 +1510,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
                 for(const auto& u: o->units) {
                     if (!sawgate &&
                             ((u->faction.lock().get() == &fac) &&
-                             u->GetSkill(S_GATE_LORE))) {
+                             u->GetSkill(Skills::Types::S_GATE_LORE))) {
                         sawgate = true;
                     }
                 }
@@ -1549,7 +1549,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
 
         for(const auto& o: objects) {
             for(const auto& u: o->units) {
-                if (u->faction.lock().get() == &fac && u->GetSkill(S_MIND_READING) > 2) {
+                if (u->faction.lock().get() == &fac && u->GetSkill(Skills::Types::S_MIND_READING) > 2) {
                     detfac = true;
                 }
             }
@@ -1557,7 +1557,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
         if (Globals->IMPROVED_FARSIGHT && has_farsight) {
             for(const auto& watcher: farsees) {
                 if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
-                    if (watcher->unit.lock()->GetSkill(S_MIND_READING) > 2) {
+                    if (watcher->unit.lock()->GetSkill(Skills::Types::S_MIND_READING) > 2) {
                         detfac = true;
                     }
                 }
@@ -1568,7 +1568,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
                 (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
             for(const auto& watcher: passers) {
                 if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
-                    if (watcher->unit.lock()->GetSkill(S_MIND_READING) > 2) {
+                    if (watcher->unit.lock()->GetSkill(Skills::Types::S_MIND_READING) > 2) {
                         passdetfac = true;
                     }
                 }
@@ -1719,7 +1719,7 @@ int ARegion::GetTrueSight(const Faction& f, bool usepassers)
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& farsight: farsees) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
-                int t = farsight->unit.lock()->GetSkill(S_TRUE_SEEING);
+                int t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
         }
@@ -1730,7 +1730,7 @@ int ARegion::GetTrueSight(const Faction& f, bool usepassers)
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
-                int t = farsight->unit.lock()->GetSkill(S_TRUE_SEEING);
+                int t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
         }
@@ -1739,7 +1739,7 @@ int ARegion::GetTrueSight(const Faction& f, bool usepassers)
     for(const auto& obj: objects) {
         for(const auto& u: obj->units) {
             if (u->faction.lock().get() == &f) {
-                int temp = u->GetSkill(S_TRUE_SEEING);
+                int temp = u->GetSkill(Skills::Types::S_TRUE_SEEING);
                 if (temp>truesight) truesight = temp;
             }
         }
@@ -1799,8 +1799,8 @@ unsigned int ARegion::IsCoastal()
         if (!n.expired())
         {
             const auto& n_type = n.lock()->type;
-            if(TerrainDefs[n_type].similar_type.equals(Regions::Types::R_OCEAN)) {
-                if (!Globals->LAKESIDE_IS_COASTAL && n_type.equals(Regions::Types::R_LAKE)) continue;
+            if(TerrainDefs[n_type].similar_type == Regions::Types::R_OCEAN) {
+                if (!Globals->LAKESIDE_IS_COASTAL && n_type == Regions::Types::R_LAKE) continue;
                 seacount++;
             }
         }
@@ -1903,7 +1903,7 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
     }
 
     AString skname = spell;
-    int sp = LookupSkill(&skname);
+    Skills sp = LookupSkill(&skname);
     for(const auto& o: objects) {
         for(const auto& u: o->units) {
             if (u->faction.lock() == caster->faction.lock()) continue;

@@ -80,7 +80,7 @@ int ARegion::Wages()
 
 AString ARegion::WagesForReport()
 {
-    Production::WeakHandle p_w = products.GetProd(I_SILVER, -1);
+    Production::WeakHandle p_w = products.GetProd(Items::Types::I_SILVER, -1);
     if (!p_w.expired())
     {
         const auto p = p_w.lock();
@@ -95,13 +95,13 @@ AString ARegion::WagesForReport()
 
 void ARegion::SetupPop()
 {
-    TerrainType *typer = &(TerrainDefs[type]);
-    habitat = typer->pop+1;
+    const auto& typer = TerrainDefs[type];
+    habitat = typer.pop+1;
     if (habitat > 1) habitat *= 5;
-    if ((habitat < 100) && (typer->similar_type != R_OCEAN)) habitat = 100;
+    if ((habitat < 100) && (typer.similar_type != Regions::Types::R_OCEAN)) habitat = 100;
 
-    int pop = typer->pop;
-    int mw = typer->wages;
+    int pop = typer.pop;
+    int mw = typer.wages;
     
     // fix economy when MAINTENANCE_COST has been adjusted
     mw += Globals->MAINTENANCE_COST - 10;
@@ -118,15 +118,15 @@ void ARegion::SetupPop()
 
     // Only select race here if it hasn't been set during Race Growth
     // in the World Creation process.
-    if ((race == -1) || (!Globals->GROW_RACES)) {
-        std::vector<int> allowed_races(typer->races.begin(), typer->races.end());
+    if (!race.isValid() || (!Globals->GROW_RACES)) {
+        std::vector<Items> allowed_races(typer.races.begin(), typer.races.end());
         if(IsCoastal())
         {
-            allowed_races.insert(allowed_races.end(), typer->coastal_races.begin(), typer->coastal_races.end());
+            allowed_races.insert(allowed_races.end(), typer.coastal_races.begin(), typer.coastal_races.end());
         }
 
-        race = -1;
-        while (race == -1 || (ItemDefs[race].flags & ItemType::DISABLED)) {
+        race.invalidate();
+        while (!race.isValid() || (ItemDefs[race].flags & ItemType::DISABLED)) {
             size_t n = getrandom(allowed_races.size());
             race = allowed_races[n];
         }
@@ -134,7 +134,7 @@ void ARegion::SetupPop()
 
     habitat = habitat * 2/3 + getrandom(habitat/3);
     ManType *mt = FindRace(ItemDefs[race].abr);
-    if (mt->terrain == typer->similar_type) {
+    if (mt->terrain == typer.similar_type) {
         habitat = (habitat * 9)/8;
     }
     if (!IsNativeRace(race)) {
@@ -208,10 +208,10 @@ void ARegion::SetupPop()
     int wagelimit = static_cast<int>(static_cast<float>(pp * (Wages() - 10 * Globals->MAINTENANCE_COST)) /50);
     if (wagelimit < 0) wagelimit = 0;
     Production::Handle w = std::make_shared<Production>();
-    w->itemtype = I_SILVER;
+    w->itemtype = Items::Types::I_SILVER;
     w->amount = wagelimit / Globals->WORK_FRACTION;
     w->baseamount = wagelimit / Globals->WORK_FRACTION;
-    w->skill = -1;
+    w->skill.invalidate();
     w->productivity = wages;
 
     /* Entertainment - setup or adjust */
@@ -224,8 +224,8 @@ void ARegion::SetupPop()
     int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 1)) / 50);
     if (maxent < 0) maxent = 0;
     Production::Handle e = std::make_shared<Production>();
-    e->itemtype = I_SILVER;
-    e->skill = S_ENTERTAINMENT;
+    e->itemtype = Items::Types::I_SILVER;
+    e->skill = Skills::Types::S_ENTERTAINMENT;
     e->amount = maxent / Globals->ENTERTAIN_FRACTION;
     e->baseamount = maxent / Globals->ENTERTAIN_FRACTION;
     // raise entertainment income by productivity factor 10
@@ -251,9 +251,9 @@ void ARegion::SetupPop()
                 Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
-        markets.Add(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
+        markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                     Population()/125, 0, 10000, 0, 400);
     }
 }
@@ -281,10 +281,10 @@ void ARegion::SetIncome()
     }
     int maxwages = static_cast<int>(static_cast<float>(pp * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
     if (maxwages < 0) maxwages = 0;
-    Production::WeakHandle w_weak = products.GetProd(I_SILVER,-1);
+    Production::WeakHandle w_weak = products.GetProd(Items::Types::I_SILVER,-1);
     Production::Handle w;
     // In some cases (ie. after products.DeleteAll() in EditGameRegionTerrain)
-    // I_SILVER is not in ProductionList
+    // Items::Types::I_SILVER is not in ProductionList
     if( w_weak.expired() ) {
       w = std::make_shared<Production>();
       products.Add(w);
@@ -293,10 +293,10 @@ void ARegion::SetIncome()
     {
         w = w_weak.lock();
     }
-    w->itemtype = I_SILVER;
+    w->itemtype = Items::Types::I_SILVER;
     w->amount = maxwages / Globals->WORK_FRACTION;
     w->baseamount = maxwages / Globals->WORK_FRACTION;
-    w->skill = -1;
+    w->skill.invalidate();
     w->productivity = wages;
 
     /* Entertainment - setup or adjust */
@@ -309,9 +309,10 @@ void ARegion::SetIncome()
     int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 10)) / 50);
     if (maxent < 0) maxent = 0;
     Production::Handle e;
-    Production::WeakHandle e_w = products.GetProd(I_SILVER,S_ENTERTAINMENT);
+    Production::WeakHandle e_w = products.GetProd(Items::Types::I_SILVER,
+                                                  Skills::Types::S_ENTERTAINMENT);
     // In some cases (ie. after products.DeleteAll() in EditGameRegionTerrain)
-    // I_SILVER is not in ProductionList
+    // Items::Types::I_SILVER is not in ProductionList
     if( e_w.expired() ) {
       e = std::make_shared<Production>();
       products.Add(e);
@@ -320,10 +321,10 @@ void ARegion::SetIncome()
     {
         e = e_w.lock();
     }
-    e->itemtype = I_SILVER;
+    e->itemtype = Items::Types::I_SILVER;
     e->amount = maxent / Globals->ENTERTAIN_FRACTION;
     e->baseamount = maxent / Globals->ENTERTAIN_FRACTION;
-    e->skill = S_ENTERTAINMENT;
+    e->skill = Skills::Types::S_ENTERTAINMENT;
     // raise entertainment income by productivity factor 10
     e->productivity = Globals->ENTERTAIN_INCOME * 10;
     
@@ -339,7 +340,7 @@ void ARegion::SetIncome()
     }    
 }
 
-void ARegion::DisbandInRegion(int item, int amt)
+void ARegion::DisbandInRegion(const Items& item, int amt)
 {
     if (!Globals->DYNAMIC_POPULATION) return;
     if (amt > 0) {
@@ -386,32 +387,28 @@ void ARegion::SetupCityMarket()
     ManType *locals = FindRace(ItemDefs[race].abr);
     if (!locals) locals = FindRace("SELF");
     /* compose array of possible supply & demand items */
-    int supply[NITEMS]; 
-    int demand[NITEMS];
+    int supply[Items::size()] = {0};
+    int demand[Items::size()] = {0};
     /* possible advanced and magic items */
-    int rare[NITEMS];
-    int antiques[NITEMS];
-    int i;
-    for (i=0; i<NITEMS; i++) {
-        supply[i] = 0;
-        demand[i] = 0;
-        rare[i] = 0;
-        antiques[i] = 0;
+    int rare[Items::size()] = {0};
+    int antiques[Items::size()] = {0};
+    for (auto it = Items::begin(); it != Items::end(); ++it) {
+        size_t i = *it;
         if (ItemDefs[i].flags & ItemType::DISABLED) continue;
         if (ItemDefs[i].flags & ItemType::NOMARKET) continue;
         if (ItemDefs[i].type & IT_SHIP) continue;
         if (ItemDefs[i].type & IT_TRADE) numtrade++;
-        if (i==I_SILVER) continue;
+        if (it == Items::Types::I_SILVER) continue;
         if ((ItemDefs[i].type & IT_MAN)
             || (ItemDefs[i].type & IT_LEADER)) continue;
-        
+
         bool canProduceHere = false;
         // Check if the product can be produced in the region
         // Raw goods
-        if (ItemDefs[i].pInput[0].item == -1) {
+        if (!ItemDefs[i].pInput[0].item.isValid()) {
             for(const auto& p: TerrainDefs[type].prods)
             {
-                int resource = p.product;
+                const auto& resource = p.product;
                 if (i == resource) {
                     canProduceHere = true;
                     break;
@@ -424,7 +421,7 @@ void ARegion::SetupCityMarket()
             for(const auto& pinput: ItemDefs[i].pInput)
             {
                 bool match = false;
-                int need = pinput.item;
+                const auto& need = pinput.item;
                 for(const auto& p: TerrainDefs[type].prods)
                 {
                     if (p.product == need)
@@ -448,7 +445,7 @@ void ARegion::SetupCityMarket()
         //Normal Items
         if (ItemDefs[ i ].type & IT_NORMAL) {
             
-            if (i==I_GRAIN || i==I_LIVESTOCK || i==I_FISH) {
+            if (it == Items::Types::I_GRAIN || it == Items::Types::I_LIVESTOCK || it == Items::Types::I_FISH) {
                 // Add foodstuffs directly to market    
                 int amt = Globals->CITY_MARKET_NORMAL_AMT;
                 size_t price;
@@ -463,7 +460,7 @@ void ARegion::SetupCityMarket()
                 cap = (citymax * 3/4) - 5000;
                 if (cap < 0) cap = citymax/2;
                 markets.Add(M_SELL, i, static_cast<int>(price), amt, population, population + cap, amt, 2*amt);
-            } else if (i == I_FOOD) {
+            } else if (it == Items::Types::I_FOOD) {
                 // Add foodstuffs directly to market
                 int amt = Globals->CITY_MARKET_NORMAL_AMT;
                 int price;
@@ -477,7 +474,7 @@ void ARegion::SetupCityMarket()
                 cap = (citymax * 3/4) - 5000;
                 if (cap < 0) cap = citymax/2;
                 markets.Add(M_BUY, i, price, amt, population, population+2*cap, amt, amt*5);
-            } else if (ItemDefs[i].pInput[0].item == -1) {
+            } else if (!ItemDefs[i].pInput[0].item.isValid()) {
                 // Basic resource
                 // Add to supply?
                 if (canProduce) supply[i] = 4;
@@ -516,11 +513,14 @@ void ARegion::SetupCityMarket()
     /* Check for advanced item */
     if ((Globals->CITY_MARKET_ADVANCED_AMT) && (getrandom(4) == 1)) {
         int ad = 0;
-        for (int i=0; i<NITEMS; i++) ad += rare[i];
+        for (size_t i = 0; i < Items::size(); i++)
+        {
+            ad += rare[i];
+        }
         ad = getrandom(ad);
-        int i;
         int sum = 0;
-        for (i=0; i<NITEMS; i++) {
+        size_t i;
+        for (i = 0; i < Items::size(); i++) {
             sum += rare[i];
             if (ad < sum) break;
         }
@@ -546,11 +546,14 @@ void ARegion::SetupCityMarket()
     /* Check for magic item */
     if ((Globals->CITY_MARKET_MAGIC_AMT) && (getrandom(8) == 1)) {
         int mg = 0;
-        for (int i=0; i<NITEMS; i++) mg += antiques[i];
+        for (size_t i = 0; i < Items::size(); i++)
+        {
+            mg += antiques[i];
+        }
         mg = getrandom(mg);
-        int i;
+        size_t i;
         int sum = 0;
-        for (i=0; i<NITEMS; i++) {
+        for (i = 0; i < Items::size(); i++) {
             sum += antiques[i];
             if (mg < sum) break;
         }
@@ -578,11 +581,14 @@ void ARegion::SetupCityMarket()
     int sum = 1;
     while((num > 0) && (sum > 0)) {
         int dm = 0;
-        for (int i=0; i<NITEMS; i++) dm += demand[i];
+        for (size_t i = 0; i < Items::size(); i++)
+        {
+            dm += demand[i];
+        }
         dm = getrandom(dm);
-        int i;
+        size_t i;
         sum = 0;
-        for (i=0; i<NITEMS; i++) {
+        for (i = 0; i < Items::size(); i++) {
             sum += demand[i];
             if (dm < sum) break;
         }
@@ -612,11 +618,14 @@ void ARegion::SetupCityMarket()
     sum = 1;
     while((num > 0) && (sum > 0)) {
         int su = 0;
-        for (int i=0; i<NITEMS; i++) su += supply[i];
+        for (size_t i = 0; i < Items::size(); i++)
+        {
+            su += supply[i];
+        }
         su = getrandom(su);
-        int i;
+        size_t i;
         sum = 0;
-        for (i=0; i<NITEMS; i++) {
+        for (i = 0; i < Items::size(); i++) {
             sum += supply[i];
             if (su < sum) break;
         }
@@ -658,7 +667,7 @@ void ARegion::SetupCityMarket()
     while (sell2 == sell1 || sell2 == buy2 || sell2 == buy1)
         sell2 = getrandom(numtrade);
 
-    for (int i=0; i<NITEMS; i++) {
+    for (size_t i = 0; i < Items::size(); i++) {
         if (ItemDefs[i].flags & ItemType::DISABLED) continue;
         if (ItemDefs[i].flags & ItemType::NOMARKET) continue;
 
@@ -730,36 +739,36 @@ void ARegion::SetupCityMarket()
 
 void ARegion::SetupProds()
 {
-    TerrainType *typer = &(TerrainDefs[type]);
+    const auto& typer = TerrainDefs[type];
 
     if (Globals->FOOD_ITEMS_EXIST) {
-        if (typer->economy) {
+        if (typer.economy) {
             // Foodchoice = 0 or 1 if inland, 0, 1, or 2 if coastal
             int foodchoice = getrandom(2 +
                     (Globals->COASTAL_FISH && IsCoastal()));
             switch (foodchoice) {
                 case 0:
-                    if (!(ItemDefs[I_GRAIN].flags & ItemType::DISABLED))
-                        products.Add(I_GRAIN, static_cast<int>(typer->economy));
+                    if (!(ItemDefs[static_cast<size_t>(Items::Types::I_GRAIN)].flags & ItemType::DISABLED))
+                        products.Add(Items::Types::I_GRAIN, static_cast<int>(typer.economy));
                     break;
                 case 1:
-                    if (!(ItemDefs[I_LIVESTOCK].flags & ItemType::DISABLED))
-                        products.Add(I_LIVESTOCK, static_cast<int>(typer->economy));
+                    if (!(ItemDefs[static_cast<size_t>(Items::Types::I_LIVESTOCK)].flags & ItemType::DISABLED))
+                        products.Add(Items::Types::I_LIVESTOCK, static_cast<int>(typer.economy));
                     break;
                 case 2:
-                    if (!(ItemDefs[I_FISH].flags & ItemType::DISABLED))
-                        products.Add(I_FISH, static_cast<int>(typer->economy));
+                    if (!(ItemDefs[static_cast<size_t>(Items::Types::I_FISH)].flags & ItemType::DISABLED))
+                        products.Add(Items::Types::I_FISH, static_cast<int>(typer.economy));
                     break;
             }
         }
     }
 
-    for(const auto& prod: typer->prods)
+    for(const auto& prod: typer.prods)
     {
-        int item = prod.product;
+        const auto& item = prod.product;
         int chance = prod.chance;
         int amt = prod.amount;
-        if (item != -1) {
+        if (item.isValid()) {
             if (!(ItemDefs[item].flags & ItemType::DISABLED) &&
                     (getrandom(100) < chance)) {
                 products.Add(item, amt);
@@ -803,7 +812,7 @@ void ARegion::AddTown(TownTypeEnum size, AString * name)
     auto it = objects.begin();
     while(it != objects.end()) {
         const auto& obj = *it;
-        if (obj->type != O_DUMMY)
+        if (obj->type != Objects::Types::O_DUMMY)
         {
             if ((ObjectDefs[obj->type].monster != -1)
                 && (!(ObjectDefs[obj->type].flags & ObjectType::CANENTER))) {
@@ -903,9 +912,9 @@ void ARegion::UpdateEditRegion()
                             Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float calculation above
-        markets.Add(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
+        markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
     }    
 }
@@ -913,14 +922,14 @@ void ARegion::UpdateEditRegion()
 void ARegion::SetupEditRegion()
 {
     // Direct copy of SetupPop() except that it calls AddTown(AString*)
-    TerrainType *typer = &(TerrainDefs[type]);
-    habitat = typer->pop+1;
+    const auto& typer = TerrainDefs[type];
+    habitat = typer.pop+1;
     // Population factor: 5 times
     if (habitat > 1) habitat *= 5;
-    if ((habitat < 100) && (typer->similar_type != R_OCEAN)) habitat = 100;
+    if ((habitat < 100) && (typer.similar_type != Regions::Types::R_OCEAN)) habitat = 100;
 
-    int pop = typer->pop;
-    int mw = typer->wages;
+    int pop = typer.pop;
+    int mw = typer.wages;
     
     // fix economy when MAINTENANCE_COST has been adjusted
     mw += Globals->MAINTENANCE_COST - 10;
@@ -937,15 +946,15 @@ void ARegion::SetupEditRegion()
 
     // Only select race here if it hasn't been set during Race Growth
     // in the World Creation process.
-    if ((race == -1) || (!Globals->GROW_RACES)) {
-        std::vector<int> allowed_races(typer->races.begin(), typer->races.end());
+    if (!race.isValid() || (!Globals->GROW_RACES)) {
+        std::vector<Items> allowed_races(typer.races.begin(), typer.races.end());
         if(IsCoastal())
         {
-            allowed_races.insert(allowed_races.end(), typer->coastal_races.begin(), typer->coastal_races.end());
+            allowed_races.insert(allowed_races.end(), typer.coastal_races.begin(), typer.coastal_races.end());
         }
 
-        race = -1;
-        while (race == -1 || (ItemDefs[race].flags & ItemType::DISABLED)) {
+        race.invalidate();
+        while (!race.isValid() || (ItemDefs[race].flags & ItemType::DISABLED)) {
             size_t n = getrandom(allowed_races.size());
             race = allowed_races[n];
         }
@@ -953,7 +962,7 @@ void ARegion::SetupEditRegion()
 
     habitat = habitat * 2/3 + getrandom(habitat/3);
     ManType *mt = FindRace(ItemDefs[race].abr);
-    if (mt->terrain == typer->similar_type) {
+    if (mt->terrain == typer.similar_type) {
         habitat = (habitat * 9)/8;
     }
     if (!IsNativeRace(race)) {
@@ -1026,9 +1035,9 @@ void ARegion::SetupEditRegion()
                             Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
-        markets.Add(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
+        markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
     }
 }
@@ -1039,7 +1048,7 @@ void ARegion::UpdateProducts()
         int lastbonus = prod->baseamount / 2;
         int bonus = 0;
 
-        if (prod->itemtype == I_SILVER && prod->skill == -1) continue;
+        if (prod->itemtype == Items::Types::I_SILVER && !prod->skill.isValid()) continue;
 
         for(const auto& o: objects) {
             if (o->incomplete < 1 &&
@@ -1050,7 +1059,7 @@ void ARegion::UpdateProducts()
         }
         prod->amount = prod->baseamount + bonus;
 
-        if (prod->itemtype == I_GRAIN || prod->itemtype == I_LIVESTOCK) {
+        if (prod->itemtype == Items::Types::I_GRAIN || prod->itemtype == Items::Types::I_LIVESTOCK) {
             prod->amount += ((earthlore + clearskies) * 40) / prod->baseamount;
         }
     }
@@ -1083,7 +1092,7 @@ int ARegion::ProdDev()
     int basedev = BaseDev();
     for(const auto& p: products) {
         if (ItemDefs[p->itemtype].type & IT_NORMAL &&
-            p->itemtype != I_SILVER) {
+            p->itemtype != Items::Types::I_SILVER) {
             basedev += p->activity;
         }
     }
@@ -1101,8 +1110,8 @@ int ARegion::TownHabitat()
     for(const auto& obj: objects) {
         if (ObjectDefs[obj->type].protect > fort) fort = ObjectDefs[obj->type].protect;
         if (ItemDefs[ObjectDefs[obj->type].productionAided].flags & IT_FOOD) farm++;
-        if (ObjectDefs[obj->type].productionAided == I_SILVER) inn++;
-        if (ObjectDefs[obj->type].productionAided == I_HERBS) temple++;
+        if (ObjectDefs[obj->type].productionAided == Items::Types::I_SILVER) inn++;
+        if (ObjectDefs[obj->type].productionAided == Items::Types::I_HERBS) temple++;
         if ((ObjectDefs[obj->type].flags & ObjectType::TRANSPORT)
             && (ItemDefs[ObjectDefs[obj->type].productionAided].flags & IT_MOUNT)) caravan++;
     }
@@ -1212,7 +1221,7 @@ int ARegion::TownGrowth()
                             amt += 2 * m->activity;
                         } else amt += m->activity;
                         if ((ItemDefs[m->item].type & IT_FOOD)
-                            && (m->item != I_FISH))    tot += 2 * m->maxamt;
+                            && (m->item != Items::Types::I_FISH))    tot += 2 * m->maxamt;
                         if (ItemDefs[m->item].type & IT_TRADE) {
                             /* regional economic improvement */
                             improvement += 3 * amt;
@@ -1269,7 +1278,7 @@ void ARegion::Grow()
     int amount = 0;
     for(const auto& p: products) {
         if (ItemDefs[p->itemtype].type & IT_NORMAL &&
-            p->itemtype != I_SILVER) {
+            p->itemtype != Items::Types::I_SILVER) {
             activity += p->activity;
             // bonuses for productivity are calculated from
             // the _baseamount_ of all resources.
@@ -1393,7 +1402,7 @@ void ARegion::FindMigrationDestination(int round)
             continue;
         }
         const auto& nb = nb_w.lock();
-        if (TerrainDefs[nb->type].similar_type == R_OCEAN)
+        if (TerrainDefs[nb->type].similar_type == Regions::Types::R_OCEAN)
         {
             continue;
         }
@@ -1412,7 +1421,7 @@ void ARegion::FindMigrationDestination(int round)
                 continue;
             }
             const auto& nb2 = nb2_w.lock();
-            if (TerrainDefs[nb2->type].similar_type == R_OCEAN)
+            if (TerrainDefs[nb2->type].similar_type == Regions::Types::R_OCEAN)
             {
                 continue;
             }
@@ -1449,7 +1458,7 @@ int ARegion::MigrationAttractiveness(int homedev, int range, int round)
     mdev -= 8 * range;
     if (mdev <= homedev) return 0;
     /* available entertainment */
-    Production::WeakHandle p_w = products.GetProd(I_SILVER, S_ENTERTAINMENT);
+    Production::WeakHandle p_w = products.GetProd(Items::Types::I_SILVER, Skills::Types::S_ENTERTAINMENT);
     const auto& p = p_w.lock();
     int entertain = p->activity / 20;
     /* available space */
@@ -1579,16 +1588,16 @@ void ARegion::PostTurn(const ARegionList& pRegs)
             markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
                     Population()/25, 0, 10000, 0, 2000);
             if (Globals->LEADERS_EXIST) {
-                ratio = static_cast<float>(ItemDefs[I_LEADERS].baseprice) /
+                ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) /
                         static_cast<float>(Globals->BASE_MAN_COST);
-                markets.Add(M_BUY, I_LEADERS, calculateWagesWithRatio(ratio),
+                markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
             }
         }
     }
 
     /* Set wage income and entertainment */
-    if (type != R_NEXUS) {
+    if (type != Regions::Types::R_NEXUS) {
         SetIncome();
     }
     

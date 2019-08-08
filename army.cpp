@@ -32,24 +32,24 @@ enum {
     LOSS
 };
 
-Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, int regtype, int r, int ass)
+Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& regtype, const Items& r, int ass)
 {
     AString abbr;
-    int item, armorType;
+    Items item;
 
     race = r;
     unit = u;
-    building = 0;
+    building = *Objects::begin();
 
     healing = 0;
     healtype = 0;
-    healitem = -1;
+    healitem.invalidate();
     canbehealed = 1;
     regen = 0;
 
-    armor = -1;
-    riding = -1;
-    weapon = -1;
+    armor.invalidate();
+    riding.invalidate();
+    weapon.invalidate();
 
     attacks = 1;
     attacktype = ATTACK_COMBAT;
@@ -76,14 +76,14 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, int regtype, in
 
     /* Special case to allow protection from ships */
     if (o->IsFleet() && o->capacity < 1 && o->shipno < o->ships.size()) {
-        int objectno;
+        Objects objectno;
 
         unsigned int i = 0;
         for(const auto& ship: o->ships) {
             if (o->shipno == i) {
                 abbr = ItemDefs[ship->type].name;
                 objectno = LookupObject(&abbr);
-                if (objectno >= 0 && ObjectDefs[objectno].protect > 0) {
+                if (objectno.isValid() && ObjectDefs[objectno].protect > 0) {
                     o->capacity = static_cast<int>(static_cast<size_t>(ObjectDefs[objectno].protect) * ship->num);
                     o->type = objectno;
                 }
@@ -157,19 +157,19 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, int regtype, in
     for (unsigned int i = 0; i < MAX_READY; i++) {
         // Check preferred armor first.
         item = u->readyArmor[i];
-        if (item == -1) break;
+        if (!item.isValid()) break;
         abbr = ItemDefs[item].abr;
         item = u->GetArmor(abbr, ass);
-        if (item != -1) {
+        if (item.isValid()) {
             armor = item;
             break;
         }
     }
-    if (armor == -1) {
-        for (armorType = 1; armorType < NUMARMORS; armorType++) {
+    if (!armor.isValid()) {
+        for (size_t armorType = 1; armorType < ArmorDefs.size(); ++armorType) {
             abbr = ArmorDefs[armorType].abbr;
             item = u->GetArmor(abbr, ass);
-            if (item != -1) {
+            if (item.isValid()) {
                 armor = item;
                 break;
             }
@@ -187,11 +187,10 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, int regtype, in
         //
         // Mounts of some type _are_ allowed in this region
         //
-        int mountType;
-        for (mountType = 1; mountType < NUMMOUNTS; mountType++) {
+        for (size_t mountType = 1; mountType < MountDefs.size(); ++mountType) {
             abbr = MountDefs[mountType].abbr;
             item = u->GetMount(abbr, canFly, canRide, ridingBonus);
-            if (item == -1) continue;
+            if (!item.isValid()) continue;
             // Defer adding the combat bonus until we know if the weapon
             // allows it.  The defense bonus for riding can be added now
             // however.
@@ -204,28 +203,31 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, int regtype, in
     //
     // Find the correct weapon for this soldier.
     //
-    int weaponType;
     int attackBonus = 0;
     int defenseBonus = 0;
     int numAttacks = 1;
     for (unsigned int i = 0; i < MAX_READY; i++) {
         // Check the preferred weapon first.
         item = u->readyWeapon[i];
-        if (item == -1) break;
+        if (!item.isValid()) break;
         abbr = ItemDefs[item].abr;
-        item = u->GetWeapon(abbr, riding, ridingBonus, attackBonus,
-                defenseBonus, numAttacks);
-        if (item != -1) {
+        item = u->GetWeapon(abbr,
+                            riding,
+                            ridingBonus,
+                            attackBonus,
+                            defenseBonus,
+                            numAttacks);
+        if (item.isValid()) {
             weapon = item;
             break;
         }
     }
-    if (weapon == -1) {
-        for (weaponType = 1; weaponType < NUMWEAPONS; weaponType++) {
+    if (!weapon.isValid()) {
+        for (size_t weaponType = 1; weaponType < WeaponDefs.size(); ++weaponType) {
             abbr = WeaponDefs[weaponType].abbr;
             item = u->GetWeapon(abbr, riding, ridingBonus, attackBonus,
                     defenseBonus, numAttacks);
-            if (item != -1) {
+            if (item.isValid()) {
                 weapon = item;
                 break;
             }
@@ -233,7 +235,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, int regtype, in
     }
     // If we did not get a weapon, set attack and defense bonuses to
     // combat skill (and riding bonus if applicable).
-    if (weapon == -1) {
+    if (!weapon.isValid()) {
         attackBonus = u->GetAttribute("combat") + ridingBonus;
         defenseBonus = attackBonus;
         numAttacks = 1;
@@ -274,8 +276,8 @@ void Soldier::SetupSpell()
             return;
         }
 
-        SkillType *pST = &SkillDefs[unit_sp->combat];
-        if (!(pST->flags & SkillType::COMBAT)) {
+        const auto& pST = SkillDefs[static_cast<size_t>(unit_sp->combat)];
+        if (!(pST.flags & SkillType::COMBAT)) {
             //
             // This isn't a combat spell!
             //
@@ -283,40 +285,39 @@ void Soldier::SetupSpell()
             return;
         }
 
-        special = pST->special;
+        special = pST.special;
         unit_sp->Practice(unit_sp->combat);
     }
 }
 
 void Soldier::SetupCombatItems()
 {
-    unsigned int battleType;
     int exclusive = 0;
     
     const auto unit_sp = unit.lock();
 
-    for (battleType = 1; battleType < NUMBATTLEITEMS; battleType++) {
-        BattleItemType *pBat = &BattleItemDefs[battleType];
+    for (size_t battleType = 1; battleType < BattleItemDefs.size(); ++battleType) {
+        const auto& pBat = BattleItemDefs[battleType];
 
-        AString abbr = pBat->abbr;
-        int item = unit_sp->GetBattleItem(abbr);
-        if (item == -1) continue;
+        AString abbr = pBat.abbr;
+        Items item = unit_sp->GetBattleItem(abbr);
+        if (!item.isValid()) continue;
 
         // If we are using the ready command, skip this item unless
         // it's the right one, or unless it is a shield which doesn't
         // need preparing.
         if (!Globals->USE_PREPARE_COMMAND ||
-                ((unit_sp->readyItem == -1) &&
+                (!unit_sp->readyItem.isValid() &&
                  (Globals->USE_PREPARE_COMMAND == GameDefs::PREPARE_NORMAL)) ||
                 (item == unit_sp->readyItem) ||
-                (pBat->flags & BattleItemType::SHIELD)) {
-            if ((pBat->flags & BattleItemType::SPECIAL) && special != NULL) {
+                (pBat.flags & BattleItemType::SHIELD)) {
+            if ((pBat.flags & BattleItemType::SPECIAL) && special != NULL) {
                 // This unit already has a special attack so give the item
                 // back to the unit as they aren't going to use it.
                 unit_sp->items.SetNum(item, unit_sp->items.GetNum(item)+1);
                 continue;
             }
-            if (pBat->flags & BattleItemType::MAGEONLY &&
+            if (pBat.flags & BattleItemType::MAGEONLY &&
                     unit_sp->type != U_MAGE && unit_sp->type != U_GUARDMAGE &&
                     unit_sp->type != U_APPRENTICE) {
                 // Only mages/apprentices can use this item so give the
@@ -325,7 +326,7 @@ void Soldier::SetupCombatItems()
                 continue;
             }
 
-            if (pBat->flags & BattleItemType::EXCLUSIVE) {
+            if (pBat.flags & BattleItemType::EXCLUSIVE) {
                 if (exclusive) {
                     // Can only use one exclusive item, and we already
                     // have one, so give the extras back.
@@ -335,33 +336,33 @@ void Soldier::SetupCombatItems()
                 exclusive = 1;
             }
 
-            if (pBat->flags & BattleItemType::MAGEONLY) {
-                unit_sp->Practice(S_MANIPULATE);
+            if (pBat.flags & BattleItemType::MAGEONLY) {
+                unit_sp->Practice(Skills::Types::S_MANIPULATE);
             }
 
             /* Make sure amulets of invulnerability are marked */
-            if (item == I_AMULETOFI) {
+            if (item == Items::Types::I_AMULETOFI) {
                 amuletofi = 1;
             }
 
             SET_BIT(battleItems, battleType);
 
-            if (pBat->flags & BattleItemType::SPECIAL) {
-                special = pBat->special;
-                slevel = pBat->skillLevel;
+            if (pBat.flags & BattleItemType::SPECIAL) {
+                special = pBat.special;
+                slevel = pBat.skillLevel;
             }
 
-            if (pBat->flags & BattleItemType::SHIELD) {
-                SpecialType *sp = FindSpecial(pBat->special);
+            if (pBat.flags & BattleItemType::SHIELD) {
+                SpecialType *sp = FindSpecial(pBat.special);
                 for (int i = 0; i < 4; i++) {
                     if (sp->shield[i] == NUM_ATTACK_TYPES) {
                         for (int j = 0; j < NUM_ATTACK_TYPES; j++) {
-                            if (dskill[j] < pBat->skillLevel)
-                                dskill[j] = pBat->skillLevel;
+                            if (dskill[j] < pBat.skillLevel)
+                                dskill[j] = pBat.skillLevel;
                         }
                     } else if (sp->shield[i] >= 0) {
-                        if (dskill[sp->shield[i]] < pBat->skillLevel)
-                            dskill[sp->shield[i]] = pBat->skillLevel;
+                        if (dskill[sp->shield[i]] < pBat.skillLevel)
+                            dskill[sp->shield[i]] = pBat.skillLevel;
                     }
                 }
             }
@@ -422,10 +423,9 @@ void Soldier::ClearEffect(char const *eff)
 
 void Soldier::ClearOneTimeEffects(void)
 {
-    for (int i = 0; i < NUMEFFECTS; i++) {
-        if (HasEffect(EffectDefs[i].name) &&
-                (EffectDefs[i].flags & EffectType::EFF_ONESHOT))
-            ClearEffect(EffectDefs[i].name);
+    for (const auto& i: EffectDefs) {
+        if (HasEffect(i.name) && (i.flags & EffectType::EFF_ONESHOT))
+            ClearEffect(i.name);
     }
 }
 
@@ -448,29 +448,34 @@ int Soldier::ArmorProtect(int weaponClass)
 void Soldier::RestoreItems()
 {
     const auto unit_sp = unit.lock();
-    if (healing && healitem != -1) {
-        if (healitem == I_HERBS) {
+    if (healing && healitem.isValid()) {
+        if (healitem == Items::Types::I_HERBS) {
             unit_sp->items.SetNum(healitem,
                     unit_sp->items.GetNum(healitem) + healing);
-        } else if (healitem == I_HEALPOTION) {
+        } else if (healitem == Items::Types::I_HEALPOTION) {
             unit_sp->items.SetNum(healitem,
                     unit_sp->items.GetNum(healitem)+healing/10);
         }
     }
-    if (weapon != -1)
+    if (weapon.isValid())
+    {
         unit_sp->items.SetNum(weapon,unit_sp->items.GetNum(weapon) + 1);
-    if (armor != -1)
+    }
+    if (armor.isValid())
+    {
         unit_sp->items.SetNum(armor,unit_sp->items.GetNum(armor) + 1);
-    if (riding != -1)
+    }
+    if (riding.isValid())
+    {
         unit_sp->items.SetNum(riding,unit_sp->items.GetNum(riding) + 1);
+    }
 
-    unsigned int battleType;
-    for (battleType = 1; battleType < NUMBATTLEITEMS; battleType++) {
-        BattleItemType *pBat = &BattleItemDefs[ battleType ];
+    for (size_t battleType = 1; battleType < BattleItemDefs.size(); ++battleType) {
+        const BattleItemType& pBat = BattleItemDefs[battleType];
 
         if (GET_BIT(battleItems, battleType)) {
-            AString itm(pBat->abbr);
-            int item = LookupItem(&itm);
+            AString itm(pBat.abbr);
+            Items item = LookupItem(&itm);
             unit_sp->items.SetNum(item, unit_sp->items.GetNum(item) + 1);
         }
     }
@@ -584,7 +589,7 @@ Army::Army(const Unit::Handle& ldr, const std::list<Location::Handle>& locs, int
     // from tact-4 to tact-5! Also check that we have skills, otherwise
     // we get a nasty core dump ;)
     if (Globals->TACTICS_NEEDS_WAR && (tactician->skills.Num() != 0)) {
-        size_t currskill = tactician->skills.GetDays(S_TACTICS) / tactician->GetMen();
+        size_t currskill = tactician->skills.GetDays(Skills::Types::S_TACTICS) / tactician->GetMen();
         if (currskill < 450 - Globals->SKILL_PRACTICE_AMOUNT) {
             tactician->PracticeAttribute("tactics");
         }
@@ -642,7 +647,7 @@ void Army::WriteLosses(Battle& b) {
     }
 }
 
-void Army::GetMonSpoils(ItemList& spoils, int monitem, size_t free)
+void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
 {
     if ((Globals->MONSTER_NO_SPOILS > 0) &&
             (free >= Globals->MONSTER_SPOILS_RECOVERY)) {
@@ -659,34 +664,35 @@ void Army::GetMonSpoils(ItemList& spoils, int monitem, size_t free)
         silv *= (Globals->MONSTER_SPOILS_RECOVERY-free);
         silv /= Globals->MONSTER_SPOILS_RECOVERY;
     }
-    spoils.SetNum(I_SILVER, spoils.GetNum(I_SILVER) + getrandom(silv));
+    spoils.SetNum(Items::Types::I_SILVER,
+                  spoils.GetNum(Items::Types::I_SILVER) + getrandom(silv));
 
-    int thespoil = mp->spoiltype;
+    if (mp->spoiltype == -1) return;
 
-    if (thespoil == -1) return;
+    size_t thespoil = static_cast<size_t>(mp->spoiltype);
+
     if (thespoil == IT_NORMAL && getrandom(2)) thespoil = IT_TRADE;
 
     int count = 0;
-    int i;
-    for (i=0; i<NITEMS; i++) {
-        if ((ItemDefs[i].type & thespoil) &&
-                !(ItemDefs[i].type & IT_SPECIAL) &&
-                !(ItemDefs[i].type & IT_SHIP) &&
-                !(ItemDefs[i].flags & ItemType::DISABLED)) {
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        if ((ItemDefs[*i].type & thespoil) &&
+                !(ItemDefs[*i].type & IT_SPECIAL) &&
+                !(ItemDefs[*i].type & IT_SHIP) &&
+                !(ItemDefs[*i].flags & ItemType::DISABLED)) {
             count ++;
         }
     }
     if (count == 0) return;
     count = getrandom(count) + 1;
 
-    for (i=0; i<NITEMS; i++) {
-        if ((ItemDefs[i].type & thespoil) &&
-                !(ItemDefs[i].type & IT_SPECIAL) &&
-                !(ItemDefs[i].type & IT_SHIP) &&
-                !(ItemDefs[i].flags & ItemType::DISABLED)) {
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        if ((ItemDefs[*i].type & thespoil) &&
+                !(ItemDefs[*i].type & IT_SPECIAL) &&
+                !(ItemDefs[*i].type & IT_SHIP) &&
+                !(ItemDefs[*i].flags & ItemType::DISABLED)) {
             count--;
             if (count == 0) {
-                thespoil = i;
+                thespoil = *i;
                 break;
             }
         }
@@ -781,13 +787,13 @@ bool Army::CanBeHealed()
 void Army::DoHeal(Battle& b)
 {
     // Do magical healing
-    for (int i = 5; i > 0; --i)
+    for (size_t i = 5; i > 0; --i)
         DoHealLevel(b, i, 0);
     // Do Normal healing
     DoHealLevel(b, 1, 1);
 }
 
-void Army::DoHealLevel(Battle& b, int type, int useItems)
+void Army::DoHealLevel(Battle& b, size_t type, int useItems)
 {
     unsigned int rate = HealDefs[type].rate;
 
@@ -796,15 +802,22 @@ void Army::DoHealLevel(Battle& b, int type, int useItems)
         int n = 0;
         if (!CanBeHealed()) break;
         if (s->healtype <= 0) continue;
+        size_t s_healtype = static_cast<size_t>(s_healtype);
         // This should be here.. Use the best healing first
-        if (s->healtype != type) continue;
+        if (s_healtype != type) continue;
         if (!s->healing) continue;
         if (useItems) {
-            if (s->healitem == -1) continue;
-            if (s->healitem != I_HEALPOTION) s->unit.lock()->Practice(S_HEALING);
+            if (!s->healitem.isValid())
+            {
+                continue;
+            }
+            if (s->healitem != Items::Types::I_HEALPOTION)
+            {
+                s->unit.lock()->Practice(Skills::Types::S_HEALING);
+            }
         } else {
-            if (s->healitem != -1) continue;
-            s->unit.lock()->Practice(S_MAGICAL_HEALING);
+            if (s->healitem.isValid()) continue;
+            s->unit.lock()->Practice(Skills::Types::S_MAGICAL_HEALING);
         }
 
         while (s->healing) {
@@ -1190,7 +1203,7 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         size_t tarnum = static_cast<size_t>(tarnum_signed);
         auto tar = GetTarget(tarnum);
         int tarFlags = 0;
-        if (tar->weapon != -1) {
+        if (tar->weapon.isValid()) {
             WeaponType *pw = FindWeapon(ItemDefs[tar->weapon].abr);
             tarFlags = pw->flags;
         }
@@ -1221,7 +1234,7 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         }
 
         /* 4.3 Add bonuses versus mounted */
-        if (tar->riding != -1) attackLevel += mountBonus;
+        if (tar->riding.isValid()) attackLevel += mountBonus;
 
         /* 5. Attack soldier */
         if (attackType != NUM_ATTACK_TYPES) {

@@ -44,15 +44,15 @@ int Game::SetupFaction( const Faction::Handle& pFac )
     temp2->reveal = REVEAL_FACTION;
 
     temp2->type = U_MAGE;
-    temp2->Study(S_PATTERN, 30);
-    temp2->Study(S_SPIRIT, 30);
-    temp2->Study(S_GATE_LORE, 30);
+    temp2->Study(Skills::Types::S_PATTERN, 30);
+    temp2->Study(Skills::Types::S_SPIRIT, 30);
+    temp2->Study(Skills::Types::S_GATE_LORE, 30);
 
     if (TurnNumber() >= 25) {
-        temp2->Study(S_PATTERN, 60);
-        temp2->Study(S_SPIRIT, 60);
-        temp2->Study(S_FORCE, 90);
-        temp2->Study(S_COMBAT, 30);
+        temp2->Study(Skills::Types::S_PATTERN, 60);
+        temp2->Study(Skills::Types::S_SPIRIT, 60);
+        temp2->Study(Skills::Types::S_FORCE, 90);
+        temp2->Study(Skills::Types::S_COMBAT, 30);
     }
 
     if (Globals->UPKEEP_MINIMUM_FOOD > 0)
@@ -122,10 +122,10 @@ Faction::WeakHandle Game::CheckVictory()
 void Game::ModifyTablesPerRuleset(void)
 {
     if (Globals->APPRENTICES_EXIST)
-        EnableSkill(S_MANIPULATE);
+        EnableSkill(Skills::Types::S_MANIPULATE);
 
     if (!Globals->GATES_EXIST)
-        DisableSkill(S_GATE_LORE);
+        DisableSkill(Skills::Types::S_GATE_LORE);
 
     if (Globals->FULL_TRUESEEING_BONUS) {
         ModifyAttribMod("observation", 1, AttribModItem::SKILL,
@@ -174,8 +174,8 @@ void Game::ModifyTablesPerRuleset(void)
     EnableItem(Items::Types::I_JAVELIN);
     EnableItem(Items::Types::I_PIKE);
 
-    EnableSkill(S_ARMORCRAFT);
-    EnableSkill(S_WEAPONCRAFT);
+    EnableSkill(Skills::Types::S_ARMORCRAFT);
+    EnableSkill(Skills::Types::S_WEAPONCRAFT);
 
     EnableObject(Objects::Types::O_ROADN);
     EnableObject(Objects::Types::O_ROADNE);
@@ -203,7 +203,7 @@ void Game::ModifyTablesPerRuleset(void)
         EnableItem(Items::Types::I_HEALPOTION);
         EnableItem(Items::Types::I_ROUGHGEM);
         EnableItem(Items::Types::I_GEMS);
-        EnableSkill(S_GEMCUTTING);
+        EnableSkill(Skills::Types::S_GEMCUTTING);
     }
 
     // Modify the various spells which are allowed to cross levels
@@ -215,7 +215,7 @@ void Game::ModifyTablesPerRuleset(void)
     }
 
     if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
-        EnableSkill(S_QUARTERMASTER);
+        EnableSkill(Skills::Types::S_QUARTERMASTER);
         EnableObject(Objects::Types::O_CARAVANSERAI);
     }
     // XXX -- This is just here to preserve existing behavior
