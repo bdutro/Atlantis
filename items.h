@@ -30,6 +30,7 @@ class ItemType;
 
 #include <list>
 #include <memory>
+#include <exception>
 
 #include "gamedataarray.h"
 #include "itemtype.h"
@@ -169,8 +170,8 @@ class ManType
         int defaultlevel;
         std::array<char const *, 6> skills;
 
-        bool CanProduce(const Items&);
-        bool CanUse(const Items&);
+        bool CanProduce(const Items&) const;
+        bool CanUse(const Items&) const;
 };
 
 extern const GameDataArray<ManType> ManDefs;
@@ -344,12 +345,12 @@ extern Items ParseEnabledItem(AString *);
 extern Items ParseTransportableItem(AString *);
 extern Items LookupItem(AString *);
 
-extern BattleItemType *FindBattleItem(char const *abbr);
-extern ArmorType *FindArmor(char const *abbr);
-extern WeaponType *FindWeapon(char const *abbr);
-extern MountType *FindMount(char const *abbr);
-extern MonType *FindMonster(char const *abbr, int illusion);
-extern ManType *FindRace(char const *abbr);
+extern const BattleItemType& FindBattleItem(char const *abbr);
+extern const ArmorType& FindArmor(char const *abbr);
+extern const WeaponType& FindWeapon(char const *abbr);
+extern const MountType& FindMount(char const *abbr);
+extern const MonType& FindMonster(char const *abbr, int illusion);
+extern const ManType& FindRace(char const *abbr);
 extern AString AttType(int atype);
 
 enum {
@@ -357,7 +358,7 @@ enum {
     ALWAYSPLURAL = 0x02
 };
 extern AString ItemString(const Items& type, int num, int flags=0);
-extern AString *ItemDescription(int item, int full);
+extern AString *ItemDescription(const Items& item, int full);
 
 extern bool IsSoldier(const Items&);
 

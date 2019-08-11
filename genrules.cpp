@@ -79,7 +79,6 @@ int Game::GenRules(const AString &rules, const AString &css,
     AString temp, temp2;
     int cap;
     AString skname;
-    SkillType *pS;
 
     if (f.OpenByName(rules) == -1) {
         return 0;
@@ -1270,8 +1269,16 @@ int Game::GenRules(const AString &rules, const AString &css,
     for (const auto& item_def: ItemDefs) {
         if (item_def.flags & ItemType::DISABLED) continue;
         if (!(item_def.type & IT_NORMAL)) continue;
-        pS = FindSkill(item_def.pSkill);
-        if (pS && (pS->flags & SkillType::DISABLED)) continue;
+
+        try
+        {
+            const auto& pS = FindSkill(item_def.pSkill);
+            if (pS.flags & SkillType::DISABLED) continue;
+        }
+        catch(const NoSuchItemException&)
+        {
+        }
+
         last = false;
         for (const auto& input: item_def.pInput) {
             const auto& k = input.item;
@@ -1691,10 +1698,16 @@ int Game::GenRules(const AString &rules, const AString &css,
             if (skill_def.flags & SkillType::MAGIC) continue;
             found = 0;
             for (const auto& depend: skill_def.depends) {
-                SkillType *pS = FindSkill(depend.skill);
-                if (pS && !(pS->flags & SkillType::DISABLED)) {
-                    found = 1;
-                    break;
+                try
+                {
+                    const auto& pS = FindSkill(depend.skill);
+                    if (!(pS.flags & SkillType::DISABLED)) {
+                        found = 1;
+                        break;
+                    }
+                }
+                catch(const NoSuchItemException&)
+                {
                 }
             }
             if (found) continue;
@@ -1736,12 +1749,18 @@ int Game::GenRules(const AString &rules, const AString &css,
         } else {
             temp = "A unit may learn as many skills as it requires. ";
         }
-        ManType *mt = FindRace("MAN");
-        if (mt != NULL) {
+
+        try
+        {
+            const auto& mt = FindRace("MAN");
             temp += "Skills can be learned up to a maximum level of ";
-            temp += mt->defaultlevel;
+            temp += mt.defaultlevel;
             temp += ".";
         }
+        catch(const NoSuchItemException&)
+        {
+        }
+
         f.Paragraph(temp);
     }
 
@@ -1773,7 +1792,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             if (item_def.flags & ItemType::DISABLED) continue;
             if (!(item_def.type & IT_MAN)) continue;
             f.Enclose(1, "tr");
-            ManType *mt = FindRace(item_def.abr);
+            const auto& mt = FindRace(item_def.abr);
             f.Enclose(1, "td align=\"left\" nowrap");
             f.PutStr(item_def.names);
             f.Enclose(0, "td");
@@ -1781,35 +1800,40 @@ int Game::GenRules(const AString &rules, const AString &css,
             int spec = 0;
             comma = 0;
             temp = "";
-            for(const auto& skill: mt->skills)
+            for(const auto& skill: mt.skills)
             {
-                pS = FindSkill(skill);
-                if (!pS) continue;
-                if (temp2 == pS->abbr &&
-                        Globals->MAGE_NONLEADERS) {
+                try
+                {
+                    const auto& pS = FindSkill(skill);
+                    if (temp2 == pS.abbr &&
+                            Globals->MAGE_NONLEADERS) {
+                        spec = 1;
+                        if (comma) temp += ", ";
+                        temp += "all magical skills";
+                        comma++;
+                        continue;
+                    }
+                    if (pS.flags & SkillType::DISABLED) continue;
                     spec = 1;
                     if (comma) temp += ", ";
-                    temp += "all magical skills";
+                    temp += pS.name;
                     comma++;
-                    continue;
                 }
-                if (pS->flags & SkillType::DISABLED) continue;
-                spec = 1;
-                if (comma) temp += ", ";
-                temp += pS->name;
-                comma++;
+                catch(const NoSuchItemException&)
+                {
+                }
             }
             if (!spec) temp = "None.";
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"left\" nowrap");
             if (spec)
-                f.PutStr(mt->speciallevel);
+                f.PutStr(mt.speciallevel);
             else
                 f.PutStr("--");
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"left\" nowrap");
-            f.PutStr(mt->defaultlevel);
+            f.PutStr(mt.defaultlevel);
             f.Enclose(0, "td");
             f.Enclose(0, "tr");
         }
@@ -2311,8 +2335,19 @@ int Game::GenRules(const AString &rules, const AString &css,
         const auto& item_def = ItemDefs[*i];
         if (item_def.flags & ItemType::DISABLED) continue;
         if (!(item_def.type & IT_NORMAL)) continue;
-        pS = FindSkill(item_def.pSkill);
-        if (pS && (pS->flags & SkillType::DISABLED)) continue;
+        bool found_ps;
+        try
+        {
+            const auto& pS = FindSkill(item_def.pSkill);
+            if (pS.flags & SkillType::DISABLED) continue;
+            temp = pS.name;
+            found_ps = true;
+        }
+        catch(const NoSuchItemException&)
+        {
+            found_ps = false;
+        }
+
         last = false;
         for (const auto& j: item_def.pInput) {
             const auto& k = j.item;
@@ -2327,8 +2362,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.PutStr(item_def.name);
         f.Enclose(0, "td");
         f.Enclose(1, "td align=\"left\" nowrap");
-        if (pS != NULL) {
-            temp = pS->name;
+        if (found_ps) {
             temp += AString(" (") + item_def.pLevel + ")";
             f.PutStr(temp);
         }
@@ -2381,56 +2415,76 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(1, "td align=\"left\"");
         temp = "";
         if (item_def.type & IT_WEAPON) {
-            WeaponType *wp = FindWeapon(item_def.abr);
-            if (wp->attackBonus || wp->defenseBonus ||
-                    (wp->flags & WeaponType::RANGED) ||
-                    (wp->flags & WeaponType::NEEDSKILL)) {
-                if (wp->flags & WeaponType::RANGED)
+            const auto& wp = FindWeapon(item_def.abr);
+            if (wp.attackBonus || wp.defenseBonus ||
+                    (wp.flags & WeaponType::RANGED) ||
+                    (wp.flags & WeaponType::NEEDSKILL)) {
+                if (wp.flags & WeaponType::RANGED)
                     temp += "Ranged weapon";
                 else
                     temp += "Weapon";
                 temp += " which gives ";
-                if (wp->attackBonus > -1) temp += "+";
-                temp += wp->attackBonus;
+                if (wp.attackBonus > -1) temp += "+";
+                temp += wp.attackBonus;
                 temp += " on attack";
                 temp += " and ";
-                if (wp->defenseBonus > -1) temp += "+";
-                temp += wp->defenseBonus;
+                if (wp.defenseBonus > -1) temp += "+";
+                temp += wp.defenseBonus;
                 temp += " on defense";
-                if (wp->flags & WeaponType::NEEDSKILL) {
-                    pS = FindSkill(wp->baseSkill);
-                    if (pS && !(pS->flags & SkillType::DISABLED))
-                        temp += AString(" (needs ") + pS->name;
-                    pS = FindSkill(wp->orSkill);
-                    if (pS && !(pS->flags & SkillType::DISABLED))
-                        temp += AString(" or ") + pS->name;
+                if (wp.flags & WeaponType::NEEDSKILL) {
+                    try
+                    {
+                        const auto& pS = FindSkill(wp.baseSkill);
+                        if (!(pS.flags & SkillType::DISABLED))
+                        {
+                            temp += AString(" (needs ") + pS.name;
+                        }
+                    }
+                    catch(const NoSuchItemException&)
+                    {
+                    }
+                    try
+                    {
+                        const auto& pS = FindSkill(wp.orSkill);
+                        if (!(pS.flags & SkillType::DISABLED))
+                            temp += AString(" or ") + pS.name;
+                    }
+                    catch(const NoSuchItemException&)
+                    {
+                    }
                     temp += " skill)";
                 }
                 temp += ".<br />";
             }
-            if (wp->numAttacks < 0) {
+            if (wp.numAttacks < 0) {
                 temp += "Gives 1 attack every ";
-                temp += -(wp->numAttacks);
+                temp += -(wp.numAttacks);
                 temp += " rounds.<br />";
             }
         }
         if (item_def.type & IT_MOUNT) {
-            MountType *mp = FindMount(item_def.abr);
-            pS = FindSkill(mp->skill);
-            if (pS && !(pS->flags & SkillType::DISABLED)) {
-                temp += "Gives a riding bonus with the ";
-                temp += pS->name;
-                temp += " skill.<br />";
+            const auto& mp = FindMount(item_def.abr);
+            try
+            {
+                const auto& pS = FindSkill(mp.skill);
+                if (!(pS.flags & SkillType::DISABLED)) {
+                    temp += "Gives a riding bonus with the ";
+                    temp += pS.name;
+                    temp += " skill.<br />";
+                }
+            }
+            catch(const NoSuchItemException&)
+            {
             }
         }
         if (item_def.type & IT_ARMOR) {
-            ArmorType *at = FindArmor(item_def.abr);
+            const auto& at = FindArmor(item_def.abr);
             temp += "Gives a ";
-            temp += at->saves[SLASHING];
+            temp += at.saves[SLASHING];
             temp += " in ";
-            temp += at->from;
+            temp += at.from;
             temp += " chance to survive a normal hit.<br />";
-            if ((at->flags & ArmorType::USEINASSASSINATE) && has_stea) {
+            if ((at.flags & ArmorType::USEINASSASSINATE) && has_stea) {
                 temp += "May be used during assassinations.<br />";
             }
         }
@@ -2439,8 +2493,16 @@ int Game::GenRules(const AString &rules, const AString &css,
                 if (item_def2.flags & ItemType::DISABLED) continue;
                 if (item_def2.mult_item != *i) continue;
                 if (!(item_def2.type & IT_NORMAL)) continue;
-                pS = FindSkill(item_def2.pSkill);
-                if (!pS || (pS->flags & SkillType::DISABLED)) continue;
+                try
+                {
+                    const auto& pS = FindSkill(item_def2.pSkill);
+                    if (pS.flags & SkillType::DISABLED) continue;
+                }
+                catch(const NoSuchItemException&)
+                {
+                    continue;
+                }
+
                 last = 0;
                 for (const auto& k: item_def2.pInput) {
                     const auto& l = k.item;
@@ -2579,9 +2641,17 @@ int Game::GenRules(const AString &rules, const AString &css,
         const auto& object_def = ObjectDefs[*i];
         if (object_def.flags & ObjectType::DISABLED) continue;
         if (!object_def.protect) continue;
-        pS = FindSkill(object_def.skill);
-        if (pS == NULL) continue;
-        if (pS->flags & SkillType::MAGIC) continue;
+        const char* ps_name;
+        try
+        {
+            const auto& pS = FindSkill(object_def.skill);
+            if (pS.flags & SkillType::MAGIC) continue;
+            ps_name = pS.name;
+        }
+        catch(const NoSuchItemException&)
+        {
+            continue;
+        }
         if (ObjectIsShip(*i)) continue;
         const auto& j = object_def.item;
         if (!j.isValid()) continue;
@@ -2611,7 +2681,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.PutStr(temp);
         f.Enclose(0, "td");
         f.Enclose(1, "td align=\"left\" nowrap");
-        temp = pS->name;
+        temp = ps_name;
         temp += AString(" (") + object_def.level + ")";
         f.PutStr(temp);
         f.Enclose(0, "td");
@@ -2678,9 +2748,17 @@ int Game::GenRules(const AString &rules, const AString &css,
         if (!prod_aided.isValid()) continue;
         if (ItemDefs[prod_aided].flags & ItemType::DISABLED) continue;
         if (!(ItemDefs[prod_aided].type & IT_NORMAL)) continue;
-        pS = FindSkill(object_def.skill);
-        if (pS == NULL) continue;
-        if (pS->flags & SkillType::MAGIC) continue;
+        const char* ps_name;
+        try
+        {
+            const auto& pS = FindSkill(object_def.skill);
+            if (pS.flags & SkillType::MAGIC) continue;
+            ps_name = pS.name;
+        }
+        catch(const NoSuchItemException&)
+        {
+            continue;
+        }
         const auto& item = object_def.item;
         if (!item.isValid()) continue;
         /* Need the >0 since item could be WOOD_OR_STONE (-2) */
@@ -2702,7 +2780,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.PutStr(temp);
         f.Enclose(0, "td");
         f.Enclose(1, "td align=\"left\" nowrap");
-        temp = pS->name;
+        temp = ps_name;
         if (object_def.level > 1)
             temp += AString(" (") + object_def.level + ")";
         f.PutStr(temp);
@@ -2773,9 +2851,17 @@ int Game::GenRules(const AString &rules, const AString &css,
             if (object_def.productionAided.isValid()) continue;
             if (object_def.protect) continue;
             if (ObjectIsShip(*i)) continue;
-            pS = FindSkill(object_def.skill);
-            if (pS == NULL) continue;
-            if (pS->flags & SkillType::MAGIC) continue;
+            const char* ps_name;
+            try
+            {
+                const auto& pS = FindSkill(object_def.skill);
+                if (pS.flags & SkillType::MAGIC) continue;
+                ps_name = pS.name;
+            }
+            catch(const NoSuchItemException&)
+            {
+                continue;
+            }
             const auto& j = object_def.item;
             if (!j.isValid()) continue;
             /* Need the >0 since item could be WOOD_OR_STONE (-2) */
@@ -2797,7 +2883,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"left\" nowrap");
-            temp = pS->name;
+            temp = ps_name;
             temp += AString(" (") + object_def.level + ")";
             f.PutStr(temp);
             f.Enclose(0, "td");
@@ -3872,9 +3958,17 @@ int Game::GenRules(const AString &rules, const AString &css,
                 if (!(item_def.type & IT_ARMOR)) continue;
                 if (!(item_def.type & IT_NORMAL)) continue;
                 if (item_def.flags & ItemType::DISABLED) continue;
-                ArmorType *at = FindArmor(item_def.abr);
-                if (at == NULL) continue;
-                if (!(at->flags & ArmorType::USEINASSASSINATE)) continue;
+
+                try
+                {
+                    const auto& at = FindArmor(item_def.abr);
+                    if (!(at.flags & ArmorType::USEINASSASSINATE)) continue;
+                }
+                catch(const NoSuchItemException&)
+                {
+                    continue;
+                }
+
                 if (last_it == ItemDefs.end()) {
                     last_it = i;
                     continue;
@@ -4011,9 +4105,15 @@ int Game::GenRules(const AString &rules, const AString &css,
         for (const auto& object_def: ObjectDefs) {
             if (object_def.flags & ObjectType::DISABLED) continue;
             if (!object_def.maxMages) continue;
-            pS = FindSkill(object_def.skill);
-            if (pS == NULL) continue;
-            if (pS->flags & SkillType::MAGIC) continue;
+            try
+            {
+                const auto& pS = FindSkill(object_def.skill);
+                if (pS.flags & SkillType::MAGIC) continue;
+            }
+            catch(const NoSuchItemException&)
+            {
+                continue;
+            }
             const auto& k = object_def.item;
             if (!k.isValid()) continue;
             /* Need the >0 since item could be WOOD_OR_STONE (-2) */

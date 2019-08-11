@@ -24,65 +24,70 @@
 // END A3HEADER
 
 #include <stdlib.h>
+#include <cstring>
 
 #include "game.h"
 #include "skills.h"
 #include "items.h"
 #include "gamedata.h"
 
-RangeType *FindRange(char const *range)
+const RangeType& FindRange(char const *range)
 {
-    if (range == NULL) return NULL;
-    for (int i = 0; i < NUMRANGES; i++) {
-        if (RangeDefs[i].key == NULL) continue;
-        if (AString(range) == RangeDefs[i].key)
-            return &RangeDefs[i];
-    }
-    return NULL;
+    return RangeDefs.FindItemByKey(range);
 }
 
-SpecialType *FindSpecial(char const *key)
+const SpecialType& FindSpecial(char const *key)
 {
-    if (key == NULL) return NULL;
-    for (int i = 0; i < NUMSPECIALS; i++) {
-        if (SpecialDefs[i].key == NULL) continue;
-        if (AString(key) == SpecialDefs[i].key)
-            return &SpecialDefs[i];
-    }
-    return NULL;
+    return SpecialDefs.FindItemByKey(key);
 }
 
-EffectType *FindEffect(char const *effect)
+const EffectType& FindEffect(char const *effect)
 {
-    if (effect == NULL) return NULL;
-    for (int i = 0; i < NUMEFFECTS; i++) {
-        if (EffectDefs[i].name == NULL) continue;
-        if (AString(effect) == EffectDefs[i].name)
-            return &EffectDefs[i];
-    }
-    return NULL;
+    return EffectDefs.FindItemByName(effect);
 }
 
-AttribModType *FindAttrib(char const *attrib)
+const AttribModType& FindAttrib(char const *attrib)
 {
-    if (attrib == NULL) return NULL;
-    for (int i = 0; i < NUMATTRIBMODS; i++) {
-        if (AttribDefs[i].key == NULL) continue;
-        if (AString(attrib) == AttribDefs[i].key)
-            return &AttribDefs[i];
-    }
-    return NULL;
+    return AttribDefs.FindItemByKey(attrib);
 }
 
-SkillType *FindSkill(char const *skname)
+const SkillType& FindSkill(char const *skname)
 {
-    if (skname == NULL) return NULL;
-    for (int i = 0; i < NSKILLS; i++) {
-        if (SkillDefs[i].abbr == NULL) continue;
-        if (AString(skname) == SkillDefs[i].abbr)
-            return &SkillDefs[i];
+    return SkillDefs.FindItemByAbbr(skname);
+}
+
+bool FindSameSkills(char const* sk1, char const *sk2)
+{
+    if(sk1 == sk2)
+    {
+        return true;
     }
-    return NULL;
+    else if(strcmp(sk1, sk2) == 0)
+    {
+        return true;
+    }
+    
+    const SkillType* sk1_ptr;
+    try
+    {
+        sk1_ptr = &FindSkill(sk1);
+    }
+    catch(const NoSuchItemException&)
+    {
+        sk1_ptr = nullptr;
+    }
+
+    const SkillType* sk2_ptr;
+    try
+    {
+        sk2_ptr = &FindSkill(sk2);
+    }
+    catch(const NoSuchItemException&)
+    {
+        sk2_ptr = nullptr;
+    }
+
+    return sk1_ptr == sk2_ptr;
 }
 
 int LookupSkill(AString *token)
@@ -108,17 +113,15 @@ int ParseSkill(AString *token)
     return r;
 }
 
-AString SkillStrs(SkillType *pS)
+AString SkillStrs(const SkillType& pS)
 {
-    AString temp = AString(pS->name) + " [" + pS->abbr + "]";
+    AString temp = AString(pS.name) + " [" + pS.abbr + "]";
     return temp;
 }
 
-AString SkillStrs(int i)
+AString SkillStrs(const Skills& type)
 {
-    AString temp = AString(SkillDefs[i].name) + " [" +
-        SkillDefs[i].abbr + "]";
-    return temp;
+    return SkillStrs(SkillDefs[type]);
 }
 
 int SkillCost(int skill)

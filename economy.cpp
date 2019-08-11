@@ -133,8 +133,8 @@ void ARegion::SetupPop()
     }
 
     habitat = habitat * 2/3 + getrandom(habitat/3);
-    ManType *mt = FindRace(ItemDefs[race].abr);
-    if (mt->terrain == typer.similar_type) {
+    const auto& mt = FindRace(ItemDefs[race].abr);
+    if (mt.terrain == typer.similar_type) {
         habitat = (habitat * 9)/8;
     }
     if (!IsNativeRace(race)) {
@@ -384,8 +384,16 @@ void ARegion::SetupCityMarket()
     int cap;
     int offset = 0;
     int citymax = Globals->CITY_POP;
-    ManType *locals = FindRace(ItemDefs[race].abr);
-    if (!locals) locals = FindRace("SELF");
+    const auto& locals = [&]() -> const ManType& {
+        try
+        {
+            return FindRace(ItemDefs[race].abr);
+        }
+        catch(const NoSuchItemException&)
+        {
+            return FindRace("SELF");
+        }
+    } ();
     /* compose array of possible supply & demand items */
     int supply[Items::size()] = {0};
     int demand[Items::size()] = {0};
@@ -438,10 +446,10 @@ void ARegion::SetupCityMarket()
         }
         int canProduce = 0;
         // Check if the locals can produce this item
-        if (canProduceHere) canProduce = locals->CanProduce(i);
+        if (canProduceHere) canProduce = locals.CanProduce(i);
         int isUseful = 0;
         // Check if the item is useful to the locals
-        isUseful = locals->CanUse(i);
+        isUseful = locals.CanUse(i);
         //Normal Items
         if (ItemDefs[ i ].type & IT_NORMAL) {
             
@@ -482,7 +490,7 @@ void ARegion::SetupCityMarket()
                 if (!canProduceHere) {
                     // Is it a mount?
                     if (ItemDefs[i].type & IT_MOUNT) {
-                        if (locals->CanProduce(i)) demand[i] = 4;
+                        if (locals.CanProduce(i)) demand[i] = 4;
                     } else if (isUseful) demand[i] = 4;
                 }
             } else {
@@ -961,8 +969,8 @@ void ARegion::SetupEditRegion()
     }
 
     habitat = habitat * 2/3 + getrandom(habitat/3);
-    ManType *mt = FindRace(ItemDefs[race].abr);
-    if (mt->terrain == typer.similar_type) {
+    const auto& mt = FindRace(ItemDefs[race].abr);
+    if (mt.terrain == typer.similar_type) {
         habitat = (habitat * 9)/8;
     }
     if (!IsNativeRace(race)) {

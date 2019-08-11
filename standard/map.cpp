@@ -1177,8 +1177,8 @@ void ARegionList::GrowRaces(const ARegionArray::Handle& pArr)
                         if (TerrainDefs[nreg->type].similar_type == Regions::Types::R_OCEAN)
                             ch += 2;
                     } else {
-                        ManType *mt = FindRace(ItemDefs[reg->race].abr);
-                        if (mt->terrain == TerrainDefs[nreg->type].similar_type)
+                        const auto& mt = FindRace(ItemDefs[reg->race].abr);
+                        if (mt.terrain == TerrainDefs[nreg->type].similar_type)
                         {
                             ch += 2;
                         }

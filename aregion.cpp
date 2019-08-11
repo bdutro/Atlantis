@@ -1887,11 +1887,11 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
 {
     std::list<Faction::Handle> flist;
 
-    SkillType *pS = FindSkill(spell);
+    const auto& pS = FindSkill(spell);
 
-    if (!(pS->flags & SkillType::NOTIFY)) {
+    if (!(pS.flags & SkillType::NOTIFY)) {
         // Okay, we aren't notifyable, check our prerequisites
-        for(const auto& d: pS->depends)
+        for(const auto& d: pS.depends)
         {
             if (d.skill == nullptr)
             {

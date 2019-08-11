@@ -112,35 +112,34 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
 
     /* Is this a monster? */
     if (ItemDefs[r].type & IT_MONSTER) {
-        MonType *mp = FindMonster(ItemDefs[r].abr,
-                (ItemDefs[r].type & IT_ILLUSION));
+        const auto& mp = FindMonster(ItemDefs[r].abr, ItemDefs[r].type & IT_ILLUSION);
         if (u->type == U_WMON)
-            name = AString(mp->name) + " in " + *(u->name);
+            name = AString(mp.name) + " in " + *(u->name);
         else
-            name = AString(mp->name) + " controlled by " + *(u->name);
-        askill = mp->attackLevel;
-        dskill[ATTACK_COMBAT] += mp->defense[ATTACK_COMBAT];
-        if (mp->defense[ATTACK_ENERGY] > dskill[ATTACK_ENERGY]) {
-            dskill[ATTACK_ENERGY] = mp->defense[ATTACK_ENERGY];
+            name = AString(mp.name) + " controlled by " + *(u->name);
+        askill = mp.attackLevel;
+        dskill[ATTACK_COMBAT] += mp.defense[ATTACK_COMBAT];
+        if (mp.defense[ATTACK_ENERGY] > dskill[ATTACK_ENERGY]) {
+            dskill[ATTACK_ENERGY] = mp.defense[ATTACK_ENERGY];
         }
-        if (mp->defense[ATTACK_SPIRIT] > dskill[ATTACK_SPIRIT]) {
-            dskill[ATTACK_SPIRIT] = mp->defense[ATTACK_SPIRIT];
+        if (mp.defense[ATTACK_SPIRIT] > dskill[ATTACK_SPIRIT]) {
+            dskill[ATTACK_SPIRIT] = mp.defense[ATTACK_SPIRIT];
         }
-        if (mp->defense[ATTACK_WEATHER] > dskill[ATTACK_WEATHER]) {
-            dskill[ATTACK_WEATHER] = mp->defense[ATTACK_WEATHER];
+        if (mp.defense[ATTACK_WEATHER] > dskill[ATTACK_WEATHER]) {
+            dskill[ATTACK_WEATHER] = mp.defense[ATTACK_WEATHER];
         }
-        dskill[ATTACK_RIDING] += mp->defense[ATTACK_RIDING];
-        dskill[ATTACK_RANGED] += mp->defense[ATTACK_RANGED];
+        dskill[ATTACK_RIDING] += mp.defense[ATTACK_RIDING];
+        dskill[ATTACK_RANGED] += mp.defense[ATTACK_RANGED];
         damage = 0;
-        hits = mp->hits;
+        hits = mp.hits;
         if (hits < 1) hits = 1;
         maxhits = hits;
-        attacks = mp->numAttacks;
+        attacks = mp.numAttacks;
         if (!attacks) attacks = 1;
-        special = mp->special;
-        slevel = mp->specialLevel;
+        special = mp.special;
+        slevel = mp.specialLevel;
         if (Globals->MONSTER_BATTLE_REGEN) {
-            regen = mp->regen;
+            regen = mp.regen;
             if (regen < 0) regen = 0;
         }
         return;
@@ -246,9 +245,9 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
         // items will be skipped in the battle items setup and handled
         // here.
         if ((ItemDefs[weapon].type & IT_BATTLE) && special == NULL) {
-            BattleItemType *pBat = FindBattleItem(ItemDefs[weapon].abr);
-            special = pBat->special;
-            slevel = pBat->skillLevel;
+            const auto& pBat = FindBattleItem(ItemDefs[weapon].abr);
+            special = pBat.special;
+            slevel = pBat.skillLevel;
         }
     }
 
@@ -353,8 +352,8 @@ void Soldier::SetupCombatItems()
             }
 
             if (pBat.flags & BattleItemType::SHIELD) {
-                SpecialType *sp = FindSpecial(pBat.special);
-                for (const auto shield: sp->shield) {
+                const auto& sp = FindSpecial(pBat.special);
+                for (const auto shield: sp.shield) {
                     if (shield == NUM_ATTACK_TYPES) {
                         for (int j = 0; j < NUM_ATTACK_TYPES; j++) {
                             if (dskill[j] < pBat.skillLevel)
@@ -387,40 +386,50 @@ void Soldier::SetEffect(char const *eff)
 {
     if (eff == NULL) return;
 
-    EffectType *e = FindEffect(eff);
-    if (e == NULL) return;
+    try
+    {
+        const auto& e = FindEffect(eff);
 
-    askill += e->attackVal;
+        askill += e.attackVal;
 
-    for (const auto& def_mod: e->defMods) {
-        if (def_mod.type != -1)
-        {
-            dskill[def_mod.type] += def_mod.val;
+        for (const auto& def_mod: e.defMods) {
+            if (def_mod.type != -1)
+            {
+                dskill[def_mod.type] += def_mod.val;
+            }
         }
+
+        if (e.cancelEffect != NULL) ClearEffect(e.cancelEffect);
+
+        if (!(e.flags & EffectType::EFF_NOSET)) effects[eff] = 1;
     }
-
-    if (e->cancelEffect != NULL) ClearEffect(e->cancelEffect);
-
-    if (!(e->flags & EffectType::EFF_NOSET)) effects[eff] = 1;
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Soldier::ClearEffect(char const *eff)
 {
     if (eff == NULL) return;
 
-    EffectType *e = FindEffect(eff);
-    if (e == NULL) return;
+    try
+    {
+        const auto& e = FindEffect(eff);
 
-    askill -= e->attackVal;
+        askill -= e.attackVal;
 
-    for (const auto& def_mod: e->defMods) {
-        if (def_mod.type != -1)
-        {
-            dskill[def_mod.type] -= def_mod.val;
+        for (const auto& def_mod: e.defMods) {
+            if (def_mod.type != -1)
+            {
+                dskill[def_mod.type] -= def_mod.val;
+            }
         }
-    }
 
-    effects[eff] = 0;
+        effects[eff] = 0;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Soldier::ClearOneTimeEffects(void)
@@ -431,20 +440,35 @@ void Soldier::ClearOneTimeEffects(void)
     }
 }
 
-int Soldier::ArmorProtect(int weaponClass)
+bool Soldier::ArmorProtect(int weaponClass)
 {
     //
     // Return 1 if the armor is successful
     //
-    ArmorType *pArm = NULL;
-    if (armor > 0) pArm = FindArmor(ItemDefs[armor].abr);
-    if (pArm == NULL) return 0;
-    int chance = pArm->saves[weaponClass];
+    try
+    {
+        if (armor <= 0)
+        {
+            return false;
+        }
+        const auto& pArm = FindArmor(ItemDefs[armor].abr);
+        int chance = pArm.saves[weaponClass];
 
-    if (chance <= 0) return 0;
-    if (chance > getrandom(pArm->from)) return 1;
+        if (chance <= 0)
+        {
+            return false;
+        }
+        if (chance > getrandom(pArm.from))
+        {
+            return true;
+        }
 
-    return 0;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
+
+    return false;
 }
 
 void Soldier::RestoreItems()
@@ -658,9 +682,8 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
     }
 
     /* First, silver */
-    MonType *mp = FindMonster(ItemDefs[monitem].abr,
-            (ItemDefs[monitem].type & IT_ILLUSION));
-    size_t silv = mp->silver;
+    const auto& mp = FindMonster(ItemDefs[monitem].abr, ItemDefs[monitem].type & IT_ILLUSION);
+    size_t silv = mp.silver;
     if ((Globals->MONSTER_NO_SPOILS > 0) && (free > 0)) {
         // Adjust the spoils for length of freedom.
         silv *= (Globals->MONSTER_SPOILS_RECOVERY-free);
@@ -669,9 +692,9 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
     spoils.SetNum(Items::Types::I_SILVER,
                   spoils.GetNum(Items::Types::I_SILVER) + getrandom(silv));
 
-    if (mp->spoiltype == -1) return;
+    if (mp.spoiltype == -1) return;
 
-    int thespoil = mp->spoiltype;
+    int thespoil = mp.spoiltype;
 
     if (thespoil == IT_NORMAL && getrandom(2)) thespoil = IT_TRADE;
 
@@ -700,7 +723,7 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
         }
     }
 
-    size_t val = getrandom(mp->silver * 2);
+    size_t val = getrandom(mp.silver * 2);
     if ((Globals->MONSTER_NO_SPOILS > 0) && (free > 0)) {
         // Adjust for length of monster freedom.
         val *= (Globals->MONSTER_SPOILS_RECOVERY-free);
@@ -1014,9 +1037,15 @@ ssize_t Army::GetTargetNum(char const *special)
         if (tars == 0) return -1;
     }
 
-    SpecialType *sp = FindSpecial(special);
+    
+    try
+    {
+        const auto& sp = FindSpecial(special);
 
-    if (sp && sp->targflags) {
+        if (!sp.targflags) {
+            throw NoSuchItemException();
+        }
+
         int validtargs = 0;
         bool found_start = false;
         size_t start;
@@ -1055,7 +1084,9 @@ ssize_t Army::GetTargetNum(char const *special)
                 }
             }
         }
-    } else {
+    }
+    catch(const NoSuchItemException&)
+    {
         size_t i = getrandom(tars);
         if (i < canfront)
         {
@@ -1205,8 +1236,8 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         auto tar = GetTarget(tarnum);
         int tarFlags = 0;
         if (tar->weapon.isValid()) {
-            WeaponType *pw = FindWeapon(ItemDefs[tar->weapon].abr);
-            tarFlags = pw->flags;
+            const auto& pw = FindWeapon(ItemDefs[tar->weapon].abr);
+            tarFlags = pw.flags;
         }
 
         /* 4. Add in any effects, if applicable */
@@ -1214,8 +1245,8 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         if (attackType != NUM_ATTACK_TYPES)
             tlev = tar->dskill[ attackType ];
         if (special != NULL) {
-            SpecialType *sp = FindSpecial(special);
-            if ((sp->effectflags & SpecialType::FX_NOBUILDING) && tar->building)
+            const auto& sp = FindSpecial(special);
+            if ((sp.effectflags & SpecialType::FX_NOBUILDING) && tar->building)
                 tlev -= 2;
         }
 
@@ -1296,9 +1327,8 @@ void Army::Kill(size_t killed)
     temp->unit.lock()->losses++;
     if (Globals->ARMY_ROUT == GameDefs::ARMY_ROUT_HITS_FIGURE) {
         if (ItemDefs[temp->race].type & IT_MONSTER) {
-            MonType *mp = FindMonster(ItemDefs[temp->race].abr,
-                    (ItemDefs[temp->race].type & IT_ILLUSION));
-            hitsalive -= mp->hits;
+            const auto& mp = FindMonster(ItemDefs[temp->race].abr, ItemDefs[temp->race].type & IT_ILLUSION);
+            hitsalive -= mp.hits;
         } else {
             // Assume everything that is a solder and isn't a monster is a
             // man.

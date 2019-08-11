@@ -84,18 +84,18 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
     if (!def->NumAlive()) return;
 
     if (!behind && a->riding.isValid()) {
-        MountType *pMt = FindMount(ItemDefs[a->riding].abr);
-        if (pMt->mountSpecial != NULL) {
+        const auto& pMt = FindMount(ItemDefs[a->riding].abr);
+        if (pMt.mountSpecial != NULL) {
             int num, tot = -1;
-            SpecialType *spd = FindSpecial(pMt->mountSpecial);
-            for (const auto& damage: spd->damage) {
+            const auto& spd = FindSpecial(pMt.mountSpecial);
+            for (const auto& damage: spd.damage) {
                 int times = damage.value;
-                if (spd->effectflags & SpecialType::FX_USE_LEV)
-                    times *= pMt->specialLev;
+                if (spd.effectflags & SpecialType::FX_USE_LEV)
+                    times *= pMt.specialLev;
                 int realtimes = damage.minnum + getrandom(times) +
                     getrandom(times);
-                num = def->DoAnAttack(pMt->mountSpecial, realtimes,
-                        damage.type, pMt->specialLev,
+                num = def->DoAnAttack(pMt.mountSpecial, realtimes,
+                        damage.type, pMt.specialLev,
                         damage.flags, damage.dclass,
                         damage.effect, 0, a);
                 if (num != -1) {
@@ -104,8 +104,8 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
                 }
             }
             if (tot != -1) {
-                AddLine(a->name + " " + spd->spelldesc + ", " +
-                        spd->spelldesc2 + tot + spd->spelltarget + ".");
+                AddLine(a->name + " " + spd.spelldesc + ", " +
+                        spd.spelldesc2 + tot + spd.spelltarget + ".");
             }
         }
     }
@@ -123,25 +123,32 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
     }
 
     for (int i = 0; i < numAttacks; i++) {
-        WeaponType *pWep = NULL;
-        if (a->weapon.isValid())
-            pWep = FindWeapon(ItemDefs[a->weapon].abr);
-
-        if (behind) {
-            if (!pWep) break;
-            if (!( pWep->flags & WeaponType::RANGED)) break;
-        }
-
         int flags = 0;
         int attackType = ATTACK_COMBAT;
         int mountBonus = 0;
         int attackClass = SLASHING;
-        if (pWep) {
-            flags = pWep->flags;
-            attackType = pWep->attackType;
-            mountBonus = pWep->mountBonus;
-            attackClass = pWep->weapClass;
+
+        try
+        {
+            const auto& pWep = FindWeapon(ItemDefs[a->weapon].abr);
+            if (!(pWep.flags & WeaponType::RANGED))
+            {
+                break;
+            }
+
+            flags = pWep.flags;
+            attackType = pWep.attackType;
+            mountBonus = pWep.mountBonus;
+            attackClass = pWep.weapClass;
         }
+        catch(const NoSuchItemException&)
+        {
+            if(behind)
+            {
+                break;
+            }
+        }
+
         def->DoAnAttack(NULL, 1, attackType, a->askill, flags, attackClass,
                 NULL, mountBonus, a);
         if (!def->NumAlive()) break;

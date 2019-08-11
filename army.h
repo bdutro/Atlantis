@@ -60,7 +60,7 @@ class Soldier {
         void SetEffect(char const *);
         void ClearEffect(char const *);
         void ClearOneTimeEffects(void);
-        int ArmorProtect(int weaponClass );
+        bool ArmorProtect(int weaponClass );
 
         void RestoreItems();
         void Alive(int);

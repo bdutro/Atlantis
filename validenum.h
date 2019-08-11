@@ -1,6 +1,8 @@
 #ifndef VALID_ENUM_H
 #define VALID_ENUM_H
 
+#include <iterator>
+
 #include "validvalue.h"
 
 template<typename EnumType, EnumType EndType>
@@ -15,6 +17,12 @@ class ValidEnum : public ValidValue<size_t>
                 size_t it_;
 
             public:
+                using value_type = ValidEnum;
+                using pointer = ValidEnum*;
+                using reference = ValidEnum&;
+                using iterator_category = std::bidirectional_iterator_tag;
+                using difference_type = ptrdiff_t;
+
                 iterator(Types it) :
                     iterator(static_cast<size_t>(it))
                 {

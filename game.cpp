@@ -1595,9 +1595,9 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                     if (Globals->WANDERING_MONSTERS_EXIST) {
                         const auto mfac = GetFaction(factions, monfaction);
                         const auto mon = GetNewUnit(mfac, 0);
-                        MonType *mp = FindMonster(ItemDefs[i->type].abr,
+                        const auto& mp = FindMonster(ItemDefs[i->type].abr,
                                 (ItemDefs[i->type].type & IT_ILLUSION));
-                        mon->MakeWMon(mp->name, i->type, i->num);
+                        mon->MakeWMon(mp.name, i->type, i->num);
                         mon->MoveUnit(r->GetDummy());
                         // This will be zero unless these are set. (0 means
                         // full spoils)
@@ -1647,9 +1647,9 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                     if (Globals->WANDERING_MONSTERS_EXIST) {
                         const auto mfac = GetFaction(factions, monfaction);
                         const auto mon = GetNewUnit(mfac, 0);
-                        MonType *mp = FindMonster(ItemDefs[i->type].abr,
+                        const auto& mp = FindMonster(ItemDefs[i->type].abr,
                                 (ItemDefs[i->type].type & IT_ILLUSION));
-                        mon->MakeWMon(mp->name, i->type, i->num);
+                        mon->MakeWMon(mp.name, i->type, i->num);
                         mon->MoveUnit(r->GetDummy());
                         // This will be zero unless these are set. (0 means
                         // full spoils)
@@ -1675,9 +1675,9 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                         if (Globals->WANDERING_MONSTERS_EXIST) {
                             const auto mfac = GetFaction(factions, monfaction);
                             const auto mon = GetNewUnit(mfac, 0);
-                            MonType *mp = FindMonster(ItemDefs[it->type].abr,
+                            const auto& mp = FindMonster(ItemDefs[it->type].abr,
                                     (ItemDefs[it->type].type & IT_ILLUSION));
-                            mon->MakeWMon(mp->name, it->type, it->num);
+                            mon->MakeWMon(mp.name, it->type, it->num);
                             mon->MoveUnit(r->GetDummy());
                             // This will be zero unless these are set. (0 means
                             // full spoils)
@@ -1943,9 +1943,9 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     Skills skill = Skills::Types::S_COMBAT;
     
     if (weapon.isValid()) {
-        WeaponType *wp = FindWeapon(ItemDefs[weapon].abr);
-        if (FindSkill(wp->baseSkill) == FindSkill("XBOW")) skill = Skills::Types::S_CROSSBOW;
-        if (FindSkill(wp->baseSkill) == FindSkill("LBOW")) skill = Skills::Types::S_LONGBOW;
+        const auto& wp = FindWeapon(ItemDefs[weapon].abr);
+        if (FindSameSkills(wp.baseSkill, "XBOW")) skill = Skills::Types::S_CROSSBOW;
+        if (FindSameSkills(wp.baseSkill, "LBOW")) skill = Skills::Types::S_LONGBOW;
     }
     
     size_t sl = u->GetRealSkill(skill);

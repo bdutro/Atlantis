@@ -107,11 +107,12 @@ class SkillType
 };
 extern const GameDataArray<SkillType> SkillDefs;
 
-SkillType *FindSkill(char const *skname);
+const SkillType& FindSkill(char const *skname);
+bool FindSameSkills(char const* sk1, char const *sk2);
 Skills LookupSkill(AString *);
 Skills ParseSkill(AString *);
 AString SkillStrs(const Skills&);
-AString SkillStrs(SkillType *);
+AString SkillStrs(const SkillType&);
 
 class ShowType {
     public:
@@ -249,7 +250,7 @@ class SpecialType {
 };
 extern const GameDataArray<SpecialType> SpecialDefs;
 
-extern SpecialType *FindSpecial(char const *key);
+extern const SpecialType& FindSpecial(char const *key);
 
 class EffectType {
     public:
@@ -266,7 +267,7 @@ class EffectType {
 };
 extern const GameDataArray<EffectType> EffectDefs;
 
-extern EffectType *FindEffect(char const *effect);
+extern const EffectType& FindEffect(char const *effect);
 
 class RangeType {
     public:
@@ -294,7 +295,7 @@ class RangeType {
 };
 extern const GameDataArray<RangeType> RangeDefs;
 
-extern RangeType *FindRange(char const *range);
+extern const RangeType& FindRange(char const *range);
 
 class AttribModItem {
     public:
@@ -337,6 +338,6 @@ class AttribModType {
 
 extern const GameDataArray<AttribModType> AttribDefs;
 
-extern AttribModType *FindAttrib(char const *attrib);
+extern const AttribModType& FindAttrib(char const *attrib);
 
 #endif
