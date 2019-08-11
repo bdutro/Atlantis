@@ -59,6 +59,16 @@ class GameDataArray : public std::vector<T>
             throw NoSuchItemException();
         }
 
+        T& FindItemByAbbr(char const* abbr)
+        {
+            return const_cast<T&>(const_cast<const GameDataArray*>(this)->FindItemByAbbr(abbr));
+        }
+
+        T& FindItemByAbbr(const AString& abbr)
+        {
+            return const_cast<T&>(const_cast<const GameDataArray*>(this)->FindItemByAbbr(abbr));
+        }
+
         const T& FindItemByKey(char const* key) const
         {
             if(!key)
@@ -84,6 +94,16 @@ class GameDataArray : public std::vector<T>
             throw NoSuchItemException();
         }
 
+        T& FindItemByKey(char const* key)
+        {
+            return const_cast<T&>(const_cast<const GameDataArray*>(this)->FindItemByKey(key));
+        }
+
+        T& FindItemByKey(const AString& key)
+        {
+            return const_cast<T&>(const_cast<const GameDataArray*>(this)->FindItemByKey(key));
+        }
+
         const T& FindItemByName(char const* name) const
         {
             if(!name)
@@ -107,6 +127,16 @@ class GameDataArray : public std::vector<T>
             }
 
             throw NoSuchItemException();
+        }
+
+        T& FindItemByName(char const* name)
+        {
+            return const_cast<T&>(const_cast<const GameDataArray*>(this)->FindItemByName(name));
+        }
+
+        T& FindItemByName(const AString& name)
+        {
+            return const_cast<T&>(const_cast<const GameDataArray*>(this)->FindItemByName(name));
         }
 };
 

@@ -30,448 +30,937 @@
 #include "game.h"
 #include "gamedata.h"
 
-void Game::EnableSkill(int sk)
+static ManType& FindRace_(char const *abbr);
+
+static ManType& FindRace_(char const *abbr)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
+    return ManDefs.FindItemByAbbr(abbr);
+}
+
+static MonType& FindMonster_(char const *abbr, int illusion);
+
+static MonType& FindMonster_(char const *abbr, int illusion)
+{
+    return MonDefs.FindItemByAbbr(GetMonsterTag(abbr, illusion));
+}
+
+static ArmorType& FindArmor_(char const *abbr);
+
+static ArmorType& FindArmor_(char const *abbr)
+{
+    return ArmorDefs.FindItemByAbbr(abbr);
+}
+
+static WeaponType& FindWeapon_(char const *abbr);
+
+static WeaponType& FindWeapon_(char const *abbr)
+{
+    return WeaponDefs.FindItemByAbbr(abbr);
+}
+
+static MountType& FindMount_(char const *abbr);
+
+static MountType& FindMount_(char const *abbr)
+{
+    return MountDefs.FindItemByAbbr(abbr);
+}
+
+static BattleItemType& FindBattleItem_(char const *abbr);
+
+static BattleItemType& FindBattleItem_(char const *abbr)
+{
+    return BattleItemDefs.FindItemByAbbr(abbr);
+}
+
+static SpecialType& FindSpecial_(char const *key);
+
+static SpecialType& FindSpecial_(char const *key)
+{
+    return SpecialDefs.FindItemByKey(key);
+}
+
+static EffectType& FindEffect_(char const *effect);
+
+static EffectType& FindEffect_(char const *effect)
+{
+    return EffectDefs.FindItemByName(effect);
+}
+
+static RangeType& FindRange_(char const *range);
+
+static RangeType& FindRange_(char const *range)
+{
+    return RangeDefs.FindItemByKey(range);
+}
+
+static AttribModType& FindAttrib_(char const *attrib);
+
+static AttribModType& FindAttrib_(char const *attrib)
+{
+    return AttribDefs.FindItemByKey(attrib);
+}
+
+void Game::EnableSkill(const Skills& sk)
+{
+    if (!sk.isValid())
+    {
+        return;
+    }
     SkillDefs[sk].flags &= ~SkillType::DISABLED;
 }
 
-void Game::DisableSkill(int sk)
+void Game::DisableSkill(const Skills& sk)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
+    if (!sk.isValid())
+    {
+        return;
+    }
     SkillDefs[sk].flags |= SkillType::DISABLED;
 }
 
-void Game::ModifySkillDependancy(int sk, int i, char const *dep, int lev)
+void Game::ModifySkillDependancy(const Skills& sk, int i, char const *dep, int lev)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
-    if (i < 0 || i >= (int)(sizeof(SkillDefs[sk].depends)/sizeof(SkillDepend)))
+    if (i < 0)
+    {
         return;
-    if (dep && (FindSkill(dep) == NULL)) return;
-    if (lev < 0) return;
-    SkillDefs[sk].depends[i].skill = dep;
-    SkillDefs[sk].depends[i].level = lev;
+    }
+    if (lev < 0)
+    {
+        return;
+    }
+    if (!sk.isValid())
+    {
+        return;
+    }
+    auto& skill_def = SkillDefs[sk];
+
+    const size_t i_u = static_cast<size_t>(i);
+    if(i_u >= skill_def.depends.size())
+    {
+        return;
+    }
+    try
+    {
+        FindSkill(dep);
+        skill_def.depends[i_u].skill = dep;
+        skill_def.depends[i_u].level = lev;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
-void Game::ModifySkillFlags(int sk, int flags)
+void Game::ModifySkillFlags(const Skills& sk, int flags)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
+    if (!sk.isValid())
+    {
+        return;
+    }
     SkillDefs[sk].flags = flags;
 }
 
-void Game::ModifySkillCost(int sk, int cost)
+void Game::ModifySkillCost(const Skills& sk, int cost)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
-    if (cost < 0) return;
+    if (cost < 0)
+    {
+        return;
+    }
+    if (!sk.isValid())
+    {
+        return;
+    }
     SkillDefs[sk].cost = cost;
 }
 
-void Game::ModifySkillSpecial(int sk, char const *special)
+void Game::ModifySkillSpecial(const Skills& sk, char const *special)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
-    if (special && (FindSpecial(special) == NULL)) return;
-    SkillDefs[sk].special = special;
+    if (!sk.isValid())
+    {
+        return;
+    }
+    try
+    {
+        FindSpecial_(special);
+        SkillDefs[sk].special = special;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::ModifySkillRange(int sk, char const *range)
+void Game::ModifySkillRange(const Skills& sk, char const *range)
 {
-    if (sk < 0 || sk > (NSKILLS-1)) return;
-    if (range && (FindRange(range) == NULL)) return;
-    SkillDefs[sk].range = range;
+    if (!sk.isValid())
+    {
+        return;
+    }
+    try
+    {
+        FindRange_(range);
+        SkillDefs[sk].range = range;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-
-void Game::EnableItem(int item)
+void Game::EnableItem(const Items& item)
 {
-    if (item < 0 || item > (NITEMS-1)) return;
+    if (!item.isValid())
+    {
+        return;
+    }
     ItemDefs[item].flags &= ~ItemType::DISABLED;
 }
 
-void Game::DisableItem(int item)
+void Game::DisableItem(const Items& item)
 {
-    if (item < 0 || item > (NITEMS-1)) return;
+    if (!item.isValid())
+    {
+        return;
+    }
     ItemDefs[item].flags |= ItemType::DISABLED;
 }
 
-void Game::ModifyItemFlags(int it, int flags)
+void Game::ModifyItemFlags(const Items& it, int flags)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
+    if (!it.isValid())
+    {
+        return;
+    }
     ItemDefs[it].flags = flags;
 }
 
-void Game::ModifyItemType(int it, int type)
+void Game::ModifyItemType(const Items& it, int type)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
+    if (!it.isValid())
+    {
+        return;
+    }
     ItemDefs[it].type = type;
 }
 
-void Game::ModifyItemWeight(int it, int weight)
+void Game::ModifyItemWeight(const Items& it, int weight)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (weight < 0) weight = 0;
-    ItemDefs[it].weight = weight;
+    if (!it.isValid())
+    {
+        return;
+    }
+    if (weight < 0)
+    {
+        weight = 0;
+    }
+    ItemDefs[it].weight = static_cast<size_t>(weight);
 }
 
-void Game::ModifyItemBasePrice(int it, int price)
+void Game::ModifyItemBasePrice(const Items& it, int price)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (price < 0) price = 0;
-    ItemDefs[it].baseprice = price;
+    if (!it.isValid())
+    {
+        return;
+    }
+    if (price < 0)
+    {
+        price = 0;
+    }
+    ItemDefs[it].baseprice = static_cast<size_t>(price);
 }
 
-void Game::ModifyItemCapacities(int it, int wlk, int rid, int fly, int swm)
+void Game::ModifyItemCapacities(const Items& it, int wlk, int rid, int fly, int swm)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
+    if (!it.isValid())
+    {
+        return;
+    }
     if (wlk < 0) wlk = 0;
     if (rid < 0) rid = 0;
     if (fly < 0) fly = 0;
     if (swm < 0) swm = 0;
-    ItemDefs[it].walk = wlk;
-    ItemDefs[it].ride = rid;
-    ItemDefs[it].fly = fly;
-    ItemDefs[it].swim = swm;
+
+    auto& item_def = ItemDefs[it];
+    item_def.walk = wlk;
+    item_def.ride = rid;
+    item_def.fly = fly;
+    item_def.swim = swm;
 }
 
-void Game::ModifyItemSpeed(int it, int speed)
+void Game::ModifyItemSpeed(const Items& it, int speed)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
+    if (!it.isValid())
+    {
+        return;
+    }
     if (speed < 0) speed = 0;
     ItemDefs[it].speed = speed;
 }
 
-void Game::ModifyItemProductionBooster(int it, int item, int bonus)
+void Game::ModifyItemProductionBooster(const Items& it, const Items& item, int bonus)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (item < -1 || item > (NITEMS-1)) return;
-    ItemDefs[it].mult_item = item;
-    ItemDefs[it].mult_val = bonus;
+    if (!it.isValid())
+    {
+        return;
+    }
+
+    auto& item_def = ItemDefs[it];
+    item_def.mult_item = item;
+    item_def.mult_val = bonus;
 }
 
-void Game::ModifyItemHitch(int it, int item, int capacity)
+void Game::ModifyItemHitch(const Items& it, const Items& item, int capacity)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (item < -1 || item > (NITEMS-1)) return;
-    if (capacity < 0) return;
-    ItemDefs[it].hitchItem = item;
-    ItemDefs[it].hitchwalk = capacity;
+    if (!it.isValid())
+    {
+        return;
+    }
+    if (capacity < 0)
+    {
+        return;
+    }
+
+    auto& item_def = ItemDefs[it];
+    item_def.hitchItem = item;
+    item_def.hitchwalk = capacity;
 }
 
-void Game::ModifyItemProductionSkill(int it, char *sk, int lev)
+void Game::ModifyItemProductionSkill(const Items& it, char *sk, int lev)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (sk && (FindSkill(sk) == NULL)) return;
-    ItemDefs[it].pSkill = sk;
-    ItemDefs[it].pLevel = lev;
+    if (!it.isValid())
+    {
+        return;
+    }
+    try
+    {
+        FindSkill(sk);
+
+        auto& item_def = ItemDefs[it];
+        item_def.pSkill = sk;
+        item_def.pLevel = lev;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::ModifyItemProductionOutput(int it, int months, int count)
+void Game::ModifyItemProductionOutput(const Items& it, int months, int count)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
+    if (!it.isValid())
+    {
+        return;
+    }
     if (count < 0) count = 0;
     if (months < 0) months = 0;
-    ItemDefs[it].pMonths = months;
-    ItemDefs[it].pOut = count;
+
+    auto& item_def = ItemDefs[it];
+    item_def.pMonths = months;
+    item_def.pOut = count;
 }
 
-void Game::ModifyItemProductionInput(int it, int i, int input, int amount)
+void Game::ModifyItemProductionInput(const Items& it, int i, const Items& input, int amount)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (i < 0 || i >= (int)(sizeof(ItemDefs[it].pInput)/sizeof(Materials)))
+    if (i < 0)
+    {
         return;
-    if (input < -1 || input > (NITEMS-1)) return;
-    if (amount < 0) amount = 0;
-    ItemDefs[it].pInput[i].item = input;
-    ItemDefs[it].pInput[i].amt = amount;
+    }
+    if (!it.isValid())
+    {
+        return;
+    }
+    if(!input.isValid())
+    {
+        return;
+    }
+    auto& item_def = ItemDefs[it];
+    const size_t i_u = static_cast<size_t>(i);
+    if(i_u >= item_def.pInput.size())
+    {
+        return;
+    }
+    if (amount < 0)
+    {
+        amount = 0;
+    }
+    auto& pinput = item_def.pInput[i_u];
+    pinput.item = input;
+    pinput.amt = amount;
 }
 
-void Game::ModifyItemMagicSkill(int it, char *sk, int lev)
+void Game::ModifyItemMagicSkill(const Items& it, char *sk, int lev)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (sk && (FindSkill(sk) == NULL)) return;
-    ItemDefs[it].mSkill = sk;
-    ItemDefs[it].mLevel = lev;
+    if (!it.isValid())
+    {
+        return;
+    }
+
+    try
+    {
+        FindSkill(sk);
+
+        auto& item_def = ItemDefs[it];
+        item_def.mSkill = sk;
+        item_def.mLevel = lev;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::ModifyItemMagicOutput(int it, int count)
+void Game::ModifyItemMagicOutput(const Items& it, int count)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
+    if (!it.isValid())
+    {
+        return;
+    }
+
     if (count < 0) count = 0;
     ItemDefs[it].mOut = count;
 }
 
-void Game::ModifyItemMagicInput(int it, int i, int input, int amount)
+void Game::ModifyItemMagicInput(const Items& it, int i, const Items& input, int amount)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    if (i < 0 || i >= (int)(sizeof(ItemDefs[it].mInput)/sizeof(Materials)))
+    if(i < 0)
+    {
         return;
-    if (input < -1 || input > (NITEMS-1)) return;
-    if (amount < 0) amount = 0;
-    ItemDefs[it].mInput[i].item = input;
-    ItemDefs[it].mInput[i].amt = amount;
+    }
+    if (!it.isValid())
+    {
+        return;
+    }
+    if(!input.isValid())
+    {
+        return;
+    }
+
+    const size_t i_u = static_cast<size_t>(i);
+    auto& item_def = ItemDefs[it];
+    if (i_u >= item_def.mInput.size())
+    {
+        return;
+    }
+    if (amount < 0)
+    {
+        amount = 0;
+    }
+    auto& minput = item_def.mInput[i_u];
+    minput.item = input;
+    minput.amt = amount;
 }
 
-void Game::ModifyItemEscape(int it, int escape, char const *skill, int val)
+void Game::ModifyItemEscape(const Items& it, int escape, char const *skill, int val)
 {
-    if (it < 0 || it > (NITEMS-1)) return;
-    ItemDefs[it].escape = escape;
-    ItemDefs[it].esc_skill = skill;
-    ItemDefs[it].esc_val = val;
+    if (!it.isValid())
+    {
+        return;
+    }
+
+    auto& item_def = ItemDefs[it];
+    item_def.escape = escape;
+    item_def.esc_skill = skill;
+    item_def.esc_val = static_cast<size_t>(val);
 }
 
 void Game::ModifyRaceSkillLevels(char const *r, int spec, int def)
 {
-    ManType *mt = FindRace(r);
-    if (mt == NULL) return;
-    if (spec < 0) spec = 0;
-    if (def < 0) def = 0;
-    mt->speciallevel = spec;
-    mt->defaultlevel = def;
+    try
+    {
+        auto& mt = FindRace_(r);
+        if (spec < 0) spec = 0;
+        if (def < 0) def = 0;
+        mt.speciallevel = spec;
+        mt.defaultlevel = def;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyRaceSkills(char const *r, int i, char const *sk)
 {
-    ManType *mt = FindRace(r);
-    if (mt == NULL) return;
-    if (i < 0 || i >= (int)(sizeof(mt->skills) / sizeof(mt->skills[0]))) return;
-    if (sk && (FindSkill(sk) == NULL)) return;
-    mt->skills[i] = sk;
+    if(i < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& mt = FindRace_(r);
+        size_t i_u = static_cast<size_t>(i);
+        FindSkill(sk);
+        mt.skills[i_u] = sk;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterAttackLevel(char const *mon, int lev)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (lev < 0) return;
-    pM->attackLevel = lev;
+    if (lev < 0)
+    {
+        return;
+    }
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        pM.attackLevel = lev;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterDefense(char const *mon, int defenseType, int level)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (defenseType < 0 || defenseType > (NUM_ATTACK_TYPES -1)) return;
-    pM->defense[defenseType] = level;
+    if(defenseType < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        auto& defense = pM.defense;
+        const size_t defenseType_u = static_cast<size_t>(defenseType);
+        if(defenseType_u >= defense.size())
+        {
+            return;
+        }
+        defense[defenseType_u] = level;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterAttacksAndHits(char const *mon, int num, int hits, int regen)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (num < 0) return;
-    if (hits < 0) return;
-    if (regen < 0) return;
-    pM->numAttacks = num;
-    pM->hits = hits;
-    pM->regen = regen;
+    if (num < 0)
+    {
+        return;
+    }
+    if (hits < 0)
+    {
+        return;
+    }
+    if (regen < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        pM.numAttacks = num;
+        pM.hits = hits;
+        pM.regen = regen;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterSkills(char const *mon, int tact, int stealth, int obs)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (tact < 0) return;
-    if (stealth < 0) return;
-    if (obs < 0) return;
-    pM->tactics = tact;
-    pM->stealth = stealth;
-    pM->obs = obs;
+    if (tact < 0)
+    {
+        return;
+    }
+    if (stealth < 0)
+    {
+        return;
+    }
+    if (obs < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        pM.tactics = tact;
+        pM.stealth = stealth;
+        pM.obs = obs;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterSpecial(char const *mon, char const *special, int lev)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (special && (FindSpecial(special) == NULL)) return;
-    if (lev < 0) return;
-    pM->special = special;
-    pM->specialLevel = lev;
+    if (lev < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        FindSpecial_(special);
+        pM.special = special;
+        pM.specialLevel = lev;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterSpoils(char const *mon, int silver, int spoilType)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (spoilType < -1) return;
-    if (silver < 0) return;
-    pM->silver = silver;
-    pM->spoiltype = spoilType;
+    if (spoilType < -1)
+    {
+        return;
+    }
+    if (silver < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        pM.silver = static_cast<size_t>(silver);
+        pM.spoiltype = spoilType;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMonsterThreat(char const *mon, int num, int hostileChance)
 {
-    MonType *pM = FindMonster(mon, 0);
-    if (pM == NULL) return;
-    if (num < 0) return;
-    if (hostileChance < 0 || hostileChance > 100) return;
-    pM->hostile = hostileChance;
-    pM->number = num;
+    if (num < 0)
+    {
+        return;
+    }
+    if (hostileChance < 0 || hostileChance > 100)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pM = FindMonster_(mon, 0);
+        pM.hostile = hostileChance;
+        pM.number = num;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyWeaponSkills(char const *weap, char *baseSkill, char *orSkill)
 {
-    WeaponType *pw = FindWeapon(weap);
-    if (pw == NULL) return;
-    if (baseSkill && (FindSkill(baseSkill) == NULL)) return;
-    if (orSkill && (FindSkill(orSkill) == NULL)) return;
-    pw->baseSkill = baseSkill;
-    pw->orSkill = orSkill;
+    try
+    {
+        auto& pw = FindWeapon_(weap);
+        FindSkill(baseSkill);
+        FindSkill(orSkill);
+        pw.baseSkill = baseSkill;
+        pw.orSkill = orSkill;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyWeaponFlags(char const *weap, int flags)
 {
-    WeaponType *pw = FindWeapon(weap);
-    if (pw == NULL) return;
-    pw->flags = flags;
+    try
+    {
+        auto& pw = FindWeapon_(weap);
+        pw.flags = flags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyWeaponAttack(char const *weap, int wclass, int attackType,
         int numAtt)
 {
-    WeaponType *pw = FindWeapon(weap);
-    if (pw == NULL) return;
-    if (wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1)) return;
-    if (attackType < 0 || attackType > (NUM_ATTACK_TYPES - 1)) return;
-    pw->weapClass = wclass;
-    pw->attackType = attackType;
-    pw->numAttacks = numAtt;
+    if (wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1))
+    {
+        return;
+    }
+    if (attackType < 0 || attackType > (NUM_ATTACK_TYPES - 1))
+    {
+        return;
+    }
+    try
+    {
+        auto& pw = FindWeapon_(weap);
+        pw.weapClass = wclass;
+        pw.attackType = attackType;
+        pw.numAttacks = numAtt;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyWeaponBonuses(char const *weap, int attack, int defense, int vsMount)
 {
-    WeaponType *pw = FindWeapon(weap);
-    if (pw == NULL) return;
-    pw->attackBonus = attack;
-    pw->defenseBonus = defense;
-    pw->mountBonus = vsMount;
+    try
+    {
+        auto& pw = FindWeapon_(weap);
+        pw.attackBonus = attack;
+        pw.defenseBonus = defense;
+        pw.mountBonus = vsMount;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyArmorFlags(char const *armor, int flags)
 {
-    ArmorType *pa = FindArmor(armor);
-    if (pa == NULL) return;
-    pa->flags = flags;
+    try
+    {
+        auto& pa = FindArmor_(armor);
+        pa.flags = flags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyArmorSaveFrom(char const *armor, int from)
 {
-    ArmorType *pa = FindArmor(armor);
-    if (pa == NULL) return;
-    if (from < 0) return;
-    pa->from = from;
+    if (from < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pa = FindArmor_(armor);
+        pa.from = from;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyArmorSaveValue(char const *armor, int wclass, int val)
 {
-    ArmorType *pa = FindArmor(armor);
-    if (pa == NULL) return;
-    if (wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1)) return;
-    if (val < 0 || val > pa->from) return;
-    pa->saves[wclass] = val;
+    if (wclass < 0 || wclass > (NUM_WEAPON_CLASSES - 1))
+    {
+        return;
+    }
+    if (val < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pa = FindArmor_(armor);
+        if(val > pa.from)
+        {
+            return;
+        }
+        pa.saves[wclass] = val;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMountSkill(char const *mount, char *skill)
 {
-    MountType *pm = FindMount(mount);
-    if (pm == NULL) return;
-    if (skill && (FindSkill(skill) == NULL)) return;
-    pm->skill = skill;
+    try
+    {
+        auto& pm = FindMount_(mount);
+        FindSkill(skill);
+        pm.skill = skill;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMountBonuses(char const *mount, int min, int max, int hampered)
 {
-    MountType *pm = FindMount(mount);
-    if (pm == NULL) return;
-    if (min < 0) return;
-    if (max < 0) return;
-    if (hampered < min) return;
-    pm->minBonus = min;
-    pm->maxBonus = max;
-    pm->maxHamperedBonus = hampered;
+    if (min < 0)
+    {
+        return;
+    }
+    if (max < 0)
+    {
+        return;
+    }
+    if (hampered < min)
+    {
+        return;
+    }
+    try
+    {
+        auto& pm = FindMount_(mount);
+        pm.minBonus = min;
+        pm.maxBonus = max;
+        pm.maxHamperedBonus = hampered;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyMountSpecial(char const *mount, char const *special, int level)
 {
-    MountType *pm = FindMount(mount);
-    if (pm == NULL) return;
-    if (special && (FindSpecial(special) == NULL)) return;
-    if (level < 0) return;
-    pm->mountSpecial = special;
-    pm->specialLev = level;
+    if (level < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pm = FindMount_(mount);
+        FindSpecial_(special);
+        pm.mountSpecial = special;
+        pm.specialLev = level;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::EnableObject(int obj)
+void Game::EnableObject(const Objects& obj)
 {
-    if (obj < 0 || obj > (NOBJECTS-1)) return;
+    if (!obj.isValid())
+    {
+        return;
+    }
     ObjectDefs[obj].flags &= ~ObjectType::DISABLED;
 }
 
-void Game::DisableObject(int obj)
+void Game::DisableObject(const Objects& obj)
 {
-    if (obj < 0 || obj > (NOBJECTS-1)) return;
+    if (!obj.isValid())
+    {
+        return;
+    }
     ObjectDefs[obj].flags |= ObjectType::DISABLED;
 }
 
-void Game::ModifyObjectFlags(int ob, int flags)
+void Game::ModifyObjectFlags(const Objects& ob, int flags)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
+    if (!ob.isValid())
+    {
+        return;
+    }
     ObjectDefs[ob].flags = flags;
 }
 
-void Game::ModifyObjectDecay(int ob, int maxMaint, int maxMonthDecay, int mFact)
+void Game::ModifyObjectDecay(const Objects& ob, int maxMaint, int maxMonthDecay, int mFact)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
-    if (maxMonthDecay > maxMaint) return;
-    if (maxMaint < 0) return;
-    if (maxMonthDecay < 0) return;
-    if (mFact < 0) return;
+    if (maxMonthDecay > maxMaint)
+    {
+        return;
+    }
+    if (maxMaint < 0)
+    {
+        return;
+    }
+    if (maxMonthDecay < 0)
+    {
+        return;
+    }
+    if (mFact < 0)
+    {
+        return;
+    }
+    if (!ob.isValid())
+    {
+        return;
+    }
     ObjectDefs[ob].maxMaintenance = maxMaint;
     ObjectDefs[ob].maxMonthlyDecay = maxMonthDecay;
     ObjectDefs[ob].maintFactor = mFact;
 }
 
-void Game::ModifyObjectProduction(int ob, int it)
+void Game::ModifyObjectProduction(const Objects& ob, const Items& it)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
-    if (it < -1 || it > (NITEMS -1)) return;
+    if (!ob.isValid())
+    {
+        return;
+    }
     ObjectDefs[ob].productionAided = it;
 }
 
-void Game::ModifyObjectMonster(int ob, int monster)
+void Game::ModifyObjectMonster(const Objects& ob, const Items& monster)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
-    if (monster < -1 || monster > (NITEMS -1)) return;
+    if (!ob.isValid())
+    {
+        return;
+    }
     ObjectDefs[ob].monster = monster;
 }
 
-void Game::ModifyObjectConstruction(int ob, int it, int num, char const *sk, int lev)
+void Game::ModifyObjectConstruction(const Objects& ob, const ObjectTypeItems& it, int num, char const *sk, int lev)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
-    if ((it < -1 && it != I_WOOD_OR_STONE) || it > (NITEMS -1))
+    if (num < 0)
+    {
         return;
-    if (num < 0) return;
-    if (sk && FindSkill(sk) == NULL) return;
-    if (lev < 0) return;
-    ObjectDefs[ob].item = it;
-    ObjectDefs[ob].cost = num;
-    ObjectDefs[ob].skill = sk;
-    ObjectDefs[ob].level = lev;
+    }
+    if (lev < 0)
+    {
+        return;
+    }
+    if (!ob.isValid())
+    {
+        return;
+    }
+    if (!it.isValid())
+    {
+        return;
+    }
+
+    try
+    {
+        FindSkill(sk);
+        ObjectDefs[ob].item = it;
+        ObjectDefs[ob].cost = num;
+        ObjectDefs[ob].skill = sk;
+        ObjectDefs[ob].level = lev;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::ModifyObjectManpower(int ob, int prot, int cap, int sail, int mages)
+void Game::ModifyObjectManpower(const Objects& ob, int prot, int cap, int sail, int mages)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
-    if (prot < 0) return;
-    if (cap < 0) return;
-    if (sail < 0) return;
-    if (mages < 0) return;
+    if (prot < 0)
+    {
+        return;
+    }
+    if (cap < 0)
+    {
+        return;
+    }
+    if (sail < 0)
+    {
+        return;
+    }
+    if (mages < 0)
+    {
+        return;
+    }
+    if (!ob.isValid())
+    {
+        return;
+    }
     ObjectDefs[ob].protect = prot;
     ObjectDefs[ob].capacity = cap;
     ObjectDefs[ob].sailors = sail;
     ObjectDefs[ob].maxMages = mages;
 }
 
-void Game::ModifyObjectDefence(int ob, int co, int en, int sp, int we, int ri, int ra)
+void Game::ModifyObjectDefence(const Objects& ob, int co, int en, int sp, int we, int ri, int ra)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
+    if (!ob.isValid())
+    {
+        return;
+    }
     //if (val < 0) return;    // we could conceivably have a negative value 
                                 // associated with a structure
     ObjectDefs[ob].defenceArray[0] = co;
@@ -482,288 +971,623 @@ void Game::ModifyObjectDefence(int ob, int co, int en, int sp, int we, int ri, i
     ObjectDefs[ob].defenceArray[5] = ra;
 }
 
-void Game::ModifyObjectName(int ob, char const *name)
+void Game::ModifyObjectName(const Objects& ob, char const *name)
 {
-    if (ob < 0 || ob > (NOBJECTS-1)) return;
+    if (!ob.isValid())
+    {
+        return;
+    }
     ObjectDefs[ob].name = name;
 }
 
-void Game::ClearTerrainRaces(int t)
+void Game::ClearTerrainRaces(const Regions& t)
 {
-    if (t < 0 || t > R_NUM-1) return;
-    unsigned int c;
-    for (c = 0; c < sizeof(TerrainDefs[t].races)/sizeof(int); c++) {
-        TerrainDefs[t].races[c] = -1;
-    }
-    for (c = 0; c < sizeof(TerrainDefs[t].coastal_races)/sizeof(int); c++) {
-        TerrainDefs[t].coastal_races[c] = -1;
-    }
-}
-
-void Game::ModifyTerrainRace(int t, int i, int r)
-{
-    if (t < 0 || t > (R_NUM -1)) return;
-    if (i < 0 || i >= (int)(sizeof(TerrainDefs[t].races)/sizeof(int))) return;
-    if (r < -1 || r > NITEMS-1) r = -1;
-    if (r != -1 && !(ItemDefs[r].type & IT_MAN)) r = -1;
-    TerrainDefs[t].races[i] = r;
-}
-
-void Game::ModifyTerrainCoastRace(int t, int i, int r)
-{
-    if (t < 0 || t > (R_NUM -1)) return;
-    if (i < 0 || i >= (int)(sizeof(TerrainDefs[t].coastal_races)/sizeof(int)))
+    if (!t.isValid())
+    {
         return;
-    if (r < -1 || r > NITEMS-1) r = -1;
-    if (r != -1 && !(ItemDefs[r].type & IT_MAN)) r = -1;
-    TerrainDefs[t].coastal_races[i] = r;
-}
+    }
 
-void Game::ClearTerrainItems(int terrain)
-{
-    if (terrain < 0 || terrain > R_NUM-1) return;
-
-    for (unsigned int c = 0;
-            c < sizeof(TerrainDefs[terrain].prods)/sizeof(Product);
-            c++) {
-        TerrainDefs[terrain].prods[c].product = -1;
-        TerrainDefs[terrain].prods[c].chance = 0;
-        TerrainDefs[terrain].prods[c].amount = 0;
+    auto& terrain_def = TerrainDefs[t];
+    for (auto& c: terrain_def.races) {
+        c.invalidate();
+    }
+    for (auto& c: terrain_def.coastal_races) {
+        c.invalidate();
     }
 }
 
-void Game::ModifyTerrainItems(int terrain, int i, int p, int c, int a)
+void Game::ModifyTerrainRace(const Regions& t, int i, Items r)
 {
-    if (terrain < 0 || terrain > (R_NUM -1)) return;
-    if (i < 0 || i >= (int)(sizeof(TerrainDefs[terrain].prods)/sizeof(Product)))
+    if (i < 0)
+    {
         return;
-    if (p < -1 || p > NITEMS-1) p = -1;
-    if (c < 0 || c > 100) c = 0;
-    if (a < 0) a = 0;
-    TerrainDefs[terrain].prods[i].product = p;
-    TerrainDefs[terrain].prods[i].chance = c;
-    TerrainDefs[terrain].prods[i].amount = a;
+    }
+    if (!t.isValid())
+    {
+        return;
+    }
+
+    auto& terrain_def = TerrainDefs[t];
+
+    const size_t i_u = static_cast<size_t>(i);
+
+    if(i_u >= terrain_def.races.size())
+    {
+        return;
+    }
+
+    if (r.isValid() && !(ItemDefs[r].type & IT_MAN))
+    {
+        r.invalidate();
+    }
+    TerrainDefs[t].races[i_u] = r;
 }
 
-void Game::ModifyTerrainWMons(int t, int freq, int smon, int bigmon, int hum)
+void Game::ModifyTerrainCoastRace(const Regions& t, int i, Items r)
 {
-    if (t < 0 || t > (R_NUM -1)) return;
-    if (freq < 0) freq = 0;
-    if (smon < -1 || smon > NITEMS-1) smon = -1;
-    if (bigmon < -1 || bigmon > NITEMS-1) bigmon = -1;
-    if (hum < -1 || hum > NITEMS-1) hum = -1;
-    TerrainDefs[t].wmonfreq = freq;
-    TerrainDefs[t].smallmon = smon;
-    TerrainDefs[t].bigmon = bigmon;
-    TerrainDefs[t].humanoid = hum;
+    if (i < 0)
+    {
+        return;
+    }
+    if (!t.isValid())
+    {
+        return;
+    }
+
+    auto& terrain_def = TerrainDefs[t];
+
+    const size_t i_u = static_cast<size_t>(i);
+
+    if(i_u >= terrain_def.coastal_races.size())
+    {
+        return;
+    }
+
+    if (r.isValid() && !(ItemDefs[r].type & IT_MAN))
+    {
+        r.invalidate();
+    }
+    TerrainDefs[t].coastal_races[i_u] = r;
 }
 
-void Game::ModifyTerrainLairChance(int t, int chance)
+void Game::ClearTerrainItems(const Regions& terrain)
 {
-    if (t < 0 || t > (R_NUM -1)) return;
-    if (chance < 0 || chance > 100) chance = 0;
+    if (!terrain.isValid())
+    {
+        return;
+    }
+
+    for (auto& c: TerrainDefs[terrain].prods) {
+        c.product.invalidate();
+        c.chance = 0;
+        c.amount = 0;
+    }
+}
+
+void Game::ModifyTerrainItems(const Regions& terrain, int i, const Items& p, int c, int a)
+{
+    if (i < 0)
+    {
+        return;
+    }
+    if (!terrain.isValid())
+    {
+        return;
+    }
+
+    auto& terrain_defs = TerrainDefs[terrain];
+    const size_t i_u = static_cast<size_t>(i);
+
+    if(i_u >= terrain_defs.prods.size())
+    {
+        return;
+    }
+
+    if (c < 0 || c > 100)
+    {
+        c = 0;
+    }
+    if (a < 0)
+    {
+        a = 0;
+    }
+
+    auto& prod = terrain_defs.prods[i_u];
+    prod.product = p;
+    prod.chance = c;
+    prod.amount = a;
+}
+
+void Game::ModifyTerrainWMons(const Regions& t, int freq, const Items& smon, const Items& bigmon, const Items& hum)
+{
+    if(!t.isValid())
+    {
+        return;
+    }
+    if (freq < 0)
+    {
+        freq = 0;
+    }
+
+    auto& terrain_def = TerrainDefs[t];
+    terrain_def.wmonfreq = freq;
+    terrain_def.smallmon = smon;
+    terrain_def.bigmon = bigmon;
+    terrain_def.humanoid = hum;
+}
+
+void Game::ModifyTerrainLairChance(const Regions& t, int chance)
+{
+    if(!t.isValid())
+    {
+        return;
+    }
+    if (chance < 0 || chance > 100)
+    {
+        chance = 0;
+    }
     // Chance is percent out of 100 that should have some lair
     TerrainDefs[t].lairChance = chance;
 }
 
-void Game::ModifyTerrainLair(int t, int i, int l)
+void Game::ModifyTerrainLair(const Regions& t, int i, const Objects& l)
 {
-    if (t < 0 || t > (R_NUM -1)) return;
-    if (i < 0 || i >= (int)(sizeof(TerrainDefs[t].lairs)/sizeof(int))) return;
-    if (l < -1 || l > NOBJECTS-1) l = -1;
-    TerrainDefs[t].lairs[i] = l;
+    if (i < 0)
+    {
+        return;
+    }
+    if (!t.isValid())
+    {
+        return;
+    }
+
+    auto& terrain_def = TerrainDefs[t];
+    const size_t i_u = static_cast<size_t>(i);
+
+    if(i_u >= terrain_def.lairs.size())
+    {
+        return;
+    }
+
+    terrain_def.lairs[i_u] = l;
 }
 
-void Game::ModifyTerrainEconomy(int t, int pop, int wages, int econ, int move)
+void Game::ModifyTerrainEconomy(const Regions& t, int pop, int wages, int econ, int move)
 {
-    if (t < 0 || t > (R_NUM -1)) return;
-    if (pop < 0) pop = 0;
-    if (wages < 0) wages = 0;
-    if (econ < 0) econ = 0;
-    if (move < 1) move = 1;
-    TerrainDefs[t].pop = pop;
-    TerrainDefs[t].wages = wages;
-    TerrainDefs[t].economy = econ;
-    TerrainDefs[t].movepoints = move;
+    if(!t.isValid())
+    {
+        return;
+    }
+    if (pop < 0)
+    {
+        pop = 0;
+    }
+    if (wages < 0)
+    {
+        wages = 0;
+    }
+    if (econ < 0)
+    {
+        econ = 0;
+    }
+    if (move < 1)
+    {
+        move = 1;
+    }
+
+    auto& terrain_def = TerrainDefs[t];
+    terrain_def.pop = pop;
+    terrain_def.wages = wages;
+    terrain_def.economy = static_cast<unsigned int>(econ);
+    terrain_def.movepoints = move;
 }
 
 void Game::ModifyBattleItemFlags(char const *item, int flags)
 {
-    BattleItemType *pb = FindBattleItem(item);
-    if (pb == NULL) return;
-    pb->flags = flags;
+    try
+    {
+        auto& pb = FindBattleItem_(item);
+        pb.flags = flags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyBattleItemSpecial(char const *item, char const *special, int level)
 {
-    BattleItemType *pb = FindBattleItem(item);
-    if (pb == NULL) return;
-    if (special && (FindSpecial(special) == NULL)) return;
-    if (level < 0) return;
-    pb->special = special;
-    pb->skillLevel = level;
+    if (level < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& pb = FindBattleItem_(item);
+        FindSpecial(special);
+        pb.special = special;
+        pb.skillLevel = level;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifySpecialTargetFlags(char const *special, int targetflags)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    sp->targflags = targetflags;
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        sp.targflags = targetflags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::ModifySpecialTargetObjects(char const *special, int index, int obj)
+void Game::ModifySpecialTargetObjects(char const *special, int index, const Objects& obj)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    if (index < 0 || index > 3) return;
-    if ((obj != -1 && obj < 1) || (obj > (NOBJECTS-1))) return;
-    sp->buildings[index] = obj;
+    if (index < 0)
+    {
+        return;
+    }
+    if ((obj.isValid() && obj < 1) || obj.overflowed())
+    {
+        return;
+    }
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        const size_t index_u = static_cast<size_t>(index);
+        if(index_u >= sp.buildings.size())
+        {
+            return;
+        }
+        sp.buildings[index_u] = obj;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
-void Game::ModifySpecialTargetItems(char const *special, int index, int item)
+void Game::ModifySpecialTargetItems(char const *special, int index, const Items& item)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    if (index < 0 || index > 7) return;
-    if (item < -1 || item > (NITEMS-1)) return;
-    sp->targets[index] = item;
+    if (index < 0)
+    {
+        return;
+    }
+
+    if(item.overflowed())
+    {
+        return;
+    }
+
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        const size_t index_u = static_cast<size_t>(index);
+        if(index_u >= sp.targets.size())
+        {
+            return;
+        }
+        sp.targets[index_u] = item;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifySpecialTargetEffects(char const *special, int index, char const *effect)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    if (index < 0 || index > 3) return;
-    if (effect && (FindEffect(effect) == NULL)) return;
-    sp->effects[index] = effect;
+    if (index < 0)
+    {
+        return;
+    }
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        const size_t index_u = static_cast<size_t>(index);
+        if(index_u >= sp.effects.size())
+        {
+            return;
+        }
+        FindEffect(effect);
+        sp.effects[index_u] = effect;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifySpecialEffectFlags(char const *special, int effectflags)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    sp->effectflags = effectflags;
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        sp.effectflags = effectflags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifySpecialShields(char const *special, int index, int type)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    if (index < 0 || index > 4) return;
-    if (type < -1 || type > (NUM_ATTACK_TYPES)) return;
-    sp->shield[index] = type;
+    if (index < 0)
+    {
+        return;
+    }
+
+    if (type < -1 || type > (NUM_ATTACK_TYPES))
+    {
+        return;
+    }
+
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        const size_t index_u = static_cast<size_t>(index);
+        if (index_u >= sp.shield.size())
+        {
+            return;
+        }
+        sp.shield[index_u] = type;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifySpecialDefenseMods(char const *special, int index, int type, int val)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    if (index < 0 || index > 4) return;
-    if (type < -1 || type > (NUM_ATTACK_TYPES)) return;
-    sp->defs[index].type = type;
-    sp->defs[index].val = val;
+    if(index < 0)
+    {
+        return;
+    }
+
+    if (type < -1 || type > (NUM_ATTACK_TYPES))
+    {
+        return;
+    }
+
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        const size_t index_u = static_cast<size_t>(index);
+        if (index_u >= sp.defs.size())
+        {
+            return;
+        }
+        auto& def = sp.defs[index_u];
+        def.type = type;
+        def.val = val;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifySpecialDamage(char const *special, int index, int type, int min,
         int val, int flags, int cls, char const *effect)
 {
-    SpecialType *sp = FindSpecial(special);
-    if (sp == NULL) return;
-    if (index < 0 || index > 4) return;
-    if (effect && (FindEffect(effect) == NULL)) return;
-    if (type < -1 || type > NUM_ATTACK_TYPES) return;
-    if (cls < -1 || cls > (NUM_WEAPON_CLASSES-1)) return;
-    if (min < 0) return;
-    sp->damage[index].type = type;
-    sp->damage[index].minnum = min;
-    sp->damage[index].value = val;
-    sp->damage[index].flags = flags;
-    sp->damage[index].dclass = cls;
-    sp->damage[index].effect = effect;
+    if (index < 0)
+    {
+        return;
+    }
+    if (type < -1 || type > NUM_ATTACK_TYPES)
+    {
+        return;
+    }
+    if (cls < -1 || cls > (NUM_WEAPON_CLASSES-1))
+    {
+        return;
+    }
+    if (min < 0)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& sp = FindSpecial_(special);
+        FindEffect(effect);
+
+        const size_t index_u = static_cast<size_t>(index);
+        if (index_u >= sp.damage.size())
+        {
+            return;
+        }
+        auto& damage = sp.damage[index_u];
+        damage.type = type;
+        damage.minnum = min;
+        damage.value = val;
+        damage.flags = flags;
+        damage.dclass = cls;
+        damage.effect = effect;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyEffectFlags(char const *effect, int flags)
 {
-    EffectType *ep = FindEffect(effect);
-    if (ep == NULL) return;
-    ep->flags = flags;
+    try
+    {
+        auto& ep = FindEffect_(effect);
+        ep.flags = flags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyEffectAttackMod(char const *effect, int val)
 {
-    EffectType *ep = FindEffect(effect);
-    if (ep == NULL) return;
-    ep->attackVal = val;
+    try
+    {
+        auto& ep = FindEffect_(effect);
+        ep.attackVal = val;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyEffectDefenseMod(char const *effect, int index, int type, int val)
 {
-    EffectType *ep = FindEffect(effect);
-    if (ep == NULL) return;
-    if (type < 0 || type > NUM_ATTACK_TYPES) return;
-    if (index < 0 || index > 4) return;
-    ep->defMods[index].type = type;
-    ep->defMods[index].val = val;
+    if (index < 0)
+    {
+        return;
+    }
+
+    if (type < 0 || type > NUM_ATTACK_TYPES)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& ep = FindEffect_(effect);
+        const size_t index_u = static_cast<size_t>(index);
+        if (index_u >= ep.defMods.size())
+        {
+            return;
+        }
+
+        auto& def_mod = ep.defMods[index_u];
+        def_mod.type = type;
+        def_mod.val = val;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyEffectCancelEffect(char const *effect, char *uneffect)
 {
-    EffectType *ep = FindEffect(effect);
-    if (ep == NULL) return;
-    if (uneffect && (FindEffect(uneffect) == NULL)) return;
-    ep->cancelEffect = uneffect;
+    try
+    {
+        auto& ep = FindEffect_(effect);
+        FindEffect(uneffect);
+        ep.cancelEffect = uneffect;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyRangeFlags(char const *range, int flags)
 {
-    RangeType *rp = FindRange(range);
-    if (rp == NULL) return;
-    rp->flags = flags;
+    try
+    {
+        auto& rp = FindRange_(range);
+        rp.flags = flags;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyRangeClass(char const *range, int rclass)
 {
-    RangeType *rp = FindRange(range);
-    if (rp == NULL) return;
-    if (rclass < 0 || rclass > (RangeType::NUMRANGECLASSES-1)) return;
-    rp->rangeClass = rclass;
+    if (rclass < 0 || rclass > (RangeType::NUMRANGECLASSES-1))
+    {
+        return;
+    }
+
+    try
+    {
+        auto& rp = FindRange_(range);
+        rp.rangeClass = rclass;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyRangeMultiplier(char const *range, int mult)
 {
-    RangeType *rp = FindRange(range);
-    if (rp == NULL) return;
-    if (mult < 1) return;
-    rp->rangeMult = mult;
+    if (mult < 1)
+    {
+        return;
+    }
+
+    try
+    {
+        auto& rp = FindRange_(range);
+        rp.rangeMult = mult;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyRangeLevelPenalty(char const *range, int pen)
 {
-    RangeType *rp = FindRange(range);
-    if (rp == NULL) return;
-    if (pen < 0) return;
-    rp->crossLevelPenalty = pen;
+    if (pen < 0)
+    {
+        return;
+    }
+    try
+    {
+        auto& rp = FindRange_(range);
+        rp.crossLevelPenalty = pen;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyAttribMod(char const *mod, int index, int flags, char const *ident,
         int type, int val)
 {
-    AttribModType *mp = FindAttrib(mod);
-    if (mp == NULL) return;
-    if (index < 0 || index > 5) return;
-    if (!ident) return;
-    if (type < 0 || type > AttribModItem::NUMMODTYPE-1) return;
+    if (!ident)
+    {
+        return;
+    }
+    if (index < 0)
+    {
+        return;
+    }
+    if (type < 0 || type > AttribModItem::NUMMODTYPE-1)
+    {
+        return;
+    }
+    try
+    {
+        auto& mp = FindAttrib_(mod);
+        const size_t index_u = static_cast<size_t>(index);
+        if (index_u >= mp.mods.size())
+        {
+            return;
+        }
 
-    mp->mods[index].flags = flags;
-    mp->mods[index].ident = ident;
-    mp->mods[index].modtype = type;
-    mp->mods[index].val = val;
+        auto& mod = mp.mods[index_u];
+        mod.flags = flags;
+        mod.ident = ident;
+        mod.modtype = type;
+        mod.val = val;
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 }
 
 void Game::ModifyHealing(int level, int patients, int success)
 {
-    if (level < 1 || level > 5) return;
-    HealDefs[level].num = patients;
-    HealDefs[level].rate = success;
+    if (level < 1)
+    {
+        return;
+    
+    }
+    const size_t level_u = static_cast<size_t>(level);
+    if(level_u >= HealDefs.size())
+    {
+        return;
+    }
+    auto& heal_def = HealDefs[level_u];
+    heal_def.num = static_cast<unsigned int>(patients);
+    heal_def.rate = static_cast<unsigned int>(success);
 }
 

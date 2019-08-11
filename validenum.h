@@ -8,6 +8,9 @@
 template<typename EnumType, EnumType EndType>
 class ValidEnum : public ValidValue<size_t>
 {
+    private:
+        bool overflowed_ = false;
+
     public:
         using Types = EnumType;
 
@@ -86,6 +89,10 @@ class ValidEnum : public ValidValue<size_t>
         ValidEnum(size_t type) :
             ValidValue<size_t>(type)
         {
+            if(type >= size())
+            {
+                overflowed_ = true;
+            }
         }
         
         ValidEnum(const Types& type) :
@@ -145,6 +152,16 @@ class ValidEnum : public ValidValue<size_t>
         static constexpr size_t size()
         {
             return static_cast<size_t>(EndType);
+        }
+
+        bool isValid() const override
+        {
+            return !overflowed_ && ValidValue::isValid();
+        }
+
+        bool overflowed() const
+        {
+            return overflowed_;
         }
 };
 

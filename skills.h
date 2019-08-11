@@ -105,7 +105,7 @@ class SkillType
 
         std::array<SkillDepend, 3> depends;
 };
-extern const GameDataArray<SkillType> SkillDefs;
+extern GameDataArray<SkillType> SkillDefs;
 
 const SkillType& FindSkill(char const *skname);
 bool FindSameSkills(char const* sk1, char const *sk2);
@@ -120,7 +120,7 @@ class ShowType {
         int level;
         char const * desc;
 };
-extern const GameDataArray<ShowType> ShowDefs;
+extern GameDataArray<ShowType> ShowDefs;
 
 int SkillCost(int);
 int SkillMax(char const *,int); /* skill, race */
@@ -180,7 +180,7 @@ class HealType {
         unsigned int num;
         unsigned int rate;
 };
-extern const GameDataArray<HealType> HealDefs;
+extern GameDataArray<HealType> HealDefs;
 
 class DamageType {
     public:
@@ -248,7 +248,7 @@ class SpecialType {
         char const *spelldesc2;
         char const *spelltarget;
 };
-extern const GameDataArray<SpecialType> SpecialDefs;
+extern GameDataArray<SpecialType> SpecialDefs;
 
 extern const SpecialType& FindSpecial(char const *key);
 
@@ -265,7 +265,7 @@ class EffectType {
         };
         int flags;
 };
-extern const GameDataArray<EffectType> EffectDefs;
+extern GameDataArray<EffectType> EffectDefs;
 
 extern const EffectType& FindEffect(char const *effect);
 
@@ -293,7 +293,7 @@ class RangeType {
 
         int crossLevelPenalty;    // How much extra distance to cross levels?
 };
-extern const GameDataArray<RangeType> RangeDefs;
+extern GameDataArray<RangeType> RangeDefs;
 
 extern const RangeType& FindRange(char const *range);
 
@@ -336,7 +336,7 @@ class AttribModType {
         std::array<AttribModItem, 5> mods;
 };
 
-extern const GameDataArray<AttribModType> AttribDefs;
+extern GameDataArray<AttribModType> AttribDefs;
 
 extern const AttribModType& FindAttrib(char const *attrib);
 

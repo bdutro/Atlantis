@@ -103,7 +103,7 @@ class TerrainType
         std::array<Objects, 6> lairs;
 };
 
-extern const GameDataArray<TerrainType> TerrainDefs;
+extern GameDataArray<TerrainType> TerrainDefs;
 
 class Location
 {

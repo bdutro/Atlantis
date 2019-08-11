@@ -23,6 +23,8 @@ class ValidValue
         {
         }
 
+        constexpr ValidValue(const ValidValue& rhs) = default;
+
         ValidValue& operator=(const ValidValue& rhs)
         {
             valid_ = rhs.valid_;
@@ -45,7 +47,7 @@ class ValidValue
             val_ = T();
         }
 
-        bool isValid() const
+        virtual bool isValid() const
         {
             return valid_;
         }

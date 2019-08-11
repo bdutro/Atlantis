@@ -45,7 +45,7 @@
 // granted skill, granted from array, minGrant, maxGrant
 
 
-const GameDataArray<ItemType> ItemDefs {
+GameDataArray<ItemType> ItemDefs {
     {"leader", "leaders", "LEAD",
      ItemType::NOTRANSPORT,
      NULL, 0, 0, 0, {{ {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0} }},
@@ -2306,7 +2306,7 @@ const GameDataArray<ItemType> ItemDefs {
 // abbr, Favourite terrain,
 // Special level, default, 1st skill, 2nd, 3rd, 4th,
 //
-const GameDataArray<ManType> ManDefs {
+GameDataArray<ManType> ManDefs {
     {NULL, Regions::Types::R_NEXUS,
      0,0,{NULL, NULL, NULL, NULL, NULL, NULL}},
     {"PEAS", Regions::Types::R_NEXUS,
@@ -2392,7 +2392,7 @@ const GameDataArray<ManType> ManDefs {
 // tactics, stealth, obs
 // special, specialLevel,
 // silver spoiltype, hostile, number, name, abbr
-const GameDataArray<MonType> MonDefs {
+GameDataArray<MonType> MonDefs {
     {0,{0,0,0,0,0,0},
      0,0,0,
      0,0,0,
@@ -2711,7 +2711,7 @@ const GameDataArray<MonType> MonDefs {
 //  weapClass, attackType, numAttacks
 //  attackBonus, defenseBonus, mountBonus
 //
-const GameDataArray<WeaponType> WeaponDefs {
+GameDataArray<WeaponType> WeaponDefs {
     // WEAPON_NONE
     {NULL,
      0,
@@ -2907,7 +2907,7 @@ const GameDataArray<WeaponType> WeaponDefs {
 // abbr, flags, from, slashChance, pierceChance, crushChance, cleaveChance,
 // armorpiercingChance, energyChance, spiritChance, weatherChance;
 //
-const GameDataArray<ArmorType> ArmorDefs {
+GameDataArray<ArmorType> ArmorDefs {
     // ARMOR_NONE
     { NULL, 0, 100, {0, 0, 0, 0, 0, 0, 0, 0}},
     // ARMOR_CLOAKOFI
@@ -2938,7 +2938,7 @@ const GameDataArray<ArmorType> ArmorDefs {
 // Table of mounts
 // skill,minBonus,maxBonus,maxHamperedBonus
 //
-const GameDataArray<MountType> MountDefs {
+GameDataArray<MountType> MountDefs {
     // MOUNT_NONE
     { NULL, NULL, 0, 0, 0, NULL, 0},
     // MOUNT_WHORSE
@@ -2960,7 +2960,7 @@ const GameDataArray<MountType> MountDefs {
 //
 // Table of other battle items
 //
-const GameDataArray<BattleItemType> BattleItemDefs {
+GameDataArray<BattleItemType> BattleItemDefs {
     // BATTLE_NONE
     { NULL, 0, 0, 0 },
     // BATTLE_STAFFOFL
@@ -3007,7 +3007,7 @@ const GameDataArray<BattleItemType> BattleItemDefs {
 // special, rangeindex
 // skill dependancy array
 //
-const GameDataArray<SkillType> SkillDefs {
+GameDataArray<SkillType> SkillDefs {
     {"mining","MINI",10,
      0,
      NULL, NULL,
@@ -3438,7 +3438,7 @@ const GameDataArray<SkillType> SkillDefs {
 //
 // Table of objects.
 //
-const GameDataArray<ObjectType> ObjectDefs {
+GameDataArray<ObjectType> ObjectDefs {
     //
     // name,
     // flags,
@@ -4001,7 +4001,7 @@ const GameDataArray<ObjectType> ObjectDefs {
 //
 // Table of terrain types.
 //
-const GameDataArray<TerrainType> TerrainDefs {
+GameDataArray<TerrainType> TerrainDefs {
     //
     // name, type_name, similar_type,
     // flags,
@@ -4565,7 +4565,7 @@ const GameDataArray<TerrainType> TerrainDefs {
      5,{Objects::Types::O_ISLE,-1,Objects::Types::O_OCAVE,-1,-1,-1}},
 };
 
-const GameDataArray<HealType> HealDefs {
+GameDataArray<HealType> HealDefs {
     {0, 0},
     {10, 50},
     {10, 50}, // {15, 60},
@@ -4574,7 +4574,7 @@ const GameDataArray<HealType> HealDefs {
     {100, 90}
 };
 
-const GameDataArray<SpecialType> SpecialDefs {
+GameDataArray<SpecialType> SpecialDefs {
     // NONE
     {NULL, "an unknown attack",
      0,
@@ -4923,7 +4923,7 @@ const GameDataArray<SpecialType> SpecialDefs {
      "casts something that is not a spell", "annoying ", ""},
 };
 
-const GameDataArray<EffectType> EffectDefs {
+GameDataArray<EffectType> EffectDefs {
     // EFFECT_DAZZLE
     {"dazzle", -2,
      {{ {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0} }},
@@ -4940,7 +4940,7 @@ const GameDataArray<EffectType> EffectDefs {
 
 // Range definitions
 // flags, rangeclass, rangemult, crosslevelpenalty
-const GameDataArray<RangeType> RangeDefs {
+GameDataArray<RangeType> RangeDefs {
     {"rng_teleport", 0, RangeType::RNG_LEVEL2, 2, 4},
     {"rng_portal", 0, RangeType::RNG_LEVEL2, 2, 4},
     {"rng_farsight", 0, RangeType::RNG_LEVEL2, 4, 4},
@@ -4949,7 +4949,7 @@ const GameDataArray<RangeType> RangeDefs {
     {"rng_transport", 0, RangeType::RNG_ABSOLUTE, 1, 10000000},
 };
 
-const GameDataArray<AttribModType> AttribDefs {
+GameDataArray<AttribModType> AttribDefs {
     {"tactics", AttribModType::CHECK_MONSTERS,
      {{ {AttribModItem::SKILL | AttribModItem::CUMULATIVE,
        "TACT", AttribModItem::UNIT_LEVEL, 1 },

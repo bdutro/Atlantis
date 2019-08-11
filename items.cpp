@@ -49,12 +49,17 @@ const MountType& FindMount(char const *abbr)
     return MountDefs.FindItemByAbbr(abbr);
 }
 
-const MonType& FindMonster(char const *abbr, int illusion)
+AString GetMonsterTag(char const* abbr, int illusion)
 {
     AString tag = (illusion ? "i" : "");
     tag += abbr;
 
-    return MonDefs.FindItemByAbbr(tag);
+    return tag;
+}
+
+const MonType& FindMonster(char const *abbr, int illusion)
+{
+    return MonDefs.FindItemByAbbr(GetMonsterTag(abbr, illusion));
 }
 
 const ManType& FindRace(char const *abbr)
@@ -727,7 +732,7 @@ AString *ItemDescription(const Items& item, int full)
         *temp += AString(" This monster attacks with a combat skill of ") +
             mp.attackLevel + ".";
         for (int c = 0; c < NUM_ATTACK_TYPES; c++) {
-            *temp += AString(" ") + MonResist(c, mp.defense[c], full);
+            *temp += AString(" ") + MonResist(c, mp.defense[static_cast<size_t>(c)], full);
         }
         if (mp.special && mp.special != NULL) {
             *temp += AString(" ") +

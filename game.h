@@ -192,29 +192,29 @@ private:
     // Functions to allow enabling/disabling parts of the data tables
     void EnableSkill(const Skills& sk); // Enabled a disabled skill
     void DisableSkill(const Skills& sk);  // Prevents skill being studied or used
-    void ModifySkillDependancy(int sk, int i, char const *dep, int lev);
-    void ModifySkillFlags(int sk, int flags);
-    void ModifySkillCost(int sk, int cost);
-    void ModifySkillSpecial(int sk, char const *special);
-    void ModifySkillRange(int sk, char const *range);
+    void ModifySkillDependancy(const Skills& sk, int i, char const *dep, int lev);
+    void ModifySkillFlags(const Skills& sk, int flags);
+    void ModifySkillCost(const Skills& sk, int cost);
+    void ModifySkillSpecial(const Skills& sk, char const *special);
+    void ModifySkillRange(const Skills& sk, char const *range);
 
     void EnableItem(const Items& it); // Enables a disabled item
     void DisableItem(const Items& it); // Prevents item being generated/produced
-    void ModifyItemFlags(int it, int flags);
-    void ModifyItemType(int it, int type);
-    void ModifyItemWeight(int it, int weight);
-    void ModifyItemBasePrice(int it, int price);
-    void ModifyItemCapacities(int it, int walk, int ride, int fly, int swim);
-    void ModifyItemSpeed(int it, int speed);
+    void ModifyItemFlags(const Items& it, int flags);
+    void ModifyItemType(const Items& it, int type);
+    void ModifyItemWeight(const Items& it, int weight);
+    void ModifyItemBasePrice(const Items& it, int price);
+    void ModifyItemCapacities(const Items& it, int walk, int ride, int fly, int swim);
+    void ModifyItemSpeed(const Items& it, int speed);
     void ModifyItemProductionBooster(const Items& it, const Items& item, int bonus);
-    void ModifyItemHitch(int it, int item, int bonus);
-    void ModifyItemProductionSkill(int it, char *sk, int lev);
-    void ModifyItemProductionOutput(int it, int months, int count);
-    void ModifyItemProductionInput(int it, int i, int input, int amount);
-    void ModifyItemMagicSkill(int it, char *sk, int lev);
-    void ModifyItemMagicOutput(int it, int count);
-    void ModifyItemMagicInput(int it, int i, int input, int amount);
-    void ModifyItemEscape(int it, int escape, char const *skill, int val);
+    void ModifyItemHitch(const Items& it, const Items& item, int bonus);
+    void ModifyItemProductionSkill(const Items& it, char *sk, int lev);
+    void ModifyItemProductionOutput(const Items& it, int months, int count);
+    void ModifyItemProductionInput(const Items& it, int i, const Items& input, int amount);
+    void ModifyItemMagicSkill(const Items& it, char *sk, int lev);
+    void ModifyItemMagicOutput(const Items& it, int count);
+    void ModifyItemMagicInput(const Items& it, int i, const Items& input, int amount);
+    void ModifyItemEscape(const Items& it, int escape, char const *skill, int val);
 
     void ModifyRaceSkillLevels(char const *race, int special, int def);
     void ModifyRaceSkills(char const *race, int i, char const *sk);
@@ -242,31 +242,31 @@ private:
 
     void EnableObject(const Objects& ob); // Enables a disabled object
     void DisableObject(const Objects& ob); // Prevents object being built
-    void ModifyObjectFlags(int ob, int flags);
-    void ModifyObjectDecay(int ob, int maxMaint, int maxMonthDecay, int mFact);
-    void ModifyObjectProduction(int ob, int it);
-    void ModifyObjectMonster(int ob, int monster);
-    void ModifyObjectConstruction(int ob, int it, int num, char const *sk, int lev);
-    void ModifyObjectManpower(int ob, int prot, int cap, int sail, int mages);
-    void ModifyObjectDefence(int ob, int co, int en, int sp, int we, int ri, int ra);
-    void ModifyObjectName(int ob, char const *name);
+    void ModifyObjectFlags(const Objects& ob, int flags);
+    void ModifyObjectDecay(const Objects& ob, int maxMaint, int maxMonthDecay, int mFact);
+    void ModifyObjectProduction(const Objects& ob, const Items& it);
+    void ModifyObjectMonster(const Objects& ob, const Items& monster);
+    void ModifyObjectConstruction(const Objects& ob, const ObjectTypeItems& it, int num, char const *sk, int lev);
+    void ModifyObjectManpower(const Objects& ob, int prot, int cap, int sail, int mages);
+    void ModifyObjectDefence(const Objects& ob, int co, int en, int sp, int we, int ri, int ra);
+    void ModifyObjectName(const Objects& ob, char const *name);
 
     void ClearTerrainRaces(const Regions& t);
-    void ModifyTerrainRace(const Regions& t, int i, const Items& r);
-    void ModifyTerrainCoastRace(const Regions& t, int i, int r);
+    void ModifyTerrainRace(const Regions& t, int i, Items r);
+    void ModifyTerrainCoastRace(const Regions& t, int i, Items r);
     void ClearTerrainItems(const Regions& t);
     void ModifyTerrainItems(const Regions& t, int i, const Items& p, int c, int a);
-    void ModifyTerrainWMons(const Regions& t, int freq, int smon, int bigmon, int hum);
+    void ModifyTerrainWMons(const Regions& t, int freq, const Items& smon, const Items& bigmon, const Items& hum);
     void ModifyTerrainLairChance(const Regions& t, int chance);
-    void ModifyTerrainLair(const Regions& t, int i, int lair);
+    void ModifyTerrainLair(const Regions& t, int i, const Objects& lair);
     void ModifyTerrainEconomy(const Regions& t, int pop, int wages, int econ, int move);
 
     void ModifyBattleItemFlags(char const *item, int flags);
     void ModifyBattleItemSpecial(char const *item, char const *special, int level);
 
     void ModifySpecialTargetFlags(char const *special, int targetflags);
-    void ModifySpecialTargetObjects(char const *special, int index, int obj);
-    void ModifySpecialTargetItems(char const *special, int index, int item);
+    void ModifySpecialTargetObjects(char const *special, int index, const Objects& obj);
+    void ModifySpecialTargetItems(char const *special, int index, const Items& item);
     void ModifySpecialTargetEffects(char const *special, int index, char const *effect);
     void ModifySpecialEffectFlags(char const *special, int effectflags);
     void ModifySpecialShields(char const *special, int index, int type);

@@ -159,7 +159,7 @@ class ItemType
         size_t minGrant, maxGrant;
 };
 
-extern const GameDataArray<ItemType> ItemDefs;
+extern GameDataArray<ItemType> ItemDefs;
 
 class ManType
 {
@@ -174,13 +174,13 @@ class ManType
         bool CanUse(const Items&) const;
 };
 
-extern const GameDataArray<ManType> ManDefs;
+extern GameDataArray<ManType> ManDefs;
 
 class MonType
 {
     public:
         int attackLevel;
-        int defense[NUM_ATTACK_TYPES];
+        std::array<int, NUM_ATTACK_TYPES> defense;
 
         int numAttacks;
         int hits;
@@ -201,7 +201,7 @@ class MonType
         char const *abbr;
 };
 
-extern const GameDataArray<MonType> MonDefs;
+extern GameDataArray<MonType> MonDefs;
 
 enum {
     SLASHING,        // e.g. sword attack (This is default)
@@ -265,7 +265,7 @@ class WeaponType
         int mountBonus;
 };
 
-extern const GameDataArray<WeaponType> WeaponDefs;
+extern GameDataArray<WeaponType> WeaponDefs;
 
 class ArmorType
 {
@@ -285,7 +285,7 @@ class ArmorType
         int saves[NUM_WEAPON_CLASSES];
 };
 
-extern const GameDataArray<ArmorType> ArmorDefs;
+extern GameDataArray<ArmorType> ArmorDefs;
 
 class MountType
 {
@@ -318,7 +318,7 @@ class MountType
         int specialLev;
 };
 
-extern const GameDataArray<MountType> MountDefs;
+extern GameDataArray<MountType> MountDefs;
 
 class BattleItemType
 {
@@ -337,7 +337,7 @@ class BattleItemType
         int skillLevel;
 };
 
-extern const GameDataArray<BattleItemType> BattleItemDefs;
+extern GameDataArray<BattleItemType> BattleItemDefs;
 
 extern Items ParseGiveableItem(AString *);
 extern Items ParseAllItems(AString *);
@@ -349,6 +349,7 @@ extern const BattleItemType& FindBattleItem(char const *abbr);
 extern const ArmorType& FindArmor(char const *abbr);
 extern const WeaponType& FindWeapon(char const *abbr);
 extern const MountType& FindMount(char const *abbr);
+extern AString GetMonsterTag(char const *abbr, int illusion);
 extern const MonType& FindMonster(char const *abbr, int illusion);
 extern const ManType& FindRace(char const *abbr);
 extern AString AttType(int atype);
