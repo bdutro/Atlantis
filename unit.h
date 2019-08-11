@@ -254,9 +254,9 @@ class Unit
         size_t free;
         int practiced; // Has this unit practiced a skill this turn
         int moved;
-        int phase;
+        ValidValue<size_t> phase;
         int savedmovement;
-        int savedmovedir;
+        Directions savedmovedir;
 
         /* Orders */
         int destroy;
@@ -272,8 +272,8 @@ class Unit
         AList forgetorders;
         CastOrder *castorders;
         TeleportOrder *teleportorders;
-        Order *stealorders;
-        Order *monthorders;
+        Order::Handle stealorders;
+        Order::Handle monthorders;
         AttackOrder *attackorders;
         EvictOrder *evictorders;
         std::weak_ptr<ARegion> advancefrom;

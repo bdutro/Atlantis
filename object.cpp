@@ -269,23 +269,26 @@ int Object::CanEnter(ARegion *, Unit *u)
     return 1;
 }
 
-Unit *Object::ForbiddenBy(ARegion *reg, Unit *u)
+Unit::WeakHandle Object::ForbiddenBy(const ARegion::Handle& reg, const Unit::Handle& u)
 {
-    Unit *owner = GetOwner();
-    if (!owner || type == O_GATEWAY) {
-        return(0);
+    const auto owner = GetOwner();
+    if (owner.expired() || type == O_GATEWAY) {
+        return Unit::WeakHandle();
     }
 
-    if (owner->GetAttitude(reg, u) < A_FRIENDLY) {
+    if (owner.lock()->GetAttitude(reg, u) < A_FRIENDLY) {
         return owner;
     }
-    return 0;
+    return Unit::WeakHandle();
 }
 
-Unit *Object::GetOwner()
+Unit::WeakHandle Object::GetOwner()
 {
-    Unit *owner = (Unit *) units.First();
-    return(owner);
+    if(units.empty())
+    {
+        return Unit::WeakHandle();
+    }
+    return units.front();
 }
 
 void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,

@@ -269,13 +269,13 @@ void ARegion::MakeLair(const Objects& t)
     o->inner = -1;
 }
 
-unsigned int ARegion::GetPoleDistance(Directions dir)
+unsigned int ARegion::GetPoleDistance(const Directions& dir)
 {
     unsigned int ct = 1;
-    ARegion::WeakHandle nreg = neighbors[static_cast<size_t>(dir)];
+    ARegion::WeakHandle nreg = neighbors[dir];
     while (!nreg.expired()) {
         ct++;
-        nreg = nreg.lock()->neighbors[static_cast<size_t>(dir)];
+        nreg = nreg.lock()->neighbors[dir];
     }
     return ct;
 }
@@ -297,7 +297,7 @@ void ARegion::Setup()
         LairCheck();
 }
 
-int ARegion::TraceConnectedRoad(Directions dir, int sum, std::list<ARegion::WeakHandle>& con, int range, int dev)
+int ARegion::TraceConnectedRoad(const Directions& dir, int sum, std::list<ARegion::WeakHandle>& con, int range, int dev)
 {
     ARegion::WeakHandle rn = weak_from_this();
     bool isnew = true;
@@ -320,24 +320,24 @@ int ARegion::TraceConnectedRoad(Directions dir, int sum, std::list<ARegion::Weak
     if (development * 2 > dev * 5) sum++;
     // Check further along road
     if (range > 0) {
-        for (const auto d: ALL_DIRECTIONS) {
-            if (!HasExitRoad(d))
+        for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+            if (!HasExitRoad(*d))
             {
                 continue;
             }
-            const ARegion::WeakHandle& r = neighbors[static_cast<size_t>(d)];
+            const ARegion::WeakHandle& r = neighbors[*d];
             if (r.expired())
             {
                 continue;
             }
             ARegion::Handle r_sp = r.lock();
-            if (dir == r_sp->GetRealDirComp(d))
+            if (dir == r_sp->GetRealDirComp(*d))
             {
                 continue;
             }
-            if (r_sp->HasConnectingRoad(d))
+            if (r_sp->HasConnectingRoad(*d))
             {
-                sum = r_sp->TraceConnectedRoad(d, sum, con, range-1, dev+2);
+                sum = r_sp->TraceConnectedRoad(*d, sum, con, range-1, dev+2);
             }
         }
     }
@@ -349,17 +349,17 @@ int ARegion::RoadDevelopmentBonus(int range, int dev)
     int bonus = 0;
     std::list<ARegion::WeakHandle> con;
     con.push_back(weak_from_this());
-    for (const auto d: ALL_DIRECTIONS) {
-        if (!HasExitRoad(d)) continue;
-        const ARegion::WeakHandle& r = neighbors[static_cast<size_t>(d)];
+    for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+        if (!HasExitRoad(*d)) continue;
+        const ARegion::WeakHandle& r = neighbors[*d];
         if (r.expired())
         {
             continue;
         }
         ARegion::Handle r_sp = r.lock();
-        if (r_sp->HasConnectingRoad(d))
+        if (r_sp->HasConnectingRoad(*d))
         {
-            bonus = r_sp->TraceConnectedRoad(d, bonus, con, range-1, dev);
+            bonus = r_sp->TraceConnectedRoad(*d, bonus, con, range-1, dev);
         }
     }
     return bonus;    
@@ -412,7 +412,7 @@ AString ARegion::GetDecayFlavor()
 {
     AString flavor;
     int badWeather = 0;
-    if (weather != W_NORMAL && !clearskies) badWeather = 1;
+    if (weather != Weather::Types::W_NORMAL && !clearskies) badWeather = 1;
     if (!Globals->WEATHER_EXISTS) badWeather = 0;
     switch (type.asEnum()) {
         case Regions::Types::R_PLAIN:
@@ -515,7 +515,7 @@ int ARegion::GetMaxClicks()
     int weatherAdd = 0;
     int badWeather = 0;
     int maxClicks;
-    if (weather != W_NORMAL && !clearskies) badWeather = 1;
+    if (weather != Weather::Types::W_NORMAL && !clearskies) badWeather = 1;
     if (!Globals->WEATHER_EXISTS) badWeather = 0;
     switch (type.asEnum()) {
         case Regions::Types::R_PLAIN:
@@ -617,7 +617,7 @@ bool ARegion::HasRoad()
 }
 
 // AS
-bool ARegion::HasExitRoad(Directions realDirection)
+bool ARegion::HasExitRoad(const Directions& realDirection)
 {
     for(const auto& o: objects)
     {
@@ -635,20 +635,19 @@ bool ARegion::HasExitRoad(Directions realDirection)
 int ARegion::CountConnectingRoads()
 {
     int connections = 0;
-    for (const auto i: ALL_DIRECTIONS) {
-        if (HasExitRoad(i) && !neighbors[static_cast<size_t>(i)].expired() && HasConnectingRoad(i))
+    for (auto i = Directions::begin(); i != Directions::end(); ++i) {
+        if (HasExitRoad(*i) && !neighbors[*i].expired() && HasConnectingRoad(*i))
             connections ++;
     }
     return connections;
 }
 
 // AS
-bool ARegion::HasConnectingRoad(Directions realDirection)
+bool ARegion::HasConnectingRoad(const Directions& realDirection)
 {
     Directions opposite = GetRealDirComp(realDirection);
-    const size_t idx = static_cast<size_t>(realDirection);
 
-    if (!neighbors[idx].expired() && neighbors[idx].lock()->HasExitRoad(opposite))
+    if (!neighbors[realDirection].expired() && neighbors[realDirection].lock()->HasExitRoad(opposite))
     {
         return true;
     }
@@ -657,26 +656,26 @@ bool ARegion::HasConnectingRoad(Directions realDirection)
 }
 
 // AS
-Objects ARegion::GetRoadDirection(Directions realDirection)
+Objects ARegion::GetRoadDirection(const Directions& realDirection)
 {
     Objects roadDirection;
-    switch (realDirection) {
-        case Directions::D_NORTH:
+    switch (realDirection.asEnum()) {
+        case Directions::Types::D_NORTH:
             roadDirection = Objects::Types::O_ROADN;
             break;
-        case Directions::D_NORTHEAST:
+        case Directions::Types::D_NORTHEAST:
             roadDirection = Objects::Types::O_ROADNE;
             break;
-        case Directions::D_NORTHWEST:
+        case Directions::Types::D_NORTHWEST:
             roadDirection = Objects::Types::O_ROADNW;
             break;
-        case Directions::D_SOUTH:
+        case Directions::Types::D_SOUTH:
             roadDirection = Objects::Types::O_ROADS;
             break;
-        case Directions::D_SOUTHEAST:
+        case Directions::Types::D_SOUTHEAST:
             roadDirection = Objects::Types::O_ROADSE;
             break;
-        case Directions::D_SOUTHWEST:
+        case Directions::Types::D_SOUTHWEST:
             roadDirection = Objects::Types::O_ROADSW;
             break;
         default:
@@ -686,40 +685,39 @@ Objects ARegion::GetRoadDirection(Directions realDirection)
 }
 
 // AS
-Directions ARegion::GetRealDirComp(Directions realDirection)
+Directions ARegion::GetRealDirComp(const Directions& realDirection)
 {
     Directions complementDirection;
-    const size_t idx = static_cast<size_t>(realDirection);
-    if (!neighbors[idx].expired()) {
-        const ARegion::Handle n = neighbors[idx].lock();
+    if (!neighbors[realDirection].expired()) {
+        const ARegion::Handle n = neighbors[realDirection].lock();
         const ARegion::Handle this_shared = shared_from_this();
-        for (const auto i: ALL_DIRECTIONS)
+        for (auto i = Directions::begin(); i != Directions::end(); ++i)
         {
-            if (n->neighbors[static_cast<size_t>(i)].lock() == this_shared)
+            if (n->neighbors[*i].lock() == this_shared)
             {
-                return i;
+                return *i;
             }
         }
     }
 
-    switch (realDirection) {
-        case Directions::D_NORTH:
-            complementDirection = Directions::D_SOUTH;
+    switch (realDirection.asEnum()) {
+        case Directions::Types::D_NORTH:
+            complementDirection = Directions::Types::D_SOUTH;
             break;
-        case Directions::D_NORTHEAST:
-            complementDirection = Directions::D_SOUTHWEST;
+        case Directions::Types::D_NORTHEAST:
+            complementDirection = Directions::Types::D_SOUTHWEST;
             break;
-        case Directions::D_NORTHWEST:
-            complementDirection = Directions::D_SOUTHEAST;
+        case Directions::Types::D_NORTHWEST:
+            complementDirection = Directions::Types::D_SOUTHEAST;
             break;
-        case Directions::D_SOUTH:
-            complementDirection = Directions::D_NORTH;
+        case Directions::Types::D_SOUTH:
+            complementDirection = Directions::Types::D_NORTH;
             break;
-        case Directions::D_SOUTHEAST:
-            complementDirection = Directions::D_NORTHWEST;
+        case Directions::Types::D_SOUTHEAST:
+            complementDirection = Directions::Types::D_NORTHWEST;
             break;
-        case Directions::D_SOUTHWEST:
-            complementDirection = Directions::D_NORTHEAST;
+        case Directions::Types::D_SOUTHWEST:
+            complementDirection = Directions::Types::D_NORTHEAST;
             break;
         default:
             throw std::runtime_error("Invalid direction specified");
@@ -784,17 +782,23 @@ void ARegion::SetLoc(unsigned int x, unsigned int y, unsigned int z)
     zloc = z;
 }
 
-void ARegion::SetGateStatus(int month)
+void ARegion::SetGateStatus(size_t month)
 {
     if ((type == Regions::Types::R_NEXUS) || (Globals->START_GATES_OPEN && IsStartingCity())) {
-        gateopen = 1;
+        gateopen = true;
         return;
     }
-    gateopen = 0;
-    for (int i = 0; i < Globals->GATES_NOT_PERENNIAL; i++) {
-        int dmon = gatemonth + i;
-        if (dmon > 11) dmon = dmon - 12;
-        if (dmon == month) gateopen = 1;
+    gateopen = false;
+    for (size_t i = 0; i < Globals->GATES_NOT_PERENNIAL; i++) {
+        size_t dmon = gatemonth + i;
+        if (dmon > 11)
+        {
+            dmon = dmon - 12;
+        }
+        if (dmon == month)
+        {
+            gateopen = true;
+        }
     }
 }
 
@@ -818,7 +822,7 @@ void ARegion::Kill(const Unit::Handle& u)
     if (first) {
         // give u's stuff to first
         for(const auto& i: u->items) {
-            if (ItemDefs[static_cast<size_t>(i->type)].type & IT_SHIP &&
+            if (ItemDefs[i->type].type & IT_SHIP &&
                     first->items.GetNum(i->type) > 0) {
                 if (first->items.GetNum(i->type) > i->num)
                     first->items.SetNum(i->type, i->num);
@@ -1128,7 +1132,7 @@ void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER
     delete temp;
     buildingseq = f->GetInt<int>();
     gate = f->GetInt<int>();
-    if (gate > 0) gatemonth = f->GetInt<int>();
+    if (gate > 0) gatemonth = f->GetInt<size_t>();
 
     temp = f->GetStr();
     race = LookupItem(temp);
@@ -1366,16 +1370,15 @@ void ARegion::WriteEconomy(Areport *f, const Faction& fac, bool present)
     f->DropTab();
 }
 
-void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const std::array<bool, ALL_DIRECTIONS.size()>& exits_seen)
+void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const ExitArray& exits_seen)
 {
     f->PutStr("Exits:");
     f->AddTab();
     int y = 0;
-    for (const auto d: ALL_DIRECTIONS) {
-        size_t i = static_cast<size_t>(d);
-        const ARegion::WeakHandle& r = neighbors[i];
-        if (!r.expired() && exits_seen[i]) {
-            f->PutStr(AString(DirectionStrs[i]) + " : " +
+    for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+        const ARegion::WeakHandle& r = neighbors[*d];
+        if (!r.expired() && exits_seen[*d]) {
+            f->PutStr(AString(DirectionStrs[*d]) + " : " +
                     r.lock()->Print(pRegs) + ".");
             y = 1;
         }
@@ -1390,7 +1393,7 @@ void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const std::array<
 "keep you safe as long as you should choose to stay. However, rumor " \
 "has it that once you have left the Nexus, you can never return."
 
-void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegionList& pRegions)
+void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_t>& month, const ARegionList& pRegions)
 {
     Farsight::WeakHandle farsight = GetFarsight(farsees, fac);
     const bool has_farsight = !farsight.expired();
@@ -1424,12 +1427,21 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
             temp = "It was ";
             if (clearskies) temp += "unnaturally clear ";
             else {
-                if (weather == W_BLIZZARD) temp = "There was an unnatural ";
-                else if (weather == W_NORMAL) temp = "The weather was ";
+                if (weather == Weather::Types::W_BLIZZARD) temp = "There was an unnatural ";
+                else if (weather == Weather::Types::W_NORMAL) temp = "The weather was ";
                 temp += SeasonNames[weather];
             }
             temp += " last month; ";
-            int nxtweather = pRegions.GetWeather(*this, (month + 1) % 12);
+            size_t next_month;
+            if(month.isValid())
+            {
+                next_month = month + 1;
+            }
+            else
+            {
+                next_month = 0;
+            }
+            Weather nxtweather = pRegions.GetWeather(*this, next_month % 12);
             temp += "it will be ";
             temp += SeasonNames[nxtweather];
             temp += " next month.";
@@ -1461,7 +1473,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
 
         WriteEconomy(f, fac, present || has_farsight);
 
-        std::array<bool, ALL_DIRECTIONS.size()> exits_seen;
+        ExitArray exits_seen;
         if (present || has_farsight || (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_ALL_EXITS)) {
             std::fill(exits_seen.begin(), exits_seen.end(), true);
         } else {
@@ -1588,7 +1600,7 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
 
 // DK
 void ARegion::WriteTemplate(Areport *f, const Faction& fac,
-        const ARegionList& pRegs, int month)
+        const ARegionList& pRegs, const ValidValue<size_t>& month)
 {
     int header = 0;
     Orders order;
@@ -1785,7 +1797,7 @@ int ARegion::GetObservation(const Faction& f, bool usepassers)
     return obs;
 }
 
-void ARegion::SetWeather(int newWeather)
+void ARegion::SetWeather(const Weather& newWeather)
 {
     weather = newWeather;
 }
@@ -1826,13 +1838,13 @@ unsigned int ARegion::IsCoastalOrLakeside()
     return seacount;
 }
 
-int ARegion::MoveCost(int movetype, ARegion *fromRegion, Directions dir, AString *road)
+int ARegion::MoveCost(int movetype, const ARegion::Handle& fromRegion, const Directions& dir, AString *road)
 {
     int cost = 1;
     if (Globals->WEATHER_EXISTS) {
         cost = 2;
-        if (weather == W_BLIZZARD) return 10;
-        if (weather == W_NORMAL || clearskies) cost = 1;
+        if (weather == Weather::Types::W_BLIZZARD) return 10;
+        if (weather == Weather::Types::W_NORMAL || clearskies) cost = 1;
     }
     if (movetype == M_SWIM) {
         cost = (TerrainDefs[type].movepoints * cost);
@@ -2188,18 +2200,18 @@ void ARegionList::NeighSetup(const ARegion::Handle& r, const ARegionArray::Handl
     r->ZeroNeighbors();
 
     if (r->yloc != 0 && r->yloc != 1) {
-        r->neighbors[static_cast<size_t>(Directions::D_NORTH)] = ar->GetRegion(r->xloc, r->yloc - 2);
+        r->neighbors[Directions::Types::D_NORTH] = ar->GetRegion(r->xloc, r->yloc - 2);
     }
     if (r->yloc != 0) {
-        r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)] = ar->GetRegion(r->xloc + 1, r->yloc - 1);
-        r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)] = ar->GetRegion(r->xloc - 1, r->yloc - 1);
+        r->neighbors[Directions::Types::D_NORTHEAST] = ar->GetRegion(r->xloc + 1, r->yloc - 1);
+        r->neighbors[Directions::Types::D_NORTHWEST] = ar->GetRegion(r->xloc - 1, r->yloc - 1);
     }
     if (r->yloc != ar->y - 1) {
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)] = ar->GetRegion(r->xloc + 1, r->yloc + 1);
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)] = ar->GetRegion(r->xloc - 1, r->yloc + 1);
+        r->neighbors[Directions::Types::D_SOUTHEAST] = ar->GetRegion(r->xloc + 1, r->yloc + 1);
+        r->neighbors[Directions::Types::D_SOUTHWEST] = ar->GetRegion(r->xloc - 1, r->yloc + 1);
     }
     if (r->yloc != ar->y - 1 && r->yloc != ar->y - 2) {
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTH)] = ar->GetRegion(r->xloc, r->yloc + 2);
+        r->neighbors[Directions::Types::D_SOUTH] = ar->GetRegion(r->xloc, r->yloc + 2);
     }
 }
 
@@ -2224,10 +2236,10 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
     y2 = 10 * scale - 1 - y;
     // Always try to connect in the standard way...
     if (y > 1) {
-        r->neighbors[static_cast<size_t>(Directions::D_NORTH)] = ar->GetRegion(x, y - 2);
+        r->neighbors[Directions::Types::D_NORTH] = ar->GetRegion(x, y - 2);
     }
     // but if that fails, use the special icosahedral connections:
-    if (r->neighbors[static_cast<size_t>(Directions::D_NORTH)].expired()) {
+    if (r->neighbors[Directions::Types::D_NORTH].expired()) {
         if (y > 0 && y < 3 * scale)
         {
             if (y == 2) {
@@ -2243,16 +2255,16 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
                 neighY = y - 2;
             }
             neighX %= (scale * 10);
-            r->neighbors[static_cast<size_t>(Directions::D_NORTH)] = ar->GetRegion(neighX, neighY);
+            r->neighbors[Directions::Types::D_NORTH] = ar->GetRegion(neighX, neighY);
         }
     }
     if (y > 0) {
         neighX = x + 1;
         neighY = y - 1;
         neighX %= (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_NORTHEAST] = ar->GetRegion(neighX, neighY);
     }
-    if (r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)].expired()) {
+    if (r->neighbors[Directions::Types::D_NORTHEAST].expired()) {
         if (y == 0) {
             neighX = 4 * scale;
             neighY = 2;
@@ -2276,15 +2288,15 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
             neighY = y - 2;
         }
         neighX %= (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_NORTHEAST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_NORTHEAST] = ar->GetRegion(neighX, neighY);
     }
     if (y2 > 0) {
         neighX = x + 1;
         neighY = y + 1;
         neighX %= (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_SOUTHEAST] = ar->GetRegion(neighX, neighY);
     }
-    if (r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)].expired()) {
+    if (r->neighbors[Directions::Types::D_SOUTHEAST].expired()) {
         if (y == 0) {
             neighX = 2 * scale;
             neighY = 2;
@@ -2308,12 +2320,12 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
             neighY = y + 2;
         }
         neighX %= (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_SOUTHEAST] = ar->GetRegion(neighX, neighY);
     }
     if (y2 > 1) {
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTH)] = ar->GetRegion(x, y + 2);
+        r->neighbors[Directions::Types::D_SOUTH] = ar->GetRegion(x, y + 2);
     }
-    if (r->neighbors[static_cast<size_t>(Directions::D_SOUTH)].expired()) {
+    if (r->neighbors[Directions::Types::D_SOUTH].expired()) {
         if (y2 > 0 && y2 < 3 * scale)
         {
             if (y2 == 2) {
@@ -2329,16 +2341,16 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
                 neighY = y + 2;
             }
             neighX = (neighX + scale * 10) % (scale * 10);
-            r->neighbors[static_cast<size_t>(Directions::D_SOUTH)] = ar->GetRegion(neighX, neighY);
+            r->neighbors[Directions::Types::D_SOUTH] = ar->GetRegion(neighX, neighY);
         }
     }
     if (y2 > 0) {
         neighX = x - 1;
         neighY = y + 1;
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_SOUTHWEST] = ar->GetRegion(neighX, neighY);
     }
-    if (r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)].expired()) {
+    if (r->neighbors[Directions::Types::D_SOUTHWEST].expired()) {
         if (y == 0) {
             neighX = 8 * scale;
             neighY = 2;
@@ -2362,15 +2374,15 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
             neighY = y + 1;
         }
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_SOUTHWEST] = ar->GetRegion(neighX, neighY);
     }
     if (y > 0) {
         neighX = x - 1;
         neighY = y - 1;
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_NORTHWEST] = ar->GetRegion(neighX, neighY);
     }
-    if (r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)].expired()) {
+    if (r->neighbors[Directions::Types::D_NORTHWEST].expired()) {
         if (y == 0) {
             neighX = 6 * scale;
             neighY = 2;
@@ -2394,7 +2406,7 @@ void ARegionList::IcosahedralNeighSetup(const ARegion::Handle& r, const ARegionA
             neighY = y - 1;
         }
         neighX = (neighX + scale * 10) % (scale * 10);
-        r->neighbors[static_cast<size_t>(Directions::D_NORTHWEST)] = ar->GetRegion(neighX, neighY);
+        r->neighbors[Directions::Types::D_NORTHWEST] = ar->GetRegion(neighX, neighY);
     }
 }
 
@@ -2517,7 +2529,7 @@ ARegion::WeakHandle ARegionList::FindConnectedRegions(const ARegion::Handle& r, 
         return tail;
 }
 
-ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle start, unsigned int *dir)
+ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle start, Directions& dir)
 {
     for(const auto& r: regions_) {
         r->distance.invalidate();
@@ -2549,16 +2561,16 @@ ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle sta
         }
         if (valid) {
             if (dir) {
-                size_t offset = static_cast<unsigned int>(getrandom(ALL_DIRECTIONS.size()));
+                size_t offset = static_cast<unsigned int>(getrandom(Directions::size()));
                 const auto start_sp = start.lock();
-                for (size_t i = 0; i < ALL_DIRECTIONS.size(); i++) {
-                    const auto& r = start_sp->neighbors[(i + offset) % ALL_DIRECTIONS.size()];
+                for (auto i = Directions::begin(); i != Directions::end(); i++) {
+                    const auto& r = start_sp->neighbors[(*i + offset) % Directions::size()];
                     if (r.expired())
                     {
                         continue;
                     }
                     if (r.lock()->distance + 1 == start_sp->distance) {
-                        *dir = static_cast<unsigned int>((i + offset) % ALL_DIRECTIONS.size());
+                        dir = (*i + offset) % Directions::size();
                         break;
                     }
                 }
@@ -2566,7 +2578,7 @@ ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle sta
                     if (o->inner != -1) {
                         const auto& inner = GetRegion(static_cast<size_t>(o->inner));
                         if (inner.lock()->distance + 1 == start_sp->distance) {
-                            *dir = MOVE_IN;
+                            dir = Directions::MOVE_IN;
                             break;
                         }
                     }

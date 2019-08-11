@@ -110,8 +110,8 @@ class Object
         int IsBuilding();
         int CanModify();
         int CanEnter(ARegion *, Unit *);
-        Unit *ForbiddenBy(ARegion *, Unit *);
-        Unit *GetOwner();
+        std::weak_ptr<Unit> ForbiddenBy(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
+        std::weak_ptr<Unit> GetOwner();
 
         void SetPrevDir(int);
         void MoveObject(ARegion *toreg);

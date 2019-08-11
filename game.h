@@ -120,7 +120,7 @@ public:
     // Handle special gm unit modification functions
     Unit::WeakHandle ParseGMUnit(AString *tag, const Faction::Handle& pFac);
 
-    int TurnNumber();
+    size_t TurnNumber();
 
     // JLT
     // Functions to allow enabling/disabling parts of the data tables
@@ -297,8 +297,8 @@ private:
     std::vector<Unit::Handle> ppUnits;
     size_t maxppunits;
     int shipseq;
-    int year;
-    int month;
+    size_t year;
+    ValidValue<size_t> month;
 
     enum {
         GAME_STATUS_UNINIT,
@@ -509,7 +509,7 @@ private:
     void DoAutoAttacks();
     void DoAdvanceAttack(ARegion *, Unit *);
     void DoAutoAttack(ARegion *, Unit *);
-    void DoMovementAttacks(AList *);
+    void DoMovementAttacks(const std::list<Location::Handle>&);
     void DoMovementAttack(ARegion *, Unit *);
     void DoAutoAttackOn(ARegion *, Unit *);
     void RemoveEmptyObjects();
@@ -549,8 +549,8 @@ private:
     // Month long orders
     //
     void RunMoveOrders();
-    Location *DoAMoveOrder(Unit *, ARegion *, Object *);
-    void DoMoveEnter(Unit *, ARegion *, Object **);
+    Location::Handle DoAMoveOrder(const Unit::Handle&, const ARegion::Handle&, const Object::Handle&);
+    void DoMoveEnter(const Unit::Handle&, const ARegion::Handle&, Object::Handle&);
     void RunMonthOrders();
     void RunStudyOrders(ARegion *);
     void Do1StudyOrder(Unit *, Object *);
@@ -569,7 +569,7 @@ private:
     void CreateShip(ARegion *, Unit *, int);
     void RunSailOrders();
     void RunMovementOrders();
-    Location *Do1SailOrder(ARegion *, Object *, Unit *);
+    Location::Handle Do1SailOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void ClearCastEffects();
     void RunCastOrders();
     void RunACastOrder(ARegion *, Object *, Unit *);

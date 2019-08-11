@@ -37,47 +37,43 @@
 
 void Game::RunMovementOrders()
 {
-    int phase, error;
-    ARegion *r;
-    Object *o;
-    Unit *u;
-    AList locs;
-    Location *l;
-    MoveOrder *mo;
-    SailOrder *so;
-    MoveDir *d;
-    AString order, *tOrder;
+    int error;
+    std::list<Location::Handle> locs;
+    AString order;
 
-    for (phase = 0; phase < Globals->MAX_SPEED; phase++) {
-        forlist(&regions) {
-            r = (ARegion *) elem;
-            forlist(&r->objects) {
-                o = (Object *) elem;
-                forlist(&o->units) {
-                    u = (Unit *) elem;
-                    Object *tempobj = o;
-                    DoMoveEnter(u, r, &tempobj);
+    for (size_t phase = 0; phase < Globals->MAX_SPEED; ++phase) {
+        for(const auto& r: regions) {
+            for(const auto& o: r->objects) {
+                for(const auto& u: o->units) {
+                    Object::Handle tempobj = o;
+                    DoMoveEnter(u, r, tempobj);
                 }
             }
         }
-        forlist_reuse(&regions) {
-            r = (ARegion *) elem;
-            forlist(&r->objects) {
-                o = (Object *) elem;
+        for(const auto& r: regions) {
+            for(const auto& o: r->objects) {
                 error = 1;
                 if (o->IsFleet()) {
-                    u = o->GetOwner();
-                    if (!u)
+                    const auto u_w = o->GetOwner();
+                    if (u_w.expired())
+                    {
                         continue;
-                    if (u->phase >= phase)
+                    }
+                    const auto u = u_w.lock();
+                    if (!u->phase.isValid() || u->phase >= phase)
+                    {
                         continue;
+                    }
                     if (!u->nomove &&
                             u->monthorders &&
-                            u->monthorders->type == O_SAIL)  {
+                            u->monthorders->type == Orders::Types::O_SAIL)  {
                         u->phase = phase;
                         if (o->incomplete < 50) {
-                            l = Do1SailOrder(r, o, u);
-                            if (l) locs.Add(l);
+                            const auto l = Do1SailOrder(r, o, u);
+                            if (l)
+                            {
+                                locs.push_back(l);
+                            }
                             error = 0;
                         } else
                             error = 3;
@@ -85,10 +81,9 @@ void Game::RunMovementOrders()
                         error = 2;
                 }
                 if (error > 0) {
-                    forlist(&o->units) {
-                        u = (Unit *) elem;
+                    for(const auto& u: o->units) {
                         if (u && u->monthorders &&
-                                u->monthorders->type == O_SAIL) {
+                                u->monthorders->type == Orders::Types::O_SAIL) {
                             switch (error) {
                                 case 1:
                                     u->Error("SAIL: Must be on a ship.");
@@ -100,128 +95,121 @@ void Game::RunMovementOrders()
                                     u->Error("SAIL: Fleet is too damaged to sail.");
                                     break;
                             }
-                            delete u->monthorders;
-                            u->monthorders = 0;
+                            u->monthorders.reset();
                         }
                     }
                 }
             }
         }
-        forlist_reuse(&regions) {
-            r = (ARegion *) elem;
-            forlist(&r->objects) {
-                o = (Object *) elem;
-                forlist(&o->units) {
-                    u = (Unit *) elem;
+        for(const auto& r: regions) {
+            for(const auto& o: r->objects) {
+                for(const auto& u: o->units) {
                     if (u->phase >= phase)
                         continue;
                     u->phase = phase;
                     if (u && !u->nomove && u->monthorders &&
-                            (u->monthorders->type == O_MOVE ||
-                            u->monthorders->type == O_ADVANCE)) {
-                        l = DoAMoveOrder(u, r, o);
-                        if (l) locs.Add(l);
+                            (u->monthorders->type == Orders::Types::O_MOVE ||
+                            u->monthorders->type == Orders::Types::O_ADVANCE)) {
+                        auto l = DoAMoveOrder(u, r, o);
+                        if (l)
+                        {
+                            locs.push_back(l);
+                        }
                     }
                 }
             }
         }
-        DoMovementAttacks(&locs);
-        locs.DeleteAll();
+        DoMovementAttacks(locs);
+        locs.clear();
     }
 
     // Do a final round of Enters after the phased movement is done,
     // in case such a thing is at the end of a move chain
-    forlist(&regions) {
-        r = (ARegion *) elem;
-        forlist(&r->objects) {
-            o = (Object *) elem;
-            forlist(&o->units) {
-                u = (Unit *) elem;
-                Object *tempobj = o;
-                DoMoveEnter(u, r, &tempobj);
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(const auto& u: o->units) {
+                Object::Handle tempobj = o;
+                DoMoveEnter(u, r, tempobj);
             }
         }
     }
 
     // Queue remaining moves
-    forlist_reuse(&regions) {
-        r = (ARegion *) elem;
-        forlist(&r->objects) {
-            o = (Object *) elem;
-            forlist(&o->units) {
-                u = (Unit *) elem;
-                mo = (MoveOrder *) u->monthorders;
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(const auto& u: o->units) {
+                const auto mo = std::dynamic_pointer_cast<MoveOrder>(u->monthorders);
                 if (!u->nomove &&
                         u->monthorders &&
-                        (u->monthorders->type == O_MOVE ||
-                        u->monthorders->type == O_ADVANCE) &&
-                        mo->dirs.Num() > 0) {
-                    d = (MoveDir *) mo->dirs.First();
+                        (u->monthorders->type == Orders::Types::O_MOVE ||
+                        u->monthorders->type == Orders::Types::O_ADVANCE) &&
+                        !mo->dirs.empty()) {
+                    const auto& d = mo->dirs.front();
                     if (u->savedmovedir != d->dir)
                         u->savedmovement = 0;
-                    u->savedmovement += u->movepoints / Globals->MAX_SPEED;
+                    u->savedmovement += u->movepoints / static_cast<int>(Globals->MAX_SPEED);
                     u->savedmovedir = d->dir;
                 } else {
                     u->savedmovement = 0;
-                    u->savedmovedir = -1;
+                    u->savedmovedir.invalidate();
                 }
                 if (u->monthorders && 
-                        (u->monthorders->type == O_MOVE ||
-                        u->monthorders->type == O_ADVANCE)) {
-                    mo = (MoveOrder *) u->monthorders;
-                    if (mo->dirs.Num() > 0) {
-                        tOrder = new AString;
+                        (u->monthorders->type == Orders::Types::O_MOVE ||
+                        u->monthorders->type == Orders::Types::O_ADVANCE)) {
+                    if (!mo->dirs.empty()) {
+                        auto tOrder = std::make_shared<AString>();
                         if (mo->advancing)
                             *tOrder = "ADVANCE";
                         else
                             *tOrder = "MOVE";
                         u->Event(*tOrder + ": Unit has insufficient movement points;"
                                 " remaining moves queued.");
-                        forlist(&mo->dirs) {
-                            d = (MoveDir *) elem;
+                        for(const auto& d: mo->dirs) {
                             *tOrder += " ";
-                            if (d->dir < NDIRS) *tOrder += DirectionAbrs[d->dir];
-                            else if (d->dir == MOVE_IN) *tOrder += "IN";
-                            else if (d->dir == MOVE_OUT) *tOrder += "OUT";
-                            else if (d->dir == MOVE_PAUSE) *tOrder += "P";
-                            else *tOrder += d->dir - MOVE_ENTER;
+                            if (d->dir.isRegularDirection()) *tOrder += DirectionAbrs[d->dir];
+                            else if (d->dir == Directions::MOVE_IN) *tOrder += "IN";
+                            else if (d->dir == Directions::MOVE_OUT) *tOrder += "OUT";
+                            else if (d->dir == Directions::MOVE_PAUSE) *tOrder += "P";
+                            else *tOrder += d->dir - Directions::MOVE_ENTER;
                         }
-                        u->oldorders.Insert(tOrder);
+                        u->oldorders.push_back(tOrder);
                     }
                 }
             }
-            u = o->GetOwner();
-            if (o->IsFleet() && u && !u->nomove &&
-                    u->monthorders && 
-                    u->monthorders->type == O_SAIL) {
-                so = (SailOrder *) u->monthorders;
-                if (so->dirs.Num() > 0) {
-                    u->Event("SAIL: Can't sail that far;"
-                        " remaining moves queued.");
-                    tOrder = new AString("SAIL");
-                    forlist(&so->dirs) {
-                        d = (MoveDir *) elem;
-                        *tOrder += " ";
-                        if (d->dir == MOVE_PAUSE)
-                            *tOrder += "P";
-                        else
-                            *tOrder += DirectionAbrs[d->dir];
+            auto u_w = o->GetOwner();
+            if(!u_w.expired())
+            {
+                auto u = u_w.lock();
+                if (o->IsFleet() && !u->nomove &&
+                        u->monthorders && 
+                        u->monthorders->type == Orders::Types::O_SAIL) {
+                    auto so = std::dynamic_pointer_cast<SailOrder>(u->monthorders);
+                    if (!so->dirs.empty()) {
+                        u->Event("SAIL: Can't sail that far;"
+                            " remaining moves queued.");
+                        auto tOrder = std::make_shared<AString>("SAIL");
+                        for(const auto& d: so->dirs) {
+                            *tOrder += " ";
+                            if (d->dir == Directions::MOVE_PAUSE)
+                                *tOrder += "P";
+                            else
+                                *tOrder += DirectionAbrs[d->dir];
+                        }
+                        u->oldorders.push_back(tOrder);
                     }
-                    u->oldorders.Insert(tOrder);
                 }
             }
         }
     }
 }
 
-Location *Game::Do1SailOrder(ARegion *reg, Object *fleet, Unit *cap)
+Location::Handle Game::Do1SailOrder(const ARegion::Handle& reg, const Object::Handle& fleet, const Unit::Handle& cap)
 {
-    SailOrder *o = (SailOrder *) cap->monthorders;
+    const auto o = std::dynamic_pointer_cast<SailOrder>(cap->monthorders);
     int stop, wgt, slr, nomove, cost;
-    AList facs;
+    std::list<Faction::WeakHandle> facs;
     ARegion *newreg;
     MoveDir *x;
-    Unit *unit;
     Location *loc;
 
     fleet->movepoints += fleet->GetFleetSpeed(0);
@@ -229,12 +217,9 @@ Location *Game::Do1SailOrder(ARegion *reg, Object *fleet, Unit *cap)
     wgt = 0;
     slr = 0;
     nomove = 0;
-    forlist(&fleet->units) {
-        unit = (Unit *) elem;
-        if (!GetFaction2(&facs,unit->faction->num)) {
-            FactionPtr * p = new FactionPtr;
-            p->ptr = unit->faction;
-            facs.Add(p);
+    for(const auto& unit: fleet->units) {
+        if (!GetFaction2(facs, unit->faction->num)) {
+            facs.emplace_back(unit->faction);
         }
         wgt += unit->Weight();
         if (unit->nomove) {

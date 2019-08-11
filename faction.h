@@ -162,7 +162,7 @@ public:
 
     int lastchange;
     int lastorders;
-    int unclaimed;
+    size_t unclaimed;
     int bankaccount;
     int interest; // not written to game.out
     AString * name;
@@ -206,7 +206,7 @@ public:
     std::weak_ptr<ARegion> pReg;
     std::weak_ptr<ARegion> pStartLoc;
     int noStartLeader;
-    int startturn;
+    size_t startturn;
 };
 
 class FactionVector {

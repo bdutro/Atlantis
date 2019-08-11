@@ -188,7 +188,7 @@ void Faction::Readin(Ainfile *f, ATL_VER v)
 
     lastchange = f->GetInt<int>();
     lastorders = f->GetInt<int>();
-    unclaimed = f->GetInt<int>();
+    unclaimed = f->GetInt<size_t>();
 
     name = f->GetStr();
     address = f->GetStr();
@@ -372,7 +372,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     }
 
     if (Globals->MAX_INACTIVE_TURNS != -1) {
-        int cturn = pGame->TurnNumber() - lastorders;
+        int cturn = static_cast<int>(pGame->TurnNumber()) - lastorders;
         if ((cturn >= (Globals->MAX_INACTIVE_TURNS - 3)) && !IsNPC()) {
             cturn = Globals->MAX_INACTIVE_TURNS - cturn;
             f->PutStr(AString("WARNING: You have ") + cturn +

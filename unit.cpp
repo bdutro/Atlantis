@@ -91,7 +91,7 @@ Unit::Unit()
     free = 0;
     practiced = 0;
     moved = 0;
-    phase = -1;
+    phase.invalidate();
     savedmovement = 0;
     savedmovedir = -1;
     ClearOrders();
@@ -134,7 +134,7 @@ Unit::Unit(int seq, const Faction::Handle& f, int a)
     free = 0;
     practiced = 0;
     moved = 0;
-    phase = -1;
+    phase.invalidate();
     savedmovement = 0;
     savedmovedir = -1;
     ClearOrders();

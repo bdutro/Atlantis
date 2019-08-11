@@ -28,13 +28,13 @@
 #include "game.h"
 #include "gamedata.h"
 
-int ARegion::CheckSea(Directions dir, unsigned int range, int remainocean)
+int ARegion::CheckSea(const Directions& dir, unsigned int range, int remainocean)
 {
-    static constexpr int NDIRS = static_cast<int>(ALL_DIRECTIONS.size());
+    static constexpr int NDIRS = Directions::size();
     if (type != Regions::Types::R_OCEAN) return 0;
     if (range-- < 1) return 1;
     for (int d2 = -1; d2< 2; d2++) {
-        size_t direc = static_cast<size_t>((static_cast<int>(dir) + d2 + NDIRS) % NDIRS);
+        Directions direc = (static_cast<int>(dir) + d2 + NDIRS) % NDIRS;
         const auto& newregion = neighbors[direc];
         if (newregion.expired()) continue;
         remainocean += newregion.lock()->CheckSea(dir, range, remainocean);
@@ -89,7 +89,7 @@ void ARegionList::CreateAbyssLevel(unsigned int level, char const *name)
     const auto lair_sp = lair.lock();
     auto& o = lair_sp->objects.emplace_back(std::make_shared<Object>(lair));
     o->num = lair_sp->buildingseq++;
-    o->name = new AString(AString(ObjectDefs[static_cast<size_t>(Objects::Types::O_BKEEP)].name)+" ["+o->num+"]");
+    o->name = new AString(AString(ObjectDefs[Objects::Types::O_BKEEP].name)+" ["+o->num+"]");
     o->type = Objects::Types::O_BKEEP;
     o->incomplete = 0;
     o->inner = -1;
@@ -382,7 +382,6 @@ void ARegionList::SetupIcosahedralNeighbors(const ARegionArray::Handle& pRegs)
 
 void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int percentOcean, unsigned int continentSize)
 {
-    static constexpr size_t NDIRS = ALL_DIRECTIONS.size();
     unsigned int total, ocean;
 
     total = 0;
@@ -421,10 +420,10 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
             bool first = true;
             unsigned int tries = 0;
             for (unsigned int i=0; i < sz; i++) {
-                size_t direc = getrandom(NDIRS);
+                size_t direc = getrandom(Directions::size());
                 newreg = reg->neighbors[direc];
                 while (newreg.expired()) {
-                    direc = getrandom(NDIRS);
+                    direc = getrandom(Directions::size());
                     newreg = reg->neighbors[direc];
                 }
                 tries++;
@@ -442,7 +441,7 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                 }
 
                 seareg = newreg;
-                newreg = seareg.lock()->neighbors[getrandom(NDIRS)];
+                newreg = seareg.lock()->neighbors[getrandom(Directions::size())];
                 if (newreg.expired()) break;
                 // island start point (~3 regions away from last island)
                 seareg = newreg;
@@ -470,16 +469,16 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                 while (growit > growch) {
                     growit = getrandom(20);
                     tries = 0;
-                    size_t newdir = getrandom(NDIRS);
+                    size_t newdir = getrandom(Directions::size());
                     while (direc_dir == reg->GetRealDirComp(static_cast<Directions>(newdir)))
                     {
-                        newdir = getrandom(NDIRS);
+                        newdir = getrandom(Directions::size());
                     }
                     newreg = reg->neighbors[newdir];
                     while (newreg.expired() && (tries < 36)) {
                         while (direc_dir == reg->GetRealDirComp(static_cast<Directions>(newdir)))
                         {
-                            newdir = getrandom(NDIRS);
+                            newdir = getrandom(Directions::size());
                         }
                         newreg = reg->neighbors[newdir];
                         tries++;
@@ -502,8 +501,8 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                 ocean--;
             }
             for (unsigned int i=0; i<sz; i++) {
-                size_t dir = getrandom(NDIRS);
-                if ((reg->yloc < yoff*2) && ((dir < 2) || (dir == NDIRS-1))
+                size_t dir = getrandom(Directions::size());
+                if ((reg->yloc < yoff*2) && ((dir < 2) || (dir == Directions::size()-1))
                     && (getrandom(4) < 3))
                 {
                     continue;
@@ -625,8 +624,8 @@ void ARegionList::CleanUpWater(const ARegionArray::Handle& pRegs)
                 {
                     continue;
                 }
-                for (const auto& d: ALL_DIRECTIONS) {
-                    remainocean += reg->CheckSea(d, Globals->SEA_LIMIT, remainocean);
+                for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+                    remainocean += reg->CheckSea(*d, Globals->SEA_LIMIT, remainocean);
                 }
                 if (dotter++ % 2000 == 0) Adot();
                 if (remainocean > 0) continue;
@@ -666,8 +665,8 @@ void ARegionList::RemoveCoastalLakes(const ARegionArray::Handle& pRegs)
                     int wage2 = 0;
                     int count2 = 0;
                     int temp = 0;
-                    for (unsigned int d = 0; d < ALL_DIRECTIONS.size(); d++) {
-                        ARegion::WeakHandle newregion_w = reg->neighbors[d];
+                    for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+                        ARegion::WeakHandle newregion_w = reg->neighbors[*d];
                         if (newregion_w.expired())
                         {
                             continue;
@@ -727,8 +726,8 @@ void ARegionList::SeverLandBridges(const ARegionArray::Handle& pRegs)
                 continue;
             }
             unsigned int tidych = Globals->SEVER_LAND_BRIDGES;
-            for (unsigned int d = 0; d < ALL_DIRECTIONS.size(); d++) {
-                ARegion::WeakHandle newregion_w = reg->neighbors[d];
+            for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+                ARegion::WeakHandle newregion_w = reg->neighbors[*d];
                 if(newregion_w.expired())
                 {
                     continue;
@@ -820,7 +819,7 @@ void ARegionList::SetupAnchors(const ARegionArray::Handle& ta)
                     reg->population = 1;
                     if (TerrainDefs[reg->type].similar_type != Regions::Types::R_OCEAN)
                     {
-                        reg->wages = AGetName(0, reg);
+                        reg->wages = static_cast<int>(AGetName(0, reg));
                     }
                     break;
                 }
@@ -867,7 +866,7 @@ void ARegionList::GrowTerrain(const ARegionArray::Handle& pArr, bool growOcean)
                     if (getrandom(1000) < Globals->ODD_TERRAIN) {
                         reg->type = GetRegType(reg);
                         if (TerrainDefs[reg->type].similar_type != Regions::Types::R_OCEAN)
-                            reg->wages = AGetName(0, reg);
+                            reg->wages = static_cast<int>(AGetName(0, reg));
                         break;
                     }
                     
@@ -932,8 +931,8 @@ void ARegionList::RandomTerrain(const ARegionArray::Handle& pArr)
             if (reg->type == Regions::Types::R_NUM) {
                 Regions adjtype;
                 int adjname = -1;
-                for (size_t d = 0; d < ALL_DIRECTIONS.size(); d++) {
-                    ARegion::WeakHandle newregion_w = reg->neighbors[d];
+                for (auto d = Directions::begin(); d != Directions::end(); ++d) {
+                    ARegion::WeakHandle newregion_w = reg->neighbors[*d];
                     if (newregion_w.expired())
                     {
                         continue;
@@ -951,7 +950,7 @@ void ARegionList::RandomTerrain(const ARegionArray::Handle& pArr)
                     reg->wages = adjname;
                 } else {
                     reg->type = GetRegType(reg);
-                    reg->wages = AGetName(0, reg);
+                    reg->wages = static_cast<int>(AGetName(0, reg));
                 }
             }
         }
@@ -969,7 +968,7 @@ void ARegionList::MakeUWMaze(const ARegionArray::Handle& pArr)
             }
 
             const auto reg = reg_w.lock();
-            for (const auto i: ALL_DIRECTIONS) {
+            for (auto i = Directions::begin(); i != Directions::end(); ++i) {
                 unsigned int count = 0;
                 for (const auto& nn: reg->neighbors)
                 {
@@ -983,7 +982,7 @@ void ARegionList::MakeUWMaze(const ARegionArray::Handle& pArr)
                     break;
                 }
 
-                ARegion::WeakHandle n_w = reg->neighbors[static_cast<size_t>(i)];
+                ARegion::WeakHandle n_w = reg->neighbors[*i];
                 if (!n_w.expired()) {
                     const auto n = n_w.lock();
                     if (n->xloc < x || (n->xloc == x && n->yloc < y))
@@ -1002,8 +1001,8 @@ void ARegionList::MakeUWMaze(const ARegionArray::Handle& pArr)
                         {
                             break;
                         }
-                        n->neighbors[static_cast<size_t>(reg->GetRealDirComp(i))].reset();
-                        reg->neighbors[static_cast<size_t>(i)].reset();
+                        n->neighbors[reg->GetRealDirComp(*i)].reset();
+                        reg->neighbors[*i].reset();
                     }
                 }
             }
@@ -1236,7 +1235,7 @@ void ARegionList::FinalSetup(const ARegionArray::Handle& pArr)
                 }
                 else if (reg->wages != -2)
                 {
-                    reg->SetName(AGetNameString(reg->wages));
+                    reg->SetName(AGetNameString(static_cast<size_t>(reg->wages)));
                 }
                 else
                 {
@@ -1353,7 +1352,7 @@ void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, un
                 // These will transport the user to a randomly
                 // selected region of the chosen terrain type.
                 const auto& to = GetRegionArray(levelTo);
-                for (size_t type = static_cast<size_t>(Regions::Types::R_PLAIN); type <= static_cast<size_t>(Regions::Types::R_TUNDRA); ++type) {
+                for (auto type = Regions::iterator(Regions::Types::R_PLAIN); type != Regions::iterator(Regions::Types::R_TUNDRA); ++type) {
                     bool found = false;
                     for (unsigned int x2 = 0; !found && x2 < maxX; x2++)
                         for (unsigned int y2 = 0; !found && y2 < maxY; y2++) {
@@ -1363,12 +1362,12 @@ void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, un
                                 continue;
                             }
                             const auto reg = reg_w.lock();
-                            if (reg->type == type) {
+                            if (reg->type == *type) {
                                 found = true;
                                 auto& o = AC->objects.emplace_back(std::make_shared<Object>(AC));
                                 o->num = AC->buildingseq++;
                                 o->name = new AString(AString("Gateway to ") +
-                                    TerrainDefs[type].name + " [" + o->num + "]");
+                                    TerrainDefs[*type].name + " [" + o->num + "]");
                                 o->type = Objects::Types::O_GATEWAY;
                                 o->incomplete = 0;
                                 o->inner = static_cast<ssize_t>(reg->num);
@@ -1447,7 +1446,7 @@ void ARegionList::FinalSetupGates()
             r->gate = static_cast<int>(index + 1);
             used[index] = true;
             // setting up gatemonth
-            r->gatemonth = getrandom(12);;
+            r->gatemonth = getrandom(12U);
         }
     }
 }

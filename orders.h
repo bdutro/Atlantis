@@ -69,18 +69,14 @@ enum {
     M_SAIL
 };
 
-#define MOVE_PAUSE 97
-#define MOVE_IN 98
-#define MOVE_OUT 99
-/* Enter is MOVE_ENTER + num of object */
-#define MOVE_ENTER 100
-
 extern char const ** OrderStrs;
 
 Orders Parse1Order(AString *);
 
 class Order {
     public:
+        using Handle = std::shared_ptr<Order>;
+
         Order();
         virtual ~Order();
 
@@ -91,11 +87,13 @@ class Order {
 class MoveDir {
     public:
         using Handle = std::shared_ptr<MoveDir>;
-        int dir;
+        Directions dir;
 };
 
 class MoveOrder : public Order {
     public:
+        using Handle = std::shared_ptr<MoveOrder>;
+
         MoveOrder();
         ~MoveOrder();
 
@@ -105,6 +103,8 @@ class MoveOrder : public Order {
 
 class WithdrawOrder : public Order {
     public:
+        using Handle = std::shared_ptr<WithdrawOrder>;
+
         WithdrawOrder();
         ~WithdrawOrder();
 
@@ -114,6 +114,8 @@ class WithdrawOrder : public Order {
 
 class GiveOrder : public Order {
     public:
+        using Handle = std::shared_ptr<GiveOrder>;
+
         GiveOrder();
         ~GiveOrder();
 
@@ -129,6 +131,8 @@ class GiveOrder : public Order {
 
 class StudyOrder : public Order {
     public:
+        using Handle = std::shared_ptr<StudyOrder>;
+
         StudyOrder();
         ~StudyOrder();
 
@@ -139,6 +143,8 @@ class StudyOrder : public Order {
 
 class TeachOrder : public Order {
     public:
+        using Handle = std::shared_ptr<TeachOrder>;
+
         TeachOrder();
         ~TeachOrder();
 
@@ -147,6 +153,8 @@ class TeachOrder : public Order {
 
 class ProduceOrder : public Order {
     public:
+        using Handle = std::shared_ptr<ProduceOrder>;
+
         ProduceOrder();
         ~ProduceOrder();
 
@@ -158,6 +166,8 @@ class ProduceOrder : public Order {
 
 class BuyOrder : public Order {
     public:
+        using Handle = std::shared_ptr<BuyOrder>;
+
         BuyOrder();
         ~BuyOrder();
 
@@ -167,6 +177,8 @@ class BuyOrder : public Order {
 
 class SellOrder : public Order {
     public:
+        using Handle = std::shared_ptr<SellOrder>;
+
         SellOrder();
         ~SellOrder();
 
@@ -176,6 +188,8 @@ class SellOrder : public Order {
 
 class AttackOrder : public Order {
     public:
+        using Handle = std::shared_ptr<AttackOrder>;
+
         AttackOrder();
         ~AttackOrder();
 
@@ -184,6 +198,8 @@ class AttackOrder : public Order {
 
 class BuildOrder : public Order {
     public:
+        using Handle = std::shared_ptr<BuildOrder>;
+
         BuildOrder();
         ~BuildOrder();
 
@@ -193,6 +209,8 @@ class BuildOrder : public Order {
 
 class SailOrder : public Order {
     public:
+        using Handle = std::shared_ptr<SailOrder>;
+
         SailOrder();
         ~SailOrder();
 
@@ -201,6 +219,8 @@ class SailOrder : public Order {
 
 class FindOrder : public Order {
     public:
+        using Handle = std::shared_ptr<FindOrder>;
+
         FindOrder();
         ~FindOrder();
 
@@ -209,6 +229,8 @@ class FindOrder : public Order {
 
 class StealOrder : public Order {
     public:
+        using Handle = std::shared_ptr<StealOrder>;
+
         StealOrder();
         ~StealOrder();
 
@@ -218,6 +240,8 @@ class StealOrder : public Order {
 
 class AssassinateOrder : public Order {
     public:
+        using Handle = std::shared_ptr<AssassinateOrder>;
+
         AssassinateOrder();
         ~AssassinateOrder();
 
@@ -226,6 +250,8 @@ class AssassinateOrder : public Order {
 
 class ForgetOrder : public Order {
     public:
+        using Handle = std::shared_ptr<ForgetOrder>;
+
         ForgetOrder();
         ~ForgetOrder();
 
@@ -235,6 +261,8 @@ class ForgetOrder : public Order {
 // Add class for exchange
 class ExchangeOrder : public Order {
     public:
+        using Handle = std::shared_ptr<ExchangeOrder>;
+
         ExchangeOrder();
         ~ExchangeOrder();
 
@@ -260,6 +288,8 @@ class TurnOrder : public Order {
 
 class CastOrder : public Order {
     public:
+        using Handle = std::shared_ptr<CastOrder>;
+
         CastOrder();
         ~CastOrder();
 
@@ -269,6 +299,8 @@ class CastOrder : public Order {
 
 class CastMindOrder : public CastOrder {
     public:
+        using Handle = std::shared_ptr<CastMindOrder>;
+
         CastMindOrder();
         ~CastMindOrder();
 
@@ -277,6 +309,8 @@ class CastMindOrder : public CastOrder {
 
 class CastRegionOrder : public CastOrder {
     public:
+        using Handle = std::shared_ptr<CastRegionOrder>;
+
         CastRegionOrder();
         ~CastRegionOrder();
 
@@ -285,6 +319,8 @@ class CastRegionOrder : public CastOrder {
 
 class TeleportOrder : public CastRegionOrder {
     public:
+        using Handle = std::shared_ptr<TeleportOrder>;
+
         TeleportOrder();
         ~TeleportOrder();
 
@@ -294,6 +330,8 @@ class TeleportOrder : public CastRegionOrder {
 
 class CastIntOrder : public CastOrder {
     public:
+        using Handle = std::shared_ptr<CastIntOrder>;
+
         CastIntOrder();
         ~CastIntOrder();
 
@@ -302,6 +340,8 @@ class CastIntOrder : public CastOrder {
 
 class CastUnitsOrder : public CastOrder {
     public:
+        using Handle = std::shared_ptr<CastUnitsOrder>;
+
         CastUnitsOrder();
         ~CastUnitsOrder();
 
@@ -310,6 +350,8 @@ class CastUnitsOrder : public CastOrder {
 
 class CastTransmuteOrder : public CastOrder {
     public:
+        using Handle = std::shared_ptr<CastTransmuteOrder>;
+
         CastTransmuteOrder();
         ~CastTransmuteOrder();
 
@@ -319,6 +361,8 @@ class CastTransmuteOrder : public CastOrder {
 
 class EvictOrder : public Order {
     public:
+        using Handle = std::shared_ptr<EvictOrder>;
+
         EvictOrder();
         ~EvictOrder();
 
@@ -327,12 +371,16 @@ class EvictOrder : public Order {
 
 class IdleOrder : public Order {
     public:
+        using Handle = std::shared_ptr<IdleOrder>;
+
         IdleOrder();
         ~IdleOrder();
 };
 
 class TransportOrder : public Order {
     public:
+        using Handle = std::shared_ptr<TransportOrder>;
+
         TransportOrder();
         ~TransportOrder();
 
@@ -346,6 +394,8 @@ class TransportOrder : public Order {
 
 class JoinOrder : public Order {
     public:
+        using Handle = std::shared_ptr<JoinOrder>;
+
         JoinOrder();
         ~JoinOrder();
 

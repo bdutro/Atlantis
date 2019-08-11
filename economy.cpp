@@ -173,8 +173,8 @@ void ARegion::SetupPop()
             }
         }
         if (Globals->LESS_ARCTIC_TOWNS) {
-            unsigned int dnorth = GetPoleDistance(Directions::D_NORTH);
-            unsigned int dsouth = GetPoleDistance(Directions::D_SOUTH);
+            unsigned int dnorth = GetPoleDistance(Directions::Types::D_NORTH);
+            unsigned int dsouth = GetPoleDistance(Directions::Types::D_SOUTH);
             if (dnorth < 9)
                 townch = townch + 25 * (9 - dnorth) *
                     (9 - dnorth) * Globals->LESS_ARCTIC_TOWNS;
@@ -1012,8 +1012,8 @@ void ARegion::SetupEditRegion()
             }
         }
         if (Globals->LESS_ARCTIC_TOWNS) {
-            unsigned int dnorth = GetPoleDistance(Directions::D_NORTH);
-            unsigned int dsouth = GetPoleDistance(Directions::D_SOUTH);
+            unsigned int dnorth = GetPoleDistance(Directions::Types::D_NORTH);
+            unsigned int dsouth = GetPoleDistance(Directions::Types::D_SOUTH);
             if (dnorth < 9)
             {
                 townch = townch + 25 * (9 - dnorth) * (9 - dnorth) * Globals->LESS_ARCTIC_TOWNS;
@@ -1153,9 +1153,9 @@ int ARegion::RoadDevelopment()
 {
     // Road bonus
     int roads = 0;
-    for (const auto i: ALL_DIRECTIONS)
+    for (auto i = Directions::begin(); i != Directions::end(); ++i)
     {
-        if (HasExitRoad(i))
+        if (HasExitRoad(*i))
         {
             roads++;
         }

@@ -50,9 +50,9 @@ Game::~Game()
     maxppunits = 0;
 }
 
-int Game::TurnNumber()
+size_t Game::TurnNumber()
 {
-    return (year-1)*12 + month + 1;
+    return (year-1)*12 + (month.isValid() ? month + 1 : 0);
 }
 
 // ALT, 25-Jul-2000
@@ -150,15 +150,15 @@ void Game::WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int
             const auto reg2 = pArr->GetRegion(x+xx*32+1,y+yy*16+1).lock();
             temp += AString(GetRChar(reg));
             temp += GetXtraMap(reg,type);
-            if (reg2 && !reg2->neighbors[static_cast<size_t>(Directions::D_NORTH)].expired()) temp += "|";
+            if (reg2 && !reg2->neighbors[Directions::Types::D_NORTH].expired()) temp += "|";
             else temp += " ";
 
             temp += " ";
-            if (reg && !reg->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)].expired()) temp2 += "/";
+            if (reg && !reg->neighbors[Directions::Types::D_SOUTHWEST].expired()) temp2 += "/";
             else temp2 += " ";
 
             temp2 += " ";
-            if (reg && !reg->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)].expired()) temp2 += "\\";
+            if (reg && !reg->neighbors[Directions::Types::D_SOUTHEAST].expired()) temp2 += "\\";
             else temp2 += " ";
 
             temp2 += " ";
@@ -172,18 +172,18 @@ void Game::WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int
             const auto reg = pArr->GetRegion(x+xx*32,y+yy*16+1).lock();
             const auto reg2 = pArr->GetRegion(x+xx*32-1,y+yy*16).lock();
 
-            if (reg2 && !reg2->neighbors[static_cast<size_t>(Directions::D_SOUTH)].expired()) temp += "|";
+            if (reg2 && !reg2->neighbors[Directions::Types::D_SOUTH].expired()) temp += "|";
             else temp += " ";
 
             temp += AString(" ");
             temp += AString(GetRChar(reg));
             temp += GetXtraMap(reg,type);
 
-            if (reg && !reg->neighbors[static_cast<size_t>(Directions::D_SOUTHWEST)].expired()) temp2 += "/";
+            if (reg && !reg->neighbors[Directions::Types::D_SOUTHWEST].expired()) temp2 += "/";
             else temp2 += " ";
 
             temp2 += " ";
-            if (reg && !reg->neighbors[static_cast<size_t>(Directions::D_SOUTHEAST)].expired()) temp2 += "\\";
+            if (reg && !reg->neighbors[Directions::Types::D_SOUTHEAST].expired()) temp2 += "\\";
             else temp2 += " ";
 
             temp2 += " ";
@@ -255,7 +255,7 @@ int Game::NewGame()
     SetupUnitNums();
     shipseq = 100;
     year = 1;
-    month = -1;
+    month.invalidate();
     gameStatus = GAME_STATUS_NEW;
 
     //
@@ -369,8 +369,12 @@ int Game::OpenGame()
                 ATL_VER_PATCH(Globals->RULESET_VERSION));
     }
 
-    year = f.GetInt<int>();
-    month = f.GetInt<int>();
+    year = f.GetInt<size_t>();
+    int month_tmp = f.GetInt<int>();
+    if(month_tmp >= 0)
+    {
+        month = static_cast<size_t>(month_tmp);
+    }
     seedrandom(f.GetInt<int>());
     factionseq = f.GetInt<size_t>();
     unitseq = f.GetInt<unsigned int>();
@@ -735,7 +739,7 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
         pTemp = pLine->gettoken();
         int nAmt = pTemp->value();
         pFac->Event(AString("Reward of ") + nAmt + " silver.");
-        pFac->unclaimed += nAmt;
+        pFac->unclaimed += static_cast<size_t>(nAmt);
     } else if (*pToken == "SendTimes:") {
         // get the token, but otherwise ignore it
         pTemp = pLine->gettoken();
@@ -748,7 +752,7 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
             pFac->lastorders = pTemp->value();
     } else if (*pToken == "FirstTurn:") {
         pTemp = pLine->gettoken();
-        pFac->startturn = pTemp->value();
+        pFac->startturn = static_cast<size_t>(pTemp->value());
     } else if (*pToken == "Loc:") {
         int x, y, z;
         pTemp = pLine->gettoken();
@@ -1210,7 +1214,7 @@ Faction::Handle Game::AddFaction(int noleader, const ARegion::Handle& pStart)
     Faction::Handle temp = std::make_shared<Faction>(factionseq);
     AString x("NoAddress");
     temp->SetAddress(x);
-    temp->lastorders = TurnNumber();
+    temp->lastorders = static_cast<int>(TurnNumber());
     temp->startturn = TurnNumber();
     temp->pStartLoc = pStart;
     temp->pReg = pStart;
@@ -1390,8 +1394,7 @@ void Game::RemoveInactiveFactions()
 {
     if (Globals->MAX_INACTIVE_TURNS == -1) return;
 
-    int cturn;
-    cturn = TurnNumber();
+    int cturn = static_cast<int>(TurnNumber());
     for(const auto& fac: factions) {
         if ((cturn - fac->lastorders) >= Globals->MAX_INACTIVE_TURNS &&
                 !fac->IsNPC()) {

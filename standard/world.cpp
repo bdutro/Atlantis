@@ -33,8 +33,7 @@
 // Make sure this is correct.   The default is 1000 towns and 1000 regions.
 #define NUMBER_OF_TOWNS 1000
 
-static char const *regionnames[] =
-{
+static const std::vector<const char *> regionnames {
     "A'irhin",
     "A'vespol",
     "Abernecht",
@@ -2042,8 +2041,7 @@ static char const *regionnames[] =
 // world setup
 //
 
-static int nnames;
-static int * nameused;
+static std::vector<bool> nameused;
 static int ntowns;
 static int nregions;
 
@@ -2052,10 +2050,9 @@ void CountNames();
 
 void SetupNames()
 {
-    nnames = sizeof regionnames / sizeof (char *);
-    nameused = new int[nnames];
+    nameused.clear();
+    nameused.resize(regionnames.size(), false);
 
-    for (int i=0; i<nnames; i++) nameused[i] = 0;
     ntowns = 0;
     nregions = 0;
 }
@@ -2065,38 +2062,41 @@ void CountNames()
     Awrite(AString("Regions ") + nregions);
 }
 
-int AGetName(int town, const ARegion::Handle&)
+size_t AGetName(int town, const ARegion::Handle&)
 {
-    int offset, number;
+    size_t offset, number;
     if (town) {
         offset = 0;
         number = NUMBER_OF_TOWNS;
     } else {
         offset = NUMBER_OF_TOWNS;
-        number = nnames-NUMBER_OF_TOWNS;
+        number = regionnames.size() - NUMBER_OF_TOWNS;
     }
 
     if (town) ntowns++;
     else nregions++;
 
-    int i=getrandom(number);
-    int j;
-    for (int count=0; count < number; count++) {
+    size_t i=getrandom(number);
+    size_t j;
+    for (size_t count=0; count < number; count++) {
         j = i+offset;
-        if (nameused[j] == 0) {
-            nameused[j] = 1;
+        if (!nameused[j]) {
+            nameused[j] = true;
             return j;
         }
         if (++i >= number) i=0;
     }
-    for (i=0; i<number; i++) nameused[i+offset] = 0;
+    for (i=0; i<number; i++)
+    {
+        nameused[i+offset] = false;
+    }
     i = getrandom(number);
     j = i+offset;
-    nameused[j] = 1;
+    nameused[j] = true;
     return j;
 }
 
-char const *AGetNameString( int name )
+char const *AGetNameString( size_t name )
 {
     return( regionnames[ name ] );
 }
@@ -2438,16 +2438,16 @@ int ARegionList::CheckRegionExit(const ARegion::Handle& pFrom, const ARegion::Ha
     return( 1 );
 }
 
-int ARegionList::GetWeather(const ARegion& pReg, int month ) const
+Weather ARegionList::GetWeather(const ARegion& pReg, size_t month ) const
 {
     if (pReg.zloc == 0)
     {
-        return W_NORMAL;
+        return Weather::Types::W_NORMAL;
     }
 
     if ( pReg.zloc > 1 )
     {
-        return( W_NORMAL );
+        return( Weather::Types::W_NORMAL );
     }
 
     unsigned int ysize = pRegionArrays[ 1 ]->y;
@@ -2457,11 +2457,11 @@ int ARegionList::GetWeather(const ARegion& pReg, int month ) const
         /* Northern third of the world */
         if (month > 9 || month < 2)
         {
-            return W_WINTER;
+            return Weather::Types::W_WINTER;
         }
         else
         {
-            return W_NORMAL;
+            return Weather::Types::W_NORMAL;
         }
     }
 
@@ -2470,22 +2470,22 @@ int ARegionList::GetWeather(const ARegion& pReg, int month ) const
         /* Middle third of the world */
         if (month == 11 || month == 0 || month == 5 || month == 6)
         {
-            return W_MONSOON;
+            return Weather::Types::W_MONSOON;
         }
         else
         {
-            return W_NORMAL;
+            return Weather::Types::W_NORMAL;
         }
     }
 
     if (month > 3 && month < 8)
     {
         /* Southern third of the world */
-        return W_WINTER;
+        return Weather::Types::W_WINTER;
     }
     else
     {
-        return W_NORMAL;
+        return Weather::Types::W_NORMAL;
     }
 }
 

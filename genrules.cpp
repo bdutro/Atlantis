@@ -1653,11 +1653,11 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.Enclose(0, "td");
     f.Enclose(0, "tr");
     f.Enclose(1, "tr");
-    for (int i = 0; i < Globals->MAX_SPEED; i++) {
+    for (size_t i = 0; i < Globals->MAX_SPEED; i++) {
         f.TagText("th", i + 1);
     }
     f.Enclose(0, "tr");
-    for (int i = 0; i < Globals->MAX_SPEED; i++) {
+    for (size_t i = 0; i < Globals->MAX_SPEED; i++) {
         f.Enclose(1, "tr");
         if (!i) {
             f.Enclose(1, AString("td rowspan=\"") + Globals->MAX_SPEED + "\"");
@@ -1665,8 +1665,8 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.Enclose(0, "td");
         }
         f.TagText("th", i + 1);
-        int k = Globals->PHASED_MOVE_OFFSET;
-        for (int j = 0; j < Globals->MAX_SPEED; j++) {
+        size_t k = Globals->PHASED_MOVE_OFFSET;
+        for (size_t j = 0; j < Globals->MAX_SPEED; j++) {
             k += i + 1;
             if (k >= Globals->MAX_SPEED) {
                 f.TagText("td", "x");

@@ -55,12 +55,15 @@ class ARegionArray;
 #include "validvalue.h"
 
 /* Weather Types */
-enum {
+enum class _Weather : size_t {
     W_NORMAL,
     W_WINTER,
     W_MONSOON,
-    W_BLIZZARD
+    W_BLIZZARD,
+    N_WEATHER
 };
+
+using Weather = ValidEnum<_Weather, _Weather::N_WEATHER>;
 
 struct Product
 {
@@ -118,7 +121,9 @@ class Location
 
 Location::WeakHandle GetUnit(const std::list<Location::Handle>&, size_t);
 
-char const *AGetNameString(int name);
+char const *AGetNameString(size_t name);
+
+using ExitArray = std::array<bool, Directions::size()>;
 
 class Farsight
 {
@@ -132,7 +137,7 @@ class Farsight
         std::weak_ptr<Unit> unit;
         int level;
         int observation;
-        std::array<bool, static_cast<size_t>(Directions::NDIRS)> exits_used;
+        ExitArray exits_used;
 };
 
 Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>&, const Faction&);
@@ -188,12 +193,12 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void WriteProducts(Areport *, const Faction&, bool);
         void WriteMarkets(Areport *, const Faction&, bool);
         void WriteEconomy(Areport *, const Faction&, bool);
-        void WriteExits(Areport *, const ARegionList& pRegs, const std::array<bool, ALL_DIRECTIONS.size()>& exits_seen);
-        void WriteReport(Areport *f, const Faction& fac, int month,
+        void WriteExits(Areport *, const ARegionList& pRegs, const ExitArray& exits_seen);
+        void WriteReport(Areport *f, const Faction& fac, const ValidValue<size_t>& month,
                 const ARegionList& pRegions);
         // DK
-        void WriteTemplate(Areport *, const Faction&, const ARegionList& , int);
-        void WriteTemplateHeader(Areport *, const Faction&, const ARegionList& , int);
+        void WriteTemplate(Areport *, const Faction&, const ARegionList& , const ValidValue<size_t>&);
+        void WriteTemplateHeader(Areport *, const Faction&, const ARegionList& , const ValidValue<size_t>&);
         void GetMapLine(char *, int, const ARegionList& );
 
         AString ShortPrint(const ARegionList& pRegs);
@@ -218,7 +223,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         std::weak_ptr<Object> GetDummy();
         void CheckFleets();
 
-        int MoveCost(int, ARegion *, Directions, AString *road);
+        int MoveCost(int, const ARegion::Handle&, const Directions&, AString *road);
         std::weak_ptr<Unit> Forbidden(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         std::weak_ptr<Unit> ForbiddenByAlly(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         bool CanTax(const std::shared_ptr<Unit>&);
@@ -233,7 +238,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int TownGrowth();
         void PostTurn(const ARegionList& pRegs);
         void UpdateProducts();
-        void SetWeather(int newWeather);
+        void SetWeather(const Weather& newWeather);
         unsigned int IsCoastal();
         unsigned int IsCoastalOrLakeside();
         void MakeStartingCity();
@@ -244,11 +249,11 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         // AS
         bool HasRoad();
-        bool HasExitRoad(Directions realDirection);
+        bool HasExitRoad(const Directions& realDirection);
         int CountConnectingRoads();
-        bool HasConnectingRoad(Directions realDirection);
-        Objects GetRoadDirection(Directions realDirection);
-        Directions GetRealDirComp(Directions realDirection);
+        bool HasConnectingRoad(const Directions& realDirection);
+        Objects GetRoadDirection(const Directions& realDirection);
+        Directions GetRealDirComp(const Directions& realDirection);
         void DoDecayCheck(const ARegionList& pRegs);
         void DoDecayClicks(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
         void RunDecayEvent(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
@@ -257,8 +262,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int PillageCheck();
 
         // JR
-        unsigned int GetPoleDistance(Directions dir);
-        void SetGateStatus(int month);
+        unsigned int GetPoleDistance(const Directions& dir);
+        void SetGateStatus(size_t month);
         void DisbandInRegion(const Items&, int);
         void Recruit(int);
         bool IsNativeRace(const Items&);
@@ -268,14 +273,14 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Migrate();
         void SetTownType(TownTypeEnum);
         TownTypeEnum DetermineTownSize();
-        int TraceConnectedRoad(Directions, int, std::list<std::weak_ptr<ARegion>>&, int, int);
+        int TraceConnectedRoad(const Directions&, int, std::list<std::weak_ptr<ARegion>>&, int, int);
         int RoadDevelopmentBonus(int, int);
         int BaseDev();
         int ProdDev();
         int TownHabitat();
         int RoadDevelopment();
         int TownDevelopment();
-        int CheckSea(Directions, unsigned int, int);
+        int CheckSea(const Directions&, unsigned int, int);
         int Slope();
         int SurfaceWater();
         int Soil();
@@ -298,10 +303,10 @@ class ARegion : std::enable_shared_from_this<ARegion>
         size_t num;
         Regions type;
         int buildingseq;
-        int weather;
+        Weather weather;
         int gate;
-        int gatemonth;
-        int gateopen;
+        size_t gatemonth;
+        bool gateopen;
 
         TownInfo *town;
         Items race;
@@ -332,7 +337,46 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int clearskies;
         int earthlore;
 
-        std::array<ARegion::WeakHandle, static_cast<size_t>(Directions::NDIRS)> neighbors;
+        class NeighborArray : public std::array<ARegion::WeakHandle, Directions::size()>
+        {
+            private:
+                using ArrayType = std::array<ARegion::WeakHandle, Directions::size()>;
+
+            public:
+                using ArrayType::operator[];
+
+                const ARegion::WeakHandle& operator[](const Directions& rhs) const
+                {
+                    return ArrayType::operator[](static_cast<size_t>(rhs));
+                }
+
+                ARegion::WeakHandle& operator[](const Directions& rhs)
+                {
+                    return ArrayType::operator[](static_cast<size_t>(rhs));
+                }
+
+                const ARegion::WeakHandle& operator[](const _DirectionsVE& rhs) const
+                {
+                    return ArrayType::operator[](static_cast<size_t>(rhs));
+                }
+
+                ARegion::WeakHandle& operator[](const _DirectionsVE& rhs)
+                {
+                    return ArrayType::operator[](static_cast<size_t>(rhs));
+                }
+
+                const ARegion::WeakHandle& operator[](Directions::Types rhs) const
+                {
+                    return ArrayType::operator[](static_cast<size_t>(rhs));
+                }
+
+                ARegion::WeakHandle& operator[](Directions::Types rhs)
+                {
+                    return ArrayType::operator[](static_cast<size_t>(rhs));
+                }
+        };
+        
+        NeighborArray neighbors;
         std::list<std::shared_ptr<Object>> objects;
         std::map<int,int> newfleets;
         int fleetalias;
@@ -371,7 +415,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
 };
 
-int AGetName(int town, const ARegion::Handle& r);
+size_t AGetName(int town, const ARegion::Handle& r);
 
 ARegion::WeakHandle GetRegion(const std::list<ARegion::WeakHandle>&, size_t);
 
@@ -458,7 +502,7 @@ class ARegionList
 
         ARegion::WeakHandle FindGate(int);
         unsigned int GetPlanarDistance(const ARegion::Handle&, const ARegion::Handle&, int penalty, unsigned int maxdist = std::numeric_limits<unsigned int>::max());
-        int GetWeather(const ARegion& pReg, int month) const;
+        Weather GetWeather(const ARegion& pReg, size_t month) const;
 
         const ARegionArray::Handle& GetRegionArray(size_t level);
 
@@ -494,7 +538,7 @@ class ARegionList
         void MakeShaftLinks(unsigned int levelFrom, unsigned int levelTo, unsigned int odds);
         void SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, unsigned int maxX, unsigned int maxY);
         ARegion::WeakHandle FindConnectedRegions(const ARegion::Handle& r, ARegion::Handle tail, bool shaft);
-        ARegion::WeakHandle FindNearestStartingCity(ARegion::WeakHandle r, unsigned int *dir);
+        ARegion::WeakHandle FindNearestStartingCity(ARegion::WeakHandle r, Directions& dir);
         void FixUnconnectedRegions();
         void InitSetupGates(unsigned int level);
         void FinalSetupGates();

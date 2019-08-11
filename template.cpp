@@ -298,7 +298,7 @@ static char const *ter_fill[] = {
 // converted WriteReport
 //
 void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
-        ARegionList *pRegs, int month)
+        ARegionList *pRegs, const ValidValue<size_t>& month)
 {
 
     f->PutStr("");
@@ -327,7 +327,16 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
         GetMapLine(buffer, line, pRegs);
 
         char const * nextWeather = "";
-        int nxtweather = pRegs->GetWeather(this, (month + 1) % 12);
+        size_t next_month;
+        if(month.isValid())
+        {
+            next_month = month + 1;
+        }
+        else
+        {
+            next_month = 0;
+        }
+        int nxtweather = pRegs->GetWeather(this, next_month % 12);
         if (nxtweather == W_WINTER)
             nextWeather = "winter";
         if (nxtweather == W_MONSOON)

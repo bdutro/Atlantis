@@ -1947,7 +1947,7 @@ int Game::RunTransmutation(ARegion *, Unit *u)
 
 int Game::RunBlasphemousRitual(ARegion *r, Unit *mage)
 {
-    int level, num, sactype, sacrifices, i, sac, max, dir;
+    int level, num, sactype, sacrifices, i, sac, max;
     Object *o, *tower;
     Unit *u, *victim;
     Item *item;
@@ -2048,8 +2048,8 @@ int Game::RunBlasphemousRitual(ARegion *r, Unit *mage)
         }
         if (tower->incomplete == max * 2 / 3) {
             // 33% complete
-            dir = -1;
-            start = regions.FindNearestStartingCity(r, &dir);
+            Directions dir;
+            start = regions.FindNearestStartingCity(r, dir);
             message = "A blasphemous construction is taking shape in ";
             if (start == r) {
                 message += *start->town->name;
@@ -2059,7 +2059,7 @@ int Game::RunBlasphemousRitual(ARegion *r, Unit *mage)
             message += TerrainDefs[r->type].name;
             message += " of ";
             message += *r->name;
-            if (start && start != r && dir != -1) {
+            if (start && start != r && dir.isValid()) {
                 message += ", ";
                 if (r->zloc != start->zloc && dir != MOVE_IN)
                     message += "through a shaft ";

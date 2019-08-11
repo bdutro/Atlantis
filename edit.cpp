@@ -619,7 +619,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                         }
                         pReg->gate = static_cast<int>(gatenum);
                     }
-                    pReg->gatemonth = getrandom(12);
+                    pReg->gatemonth = getrandom(12U);
                 }
                 else if (*pToken == "w") {
                     SAFE_DELETE( pToken );

@@ -42,7 +42,7 @@ AString::AString(char *s)
     if (s) strcpy(str,s);
 }
 
-AString::AString(const char *s)
+AString::AString(const char * const s)
 {
     len = 0;
     if (s) len = strlen(s);

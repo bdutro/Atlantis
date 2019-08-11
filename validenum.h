@@ -154,7 +154,7 @@ class ValidEnum : public ValidValue<size_t>
             return static_cast<size_t>(EndType);
         }
 
-        bool isValid() const override
+        virtual bool isValid() const override
         {
             return !overflowed_ && ValidValue::isValid();
         }

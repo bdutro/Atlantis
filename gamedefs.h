@@ -29,10 +29,11 @@
 #include <array>
 #include <vector>
 
+#include "validenum.h"
 #include "helper.h"
 
 /* Directions */
-enum class Directions : uint8_t {
+enum class _Directions : size_t {
     D_NORTH = 0,
     D_NORTHEAST = 1,
     D_SOUTHEAST = 2,
@@ -42,21 +43,68 @@ enum class Directions : uint8_t {
     NDIRS = 6
 };
 
-constexpr std::array<Directions, static_cast<size_t>(Directions::NDIRS)> ALL_DIRECTIONS = {
-    Directions::D_NORTH,
-    Directions::D_NORTHEAST,
-    Directions::D_SOUTHEAST,
-    Directions::D_SOUTH,
-    Directions::D_SOUTHWEST,
-    Directions::D_NORTHWEST
+using _DirectionsVE = ValidEnum<_Directions, _Directions::NDIRS>;
+
+class Directions : public _DirectionsVE
+{
+    public:
+        static constexpr size_t MOVE_PAUSE = 97;
+        static constexpr size_t MOVE_IN = 98;
+        static constexpr size_t MOVE_OUT = 99;
+        /* Enter is MOVE_ENTER + num of object */
+        static constexpr size_t MOVE_ENTER = 100;
+        
+        static_assert(MOVE_PAUSE > size());
+        static_assert(MOVE_IN > size());
+        static_assert(MOVE_OUT > size());
+        static_assert(MOVE_ENTER > size());
+
+        Directions() :
+            ValidEnum()
+        {
+        }
+
+        Directions(size_t type) :
+            ValidEnum(type)
+        {
+        }
+        
+        Directions(const Types& type) :
+            ValidEnum(type)
+        {
+        }
+
+        Directions(const ValidEnum<_Directions, _Directions::NDIRS>& rhs) :
+            ValidEnum(rhs)
+        {
+        }
+
+        Directions(int type) :
+            ValidEnum(type)
+        {
+        }
+
+        virtual bool isValid() const override
+        {
+            return (val_ == MOVE_PAUSE) || (val_ == MOVE_IN) || (val_ == MOVE_OUT) || (val_ == MOVE_ENTER) || ValidEnum::isValid();
+        }
+
+        bool isRegularDirection() const
+        {
+            return isValid() && *this < size();
+        }
 };
 
-extern char const **DirectionStrs;
-extern char const **DirectionAbrs;
+using DirectionStringArray = std::array<const char* const, Directions::size()>;
 
-extern char const **MonthNames;
+extern const DirectionStringArray DirectionStrs;
+extern const DirectionStringArray DirectionAbrs;
 
-extern char const **SeasonNames;
+using MonthStringArray = std::array<const char* const, 12>;
+extern const MonthStringArray MonthNames;
+
+using SeasonStringArray = std::array<const char* const, 4>;
+extern const SeasonStringArray SeasonNames;
 
 extern const std::vector<int> allowedMages;
 extern const std::vector<int> allowedApprentices;
@@ -70,8 +118,8 @@ public:
     char const *RULESET_NAME;
     ATL_VER RULESET_VERSION;
 
-    int MAX_SPEED;
-    int PHASED_MOVE_OFFSET;
+    size_t MAX_SPEED;
+    size_t PHASED_MOVE_OFFSET;
     // Maximum speed boost for fleets from various sources
     int FLEET_WIND_BOOST; // Mages with SWIN
     int FLEET_CREW_BOOST; // Extra crew
@@ -113,7 +161,7 @@ public:
     // is unable to will die, period.
     int SKILL_STARVATION;
 
-    int START_MONEY; // standard is 5020
+    size_t START_MONEY; // standard is 5020
     int WORK_FRACTION; // standard is 3
     int ENTERTAIN_FRACTION; // standard is 20
     int ENTERTAIN_INCOME; // standard is 20
@@ -181,7 +229,7 @@ public:
 
     int FACTION_POINTS;
 
-    int TIMES_REWARD;
+    size_t TIMES_REWARD;
 
     bool TOWNS_EXIST;
     bool LEADERS_EXIST;
@@ -625,7 +673,7 @@ public:
     // useable while closed; EXCEPTION: a closed gate may be the TARGET for
     // a random jump (stranding the jumper until the gate opens). Nexus
     // gates (and optionally, starting city gates) are open all the time.
-    int GATES_NOT_PERENNIAL;
+    size_t GATES_NOT_PERENNIAL;
     
     // Are gates in starting cities open all year round? Need only be set
     // if GATES_NOT_PERENNIAL is selected.

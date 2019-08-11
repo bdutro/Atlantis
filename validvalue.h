@@ -8,6 +8,8 @@ class ValidValue
 {
     private:
         bool valid_;
+
+    protected:
         T val_;
 
     public:
@@ -69,6 +71,23 @@ class ValidValue
         bool operator!=(const ValidValue& rhs) const
         {
             return !(*this == rhs);
+        }
+
+        ValidValue& operator++()
+        {
+            if(!isValid())
+            {
+                throw std::runtime_error("Attempted to use an invalid ValidValue");
+            }
+            ++val_;
+            return *this;
+        }
+
+        ValidValue operator++(int)
+        {
+            ValidValue tmp = *this;
+            ++(*this);
+            return tmp;
         }
 };
 
