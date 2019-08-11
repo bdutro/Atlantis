@@ -86,18 +86,18 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
     if (!behind && a->riding.isValid()) {
         MountType *pMt = FindMount(ItemDefs[a->riding].abr);
         if (pMt->mountSpecial != NULL) {
-            int i, num, tot = -1;
+            int num, tot = -1;
             SpecialType *spd = FindSpecial(pMt->mountSpecial);
-            for (i = 0; i < 4; i++) {
-                int times = spd->damage[i].value;
+            for (const auto& damage: spd->damage) {
+                int times = damage.value;
                 if (spd->effectflags & SpecialType::FX_USE_LEV)
                     times *= pMt->specialLev;
-                int realtimes = spd->damage[i].minnum + getrandom(times) +
+                int realtimes = damage.minnum + getrandom(times) +
                     getrandom(times);
                 num = def->DoAnAttack(pMt->mountSpecial, realtimes,
-                        spd->damage[i].type, pMt->specialLev,
-                        spd->damage[i].flags, spd->damage[i].dclass,
-                        spd->damage[i].effect, 0, a);
+                        damage.type, pMt->specialLev,
+                        damage.flags, damage.dclass,
+                        damage.effect, 0, a);
                 if (num != -1) {
                     if (tot == -1) tot = num;
                     else tot += num;

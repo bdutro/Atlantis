@@ -34,6 +34,7 @@ class Game;
 #include "regiontype.h"
 #include "itemtype.h"
 #include "objecttype.h"
+#include "ordertype.h"
 #include "skilltype.h"
 #include "alist.h"
 #include "faction.h"
@@ -165,7 +166,7 @@ private:
     void CreateWMons();
     void CreateLMons();
     void CreateVMons();
-    Unit::Handle MakeManUnit(const Faction::Handle&, int, size_t, int, int, int, int);
+    Unit::Handle MakeManUnit(const Faction::Handle&, const Items&, size_t, int, int, int, int);
 
     //
     // Game-specific creation functions (see world.cpp).
@@ -321,7 +322,7 @@ private:
 
 
     void ParseOrders(size_t faction, Aorders *ordersFile, OrdersCheck *pCheck);
-    void ProcessOrder(int orderNum, const Unit::Handle& unit, AString *order,
+    void ProcessOrder(Orders orderNum, const Unit::Handle& unit, AString *order,
                        OrdersCheck *pCheck);
     void ProcessMoveOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
     void ProcessAdvanceOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
@@ -451,14 +452,14 @@ private:
     void CheckFactionHunger();
     void CheckAllyHunger();
 
-    void CheckUnitMaintenanceItem(int item, int value, int consume);
-    void CheckFactionMaintenanceItem(int item, int value, int consume);
-    void CheckAllyMaintenanceItem(int item, int value);
+    void CheckUnitMaintenanceItem(const Items& item, int value, int consume);
+    void CheckFactionMaintenanceItem(const Items& item, int value, int consume);
+    void CheckAllyMaintenanceItem(const Items& item, int value);
 
     // Hunger again
-    void CheckUnitHungerItem(int item, int value);
-    void CheckFactionHungerItem(int item, int value);
-    void CheckAllyHungerItem(int item, int value);
+    void CheckUnitHungerItem(const Items& item, int value);
+    void CheckFactionHungerItem(const Items& item, int value);
+    void CheckAllyHungerItem(const Items& item, int value);
 
     void AssessMaintenance();
 

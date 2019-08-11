@@ -35,10 +35,15 @@ class Faction;
 class Skill;
 class SkillList;
 
+#include <array>
+#include <list>
+
+#include "gamedataarray.h"
 #include "fileio.h"
 #include "astring.h"
 #include "gamedefs.h"
-#include "alist.h"
+#include "itemtype.h"
+#include "objecttype.h"
 #include "skilltype.h"
 
 /* For dependencies:
@@ -98,9 +103,9 @@ class SkillType
         // range class for ranged skills (-1 for all others)
         char const *range;
 
-        SkillDepend depends[3];
+        std::array<SkillDepend, 3> depends;
 };
-extern const std::vector<SkillType> SkillDefs;
+extern const GameDataArray<SkillType> SkillDefs;
 
 SkillType *FindSkill(char const *skname);
 Skills LookupSkill(AString *);
@@ -114,13 +119,13 @@ class ShowType {
         int level;
         char const * desc;
 };
-extern const std::vector<ShowType> ShowDefs;
+extern const GameDataArray<ShowType> ShowDefs;
 
 int SkillCost(int);
 int SkillMax(char const *,int); /* skill, race */
-int GetLevelByDays(int);
-int GetDaysByLevel(int);
-int StudyRateAdjustment(int, int); /* days, exp */
+size_t GetLevelByDays(size_t);
+size_t GetDaysByLevel(int);
+size_t StudyRateAdjustment(int, int); /* days, exp */
 
 class ShowSkill {
     public:
@@ -135,30 +140,38 @@ class ShowSkill {
         int level;
 };
 
-class Skill : public AListElem {
+class Skill {
     public:
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
 
         Skill * Split(int,int); /* total num, num leaving */
 
-        int type;
+        Skills type;
         unsigned int days;
         unsigned int exp;
 };
 
-class SkillList : public AList {
+class SkillList {
+    private:
+        std::list<Skill> skills_;
+
     public:
         size_t GetDays(const Skills&); /* Skill */
         int GetExp(const Skills&); /* Skill */
         void SetDays(const Skills&,size_t); /* Skill, days */
         void SetExp(const Skills&,int); /* Skill, exp */
         void Combine(SkillList *);
-        int GetStudyRate(const Skills&, int); /* Skill, num of men */
-        SkillList * Split(int,int); /* total men, num to split */
+        size_t GetStudyRate(const Skills&, int); /* Skill, num of men */
+        SkillList Split(int,int); /* total men, num to split */
         AString Report(int); /* Number of men */
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
+
+        bool empty() const
+        {
+            return skills_.empty();
+        }
 };
 
 class HealType {
@@ -166,7 +179,7 @@ class HealType {
         unsigned int num;
         unsigned int rate;
 };
-extern const std::vector<HealType> HealDefs;
+extern const GameDataArray<HealType> HealDefs;
 
 class DamageType {
     public:
@@ -211,9 +224,9 @@ class SpecialType {
         };
         int targflags;
 
-        int buildings[SPECIAL_BUILDINGS];
-        int targets[7];
-        char const *effects[3];
+        std::array<Objects, SPECIAL_BUILDINGS> buildings;
+        std::array<Items, 7> targets;
+        std::array<char const *, 3> effects;
 
         enum {
             FX_SHIELD    =    0x01,
@@ -225,16 +238,16 @@ class SpecialType {
         };
         int effectflags;
 
-        int shield[4];
-        DefenseMod defs[4];
+        std::array<int, 4> shield;
+        std::array<DefenseMod, 4> defs;
         char const *shielddesc;
 
-        DamageType damage[4];
+        std::array<DamageType, 4> damage;
         char const *spelldesc;
         char const *spelldesc2;
         char const *spelltarget;
 };
-extern const std::vector<SpecialType> SpecialDefs;
+extern const GameDataArray<SpecialType> SpecialDefs;
 
 extern SpecialType *FindSpecial(char const *key);
 
@@ -242,7 +255,7 @@ class EffectType {
     public:
         char const *name;
         int attackVal;
-        DefenseMod defMods[4];
+        std::array<DefenseMod, 4> defMods;
         char const *cancelEffect;
 
         enum {
@@ -251,7 +264,7 @@ class EffectType {
         };
         int flags;
 };
-extern const std::vector<EffectType> EffectDefs;
+extern const GameDataArray<EffectType> EffectDefs;
 
 extern EffectType *FindEffect(char const *effect);
 
@@ -279,7 +292,7 @@ class RangeType {
 
         int crossLevelPenalty;    // How much extra distance to cross levels?
 };
-extern const std::vector<RangeType> RangeDefs;
+extern const GameDataArray<RangeType> RangeDefs;
 
 extern RangeType *FindRange(char const *range);
 
@@ -319,10 +332,10 @@ class AttribModType {
         };
         int flags;
 
-        AttribModItem mods[5];
+        std::array<AttribModItem, 5> mods;
 };
 
-extern const std::vector<AttribModType> AttribDefs;
+extern const GameDataArray<AttribModType> AttribDefs;
 
 extern AttribModType *FindAttrib(char const *attrib);
 

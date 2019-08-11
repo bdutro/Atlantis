@@ -40,6 +40,8 @@ class ARegionArray;
 #include <vector>
 #include <array>
 #include <memory>
+
+#include "gamedataarray.h"
 #include "gamedefs.h"
 #include "gameio.h"
 #include "faction.h"
@@ -94,14 +96,14 @@ class TerrainType
         std::array<Items, 4> races;
         std::array<Items, 3> coastal_races;
         int wmonfreq;
-        int smallmon;
-        int bigmon;
-        int humanoid;
+        Items smallmon;
+        Items bigmon;
+        Items humanoid;
         int lairChance;
         std::array<Objects, 6> lairs;
 };
 
-extern const std::vector<TerrainType> TerrainDefs;
+extern const GameDataArray<TerrainType> TerrainDefs;
 
 class Location
 {

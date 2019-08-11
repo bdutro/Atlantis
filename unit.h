@@ -242,7 +242,7 @@ class Unit
         int routed;
         SkillList skills;
         ItemList items;
-        int combat;
+        Skills combat;
         Items readyItem;
         Items readyWeapon[MAX_READY];
         Items readyArmor[MAX_READY];

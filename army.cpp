@@ -266,13 +266,13 @@ void Soldier::SetupSpell()
     const auto unit_sp = unit.lock();
     if (unit_sp->type != U_MAGE && unit_sp->type != U_GUARDMAGE) return;
 
-    if (unit_sp->combat != -1) {
+    if (unit_sp->combat.isValid()) {
         slevel = unit_sp->GetSkill(unit_sp->combat);
         if (!slevel) {
             //
             // The unit can't cast this spell!
             //
-            unit_sp->combat = -1;
+            unit_sp->combat.invalidate();
             return;
         }
 
@@ -281,7 +281,7 @@ void Soldier::SetupSpell()
             //
             // This isn't a combat spell!
             //
-            unit_sp->combat = -1;
+            unit_sp->combat.invalidate();
             return;
         }
 
@@ -354,15 +354,15 @@ void Soldier::SetupCombatItems()
 
             if (pBat.flags & BattleItemType::SHIELD) {
                 SpecialType *sp = FindSpecial(pBat.special);
-                for (int i = 0; i < 4; i++) {
-                    if (sp->shield[i] == NUM_ATTACK_TYPES) {
+                for (const auto shield: sp->shield) {
+                    if (shield == NUM_ATTACK_TYPES) {
                         for (int j = 0; j < NUM_ATTACK_TYPES; j++) {
                             if (dskill[j] < pBat.skillLevel)
                                 dskill[j] = pBat.skillLevel;
                         }
-                    } else if (sp->shield[i] >= 0) {
-                        if (dskill[sp->shield[i]] < pBat.skillLevel)
-                            dskill[sp->shield[i]] = pBat.skillLevel;
+                    } else if (shield >= 0) {
+                        if (dskill[shield] < pBat.skillLevel)
+                            dskill[shield] = pBat.skillLevel;
                     }
                 }
             }
@@ -386,16 +386,17 @@ int Soldier::HasEffect(char const *eff)
 void Soldier::SetEffect(char const *eff)
 {
     if (eff == NULL) return;
-    int i;
 
     EffectType *e = FindEffect(eff);
     if (e == NULL) return;
 
     askill += e->attackVal;
 
-    for (i = 0; i < 4; i++) {
-        if (e->defMods[i].type != -1)
-            dskill[e->defMods[i].type] += e->defMods[i].val;
+    for (const auto& def_mod: e->defMods) {
+        if (def_mod.type != -1)
+        {
+            dskill[def_mod.type] += def_mod.val;
+        }
     }
 
     if (e->cancelEffect != NULL) ClearEffect(e->cancelEffect);
@@ -406,16 +407,17 @@ void Soldier::SetEffect(char const *eff)
 void Soldier::ClearEffect(char const *eff)
 {
     if (eff == NULL) return;
-    int i;
 
     EffectType *e = FindEffect(eff);
     if (e == NULL) return;
 
     askill -= e->attackVal;
 
-    for (i = 0; i < 4; i++) {
-        if (e->defMods[i].type != -1)
-            dskill[e->defMods[i].type] -= e->defMods[i].val;
+    for (const auto& def_mod: e->defMods) {
+        if (def_mod.type != -1)
+        {
+            dskill[def_mod.type] -= def_mod.val;
+        }
     }
 
     effects[eff] = 0;
@@ -588,7 +590,7 @@ Army::Army(const Unit::Handle& ldr, const std::list<Location::Handle>& locs, int
     // If TACTICS_NEEDS_WAR is enabled, we don't want to push leaders 
     // from tact-4 to tact-5! Also check that we have skills, otherwise
     // we get a nasty core dump ;)
-    if (Globals->TACTICS_NEEDS_WAR && (tactician->skills.Num() != 0)) {
+    if (Globals->TACTICS_NEEDS_WAR && !tactician->skills.empty()) {
         size_t currskill = tactician->skills.GetDays(Skills::Types::S_TACTICS) / tactician->GetMen();
         if (currskill < 450 - Globals->SKILL_PRACTICE_AMOUNT) {
             tactician->PracticeAttribute("tactics");
@@ -669,7 +671,7 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
 
     if (mp->spoiltype == -1) return;
 
-    size_t thespoil = static_cast<size_t>(mp->spoiltype);
+    int thespoil = mp->spoiltype;
 
     if (thespoil == IT_NORMAL && getrandom(2)) thespoil = IT_TRADE;
 
@@ -692,7 +694,7 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
                 !(ItemDefs[*i].flags & ItemType::DISABLED)) {
             count--;
             if (count == 0) {
-                thespoil = *i;
+                thespoil = static_cast<int>(*i);
                 break;
             }
         }
@@ -705,9 +707,8 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
         val /= Globals->MONSTER_SPOILS_RECOVERY;
     }
 
-    spoils.SetNum(thespoil, spoils.GetNum(thespoil) +
-            (val + getrandom(ItemDefs[thespoil].baseprice)) /
-            ItemDefs[thespoil].baseprice);
+    auto baseprice = ItemDefs[static_cast<size_t>(thespoil)].baseprice;
+    spoils.SetNum(thespoil, spoils.GetNum(thespoil) + (val + getrandom(baseprice)) / baseprice);
 }
 
 void Army::Regenerate(Battle& b)

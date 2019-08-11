@@ -1590,7 +1590,8 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, int month, const ARegi
 void ARegion::WriteTemplate(Areport *f, const Faction& fac,
         const ARegionList& pRegs, int month)
 {
-    int header = 0, order;
+    int header = 0;
+    Orders order;
     AString temp, *token;
 
     for(const auto& o: objects) {
@@ -1623,28 +1624,30 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                         order = Parse1Order(token);
                         delete token;
                     } else
-                        order = NORDERS;
-                    switch (order) {
-                        case O_MOVE:
-                        case O_SAIL:
-                        case O_TEACH:
-                        case O_STUDY:
-                        case O_BUILD:
-                        case O_PRODUCE:
-                        case O_ENTERTAIN:
-                        case O_WORK:
+                        order = Orders::Types::NORDERS;
+                    switch (order.asEnum()) {
+                        case Orders::Types::O_MOVE:
+                        case Orders::Types::O_SAIL:
+                        case Orders::Types::O_TEACH:
+                        case Orders::Types::O_STUDY:
+                        case Orders::Types::O_BUILD:
+                        case Orders::Types::O_PRODUCE:
+                        case Orders::Types::O_ENTERTAIN:
+                        case Orders::Types::O_WORK:
                             gotMonthOrder = 1;
                             break;
-                        case O_TAX:
-                        case O_PILLAGE:
+                        case Orders::Types::O_TAX:
+                        case Orders::Types::O_PILLAGE:
                             if (Globals->TAX_PILLAGE_MONTH_LONG)
                                 gotMonthOrder = 1;
                             break;
+                        default:
+                            break;
                     }
-                    if (order == O_ENDTURN || order == O_ENDFORM)
+                    if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
                         f->DropTab();
                     f->PutStr(*s);
-                    if (order == O_TURN || order == O_FORM)
+                    if (order == Orders::Types::O_TURN || order == Orders::Types::O_FORM)
                         f->AddTab();
                 }
                 f->ClearTab();
@@ -1669,11 +1672,11 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                                 order = Parse1Order(token);
                                 delete token;
                             } else
-                                order = NORDERS;
-                            if (order == O_ENDTURN || order == O_ENDFORM)
+                                order = Orders::Types::NORDERS;
+                            if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
                                 f->DropTab();
                             f->PutStr(*t);
-                            if (order == O_TURN || order == O_FORM)
+                            if (order == Orders::Types::O_TURN || order == Orders::Types::O_FORM)
                                 f->AddTab();
                         }
                         if (firstMonthOrder) {
@@ -1695,11 +1698,11 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                                 order = Parse1Order(token);
                                 delete token;
                             } else
-                                order = NORDERS;
-                            if (order == O_ENDTURN || order == O_ENDFORM)
+                                order = Orders::Types::NORDERS;
+                            if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
                                 f->DropTab();
                             f->PutStr(*t);
-                            if (order == O_TURN || order == O_FORM)
+                            if (order == Orders::Types::O_TURN || order == Orders::Types::O_FORM)
                                 f->AddTab();
                         }
                         f->ClearTab();

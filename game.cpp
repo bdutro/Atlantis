@@ -60,7 +60,7 @@ int Game::TurnNumber()
 void Game::DefaultWorkOrder()
 {
     for(const auto& r: regions) {
-        if (r->type == R_NEXUS) continue;
+        if (r->type == Regions::Types::R_NEXUS) continue;
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
                 if (u->monthorders || u->faction.lock()->IsNPC() ||
@@ -833,8 +833,8 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                                         "to give for Item: in faction " +
                                         pFac->num);
                             } else {
-                                int it = ParseAllItems(pTemp);
-                                if (it == -1) {
+                                Items it = ParseAllItems(pTemp);
+                                if (!it.isValid()) {
                                     Awrite(AString("Must specify a valid ") +
                                             "item to give for Item: in " +
                                             "faction " + pFac->num);
@@ -875,8 +875,8 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                         Awrite(AString("Must specify a valid skill for ") +
                                 "Skill: in faction " + pFac->num);
                     } else {
-                        int sk = ParseSkill(pTemp);
-                        if (sk == -1) {
+                        Skills sk = ParseSkill(pTemp);
+                        if (!sk.isValid()) {
                             Awrite(AString("Must specify a valid skill for ")+
                                     "Skill: in faction " + pFac->num);
                         } else {
@@ -956,10 +956,10 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                             Awrite(AString("Order: must provide unit order ")+
                                     "for faction "+pFac->num);
                         } else {
-                            int o = Parse1Order(pTemp);
-                            if (o == -1 || o == O_ATLANTIS || o == O_END ||
-                                    o == O_UNIT || o == O_FORM ||
-                                    o == O_ENDFORM) {
+                            Orders o = Parse1Order(pTemp);
+                            if (!o.isValid() || o == Orders::Types::O_ATLANTIS || o == Orders::Types::O_END ||
+                                    o == Orders::Types::O_UNIT || o == Orders::Types::O_FORM ||
+                                    o == Orders::Types::O_ENDFORM) {
                                 Awrite(AString("Order: invalid order given ")+
                                         "for faction "+pFac->num);
                             } else {
@@ -1343,11 +1343,11 @@ void Game::CountAllSpecialists()
                 {
                     fac->nummages++;
                 }
-                if (u->GetSkill(S_QUARTERMASTER))
+                if (u->GetSkill(Skills::Types::S_QUARTERMASTER))
                 {
                     fac->numqms++;
                 }
-                if (u->GetSkill(S_TACTICS) == 5)
+                if (u->GetSkill(Skills::Types::S_TACTICS) == 5)
                 {
                     fac->numtacts++;
                 }
@@ -1443,7 +1443,7 @@ size_t Game::CountQuarterMasters(const Faction::Handle& pFac)
     for(const auto& r: regions) {
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
-                if (u->faction.lock() == pFac && u->GetSkill(S_QUARTERMASTER)) i++;
+                if (u->faction.lock() == pFac && u->GetSkill(Skills::Types::S_QUARTERMASTER)) i++;
             }
         }
     }
@@ -1456,7 +1456,7 @@ size_t Game::CountTacticians(const Faction::Handle& pFac)
     for(const auto& r: regions) {
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
-                if (u->faction.lock() == pFac && u->GetSkill(S_TACTICS) == 5) i++;
+                if (u->faction.lock() == pFac && u->GetSkill(Skills::Types::S_TACTICS) == 5) i++;
             }
         }
     }
@@ -1553,9 +1553,9 @@ void Game::PostProcessUnitExtra(ARegion *r, Unit *u)
 void Game::MonsterCheck(ARegion *r, Unit *u)
 {
     AString tmp;
-    int skill;
     int linked = 0;
-    std::map<int, int> chances;
+    using MapType = std::map<int, int>;
+    MapType chances;
 
     if (u->type != U_WMON) {
 
@@ -1563,6 +1563,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
             if (!i->num) continue;
             if (!ItemDefs[i->type].escape) continue;
 
+            Skills skill;
             // Okay, check flat loss.
             if (ItemDefs[i->type].escape & ItemType::LOSS_CHANCE) {
                 size_t losses = (i->num +
@@ -1663,7 +1664,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
         }
 
         if (linked) {
-            std::map<int, int>::iterator i;
+            MapType::iterator i;
             for (i = chances.begin(); i != chances.end(); i++) {
                 // walk the chances list and for each chance, see if
                 // escape happens and if escape happens then walk all items
@@ -1696,60 +1697,60 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
 
 void Game::CheckUnitMaintenance(int consume)
 {
-    CheckUnitMaintenanceItem(I_FOOD, Globals->UPKEEP_FOOD_VALUE, consume);
-    CheckUnitMaintenanceItem(I_GRAIN, Globals->UPKEEP_FOOD_VALUE, consume);
-    CheckUnitMaintenanceItem(I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE, consume);
-    CheckUnitMaintenanceItem(I_FISH, Globals->UPKEEP_FOOD_VALUE, consume);
+    CheckUnitMaintenanceItem(Items::Types::I_FOOD, Globals->UPKEEP_FOOD_VALUE, consume);
+    CheckUnitMaintenanceItem(Items::Types::I_GRAIN, Globals->UPKEEP_FOOD_VALUE, consume);
+    CheckUnitMaintenanceItem(Items::Types::I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE, consume);
+    CheckUnitMaintenanceItem(Items::Types::I_FISH, Globals->UPKEEP_FOOD_VALUE, consume);
 }
 
 void Game::CheckFactionMaintenance(int con)
 {
-    CheckFactionMaintenanceItem(I_FOOD, Globals->UPKEEP_FOOD_VALUE, con);
-    CheckFactionMaintenanceItem(I_GRAIN, Globals->UPKEEP_FOOD_VALUE, con);
-    CheckFactionMaintenanceItem(I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE, con);
-    CheckFactionMaintenanceItem(I_FISH, Globals->UPKEEP_FOOD_VALUE, con);
+    CheckFactionMaintenanceItem(Items::Types::I_FOOD, Globals->UPKEEP_FOOD_VALUE, con);
+    CheckFactionMaintenanceItem(Items::Types::I_GRAIN, Globals->UPKEEP_FOOD_VALUE, con);
+    CheckFactionMaintenanceItem(Items::Types::I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE, con);
+    CheckFactionMaintenanceItem(Items::Types::I_FISH, Globals->UPKEEP_FOOD_VALUE, con);
 }
 
 void Game::CheckAllyMaintenance()
 {
-    CheckAllyMaintenanceItem(I_FOOD, Globals->UPKEEP_FOOD_VALUE);
-    CheckAllyMaintenanceItem(I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
-    CheckAllyMaintenanceItem(I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
-    CheckAllyMaintenanceItem(I_FISH, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyMaintenanceItem(Items::Types::I_FOOD, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyMaintenanceItem(Items::Types::I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyMaintenanceItem(Items::Types::I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyMaintenanceItem(Items::Types::I_FISH, Globals->UPKEEP_FOOD_VALUE);
 }
 
 void Game::CheckUnitHunger()
 {
-    CheckUnitHungerItem(I_FOOD, Globals->UPKEEP_FOOD_VALUE);
-    CheckUnitHungerItem(I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
-    CheckUnitHungerItem(I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
-    CheckUnitHungerItem(I_FISH, Globals->UPKEEP_FOOD_VALUE);
+    CheckUnitHungerItem(Items::Types::I_FOOD, Globals->UPKEEP_FOOD_VALUE);
+    CheckUnitHungerItem(Items::Types::I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
+    CheckUnitHungerItem(Items::Types::I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
+    CheckUnitHungerItem(Items::Types::I_FISH, Globals->UPKEEP_FOOD_VALUE);
 }
 
 void Game::CheckFactionHunger()
 {
-    CheckFactionHungerItem(I_FOOD, Globals->UPKEEP_FOOD_VALUE);
-    CheckFactionHungerItem(I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
-    CheckFactionHungerItem(I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
-    CheckFactionHungerItem(I_FISH, Globals->UPKEEP_FOOD_VALUE);
+    CheckFactionHungerItem(Items::Types::I_FOOD, Globals->UPKEEP_FOOD_VALUE);
+    CheckFactionHungerItem(Items::Types::I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
+    CheckFactionHungerItem(Items::Types::I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
+    CheckFactionHungerItem(Items::Types::I_FISH, Globals->UPKEEP_FOOD_VALUE);
 }
 
 void Game::CheckAllyHunger()
 {
-    CheckAllyHungerItem(I_FOOD, Globals->UPKEEP_FOOD_VALUE);
-    CheckAllyHungerItem(I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
-    CheckAllyHungerItem(I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
-    CheckAllyHungerItem(I_FISH, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyHungerItem(Items::Types::I_FOOD, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyHungerItem(Items::Types::I_GRAIN, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyHungerItem(Items::Types::I_LIVESTOCK, Globals->UPKEEP_FOOD_VALUE);
+    CheckAllyHungerItem(Items::Types::I_FISH, Globals->UPKEEP_FOOD_VALUE);
 }
 
 char Game::GetRChar(const ARegion::Handle& r)
 {
-    int t;
-
     if (!r)
+    {
         return ' ';
-    t = r->type;
-    if (t < 0 || t > R_NUM) return '?';
+    }
+    const auto& t = r->type;
+    if (!t.isValid() || t > Regions::Types::R_NUM) return '?';
     char c = TerrainDefs[r->type].marker;
     if (r->town) {
         c = static_cast<char>((c - 'a') + 'A');
@@ -1788,9 +1789,9 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
     int AC = 0;
     int IV = 0;
     size_t num;
-    if (pReg->type == R_NEXUS || pReg->IsStartingCity()) {
+    if (pReg->type == Regions::Types::R_NEXUS || pReg->IsStartingCity()) {
         skilllevel = static_cast<int>(TownTypeEnum::TOWN_CITY) + 1;
-        if (Globals->SAFE_START_CITIES || (pReg->type == R_NEXUS))
+        if (Globals->SAFE_START_CITIES || (pReg->type == Regions::Types::R_NEXUS))
             IV = 1;
         AC = 1;
         num = Globals->AMT_START_CITY_GUARDS;
@@ -1814,13 +1815,13 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
     Awrite(temp);
     */
     
-    if ((Globals->LEADERS_EXIST) || (pReg->type == R_NEXUS)) {
+    if ((Globals->LEADERS_EXIST) || (pReg->type == Regions::Types::R_NEXUS)) {
         /* standard Leader-type guards */
-        u->SetMen(I_LEADERS,num);
-        u->items.SetNum(I_SWORD,num);
-        if (IV) u->items.SetNum(I_AMULETOFI,num);
+        u->SetMen(Items::Types::I_LEADERS,num);
+        u->items.SetNum(Items::Types::I_SWORD,num);
+        if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,num);
         u->SetMoney(static_cast<int>(num * Globals->GUARD_MONEY));
-        u->SetSkill(S_COMBAT, skilllevel);
+        u->SetSkill(Skills::Types::S_COMBAT, skilllevel);
         u->SetName(s);
         u->type = U_GUARD;
         u->guard = GUARD_GUARD;
@@ -1830,17 +1831,15 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         size_t n = 3 * num / 4;
         int plate = 0;
         if ((AC) && (Globals->START_CITY_GUARDS_PLATE)) plate = 1;
-        u = MakeManUnit(pFac, pReg->race, n, skilllevel, 1,
-            plate, 0);
-        if (IV) u->items.SetNum(I_AMULETOFI,num);
+        u = MakeManUnit(pFac, pReg->race, n, skilllevel, 1, plate, 0);
+        if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,num);
         u->SetMoney(num * Globals->GUARD_MONEY / 2);
         u->SetName(s);
         u->type = U_GUARD;
         u->guard = GUARD_GUARD;
         u->reveal = REVEAL_FACTION;
-        u2 = MakeManUnit(pFac, pReg->race, n, skilllevel, 1,
-            plate, 1);
-        if (IV) u2->items.SetNum(I_AMULETOFI,num);
+        u2 = MakeManUnit(pFac, pReg->race, n, skilllevel, 1, plate, 1);
+        if (IV) u2->items.SetNum(Items::Types::I_AMULETOFI,num);
         u2->SetMoney(num * Globals->GUARD_MONEY / 2);
         AString *un = new AString("City Guard");
         u2->SetName(un);
@@ -1851,20 +1850,20 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
     
     if (AC) {
         if (Globals->START_CITY_GUARDS_PLATE) {
-            if (Globals->LEADERS_EXIST) u->items.SetNum(I_PLATEARMOR, num);
+            if (Globals->LEADERS_EXIST) u->items.SetNum(Items::Types::I_PLATEARMOR, num);
         }
-        u->SetSkill(S_OBSERVATION,10);
+        u->SetSkill(Skills::Types::S_OBSERVATION,10);
         if (Globals->START_CITY_TACTICS)
-            u->SetSkill(S_TACTICS, Globals->START_CITY_TACTICS);
+            u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
     } else {
-        u->SetSkill(S_OBSERVATION, skilllevel);
+        u->SetSkill(Skills::Types::S_OBSERVATION, skilllevel);
     }
     u->SetFlag(FLAG_HOLDING,1);
     u->MoveUnit(pReg->GetDummy());
     /*
     Awrite(AString(*u->BattleReport(3)));
     */
-    if ((!Globals->LEADERS_EXIST) && (pReg->type != R_NEXUS)) {
+    if ((!Globals->LEADERS_EXIST) && (pReg->type != Regions::Types::R_NEXUS)) {
         u2->SetFlag(FLAG_HOLDING,1);
         u2->MoveUnit(pReg->GetDummy());
         /*
@@ -1878,14 +1877,14 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         u->SetName(s);
         u->type = U_GUARDMAGE;
         u->reveal = REVEAL_FACTION;
-        u->SetMen(I_LEADERS,1);
-        if (IV) u->items.SetNum(I_AMULETOFI,1);
+        u->SetMen(Items::Types::I_LEADERS,1);
+        if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,1);
         u->SetMoney(Globals->GUARD_MONEY);
-        u->SetSkill(S_FORCE,Globals->START_CITY_MAGES);
-        u->SetSkill(S_FIRE,Globals->START_CITY_MAGES);
+        u->SetSkill(Skills::Types::S_FORCE,Globals->START_CITY_MAGES);
+        u->SetSkill(Skills::Types::S_FIRE,Globals->START_CITY_MAGES);
         if (Globals->START_CITY_TACTICS)
-            u->SetSkill(S_TACTICS, Globals->START_CITY_TACTICS);
-        u->combat = S_FIRE;
+            u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
+        u->combat = Skills::Types::S_FIRE;
         u->SetFlag(FLAG_BEHIND, 1);
         u->SetFlag(FLAG_HOLDING, 1);
         u->MoveUnit(pReg->GetDummy());
@@ -1920,13 +1919,13 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     int AC = 0;
     size_t men;
     int IV = 0;
-    int mantype;
+    Items mantype;
     size_t maxmen;
-    int weapon = -1;
+    Items weapon;
     size_t maxweapon = 0;
-    int armor = -1;
+    Items armor;
     size_t maxarmor = 0;
-    for (int i=0; i<NITEMS; i++) {
+    for (size_t i = 0; i < Items::size(); i++) {
         size_t num = u->items.GetNum(i);
         if (num == 0) continue;
         if (ItemDefs[i].type & IT_MAN) mantype = i;
@@ -1941,26 +1940,26 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
             maxarmor = num;
         }
     }
-    int skill = S_COMBAT;
+    Skills skill = Skills::Types::S_COMBAT;
     
-    if (weapon != -1) {
+    if (weapon.isValid()) {
         WeaponType *wp = FindWeapon(ItemDefs[weapon].abr);
-        if (FindSkill(wp->baseSkill) == FindSkill("XBOW")) skill = S_CROSSBOW;
-        if (FindSkill(wp->baseSkill) == FindSkill("LBOW")) skill = S_LONGBOW;
+        if (FindSkill(wp->baseSkill) == FindSkill("XBOW")) skill = Skills::Types::S_CROSSBOW;
+        if (FindSkill(wp->baseSkill) == FindSkill("LBOW")) skill = Skills::Types::S_LONGBOW;
     }
     
     size_t sl = u->GetRealSkill(skill);
         
-    if (r->type == R_NEXUS || r->IsStartingCity()) {
+    if (r->type == Regions::Types::R_NEXUS || r->IsStartingCity()) {
         towntype = TownTypeEnum::TOWN_CITY;
         AC = 1;
-        if (Globals->SAFE_START_CITIES || (r->type == R_NEXUS))
+        if (Globals->SAFE_START_CITIES || (r->type == Regions::Types::R_NEXUS))
             IV = 1;
         if (u->type == U_GUARDMAGE) {
             men = 1;
         } else {
             maxmen = Globals->AMT_START_CITY_GUARDS;
-            if ((!Globals->LEADERS_EXIST) && (r->type != R_NEXUS))
+            if ((!Globals->LEADERS_EXIST) && (r->type != Regions::Types::R_NEXUS))
                 maxmen = 3 * maxmen / 4;
             men = u->GetMen() + (Globals->AMT_START_CITY_GUARDS/10);
             if (men > maxmen)
@@ -1976,14 +1975,14 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     }
 
     u->SetMen(mantype,men);
-    if (IV) u->items.SetNum(I_AMULETOFI,men);
+    if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,men);
 
     if (u->type == U_GUARDMAGE) {
         if (Globals->START_CITY_TACTICS)
-            u->SetSkill(S_TACTICS, Globals->START_CITY_TACTICS);
-        u->SetSkill(S_FORCE, Globals->START_CITY_MAGES);
-        u->SetSkill(S_FIRE, Globals->START_CITY_MAGES);
-        u->combat = S_FIRE;
+            u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
+        u->SetSkill(Skills::Types::S_FORCE, Globals->START_CITY_MAGES);
+        u->SetSkill(Skills::Types::S_FIRE, Globals->START_CITY_MAGES);
+        u->combat = Skills::Types::S_FIRE;
         u->SetFlag(FLAG_BEHIND, 1);
         u->SetMoney(Globals->GUARD_MONEY);
     } else {
@@ -1991,15 +1990,15 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
         u->SetMoney(money);
         u->SetSkill(skill, static_cast<int>(sl));
         if (AC) {
-            u->SetSkill(S_OBSERVATION,10);
+            u->SetSkill(Skills::Types::S_OBSERVATION,10);
             if (Globals->START_CITY_TACTICS)
-                u->SetSkill(S_TACTICS, Globals->START_CITY_TACTICS);
+                u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
             if (Globals->START_CITY_GUARDS_PLATE)
                 u->items.SetNum(armor,men);
         } else {
-            u->SetSkill(S_OBSERVATION, static_cast<int>(towntype) + 1);
+            u->SetSkill(Skills::Types::S_OBSERVATION, static_cast<int>(towntype) + 1);
         }
-        if (weapon!= -1) {
+        if (weapon.isValid()) {
             u->items.SetNum(weapon,men);
         }
     }

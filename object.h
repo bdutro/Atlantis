@@ -29,6 +29,8 @@
 class Object;
 
 #include <memory>
+
+#include "gamedataarray.h"
 #include "objecttype.h"
 #include "alist.h"
 #include "fileio.h"
@@ -37,7 +39,60 @@ class Object;
 #include "items.h"
 #include "unit.h"
 
-#define I_WOOD_OR_STONE -2
+class ObjectTypeItems : public Items
+{
+    private:
+        bool is_wood_or_stone_ = false;
+
+    public:
+        static constexpr int I_WOOD_OR_STONE = -2;
+
+        ObjectTypeItems() :
+            Items()
+        {
+        }
+
+        ObjectTypeItems(size_t type) :
+            Items(type)
+        {
+        }
+        
+        ObjectTypeItems(const Types& type) :
+            Items(type)
+        {
+        }
+
+        ObjectTypeItems(const ValidEnum<_ItemTypes, _ItemTypes::NITEMS>& rhs) :
+            Items(rhs)
+        {
+        }
+
+        ObjectTypeItems(int type) :
+            Items(type == I_WOOD_OR_STONE ? static_cast<int>(Types::NITEMS) : type),
+            is_wood_or_stone_(type == I_WOOD_OR_STONE)
+        {
+        }
+
+        bool isWoodOrStone() const { return isValid() && is_wood_or_stone_; }
+
+        operator Types() const
+        {
+            if(isWoodOrStone())
+            {
+                throw std::logic_error("Tried to use IS_WOOD_OR_STONE object type as an index!");
+            }
+            return Items::operator Types();
+        }
+
+        operator size_t() const
+        {
+            if(isWoodOrStone())
+            {
+                throw std::logic_error("Tried to use IS_WOOD_OR_STONE object type as an index!");
+            }
+            return Items::operator size_t();
+        }
+};
 
 class ObjectType {
     public:
@@ -58,7 +113,7 @@ class ObjectType {
         int sailors;
         int maxMages;
 
-        int item;
+        ObjectTypeItems item;
         int cost;
         char const *skill;
         int level;
@@ -67,13 +122,13 @@ class ObjectType {
         int maxMonthlyDecay;
         int maintFactor;
 
-        int monster;
+        Items monster;
 
         Items productionAided;
         int defenceArray[NUM_ATTACK_TYPES];
 };
 
-extern const std::vector<ObjectType> ObjectDefs;
+extern const GameDataArray<ObjectType> ObjectDefs;
 
 AString *ObjectDescription(int obj);
 
@@ -81,7 +136,7 @@ Objects LookupObject(AString *token);
 
 Objects ParseObject(AString *, int ships);
 
-int ObjectIsShip(int);
+bool ObjectIsShip(const Objects&);
 
 class Object
 {

@@ -151,10 +151,10 @@ int SkillMax(char const *skill, int race)
     return mt->defaultlevel;
 }
 
-int GetLevelByDays(int dayspermen)
+size_t GetLevelByDays(size_t dayspermen)
 {
-    int z = 30;
-    int i = 0;
+    size_t z = 30;
+    size_t i = 0;
     while (dayspermen >= z) {
         i++;
         dayspermen -= z;
@@ -163,9 +163,9 @@ int GetLevelByDays(int dayspermen)
     return i;
 }
 
-int GetDaysByLevel(int level)
+size_t GetDaysByLevel(int level)
 {
-    int days = 0;
+    size_t days = 0;
 
     for (;level>0; level--) {
         days += level * 30;
@@ -176,9 +176,9 @@ int GetDaysByLevel(int level)
 
 /* Returns the adjusted study rate,
  */
-int StudyRateAdjustment(int days, int exp)
+size_t StudyRateAdjustment(int days, int exp)
 {
-    int rate = 30;
+    size_t rate = 30;
     if (!Globals->REQUIRED_EXPERIENCE) return rate;
     int slope = 62;
     int inc = Globals->REQUIRED_EXPERIENCE * 10;
@@ -370,7 +370,7 @@ void SkillList::Combine(SkillList *b)
 /* Returns the rate of study (days/month and man)
  * for studying a skill
  */
-int SkillList::GetStudyRate(int skill, int nummen)
+size_t SkillList::GetStudyRate(int skill, int nummen)
 {
     int days = 0;
     int exp = 0;
@@ -384,7 +384,7 @@ int SkillList::GetStudyRate(int skill, int nummen)
         }
     }
     
-    int rate = StudyRateAdjustment(days, exp);
+    size_t rate = StudyRateAdjustment(days, exp);
     
     /*
      * if (nummen == 10) {

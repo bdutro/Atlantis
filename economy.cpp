@@ -251,7 +251,7 @@ void ARegion::SetupPop()
                 Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
         markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                     Population()/125, 0, 10000, 0, 400);
@@ -748,15 +748,15 @@ void ARegion::SetupProds()
                     (Globals->COASTAL_FISH && IsCoastal()));
             switch (foodchoice) {
                 case 0:
-                    if (!(ItemDefs[static_cast<size_t>(Items::Types::I_GRAIN)].flags & ItemType::DISABLED))
+                    if (!(ItemDefs[Items::Types::I_GRAIN].flags & ItemType::DISABLED))
                         products.Add(Items::Types::I_GRAIN, static_cast<int>(typer.economy));
                     break;
                 case 1:
-                    if (!(ItemDefs[static_cast<size_t>(Items::Types::I_LIVESTOCK)].flags & ItemType::DISABLED))
+                    if (!(ItemDefs[Items::Types::I_LIVESTOCK].flags & ItemType::DISABLED))
                         products.Add(Items::Types::I_LIVESTOCK, static_cast<int>(typer.economy));
                     break;
                 case 2:
-                    if (!(ItemDefs[static_cast<size_t>(Items::Types::I_FISH)].flags & ItemType::DISABLED))
+                    if (!(ItemDefs[Items::Types::I_FISH].flags & ItemType::DISABLED))
                         products.Add(Items::Types::I_FISH, static_cast<int>(typer.economy));
                     break;
             }
@@ -814,7 +814,7 @@ void ARegion::AddTown(TownTypeEnum size, AString * name)
         const auto& obj = *it;
         if (obj->type != Objects::Types::O_DUMMY)
         {
-            if ((ObjectDefs[obj->type].monster != -1)
+            if ((ObjectDefs[obj->type].monster.isValid())
                 && (!(ObjectDefs[obj->type].flags & ObjectType::CANENTER))) {
                     obj->units.clear();
                     it = objects.erase(it);
@@ -912,7 +912,7 @@ void ARegion::UpdateEditRegion()
                             Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float calculation above
         markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
@@ -1035,7 +1035,7 @@ void ARegion::SetupEditRegion()
                             Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
-        ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
+        ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
         markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);
@@ -1588,7 +1588,7 @@ void ARegion::PostTurn(const ARegionList& pRegs)
             markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
                     Population()/25, 0, 10000, 0, 2000);
             if (Globals->LEADERS_EXIST) {
-                ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) /
+                ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) /
                         static_cast<float>(Globals->BASE_MAN_COST);
                 markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
                         Population()/125, 0, 10000, 0, 400);

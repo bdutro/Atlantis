@@ -58,76 +58,7 @@ class TransportOrder;
 #include "gamedefs.h"
 #include "astring.h"
 #include "alist.h"
-
-enum {
-    O_ATLANTIS,
-    O_END,
-    O_UNIT,
-    O_ADDRESS,
-    O_ADVANCE,
-    O_ARMOR,
-    O_ASSASSINATE,
-    O_ATTACK,
-    O_AUTOTAX,
-    O_AVOID,
-    O_BEHIND,
-    O_BUILD,
-    O_BUY,
-    O_CAST,
-    O_CLAIM,
-    O_COMBAT,
-    O_CONSUME,
-    O_DECLARE,
-    O_DESCRIBE,
-    O_DESTROY,
-    O_DISTRIBUTE,
-    O_ENDFORM,
-    O_ENDTURN,
-    O_ENTER,
-    O_ENTERTAIN,
-    O_EVICT,
-    O_EXCHANGE,
-    O_FACTION,
-    O_FIND,
-    O_FORGET,
-    O_FORM,
-    O_GIVE,
-    O_GUARD,
-    O_HOLD,
-    O_IDLE,
-    O_JOIN,
-    O_LEAVE,
-    O_MOVE,
-    O_NAME,
-    O_NOAID,
-    O_NOCROSS,
-    O_NOSPOILS,
-    O_OPTION,
-    O_PASSWORD,
-    O_PILLAGE,
-    O_PREPARE,
-    O_PRODUCE,
-    O_PROMOTE,
-    O_QUIT,
-    O_RESTART,
-    O_REVEAL,
-    O_SAIL,
-    O_SELL,
-    O_SHARE,
-    O_SHOW,
-    O_SPOILS,
-    O_STEAL,
-    O_STUDY,
-    O_TAKE,
-    O_TAX,
-    O_TEACH,
-    O_TRANSPORT,
-    O_TURN,
-    O_WEAPON,
-    O_WITHDRAW,
-    O_WORK,
-    NORDERS
-};
+#include "ordertype.h"
 
 enum {
     M_NONE,
@@ -146,14 +77,14 @@ enum {
 
 extern char const ** OrderStrs;
 
-int Parse1Order(AString *);
+Orders Parse1Order(AString *);
 
 class Order {
     public:
         Order();
         virtual ~Order();
 
-        int type;
+        Orders type;
         int quiet;
 };
 

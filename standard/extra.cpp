@@ -57,16 +57,16 @@ int Game::SetupFaction( const Faction::Handle& pFac )
 
     if (Globals->UPKEEP_MINIMUM_FOOD > 0)
     {
-        if (!(ItemDefs[static_cast<size_t>(Items::Types::I_FOOD)].flags & ItemType::DISABLED)) {
+        if (!(ItemDefs[Items::Types::I_FOOD].flags & ItemType::DISABLED)) {
             temp2->items.SetNum(Items::Types::I_FOOD, 6);
             pFac->DiscoverItem(Items::Types::I_FOOD, 0, 1);
-        } else if (!(ItemDefs[static_cast<size_t>(Items::Types::I_FISH)].flags & ItemType::DISABLED)) {
+        } else if (!(ItemDefs[Items::Types::I_FISH].flags & ItemType::DISABLED)) {
             temp2->items.SetNum(Items::Types::I_FISH, 6);
             pFac->DiscoverItem(Items::Types::I_FISH, 0, 1);
-        } else if (!(ItemDefs[static_cast<size_t>(Items::Types::I_LIVESTOCK)].flags & ItemType::DISABLED)) {
+        } else if (!(ItemDefs[Items::Types::I_LIVESTOCK].flags & ItemType::DISABLED)) {
             temp2->items.SetNum(Items::Types::I_LIVESTOCK, 6);
             pFac->DiscoverItem(Items::Types::I_LIVESTOCK, 0, 1);
-        } else if (!(ItemDefs[static_cast<size_t>(Items::Types::I_GRAIN)].flags & ItemType::DISABLED)) {
+        } else if (!(ItemDefs[Items::Types::I_GRAIN].flags & ItemType::DISABLED)) {
             temp2->items.SetNum(Items::Types::I_GRAIN, 2);
             pFac->DiscoverItem(Items::Types::I_GRAIN, 0, 1);
         }

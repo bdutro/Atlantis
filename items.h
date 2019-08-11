@@ -31,6 +31,7 @@ class ItemType;
 #include <list>
 #include <memory>
 
+#include "gamedataarray.h"
 #include "itemtype.h"
 #include "regiontype.h"
 #include "fileio.h"
@@ -83,6 +84,8 @@ struct Materials
 class ItemType
 {
     public:
+        using MaterialInputArray = std::array<Materials, 4>;
+
         char const *name;
         char const *names;
         char const *abr;
@@ -107,15 +110,15 @@ class ItemType
         int pLevel; // production skill level
         int pMonths; // Man months required for production
         int pOut; // How many of the item we get
-        std::array<Materials, 4> pInput;
+        MaterialInputArray pInput;
 
         char const *mSkill; // magical production skill
         int mLevel; // magical production skill level
         int mOut; // How many of the item are conjured
-        std::array<Materials, 4> mInput;
+        MaterialInputArray mInput;
 
         size_t weight;
-        Items type;
+        int type;
         size_t baseprice;
         int combat;
 
@@ -125,10 +128,10 @@ class ItemType
         int swim;
         int speed;
 
-        int hitchItem;
+        Items hitchItem;
         int hitchwalk;
         // LLS
-        int mult_item;
+        Items mult_item;
         int mult_val;
 
         int max_inventory; // if non-zero, amount allowed in inventory.
@@ -155,7 +158,7 @@ class ItemType
         size_t minGrant, maxGrant;
 };
 
-extern std::vector<ItemType> ItemDefs;
+extern const GameDataArray<ItemType> ItemDefs;
 
 class ManType
 {
@@ -170,7 +173,7 @@ class ManType
         bool CanUse(const Items&);
 };
 
-extern const std::vector<ManType> ManDefs;
+extern const GameDataArray<ManType> ManDefs;
 
 class MonType
 {
@@ -197,7 +200,7 @@ class MonType
         char const *abbr;
 };
 
-extern const std::vector<MonType> MonDefs;
+extern const GameDataArray<MonType> MonDefs;
 
 enum {
     SLASHING,        // e.g. sword attack (This is default)
@@ -261,7 +264,7 @@ class WeaponType
         int mountBonus;
 };
 
-extern const std::vector<WeaponType> WeaponDefs;
+extern const GameDataArray<WeaponType> WeaponDefs;
 
 class ArmorType
 {
@@ -281,7 +284,7 @@ class ArmorType
         int saves[NUM_WEAPON_CLASSES];
 };
 
-extern const std::vector<ArmorType> ArmorDefs;
+extern const GameDataArray<ArmorType> ArmorDefs;
 
 class MountType
 {
@@ -314,7 +317,7 @@ class MountType
         int specialLev;
 };
 
-extern const std::vector<MountType> MountDefs;
+extern const GameDataArray<MountType> MountDefs;
 
 class BattleItemType
 {
@@ -333,7 +336,7 @@ class BattleItemType
         int skillLevel;
 };
 
-extern const std::vector<BattleItemType> BattleItemDefs;
+extern const GameDataArray<BattleItemType> BattleItemDefs;
 
 extern Items ParseGiveableItem(AString *);
 extern Items ParseAllItems(AString *);

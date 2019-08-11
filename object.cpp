@@ -70,10 +70,10 @@ int ParseObject(AString *token, int ships)
     return -1;
 }
 
-int ObjectIsShip(int ot)
+bool ObjectIsShip(const Objects& ot)
 {
-    if (ObjectDefs[ot].capacity) return 1;
-    return 0;
+    if (ObjectDefs[ot].capacity) return true;
+    return false;
 }
 
 Object::Object(ARegion *reg)

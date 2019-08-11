@@ -280,7 +280,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         if (Globals->GM_REPORT || (pGame->month == 0 && pGame->year == 1)) {
             // Put all skills, items and objects in the GM report
             shows.clear();
-            for (int i = 0; i < NSKILLS; i++) {
+            for (size_t i = 0; i < Skills::size(); i++) {
                 for (int j = 1; j < 6; j++) {
                     shows.emplace_back(std::make_shared<ShowSkill>(i, j));
                 }
@@ -300,8 +300,8 @@ void Faction::WriteReport(Areport *f, Game *pGame)
             }
 
             itemshows.DeleteAll();
-            for (int i = 0; i < NITEMS; i++) {
-                AString *show = ItemDescription(i, 1);
+            for (size_t i = 0; i < Items::size(); i++) {
+                AString *show = ItemDescription(static_cast<int>(i), 1);
                 if (show) {
                     itemshows.Add(show);
                 }
@@ -317,8 +317,8 @@ void Faction::WriteReport(Areport *f, Game *pGame)
             }
 
             objectshows.DeleteAll();
-            for (int i = 0; i < NOBJECTS; i++) {
-                AString *show = ObjectDescription(i);
+            for (size_t i = 0; i < Objects::size(); i++) {
+                AString *show = ObjectDescription(static_cast<int>(i));
                 if (show) {
                     objectshows.Add(show);
                 }
@@ -677,13 +677,13 @@ void Faction::SetAttitude(size_t num, int att)
 
 bool Faction::CanCatch(const ARegion::Handle& r, const Unit::Handle& t)
 {
-    if (TerrainDefs[r->type].similar_type == R_OCEAN) return 1;
+    if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN) return 1;
 
     int def = t->GetDefenseRiding();
 
     for(const auto& o: r->objects) {
         for(const auto& u: o->units) {
-            if (u == t && o->type != O_DUMMY) return 1;
+            if (u == t && o->type != Objects::Types::O_DUMMY) return 1;
             if (u->faction.lock().get() == this && u->GetAttackRiding() >= def) return 1;
         }
     }
@@ -700,7 +700,7 @@ int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practic
     if (u->guard == GUARD_GUARD) retval = 1;
     for(const auto& obj: r->objects) {
         int dummy = 0;
-        if (obj->type == O_DUMMY) dummy = 1;
+        if (obj->type == Objects::Types::O_DUMMY) dummy = 1;
         for(const auto& temp: obj->units) {
             if (u == temp && dummy == 0) retval = 1;
 
@@ -708,9 +708,9 @@ int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practic
             // TODO: not sure about the reasoning behind the IMPROVED_AMTS part
             int stealpenalty = 0;
             if (Globals->HARDER_ASSASSINATION && u->stealorders){
-                if (u->stealorders->type == O_STEAL) {
+                if (u->stealorders->type == Orders::Types::O_STEAL) {
                     stealpenalty = 1;
-                } else if (u->stealorders->type == O_ASSASSINATE) {
+                } else if (u->stealorders->type == Orders::Types::O_ASSASSINATE) {
                     if (Globals->IMPROVED_AMTS){
                         stealpenalty = 1;
                     } else {
@@ -735,7 +735,7 @@ int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practic
                         if (retval < 1) retval = 1;
                     }
                 }
-                if (temp->GetSkill(S_MIND_READING) > 2) detfac = true;
+                if (temp->GetSkill(Skills::Types::S_MIND_READING) > 2) detfac = true;
             }
         }
     }
@@ -793,9 +793,9 @@ Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>& facs, size
     return Faction::WeakHandle();
 }
 
-void Faction::DiscoverItem(int item, int force, int full)
+void Faction::DiscoverItem(const Items& item, int force, int full)
 {
-    int skill;
+    Skills skill;
     size_t seen;
     AString skname;
 
@@ -818,7 +818,7 @@ void Faction::DiscoverItem(int item, int force, int full)
         }
     }
     if (force) {
-        itemshows.Add(ItemDescription(item, full));
+        itemshows.Add(ItemDescription(static_cast<int>(item), full));
         if (!full)
             return;
         // If we've found an item that grants a skill, give a
@@ -826,7 +826,7 @@ void Faction::DiscoverItem(int item, int force, int full)
         // before)
         skname = ItemDefs[item].grantSkill;
         skill = LookupSkill(&skname);
-        if (skill != -1 && !(SkillDefs[skill].flags & SkillType::DISABLED)) {
+        if (skill.isValid() && !(SkillDefs[skill].flags & SkillType::DISABLED)) {
             for (size_t i = 1; i <= ItemDefs[item].maxGrant; i++) {
                 if (i > skills.GetDays(skill)) {
                     skills.SetDays(skill, i);
