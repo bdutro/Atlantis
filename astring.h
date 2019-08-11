@@ -45,9 +45,9 @@ public:
     AString(const AString &);
     ~AString();
 
-    int operator==(const AString &);
-    int operator==(char *);
-    int operator==(const char *);
+    bool operator==(const AString &) const;
+    bool operator==(char *) const;
+    bool operator==(const char *) const;
     int CheckPrefix(const AString &);
     AString operator+(const AString &);
     AString & operator+=(const AString &);
@@ -69,7 +69,7 @@ private:
 
     size_t len;
     char *str;
-    int isEqual(const char *);
+    bool isEqual(const char *) const;
 };
 
 #endif

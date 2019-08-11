@@ -1173,10 +1173,18 @@ AString *ItemDescription(const Items& item, int full)
             if (ItemDefs[item].minGrant < ItemDefs[item].maxGrant) {
                 int count, found;
                 count = 0;
-                for (i = 0; i < 4; i++) {
-                    pS = FindSkill(ItemDefs[item].fromSkills[i]);
-                    if (pS && !(pS.flags & SkillType::DISABLED))
-                        count++;
+                for (const auto& skill: ItemDefs[item].fromSkills) {
+                    try
+                    {
+                        const auto& pS2 = FindSkill(skill);
+                        if (!(pS2.flags & SkillType::DISABLED))
+                        {
+                            count++;
+                        }
+                    }
+                    catch(const NoSuchItemException&)
+                    {
+                    }
                 }
                 if (count > 1)
                     *temp += "the highest of ";
@@ -1184,18 +1192,26 @@ AString *ItemDescription(const Items& item, int full)
                     *temp += "that of ";
                 *temp += "their ";
                 found = 0;
-                for (i = 0; i < 4; i++) {
-                    pS = FindSkill(ItemDefs[item].fromSkills[i]);
-                    if (!pS || (pS.flags & SkillType::DISABLED))
-                        continue;
-                    if (found > 0) {
-                        if ((found + 1) == count)
-                            *temp += " and ";
-                        else
-                            *temp += ", ";
+                for (const auto& skill: ItemDefs[item].fromSkills) {
+                    try
+                    {
+                        const auto& pS2 = FindSkill(skill);
+                        if (pS2.flags & SkillType::DISABLED)
+                        {
+                            continue;
+                        }
+                        if (found > 0) {
+                            if ((found + 1) == count)
+                                *temp += " and ";
+                            else
+                                *temp += ", ";
+                        }
+                        *temp += pS.name;
+                        found++;
                     }
-                    *temp += pS.name;
-                    found++;
+                    catch(const NoSuchItemException&)
+                    {
+                    }
                 }
                 *temp += " skill";
                 if (count > 1)
@@ -1219,9 +1235,10 @@ AString *ItemDescription(const Items& item, int full)
 
     if (ItemDefs[item].type & IT_BATTLE) {
         *temp += " This item is a miscellaneous combat item.";
-        BattleItemType *bt = FindBattleItem(ItemDefs[item].abr);
-        if (bt != NULL) {
-            if (bt->flags & BattleItemType::MAGEONLY) {
+        try
+        {
+            const auto& bt = FindBattleItem(ItemDefs[item].abr);
+            if (bt.flags & BattleItemType::MAGEONLY) {
                 *temp += " This item may only be used by a mage";
                 if (Globals->APPRENTICES_EXIST) {
                     *temp += " or an ";
@@ -1229,12 +1246,16 @@ AString *ItemDescription(const Items& item, int full)
                 }
                 *temp += ".";
             }
-            if (bt->flags & BattleItemType::SHIELD)
+            if (bt.flags & BattleItemType::SHIELD)
                 *temp += AString(" ") + "This item provides ";
             else
                 *temp += AString(" ") + "This item can cast ";
-            *temp += ShowSpecial(bt->special, bt->skillLevel, 1, bt->flags & BattleItemType::SHIELD);
+            *temp += ShowSpecial(bt.special, bt.skillLevel, 1, bt.flags & BattleItemType::SHIELD);
         }
+        catch(const NoSuchItemException&)
+        {
+        }
+
     } else if (ItemDefs[item].type & IT_MAGEONLY) {
         *temp += " This item may only be used by a mage";
         if (Globals->APPRENTICES_EXIST) {
@@ -1287,7 +1308,11 @@ AString Item::Report(int seeillusions)
     if (ItemDefs[type].type & IT_SHIP) {
         ret += AString("unfinished ") + ItemDefs[type].name +
             " [" + ItemDefs[type].abr + "] (needs " + num + ")";
-    } else ret += ItemString(type,num);
+    }
+    else
+    {
+        ret += ItemString(type, static_cast<int>(num));
+    }
     if (seeillusions && (ItemDefs[type].type & IT_ILLUSION)) {
         ret = ret + " (illusion)";
     }
@@ -1297,12 +1322,15 @@ AString Item::Report(int seeillusions)
 void Item::Writeout(Aoutfile *f)
 {
     AString temp;
-    if (type != -1) {
+    if (type.isValid()) {
         temp = AString(num) + " ";
         if (ItemDefs[type].type & IT_ILLUSION) temp += "i";
         temp += ItemDefs[type].abr;
     }
-    else temp = "-1 NO_ITEM";
+    else
+    {
+        temp = "-1 NO_ITEM";
+    }
     f->PutStr(temp);
 }
 
@@ -1310,7 +1338,7 @@ void Item::Readin(Ainfile *f)
 {
     AString *temp = f->GetStr();
     AString *token = temp->gettoken();
-    num = token->value();
+    num = static_cast<size_t>(token->value());
     delete token;
     token = temp->gettoken();
     type = LookupItem(token);
@@ -1333,7 +1361,7 @@ void ItemList::Readin(Ainfile *f)
     for (size_t j=0; j<i; j++) {
         Item::Handle temp = std::make_shared<Item>();
         temp->Readin(f);
-        if (!(temp->type < 0 || temp->num < 1 || ItemDefs[temp->type].flags & ItemType::DISABLED))
+        if (!(!temp->type.isValid() || temp->num < 1 || ItemDefs[temp->type].flags & ItemType::DISABLED))
         {
             items_.push_back(temp);
         }
@@ -1343,7 +1371,7 @@ void ItemList::Readin(Ainfile *f)
 size_t ItemList::GetNum(const Items& t) const
 {
     for(const auto& i: *this) {
-        if (i->type.equals(t))
+        if (i->type == t)
         {
             return i->num;
         }
@@ -1377,10 +1405,10 @@ size_t ItemList::GetNumSoldiers() const
     return n;
 }
 
-int ItemList::Weight()
+size_t ItemList::Weight()
 {
-    int wt = 0;
-    int frac = 0;
+    size_t wt = 0;
+    size_t frac = 0;
     for(const auto& i: *this) {
         // Except unfinished ships from weight calculations:
         // these just get removed when the unit moves.
@@ -1393,18 +1421,24 @@ int ItemList::Weight()
     return wt;
 }
 
-int ItemList::CanSell(int t)
+ssize_t ItemList::CanSell(const Items& t)
 {
     for(const auto& i: *this) {
-        if (i->type == t) return i->num - i->selling;
+        if (i->type == t)
+        {
+            return static_cast<ssize_t>(i->num) - static_cast<ssize_t>(i->selling);
+        }
     }
     return 0;
 }
 
-void ItemList::Selling(int t, int n)
+void ItemList::Selling(const Items& t, size_t n)
 {
     for(const auto& i: *this) {
-        if (i->type == t) i->selling += n;
+        if (i->type == t)
+        {
+            i->selling += n;
+        }
     }
 }
 
@@ -1434,12 +1468,12 @@ AString ItemList::BattleReport()
             temp += ", ";
             temp += i->Report(0);
             if (ItemDefs[i->type].type & IT_MONSTER) {
-                MonType *mp = FindMonster(ItemDefs[i->type].abr,
+                const auto& mp = FindMonster(ItemDefs[i->type].abr,
                         (ItemDefs[i->type].type & IT_ILLUSION));
-                temp += AString(" (Combat ") + mp->attackLevel +
-                    "/" + mp->defense[ATTACK_COMBAT] + ", Attacks " +
-                    mp->numAttacks + ", Hits " + mp->hits +
-                    ", Tactics " + mp->tactics + ")";
+                temp += AString(" (Combat ") + mp.attackLevel +
+                    "/" + mp.defense[ATTACK_COMBAT] + ", Attacks " +
+                    mp.numAttacks + ", Hits " + mp.hits +
+                    ", Tactics " + mp.tactics + ")";
             }
         }
     }
@@ -1474,7 +1508,7 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
                     report = 1;
                 break;
             case 4:
-                if ((i->type == I_WAGON) || (i->type == I_MWAGON))
+                if ((i->type == Items::Types::I_WAGON) || (i->type == Items::Types::I_MWAGON))
                     report = 1;
                 break;
             case 5:
@@ -1483,7 +1517,7 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
                     report = 0;
                 if (ItemDefs[i->type].type & IT_MONSTER)
                     report = 0;
-                if (i->type == I_SILVER)
+                if (i->type == Items::Types::I_SILVER)
                     report = 0;
                 if ((ItemDefs[i->type].type & IT_WEAPON) ||
                         (ItemDefs[i->type].type & IT_BATTLE) ||
@@ -1492,12 +1526,12 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
                     report = 0;
                 if (ItemDefs[i->type].type & IT_MOUNT)
                     report = 0;
-                if ((i->type == I_WAGON) ||
-                        (i->type == I_MWAGON))
+                if ((i->type == Items::Types::I_WAGON) ||
+                        (i->type == Items::Types::I_MWAGON))
                     report = 0;
                 break;
             case 6:
-                if (i->type == I_SILVER)
+                if (i->type == Items::Types::I_SILVER)
                     report = 1;
         }
         if (report) {
@@ -1518,10 +1552,10 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
     return temp;
 }
 
-void ItemList::SetNum(int t, size_t n)
+void ItemList::SetNum(const Items& t, size_t n)
 {
     // sanity check: does this item type exist?
-    if ((t<0) || (t>=NITEMS)) return;
+    if (!t.isValid()) return;
     if (n) {
         for(const auto& i: *this) {
             if (i->type == t) {
@@ -1556,67 +1590,105 @@ bool ManType::CanUse(const Items& item) const
 
     // Check if the item is a weapon
     if (ItemDefs[item].type & IT_WEAPON) {
-        WeaponType *weapon = FindWeapon(ItemDefs[item].abr);
-        for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
-            if (skills[i] == NULL) continue;
-            if ((weapon->baseSkill == skills[i]) 
-                || (weapon->orSkill == skills[i])) return true;
+        const auto& weapon = FindWeapon(ItemDefs[item].abr);
+        for (const auto& skill: skills) {
+            if (!skill)
+            {
+                continue;
+            }
+            if ((weapon.baseSkill == skill) || (weapon.orSkill == skill))
+            {
+                return true;
+            }
         }
     }
 
     // Check if the item is an armor
     if (ItemDefs[item].type & IT_ARMOR) {
-        ArmorType *armor = FindArmor(ItemDefs[item].abr);
-        int p = armor->from / armor->saves[3];
+        const auto& armor = FindArmor(ItemDefs[item].abr);
+        int p = armor.from / armor.saves[3];
         if (p > 4) {
             // puny armor not used by combative races
-            int mayWearArmor = 1;
-            for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
-                if (skills[i] == NULL) continue;
-                if (FindSkill(skills[i]) == FindSkill("COMB"))
-                        mayWearArmor = 0;
+            bool mayWearArmor = true;
+            for (const auto& skill: skills) {
+                if (!skill)
+                {
+                    continue;
+                }
+                if (FindSameSkills(skill, "COMB"))
+                {
+                        mayWearArmor = false;
+                }
             }
-            if (mayWearArmor) return true;
+            if (mayWearArmor)
+            {
+                return true;
+            }
         } else
         if (p > 3) return true;
         else {
             // heavy armor not be worn by sailors and sneaky races
-            int mayWearArmor = 1;
-            for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
-                if (skills[i] == NULL) continue;
-                if ((FindSkill(skills[i]) == FindSkill("SAIL"))
-                    || (FindSkill(skills[i]) == FindSkill("HUNT"))
-                    || (FindSkill(skills[i]) == FindSkill("STEA"))
-                    || (FindSkill(skills[i]) == FindSkill("LBOW")))
-                        mayWearArmor = 0;
+            bool mayWearArmor = true;
+            for (const auto& skill: skills) {
+                if (!skill)
+                {
+                    continue;
+                }
+                if (FindSameSkills(skill, "SAIL")
+                    || FindSameSkills(skill, "HUNT")
+                    || FindSameSkills(skill, "STEA")
+                    || FindSameSkills(skill, "LBOW"))
+                {
+                        mayWearArmor = false;
+                }
             }
             if (mayWearArmor) return true;
         }
     }
     
     // Check if the item is a tool
-    for (int i=0; i<NITEMS; i++) {
-        if ((ItemDefs[i].mult_item == item) && (CanProduce(i))) return true;
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        const auto& it = *i;
+        if ((ItemDefs[it].mult_item == item) && (CanProduce(it)))
+        {
+            return true;
+        }
     }
     
     // Check to see if the item is a base resource
     // for something the race can build
-    for (int b=0; b<NITEMS; b++) {
-        if (ItemDefs[b].pSkill == NULL) continue;
-        for (unsigned int i=0; i<(sizeof(skills)/sizeof(skills[0])); i++) {
-            if (skills[i] == NULL) continue;
-            if ((ItemDefs[b].pSkill == skills[i])
-                && (ItemDefs[b].pInput[0].item == item)) return true;
+    for (const auto& b: ItemDefs) {
+        if (!b.pSkill)
+        {
+            continue;
+        }
+        for (const auto& skill: skills) {
+            if (!skill)
+            {
+                continue;
+            }
+            if ((b.pSkill == skill) && (b.pInput[0].item == item))
+            {
+                return true;
+            }
         }
     }
-    for (int b=0; b<NOBJECTS; b++) {
-        for (unsigned int i=0; i<(sizeof(skills)/sizeof(int)); i++) {
-            if (skills[i] == NULL) continue;
-            if (ObjectDefs[b].skill == skills[i]) {
-                if (ObjectDefs[b].item == item) return true;
-                if (ObjectDefs[b].item == I_WOOD_OR_STONE) {
-                    if ((item == I_WOOD)
-                        || (item == I_STONE)) return true;
+    for (const auto& b: ObjectDefs) {
+        for (const auto& skill: skills) {
+            if (!skill)
+            {
+                continue;
+            }
+            if (b.skill == skill) {
+                if (b.item == item)
+                {
+                    return true;
+                }
+                if (b.item.isWoodOrStone()) {
+                    if ((item == Items::Types::I_WOOD) || (item == Items::Types::I_STONE))
+                    {
+                        return true;
+                    }
                 }
             }                
         }

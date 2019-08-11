@@ -118,29 +118,29 @@ AString & AString::operator=(const char *c)
     return *this;
 }
 
-int AString::operator==(char *s)
+bool AString::operator==(char *s) const
 {
     return isEqual(s);
 }
 
-int AString::operator==(const char *s)
+bool AString::operator==(const char *s) const
 {
     return isEqual(s);
 }
 
-int AString::operator==(const AString &s)
+bool AString::operator==(const AString &s) const
 {
     return isEqual(s.str);
 }
 
-int AString::isEqual(const char *temp2)
+bool AString::isEqual(const char *temp2) const
 {
     char *temp1 = str;
 
     // Handle comparisons with null
-    if (temp1 && !temp2) return 0;
-    if (temp2 && !temp1) return 0;
-    if (!temp1 && !temp2) return 1;
+    if (temp1 && !temp2) return false;
+    if (temp2 && !temp1) return false;
+    if (!temp1 && !temp2) return true;
 
     while ((*temp1) && (*temp2)) {
         char t1 = *temp1;
@@ -151,12 +151,12 @@ int AString::isEqual(const char *temp2)
         if ((t2 >= 'A') && (t2 <= 'Z'))
             t2 = static_cast<char>(t2 - 'A' + 'a');
         if (t2 == '_') t2 = ' ';
-        if (t1 != t2) return 0;
+        if (t1 != t2) return false;
         temp1++;
         temp2++;
     }
-    if (*temp1==*temp2) return 1;
-    return 0;
+    if (*temp1==*temp2) return true;
+    return false;
 }
 
 AString AString::operator+(const AString &s)

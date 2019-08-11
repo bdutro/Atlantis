@@ -660,7 +660,7 @@ public:
     // Will 0 weight items have a fractional weight so that large
     // quantities actually have some heft?
     // Leave 0 for no fractional weight.  Otherwise, X items weigh 1.
-    int FRACTIONAL_WEIGHT;
+    size_t FRACTIONAL_WEIGHT;
 
     // Use grow algorithm for races?
     unsigned int GROW_RACES;

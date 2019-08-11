@@ -376,7 +376,7 @@ class Item
 
         Items type;
         size_t num;
-        int selling;
+        size_t selling;
         int checked; // flag whether item has been reported, counted etc.
 };
 
@@ -393,13 +393,13 @@ class ItemList
         AString BattleReport();
         AString ReportByType(int, int, int, int);
 
-        int Weight();
+        size_t Weight();
         size_t GetNum(const Items&) const;
         size_t GetNumMatching(int t) const;
         size_t GetNumSoldiers() const;
         void SetNum(const Items&, size_t); /* type, number */
-        int CanSell(int);
-        void Selling(int, int); /* type, number */
+        ssize_t CanSell(const Items&);
+        void Selling(const Items&, size_t); /* type, number */
         void UncheckAll(); // re-set checked flag for all
         
         iterator begin() { return items_.begin(); }
