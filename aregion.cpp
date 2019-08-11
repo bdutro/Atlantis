@@ -2743,7 +2743,7 @@ ARegion::WeakHandle ARegionArray::GetRegion(unsigned int xx, unsigned int yy)
 
 int ARegion::calculateWagesWithRatio(float ratio, int multiplier)
 {
-    return static_cast<int>(static_cast<float>(Wages() * multiplier) * ratio);
+    return Market::calculateWagesWithRatio(Wages(), ratio, multiplier);
 }
 
 void ARegionArray::SetName(char const *name)

@@ -41,7 +41,7 @@ public:
     Market();
 
     /* type, item, price, amount, minpop, maxpop, minamt, maxamt */
-    Market(int, int, int, int, int, int, int, int);
+    Market(int, const Items&, int, int, int, int, int, int);
 
     int type;
     Items item;
@@ -59,6 +59,10 @@ public:
     void PostTurn(int,int);
     void Writeout(Aoutfile * f);
     void Readin(Ainfile * f);
+
+    static constexpr int DEFAULT_WAGE_MULTIPLIER = 4;
+    static int calculateWagesWithRatio(int wages, float ratio, int multiplier = DEFAULT_WAGE_MULTIPLIER);
+
     AString Report();
 };
 

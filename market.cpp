@@ -33,7 +33,7 @@ Market::Market()
     activity = 0;
 }
 
-Market::Market(int a, int b, int c, int d, int e, int f, int g, int h)
+Market::Market(int a, const Items& b, int c, int d, int e, int f, int g, int h)
 {
     type = a;
     item = b;
@@ -45,6 +45,11 @@ Market::Market(int a, int b, int c, int d, int e, int f, int g, int h)
     maxamt = h;
     baseprice = price;
     activity = 0;
+}
+
+int Market::calculateWagesWithRatio(int wages, float ratio, int multiplier)
+{
+    return static_cast<int>(static_cast<float>(wages * multiplier) * ratio);
 }
 
 void Market::PostTurn(int population, int wages)
@@ -61,7 +66,7 @@ void Market::PostTurn(int population, int wages)
         float ratio = static_cast<float>(ItemDefs[item].baseprice) /
                       static_cast<float>(10 * Globals->BASE_MAN_COST);
         // hack: included new wage factor of ten in float assignment above
-        price = (int)((float) wages * 4 * ratio);
+        price = calculateWagesWithRatio(wages, ratio);
         if (ItemDefs[item].type & IT_LEADER)
             amount = population / 125;
         else
@@ -95,8 +100,14 @@ void Market::PostTurn(int population, int wages)
 void Market::Writeout(Aoutfile *f)
 {
     f->PutInt(type);
-    if (item != -1) f->PutStr(ItemDefs[item].abr);
-    else f->PutStr("NO_ITEM");
+    if (item.isValid())
+    {
+        f->PutStr(ItemDefs[item].abr);
+    }
+    else
+    {
+        f->PutStr("NO_ITEM");
+    }
     f->PutInt(price);
     f->PutInt(amount);
     f->PutInt(minpop);
@@ -109,19 +120,19 @@ void Market::Writeout(Aoutfile *f)
 void Market::Readin(Ainfile *f)
 {
     AString *temp;
-    type = f->GetInt();
+    type = f->GetInt<int>();
 
     temp = f->GetStr();
     item = LookupItem(temp);
     delete temp;
 
-    price = f->GetInt();
-    amount = f->GetInt();
-    minpop = f->GetInt();
-    maxpop = f->GetInt();
-    minamt = f->GetInt();
-    maxamt = f->GetInt();
-    baseprice = f->GetInt();
+    price = f->GetInt<int>();
+    amount = f->GetInt<int>();
+    minpop = f->GetInt<int>();
+    maxpop = f->GetInt<int>();
+    minamt = f->GetInt<int>();
+    maxamt = f->GetInt<int>();
+    baseprice = f->GetInt<int>();
 }
 
 AString Market::Report()
@@ -133,24 +144,26 @@ AString Market::Report()
 
 void MarketList::PostTurn(int population, int wages)
 {
-    forlist(this) {
-        ((Market *) elem)->PostTurn(population, wages);
+    for(const auto& elem: markets_) {
+        elem->PostTurn(population, wages);
     }
 }
 
 void MarketList::Writeout(Aoutfile *f)
 {
-    f->PutInt(Num());
-    forlist (this) ((Market *) elem)->Writeout(f);
+    f->PutInt(markets_.size());
+    for(const auto& elem: markets_)
+    {
+        elem->Writeout(f);
+    }
 }
 
 void MarketList::Readin(Ainfile *f)
 {
-    int n = f->GetInt();
-    for (int i=0; i<n; i++) {
-        Market *m = new Market;
+    size_t n = f->GetInt<size_t>();
+    for (size_t i = 0; i < n; ++i) {
+        auto& m = markets_.emplace_back(std::make_shared<Market>());
         m->Readin(f);
-        Add(m);
     }
 }
 

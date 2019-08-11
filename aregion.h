@@ -289,7 +289,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         bool IsGuarded();
 
         int Wages();
-        int calculateWagesWithRatio(float ratio, int multiplier = 4);
+        int calculateWagesWithRatio(float ratio, int multiplier = Market::DEFAULT_WAGE_MULTIPLIER);
         AString WagesForReport();
         int Population();
 

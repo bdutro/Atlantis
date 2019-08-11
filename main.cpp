@@ -32,6 +32,8 @@
 #include "skills.h"
 #include "gamedata.h"
 
+void usage();
+
 void usage()
 {
     Awrite("atlantis new");
@@ -118,8 +120,8 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            int saveGame = 0;
-            if ( !game.EditGame( &saveGame ) ) {
+            bool saveGame = false;
+            if ( !game.EditGame( saveGame ) ) {
                 Awrite( "Couldn't edit the game!" );
                 break;
             }
