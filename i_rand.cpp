@@ -45,7 +45,7 @@ MODIFIED:
 #endif
 
 
-#define ind(mm,x)    (*(ub4 *)((ub1 *)(mm) + ((x) & ((RANDSIZ-1)<<2))))
+#define ind(mm,x)    (*reinterpret_cast<ub4 *>(reinterpret_cast<ub1 *>(mm) + ((x) & ((RANDSIZ-1)<<2))))
 #define rngstep(mix,a,b,mm,m,m2,r,x) \
 { \
     x = *m; \
@@ -56,7 +56,7 @@ MODIFIED:
 
 void isaac(randctx *ctx)
 {
-    register ub4 a,b,x,y,*m,*mm,*m2,*r,*mend;
+    ub4 a,b,x,y,*m,*mm,*m2,*r,*mend;
     mm=ctx->randmem; r=ctx->randrsl;
     a = ctx->randa; b = ctx->randb + (++ctx->randc);
     for (m = mm, mend = m2 = m+(RANDSIZ/2); m<mend; )

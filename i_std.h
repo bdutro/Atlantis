@@ -38,17 +38,19 @@ Standard definitions and types, Bob Jenkins
 #        define STDDEF
 #    endif
 
-typedef    unsigned long int    ub4;   /* unsigned 4-byte quantities */
+#include <cstdint>
+
+typedef    uint32_t    ub4;   /* unsigned 4-byte quantities */
 #define    UB4MAXVAL 0xffffffff
-typedef    signed long int        sb4;
+typedef    int32_t        sb4;
 #define    SB4MAXVAL 0x7fffffff
-typedef    unsigned short int    ub2;
+typedef    uint16_t    ub2;
 #define    UB2MAXVAL 0xffff
-typedef    signed short int    sb2;
+typedef    int16_t    sb2;
 #define    SB2MAXVAL 0x7fff
-typedef    unsigned char        ub1;
+typedef    uint8_t        ub1;
 #define    UB1MAXVAL 0xff
-typedef    signed char        sb1;   /* signed 1-byte quantities */
+typedef    int8_t        sb1;   /* signed 1-byte quantities */
 #define    SB1MAXVAL 0x7f
 typedef    int            word;  /* fastest type available */
 
