@@ -447,7 +447,7 @@ bool Soldier::ArmorProtect(int weaponClass)
     //
     try
     {
-        if (armor <= 0)
+        if (!armor.isValid() || armor == 0)
         {
             return false;
         }

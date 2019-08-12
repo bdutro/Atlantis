@@ -1578,7 +1578,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                 // you made illusions GIVEable, for example).
                 if (ItemDefs[i->type].escape & ItemType::HAS_SKILL) {
                     tmp = ItemDefs[i->type].esc_skill;
-                    skill = LookupSkill(&tmp);
+                    skill = LookupSkill(tmp);
                     if (u->GetSkill(skill) >= static_cast<int>(ItemDefs[i->type].esc_val))
                         losses = 0;
                 }
@@ -1593,7 +1593,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                 }
             } else if (ItemDefs[i->type].escape & ItemType::HAS_SKILL) {
                 tmp = ItemDefs[i->type].esc_skill;
-                skill = LookupSkill(&tmp);
+                skill = LookupSkill(tmp);
                 if (u->GetSkill(skill) < static_cast<int>(ItemDefs[i->type].esc_val)) {
                     if (Globals->WANDERING_MONSTERS_EXIST) {
                         const auto mfac = GetFaction(factions, monfaction);
@@ -1614,7 +1614,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
             } else {
                 // ESC_LEV_*
                 tmp = ItemDefs[i->type].esc_skill;
-                skill = LookupSkill(&tmp);
+                skill = LookupSkill(tmp);
                 int level = u->GetSkill(skill);
                 int chance;
 
@@ -1753,7 +1753,7 @@ char Game::GetRChar(const ARegion::Handle& r)
         return ' ';
     }
     const auto& t = r->type;
-    if (!t.isValid() || t > Regions::Types::R_NUM) return '?';
+    if (!t.isValid() || t.overflowed()) return '?';
     char c = TerrainDefs[r->type].marker;
     if (r->town) {
         c = static_cast<char>((c - 'a') + 'A');

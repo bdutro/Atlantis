@@ -59,6 +59,7 @@ class TransportOrder;
 #include "astring.h"
 #include "alist.h"
 #include "ordertype.h"
+#include "skilltype.h"
 
 enum {
     M_NONE,
@@ -136,9 +137,9 @@ class StudyOrder : public Order {
         StudyOrder();
         ~StudyOrder();
 
-        int skill;
-        int days;
-        int level;
+        Skills skill;
+        size_t days;
+        unsigned int level;
 };
 
 class TeachOrder : public Order {

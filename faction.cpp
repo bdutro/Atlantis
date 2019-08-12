@@ -825,7 +825,7 @@ void Faction::DiscoverItem(const Items& item, int force, int full)
         // report on the skill granted (if we haven't seen it
         // before)
         skname = ItemDefs[item].grantSkill;
-        skill = LookupSkill(&skname);
+        skill = LookupSkill(skname);
         if (skill.isValid() && !(SkillDefs[skill].flags & SkillType::DISABLED)) {
             for (size_t i = 1; i <= ItemDefs[item].maxGrant; i++) {
                 if (i > skills.GetDays(skill)) {

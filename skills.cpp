@@ -90,12 +90,15 @@ bool FindSameSkills(char const* sk1, char const *sk2)
     return sk1_ptr == sk2_ptr;
 }
 
-int LookupSkill(AString *token)
+Skills LookupSkill(const AString& token)
 {
-    for (int i=0; i<NSKILLS; i++) {
-        if (*token == SkillDefs[i].abbr) return i;
+    for (auto i = Skills::begin(); i != Skills::end(); ++i) {
+        if (token == SkillDefs[*i].abbr)
+        {
+            return *i;
+        }
     }
-    return -1;
+    return Skills();
 }
 
 int ParseSkill(AString *token)

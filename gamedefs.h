@@ -91,7 +91,7 @@ class Directions : public _DirectionsVE
 
         bool isRegularDirection() const
         {
-            return isValid() && *this < size();
+            return isValid() && static_cast<size_t>(*this) < size();
         }
 };
 
@@ -118,14 +118,14 @@ public:
     char const *RULESET_NAME;
     ATL_VER RULESET_VERSION;
 
-    size_t MAX_SPEED;
-    size_t PHASED_MOVE_OFFSET;
+    unsigned int MAX_SPEED;
+    unsigned int PHASED_MOVE_OFFSET;
     // Maximum speed boost for fleets from various sources
     int FLEET_WIND_BOOST; // Mages with SWIN
     int FLEET_CREW_BOOST; // Extra crew
     int FLEET_LOAD_BOOST; // Low load
 
-    int STUDENTS_PER_TEACHER;
+    unsigned int STUDENTS_PER_TEACHER;
 
     int MAINTENANCE_COST;
     int LEADER_COST;

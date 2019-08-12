@@ -147,8 +147,8 @@ class Unit
         int GetMoney();
         void SetMoney(size_t);
         void SetMoney(int);
-        int GetSharedNum(int);
-        void ConsumeShared(int,int);
+        size_t GetSharedNum(const Items&);
+        void ConsumeShared(const Items&,int);
         int GetSharedMoney();
         void ConsumeSharedMoney(int);
         bool IsAlive();
@@ -253,7 +253,7 @@ class Unit
         size_t losses;
         size_t free;
         int practiced; // Has this unit practiced a skill this turn
-        int moved;
+        unsigned int moved;
         ValidValue<size_t> phase;
         int savedmovement;
         Directions savedmovedir;

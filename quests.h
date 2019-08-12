@@ -69,8 +69,8 @@ class QuestList : public AList
         int CheckQuestHarvestTarget(ARegion *r,
                 int item, int harvested, int max,
                 Unit *u);
-        int CheckQuestBuildTarget(ARegion *r, int building,
-                Unit *u);
+        int CheckQuestBuildTarget(const ARegion::Handle& r, const Objects& building,
+                const Unit::Handle& u);
         int CheckQuestVisitTarget(ARegion *r, Unit *u);
         int CheckQuestDemolishTarget(ARegion *r, int building,
                 Unit *u);

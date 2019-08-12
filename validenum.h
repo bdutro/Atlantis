@@ -149,6 +149,26 @@ class ValidEnum : public ValidValue<size_t>
             return *this != ValidEnum(rhs);
         }
 
+        bool operator>(const ValidEnum& rhs) const
+        {
+            return ValidValue<size_t>::operator size_t() > static_cast<size_t>(rhs);
+        }
+
+        bool operator>=(const ValidEnum& rhs) const
+        {
+            return ValidValue<size_t>::operator size_t() >= static_cast<size_t>(rhs);
+        }
+
+        bool operator<(const ValidEnum& rhs) const
+        {
+            return ValidValue<size_t>::operator size_t() < static_cast<size_t>(rhs);
+        }
+
+        bool operator<=(const ValidEnum& rhs) const
+        {
+            return ValidValue<size_t>::operator size_t() <= static_cast<size_t>(rhs);
+        }
+
         static constexpr size_t size()
         {
             return static_cast<size_t>(EndType);
@@ -162,6 +182,11 @@ class ValidEnum : public ValidValue<size_t>
         bool overflowed() const
         {
             return overflowed_;
+        }
+
+        iterator asIter() const
+        {
+            return iterator(*this);
         }
 };
 

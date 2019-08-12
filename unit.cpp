@@ -903,9 +903,9 @@ int Unit::GetMoney()
     return items.GetNum(I_SILVER);
 }
 
-int Unit::GetSharedNum(int item)
+size_t Unit::GetSharedNum(const Types& item)
 {
-    int count = 0;
+    size_t count = 0;
 
     if (ItemDefs[item].type & IT_MAN)
         return items.GetNum(item);

@@ -508,14 +508,14 @@ void ARegion::SetupCityMarket()
         else if ((Globals->CITY_MARKET_ADVANCED_AMT)
             && (ItemDefs[i].type & IT_ADVANCED)) {
             if (isUseful) rare[i] = 4;
-            if (ItemDefs[i].hitchItem > 0) rare[i] = 2;
+            if (ItemDefs[i].hitchItem.isValid() && ItemDefs[i].hitchItem > *Items::begin()) rare[i] = 2;
         }
         // Magic Items
         else if ((Globals->CITY_MARKET_MAGIC_AMT)
             && (ItemDefs[i].type & IT_MAGIC)) {
             if (isUseful) antiques[i] = 4;
                 else antiques[i] = 1;
-            if (ItemDefs[i].hitchItem > 0) antiques[i] = 2;
+            if (ItemDefs[i].hitchItem.isValid() && ItemDefs[i].hitchItem > *Items::begin()) antiques[i] = 2;
         }
     }
     /* Check for advanced item */

@@ -109,7 +109,7 @@ extern GameDataArray<SkillType> SkillDefs;
 
 const SkillType& FindSkill(char const *skname);
 bool FindSameSkills(char const* sk1, char const *sk2);
-Skills LookupSkill(AString *);
+Skills LookupSkill(const AString&);
 Skills ParseSkill(AString *);
 AString SkillStrs(const Skills&);
 AString SkillStrs(const SkillType&);

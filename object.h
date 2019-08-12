@@ -113,8 +113,8 @@ class Object
         std::weak_ptr<Unit> ForbiddenBy(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
         std::weak_ptr<Unit> GetOwner();
 
-        void SetPrevDir(int);
-        void MoveObject(ARegion *toreg);
+        void SetPrevDir(const Directions&);
+        void MoveObject(const std::shared_ptr<ARegion>& toreg);
         
         // Fleets
         void ReadinFleet(Ainfile *f);
@@ -127,8 +127,8 @@ class Object
         int FleetCapacity();
         int FleetLoad();
         int FleetSailingSkill(int);
-        int GetFleetSize();
-        int GetFleetSpeed(int);
+        size_t GetFleetSize();
+        unsigned int GetFleetSpeed(int);
         
         AString *name;
         AString *describe;
@@ -141,10 +141,10 @@ class Object
         int flying;
         int load;
         int runes;
-        int prevdir;
+        Directions prevdir;
         int mages;
         size_t shipno;
-        int movepoints;
+        unsigned int movepoints;
         std::list<std::shared_ptr<Unit>> units;
         std::list<std::shared_ptr<Item>> ships;
 };

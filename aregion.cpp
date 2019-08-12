@@ -181,7 +181,7 @@ unsigned int ARegion::GetNearestProd(const Items& item)
         for(const auto& rp: regs) {
             ARegion::Handle r = rp.lock();
             AString skname = ItemDefs[item].pSkill;
-            Skills sk = LookupSkill(&skname);
+            Skills sk = LookupSkill(skname);
             if (!r->products.GetProd(item, sk).expired()) {
                 regs.clear();
                 regs2.clear();
@@ -1193,7 +1193,7 @@ bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
         {
             if (f && f->faction.lock().get() == &fac && !f->unit.expired()) {
                 skname = ItemDefs[item].pSkill;
-                sk = LookupSkill(&skname);
+                sk = LookupSkill(skname);
                 if (f->unit.lock()->GetSkill(sk) >= ItemDefs[item].pLevel)
                     return true;
             }
@@ -1206,7 +1206,7 @@ bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
         {
             if (f && f->faction.lock().get() == &fac && !f->unit.expired()) {
                 skname = ItemDefs[item].pSkill;
-                sk = LookupSkill(&skname);
+                sk = LookupSkill(skname);
                 if (f->unit.lock()->GetSkill(sk) >= ItemDefs[item].pLevel)
                     return true;
             }
@@ -1219,7 +1219,7 @@ bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
         {
             if (u->faction.lock().get() == &fac) {
                 skname = ItemDefs[item].pSkill;
-                sk = LookupSkill(&skname);
+                sk = LookupSkill(skname);
                 if (u->GetSkill(sk) >= ItemDefs[item].pLevel)
                     return true;
             }
@@ -1918,7 +1918,7 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
     }
 
     AString skname = spell;
-    Skills sp = LookupSkill(&skname);
+    Skills sp = LookupSkill(skname);
     for(const auto& o: objects) {
         for(const auto& u: o->units) {
             if (u->faction.lock() == caster->faction.lock()) continue;
