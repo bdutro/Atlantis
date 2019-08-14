@@ -564,9 +564,9 @@ private:
     void RunUnitProduce(ARegion *, Unit *);
     void Run1BuildOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void RunBuildShipOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
-    void RunBuildHelpers(ARegion *);
-    int ShipConstruction(ARegion *, Unit *, Unit *, int, int, int);
-    void CreateShip(ARegion *, Unit *, int);
+    void RunBuildHelpers(const ARegion::Handle&);
+    unsigned int ShipConstruction(const::ARegion::Handle&, const Unit::Handle&, const Unit::Handle&, int, size_t, const Items&);
+    void CreateShip(const ARegion::Handle&, const Unit::Handle&, const Items&);
     void RunSailOrders();
     void RunMovementOrders();
     Location::Handle Do1SailOrder(ARegion::Handle, const Object::Handle&, const Unit::Handle&);

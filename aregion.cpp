@@ -93,8 +93,8 @@ TownInfo::~TownInfo()
 void TownInfo::Readin(Ainfile *f, ATL_VER &)
 {
     name = f->GetStr();
-    pop = f->GetInt<int>();
-    hab = f->GetInt<int>();
+    pop = f->GetInt<unsigned int>();
+    hab = f->GetInt<unsigned int>();
 }
 
 void TownInfo::Writeout(Aoutfile *f)
@@ -381,7 +381,7 @@ void ARegion::DoDecayClicks(const Object::Handle& o, const ARegionList& pRegs)
 {
     if (ObjectDefs[o->type].flags & ObjectType::NEVERDECAY) return;
 
-    int clicks = getrandom(GetMaxClicks());
+    size_t clicks = getrandom(GetMaxClicks());
     clicks += PillageCheck();
 
     if (clicks > ObjectDefs[o->type].maxMonthlyDecay)
@@ -508,13 +508,12 @@ AString ARegion::GetDecayFlavor()
 }
 
 // AS
-int ARegion::GetMaxClicks()
+size_t ARegion::GetMaxClicks()
 {
     int terrainAdd = 0;
     int terrainMult = 1;
     int weatherAdd = 0;
     int badWeather = 0;
-    int maxClicks;
     if (weather != Weather::Types::W_NORMAL && !clearskies) badWeather = 1;
     if (!Globals->WEATHER_EXISTS) badWeather = 0;
     switch (type.asEnum()) {
@@ -594,15 +593,15 @@ int ARegion::GetMaxClicks()
             if (badWeather) weatherAdd = 4;
             break;
     }
-    maxClicks = terrainMult * (terrainAdd + 2) + (weatherAdd + 1);
+    size_t maxClicks = static_cast<size_t>(terrainMult * (terrainAdd + 2) + (weatherAdd + 1));
     return maxClicks;
 }
 
 // AS
-int ARegion::PillageCheck()
+size_t ARegion::PillageCheck()
 {
     int pillageAdd = maxwages - wages;
-    if (pillageAdd > 0) return pillageAdd;
+    if (pillageAdd > 0) return static_cast<size_t>(pillageAdd);
     return 0;
 }
 
@@ -1138,7 +1137,7 @@ void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER
     race = LookupItem(temp);
     delete temp;
 
-    population = f->GetInt<int>();
+    population = f->GetInt<unsigned int>();
     basepopulation = f->GetInt<int>();
     wages = f->GetInt<int>();
     maxwages = f->GetInt<int>();

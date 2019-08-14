@@ -160,12 +160,12 @@ class TownInfo
         TownTypeEnum TownType();
 
         AString *name;
-        int pop;
+        unsigned int pop;
         int activity;
         // achieved settled habitat
-        int hab;
+        unsigned int hab;
         // town's development
-        int dev;
+        unsigned int dev;
 };
 
 class ARegion : std::enable_shared_from_this<ARegion>
@@ -258,8 +258,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void DoDecayClicks(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
         void RunDecayEvent(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
         AString GetDecayFlavor();
-        int GetMaxClicks();
-        int PillageCheck();
+        size_t GetMaxClicks();
+        size_t PillageCheck();
 
         // JR
         unsigned int GetPoleDistance(const Directions& dir);
@@ -277,9 +277,9 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int RoadDevelopmentBonus(int, int);
         int BaseDev();
         int ProdDev();
-        int TownHabitat();
+        unsigned int TownHabitat();
         int RoadDevelopment();
-        int TownDevelopment();
+        unsigned int TownDevelopment();
         int CheckSea(const Directions&, unsigned int, int);
         int Slope();
         int SurfaceWater();
@@ -296,7 +296,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int Wages();
         int calculateWagesWithRatio(float ratio, int multiplier = Market::DEFAULT_WAGE_MULTIPLIER);
         AString WagesForReport();
-        int Population();
+        unsigned int Population();
 
 
         AString *name;
@@ -310,7 +310,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         TownInfo *town;
         Items race;
-        int population;
+        ValidValue<unsigned int> population;
         int basepopulation;
         int wages;
         int maxwages;
@@ -331,7 +331,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int immigrants;
         int emigrants;
         // economic improvement
-        int improvement;
+        size_t improvement;
         
         /* Potential bonuses to economy */
         int clearskies;

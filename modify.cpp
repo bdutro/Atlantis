@@ -350,7 +350,7 @@ void Game::ModifyItemProductionOutput(const Items& it, int months, int count)
     if (months < 0) months = 0;
 
     auto& item_def = ItemDefs[it];
-    item_def.pMonths = months;
+    item_def.pMonths = static_cast<unsigned int>(months);
     item_def.pOut = count;
 }
 
@@ -380,7 +380,7 @@ void Game::ModifyItemProductionInput(const Items& it, int i, const Items& input,
     }
     auto& pinput = item_def.pInput[i_u];
     pinput.item = input;
-    pinput.amt = amount;
+    pinput.amt = static_cast<unsigned int>(amount);
 }
 
 void Game::ModifyItemMagicSkill(const Items& it, char *sk, int lev)
@@ -441,7 +441,7 @@ void Game::ModifyItemMagicInput(const Items& it, int i, const Items& input, int 
     }
     auto& minput = item_def.mInput[i_u];
     minput.item = input;
-    minput.amt = amount;
+    minput.amt = static_cast<unsigned int>(amount);
 }
 
 void Game::ModifyItemEscape(const Items& it, int escape, char const *skill, int val)
@@ -872,9 +872,9 @@ void Game::ModifyObjectDecay(const Objects& ob, int maxMaint, int maxMonthDecay,
     {
         return;
     }
-    ObjectDefs[ob].maxMaintenance = maxMaint;
-    ObjectDefs[ob].maxMonthlyDecay = maxMonthDecay;
-    ObjectDefs[ob].maintFactor = mFact;
+    ObjectDefs[ob].maxMaintenance = static_cast<size_t>(maxMaint);
+    ObjectDefs[ob].maxMonthlyDecay = static_cast<size_t>(maxMonthDecay);
+    ObjectDefs[ob].maintFactor = static_cast<size_t>(mFact);
 }
 
 void Game::ModifyObjectProduction(const Objects& ob, const Items& it)

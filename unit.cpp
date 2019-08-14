@@ -2439,7 +2439,7 @@ int Unit::PracticeAttribute(char const *attrib)
     return 0;
 }
 
-int Unit::GetProductionBonus(int item)
+size_t Unit::GetProductionBonus(const Items& item)
 {
     int bonus = 0;
     if (ItemDefs[item].mult_item != -1)

@@ -51,12 +51,12 @@ public:
     int minpop;
     int maxpop;
     int minamt;
-    int maxamt;
+    unsigned int maxamt;
 
     int baseprice;
-    int activity;
+    unsigned int activity;
 
-    void PostTurn(int,int);
+    void PostTurn(unsigned int,int);
     void Writeout(Aoutfile * f);
     void Readin(Ainfile * f);
 
@@ -71,7 +71,7 @@ public:
     using iterator = std::list<Market::Handle>::iterator;
     using const_iterator = std::list<Market::Handle>::const_iterator;
 
-    void PostTurn(int,int);
+    void PostTurn(unsigned int,int);
     void Writeout(Aoutfile * f);
     void Readin(Ainfile * f);
     void DeleteAll();

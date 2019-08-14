@@ -222,7 +222,7 @@ public:
     int GUARD_REGEN; /* percent */
     size_t CITY_GUARD;
     size_t GUARD_MONEY;
-    int CITY_POP; /* standard Atlantis is 20000 */
+    unsigned int CITY_POP; /* standard Atlantis is 20000 */
 
     int WMON_FREQUENCY;
     int LAIR_FREQUENCY;

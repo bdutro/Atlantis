@@ -560,7 +560,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
         return;
     }
     
-    int needed = buildobj->incomplete;
+    size_t needed = buildobj->incomplete;
     const auto& type = buildobj->type;
     // AS
     if (((ObjectDefs[type].flags & ObjectType::NEVERDECAY) || !Globals->DECAY) &&
@@ -578,11 +578,11 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
     }
 
     const auto& it = ObjectDefs[type].item;
-    int itn;
+    size_t itn;
     if (it.isWoodOrStone()) {
-        itn = static_cast<int>(u->GetSharedNum(Items::Types::I_WOOD) + u->GetSharedNum(Items::Types::I_STONE));
+        itn = u->GetSharedNum(Items::Types::I_WOOD) + u->GetSharedNum(Items::Types::I_STONE);
     } else {
-        itn = static_cast<int>(u->GetSharedNum(it));
+        itn = u->GetSharedNum(it);
     }
 
     if (itn == 0) {
@@ -591,7 +591,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
         return;
     }
 
-    int num = static_cast<int>(u->GetMen()) * usk;
+    size_t num = u->GetMen() * static_cast<size_t>(usk);
 
     // AS
     AString job;
@@ -602,8 +602,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
         // 5 here.  Then we divide by maintFactor (some things are easier
         // to refix than others) to get how many items we need to fix it.
         // Then we fix it by that many items * maintFactor
-        int maintMax = ObjectDefs[type].maxMaintenance + needed;
-        maintMax /= ObjectDefs[type].maintFactor;
+        size_t maintMax = (ObjectDefs[type].maxMaintenance + needed) / ObjectDefs[type].maintFactor;
         if (num > maintMax) num = maintMax;
         if (itn < num) num = itn;
         job = "Performs maintenance on ";
@@ -630,7 +629,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
         u->MoveUnit(buildobj);
 
     if (it.isWoodOrStone()) {
-        int num_shared_stone = static_cast<int>(u->GetSharedNum(Items::Types::I_STONE));
+        size_t num_shared_stone = u->GetSharedNum(Items::Types::I_STONE);
         if (num > num_shared_stone) {
             num -= num_shared_stone;
             u->ConsumeShared(Items::Types::I_STONE, num_shared_stone);
@@ -659,19 +658,22 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
  */
 void Game::RunBuildShipOrder(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    int ship, skill, level, maxbuild, unfinished, output, percent;
+    int level;
+    size_t unfinished;
     AString skname;
 
-    ship = abs(u->build);
+    Items ship(abs(u->build));
     skname = ItemDefs[ship].pSkill;
-    skill = LookupSkill(&skname);
+    size_t skill = LookupSkill(skname);
     level = u->GetSkill(skill);
 
+    unsigned int output;
+
     // get needed to complete
-    maxbuild = 0;
+    size_t maxbuild = 0;
     if ((u->monthorders) && 
-        (u->monthorders->type == O_BUILD)) {
-            BuildOrder *border = (BuildOrder *) u->monthorders;
+        (u->monthorders->type == Orders::Types::O_BUILD)) {
+            auto border = std::dynamic_pointer_cast<BuildOrder>(u->monthorders);
             maxbuild = border->needtocomplete;
     }
     if (maxbuild < 1) {
@@ -693,9 +695,14 @@ void Game::RunBuildShipOrder(const ARegion::Handle& r, const Object::Handle&, co
         }
 
         // Now reduce unfinished by produced amount
-        unfinished -= output;
-        if (unfinished < 0)
+        if (unfinished < output)
+        {
             unfinished = 0;
+        }
+        else
+        {
+            unfinished -= output;
+        }
     }
     u->items.SetNum(ship, unfinished);
 
@@ -704,98 +711,92 @@ void Game::RunBuildShipOrder(const ARegion::Handle& r, const Object::Handle&, co
 
     if (unfinished == 0) {
         u->Event(AString("Finishes building a ") + ItemDefs[ship].name + " in " +
-            r->ShortPrint(&regions) + ".");
+            r->ShortPrint(regions) + ".");
         CreateShip(r, u, ship);
     } else {
-        percent = 100 * output / ItemDefs[ship].pMonths;
+        unsigned int percent = 100 * output / ItemDefs[ship].pMonths;
         u->Event(AString("Performs construction work on a ") + 
             ItemDefs[ship].name + " (" + percent + "%) in " +
-            r->ShortPrint(&regions) + ".");
+            r->ShortPrint(regions) + ".");
     }
 
-    delete u->monthorders;
-    u->monthorders = 0;
+    u->monthorders.reset();
 }
 
-void Game::RunBuildHelpers(ARegion *r)
+void Game::RunBuildHelpers(const ARegion::Handle& r)
 {
-    forlist((&r->objects)) {
-        Object *obj = (Object *) elem;
-        forlist ((&obj->units)) {
-            Unit *u = (Unit *) elem;
+    for(const auto& obj: r->objects) {
+        for(const auto& u: obj->units) {
             if (u->monthorders) {
-                if (u->monthorders->type == O_BUILD) {
-                    BuildOrder *o = (BuildOrder *)u->monthorders;
-                    Object *tarobj = NULL;
-                    if (o->target) {
-                        Unit *target = r->GetUnitId(o->target,u->faction->num);
-                        if (!target) {
+                if (u->monthorders->type == Orders::Types::O_BUILD) {
+                    auto o = std::dynamic_pointer_cast<BuildOrder>(u->monthorders);
+                    Object::WeakHandle tarobj;
+                    if (o->target.isValid()) {
+                        const auto ufac_num = u->faction.lock()->num;
+                        auto target_w = r->GetUnitId(o->target, ufac_num);
+                        if (target_w.expired()) {
                             u->Error("BUILD: No such unit to help.");
-                            delete u->monthorders;
-                            u->monthorders = 0;
+                            u->monthorders.reset();
                             continue;
                         }
+                        const auto target = target_w.lock();
                         // Make sure that unit is building
                         if (!target->monthorders ||
-                                target->monthorders->type != O_BUILD) {
+                                target->monthorders->type != Orders::Types::O_BUILD) {
                             u->Error("BUILD: Unit isn't building.");
-                            delete u->monthorders;
-                            u->monthorders = 0;
+                            u->monthorders.reset();
                             continue;
                         }
                         // Make sure that unit considers you friendly!
-                        if (target->faction->GetAttitude(u->faction->num) <
-                                A_FRIENDLY) {
+                        if (target->faction.lock()->GetAttitude(ufac_num) < A_FRIENDLY) {
                             u->Error("BUILD: Unit you are helping rejects "
                                     "your help.");
-                            delete u->monthorders;
-                            u->monthorders = 0;
+                            u->monthorders.reset();
                             continue;
                         }
                         if (target->build == 0) {
                             // Help with whatever building the target is in
                             tarobj = target->object;
-                            u->build = tarobj->num;
+                            u->build = tarobj.lock()->num;
                         } else if (target->build > 0) {
                             u->build = target->build;
                             tarobj = r->GetObject(target->build);
                         } else {
                             // help build ships
-                            int ship = abs(target->build);
+                            Items ship(abs(target->build));
                             AString skname = ItemDefs[ship].pSkill;
-                            int skill = LookupSkill(&skname);
+                            Skills skill = LookupSkill(skname);
                             int level = u->GetSkill(skill);
-                            int needed = 0;
+                            size_t needed = 0;
                             if ((target->monthorders) && 
-                                    (target->monthorders->type == O_BUILD)) {
-                                        BuildOrder *border = (BuildOrder *) target->monthorders;
+                                    (target->monthorders->type == Orders::Types::O_BUILD)) {
+                                        const auto border = std::dynamic_pointer_cast<BuildOrder>(target->monthorders);
                                         needed = border->needtocomplete;
                             }
                             if (needed < 1) {
                                 u->Error("BUILD: Construction is already complete.");
-                                delete u->monthorders;
-                                u->monthorders = 0;
+                                u->monthorders.reset();
                                 continue;
                             }
-                            int output = ShipConstruction(r, u, target, level, needed, ship);
+                            unsigned int output = ShipConstruction(r, u, target, level, needed, ship);
                             if (output < 1) continue;
                             
-                            int unfinished = target->items.GetNum(ship);
+                            size_t unfinished = target->items.GetNum(ship);
                             if (unfinished == 0) {
                                 // Start construction on a new ship
                                 unfinished = ItemDefs[ship].pMonths;
                                 target->items.SetNum(ship, unfinished);    
                             }
                             unfinished -= output;
-                            
+
                             // practice
                             u->Practice(skill);
                             
                             if (unfinished > 0) {
                                 target->items.SetNum(ship, unfinished);
                                 if ((target->monthorders) && 
-                                    (target->monthorders->type == O_BUILD)) {
-                                        BuildOrder *border = (BuildOrder *) target->monthorders;
+                                    (target->monthorders->type == Orders::Types::O_BUILD)) {
+                                        const auto border = std::dynamic_pointer_cast<BuildOrder>(target->monthorders);
                                         border->needtocomplete = unfinished;
                                 }
                             } else {
@@ -803,31 +804,34 @@ void Game::RunBuildHelpers(ARegion *r)
                                 // don't create the ship yet; leave that for the unit we're helping
                                 target->items.SetNum(ship, 1);
                                 if ((target->monthorders) && 
-                                    (target->monthorders->type == O_BUILD)) {
-                                        BuildOrder *border = (BuildOrder *) target->monthorders;
+                                    (target->monthorders->type == Orders::Types::O_BUILD)) {
+                                        const auto border = std::dynamic_pointer_cast<BuildOrder>(target->monthorders);
                                         border->needtocomplete = 0;
                                 }
                             } 
-                            int percent = 100 * output / ItemDefs[ship].pMonths;
+                            unsigned int percent = 100 * output / ItemDefs[ship].pMonths;
                             u->Event(AString("Helps ") +
                                 *(target->name) + " with construction of a " + 
                                 ItemDefs[ship].name + " (" + percent + "%) in " +
-                                r->ShortPrint(&regions) + ".");                            
+                                r->ShortPrint(regions) + ".");                            
                         }
                         // no need to move unit if item-type ships
                         // are being built. (leave this commented out)
                         // if (tarobj == NULL) tarobj = target->object;
-                        if ((tarobj != NULL) && (u->object != tarobj))
+                        if (!tarobj.expired() && (u->object.lock() != tarobj.lock()))
                             u->MoveUnit(tarobj);
                     } else {
-                        Object *buildobj;
+                        Object::WeakHandle buildobj;
                         if (u->build > 0) {
                             buildobj = r->GetObject(u->build);
-                            if (buildobj && 
-                                    buildobj != r->GetDummy() &&
-                                    buildobj != u->object)
+                            if (!buildobj.expired())
                             {
-                                u->MoveUnit(buildobj);
+                                const auto buildobj_s  = buildobj.lock();
+                                if(buildobj_s != r->GetDummy().lock() &&
+                                   buildobj_s != u->object.lock())
+                                {
+                                    u->MoveUnit(buildobj);
+                                }
                             }
                         }
                     }
@@ -842,26 +846,25 @@ void Game::RunBuildHelpers(ARegion *r)
  * object with Unit u as owner consisting of exactly
  * ONE ship of the given type.
  */
-void Game::CreateShip(ARegion *r, Unit * u, int ship)
+void Game::CreateShip(const ARegion::Handle& r, const Unit::Handle& u, const Items& ship)
 {
-    Object * obj = u->object;
+    const auto obj = u->object.lock();
     // Do we need to create a new fleet?
-    int newfleet = 1;
-    if (u->object->IsFleet()) {
-        newfleet = 0;
+    bool newfleet = true;
+    if (obj->IsFleet()) {
+        newfleet = false;
         int flying = obj->flying;
         // are the fleets compatible?
-        if ((flying > 0) && (ItemDefs[ship].fly < 1)) newfleet = 1;
-        if ((flying < 1) && (ItemDefs[ship].fly > 0)) newfleet = 1;
+        if ((flying > 0) && (ItemDefs[ship].fly < 1)) newfleet = true;
+        if ((flying < 1) && (ItemDefs[ship].fly > 0)) newfleet = true;
     }
-    if (newfleet != 0) {
+    if (newfleet) {
         // create a new fleet
-        Object * fleet = new Object(r);
-        fleet->type = O_FLEET;
+        auto& fleet = obj->region.lock()->objects.emplace_back(std::make_shared<Object>(r));
+        fleet->type = Objects::Types::O_FLEET;
         fleet->num = shipseq++;
         fleet->name = new AString(AString("Ship [") + fleet->num + "]");
         fleet->AddShip(ship);
-        u->object->region->objects.Add(fleet);
         u->MoveUnit(fleet);
     } else {
         obj->AddShip(ship);
@@ -872,29 +875,32 @@ void Game::CreateShip(ARegion *r, Unit * u, int ship)
  * handles material use and practice for both the main
  * shipbuilders and the helpers.
  */
-int Game::ShipConstruction(ARegion *r, Unit *u, Unit *target, int level, int needed, int ship)
+unsigned int Game::ShipConstruction(const ARegion::Handle& r,
+                                    const Unit::Handle& u,
+                                    const Unit::Handle& target,
+                                    int level,
+                                    size_t needed,
+                                    const Items& ship)
 {
-    if (!TradeCheck(r, u->faction)) {
+    if (!TradeCheck(r, u->faction.lock())) {
         u->Error("BUILD: Faction can't produce in that many regions.");
-        delete u->monthorders;
-        u->monthorders = 0;
+        u->monthorders.reset();
         return 0;
     }
 
     if (level < ItemDefs[ship].pLevel) {
         u->Error("BUILD: Can't build that.");
-        delete u->monthorders;
-        u->monthorders = 0;
+        u->monthorders.reset();
         return 0;
     }
 
     // are there unfinished ship items of the given type?
-    int unfinished = target->items.GetNum(ship);
+    size_t unfinished = target->items.GetNum(ship);
 
-    int number = u->GetMen() * level + u->GetProductionBonus(ship);
+    size_t number = u->GetMen() * static_cast<size_t>(level) + u->GetProductionBonus(ship);
 
     // find the max we can possibly produce based on man-months of labor
-    int maxproduced;
+    size_t maxproduced;
     if (ItemDefs[ship].flags & ItemType::SKILLOUT)
         maxproduced = u->GetMen();
     else
@@ -911,12 +917,13 @@ int Game::ShipConstruction(ARegion *r, Unit *u, Unit *target, int level, int nee
 
     if (ItemDefs[ship].flags & ItemType::ORINPUTS) {
         // Figure out the max we can produce based on the inputs
-        int count = 0;
-        unsigned int c;
-        for (c = 0; c < sizeof(ItemDefs->pInput)/sizeof(Materials); c++) {
-            int i = ItemDefs[ship].pInput[c].item;
-            if (i != -1)
-                count += u->GetSharedNum(i) / ItemDefs[ship].pInput[c].amt;
+        size_t count = 0;
+        for (const auto& input: ItemDefs[ship].pInput) {
+            const auto& i = input.item;
+            if (i.isValid())
+            {
+                count += u->GetSharedNum(i) / input.amt;
+            }
         }
         if (maxproduced > count)
             maxproduced = count;
@@ -925,23 +932,23 @@ int Game::ShipConstruction(ARegion *r, Unit *u, Unit *target, int level, int nee
         // no required materials?
         if (count < 1) {
             u->Error("BUILD: Don't have the required materials.");
-            delete u->monthorders;
-            u->monthorders = 0;
+            u->monthorders.reset();
             return 0;
         }
         
         /* regional economic improvement */
-        r->improvement += count;
+        r->improvement += static_cast<int>(count);
 
         // Deduct the items spent
-        for (c = 0; c < sizeof(ItemDefs->pInput)/sizeof(Materials); c++) {
-            int i = ItemDefs[ship].pInput[c].item;
-            int a = ItemDefs[ship].pInput[c].amt;
-            if (i != -1) {
-                int amt = u->GetSharedNum(i);
-                if (count > amt / a) {
-                    count -= amt / a;
-                    u->ConsumeShared(i, (amt/a)*a);
+        for (const auto& input: ItemDefs[ship].pInput) {
+            const auto& i = input.item;
+            const unsigned int a = input.amt;
+            if (i.isValid()) {
+                const size_t amt = u->GetSharedNum(i);
+                const size_t amt_divided = amt / a;
+                if (count > amt_divided) {
+                    count -= amt_divided;
+                    u->ConsumeShared(i, amt_divided * a);
                 } else {
                     u->ConsumeShared(i, count * a);
                     count = 0;
@@ -951,13 +958,13 @@ int Game::ShipConstruction(ARegion *r, Unit *u, Unit *target, int level, int nee
     }
     else {
         // Figure out the max we can produce based on the inputs
-        unsigned int c;
-        for (c = 0; c < sizeof(ItemDefs->pInput)/sizeof(Materials); c++) {
-            int i = ItemDefs[ship].pInput[c].item;
-            if (i != -1) {
-                int amt = u->GetSharedNum(i);
-                if (amt/ItemDefs[ship].pInput[c].amt < maxproduced) {
-                    maxproduced = amt/ItemDefs[ship].pInput[c].amt;
+        for (const auto& input: ItemDefs[ship].pInput) {
+            const auto& i = input.item;
+            if (i.isValid()) {
+                const size_t amt = u->GetSharedNum(i);
+                const size_t amt_divided = amt / input.amt;
+                if (amt_divided < maxproduced) {
+                    maxproduced = amt_divided;
                 }
             }
         }
@@ -982,7 +989,7 @@ int Game::ShipConstruction(ARegion *r, Unit *u, Unit *target, int level, int nee
             }
         }
     }
-    int output = maxproduced * ItemDefs[ship].pOut;
+    unsigned int output = maxproduced * ItemDefs[ship].pOut;
     if (ItemDefs[ship].flags & ItemType::SKILLOUT)
         output *= level;
 
