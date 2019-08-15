@@ -204,8 +204,8 @@ class BuildOrder : public Order {
         BuildOrder();
         ~BuildOrder();
 
-        ValidValue<UnitId> target;
-        size_t needtocomplete;
+        UnitId target;
+        int needtocomplete;
 };
 
 class SailOrder : public Order {

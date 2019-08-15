@@ -2530,7 +2530,7 @@ void ARegion::MakeStartingCity()
     if (!Globals->START_CITIES_EXIST) return;
 
     town->hab = 125 * Globals->CITY_POP / 100;
-    while (town->pop < town->hab) town->pop += getrandom(200U)+200;
+    while (town->pop < town->hab) town->pop += getrandom(200)+200;
     town->dev = TownDevelopment();
 
     float ratio;
@@ -2579,7 +2579,7 @@ void ARegion::MakeStartingCity()
         markets.Add(M_BUY,
                     race,
                     calculateWagesWithRatio(ratio),
-                    static_cast<int>(Population() / 5),
+                    Population() / 5,
                     0,
                     10000,
                     0,
@@ -2590,7 +2590,7 @@ void ARegion::MakeStartingCity()
             markets.Add(M_BUY,
                         Items::Types::I_LEADERS,
                         calculateWagesWithRatio(ratio),
-                        static_cast<int>(Population() / 25),
+                        Population() / 25,
                         0,
                         10000,
                         0,

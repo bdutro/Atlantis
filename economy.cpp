@@ -34,13 +34,13 @@
 // Depends on population and town development
 TownTypeEnum TownInfo::TownType()
 {
-    unsigned int prestige = pop * (dev + 220) / 270;
+    int prestige = pop * (dev + 220) / 270;
     if (prestige < Globals->CITY_POP / 4) return TownTypeEnum::TOWN_VILLAGE;
     if (prestige < Globals->CITY_POP * 4 / 5) return TownTypeEnum::TOWN_TOWN;
     return TownTypeEnum::TOWN_CITY;
 }
 
-unsigned int ARegion::Population()
+int ARegion::Population()
 {
     if (town) {
         return population + town->pop;
@@ -142,7 +142,7 @@ void ARegion::SetupPop()
     }
     basepopulation = habitat / 3;
     // hmm... somewhere not too far off equilibrium pop
-    population = static_cast<unsigned int>(habitat) * (60 + getrandom(6U) + getrandom(6U)) / 100;
+    population = habitat * (60 + getrandom(6) + getrandom(6)) / 100;
     
     // Setup development
     int level = 1;
@@ -195,17 +195,17 @@ void ARegion::SetupPop()
     maxwages = Wages();
 
     /* taxable region wealth */
-    wealth = static_cast<int>(static_cast<float>(static_cast<int>(Population()) * (Wages() - (10 * Globals->MAINTENANCE_COST)) / 50));
+    wealth = static_cast<int>(static_cast<float>(Population() * (Wages() - (10 * Globals->MAINTENANCE_COST)) / 50));
     if (wealth < 0) wealth = 0;
 
     // wage-relevant population (/10 wages /5 popfactor)
-    unsigned int pp = Population();
+    int pp = Population();
     // adjustment for rural areas
     if (pp < 3000) {
         float wpfactor = 120 / (61 - static_cast<float>(pp) / 50);
-        pp += static_cast<unsigned int>(static_cast<float>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1)));
+        pp += static_cast<int>(static_cast<float>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1)));
     }
-    int wagelimit = static_cast<int>(static_cast<float>(static_cast<int>(pp) * (Wages() - 10 * Globals->MAINTENANCE_COST)) /50);
+    int wagelimit = static_cast<int>(static_cast<float>(pp * (Wages() - 10 * Globals->MAINTENANCE_COST)) /50);
     if (wagelimit < 0) wagelimit = 0;
     Production::Handle w = std::make_shared<Production>();
     w->itemtype = Items::Types::I_SILVER;
@@ -215,13 +215,13 @@ void ARegion::SetupPop()
     w->productivity = wages;
 
     /* Entertainment - setup or adjust */
-    unsigned int ep = Population();
+    int ep = Population();
     // adjustment for rural areas
     if (ep < 3000) {
-        unsigned int epf = (ep / 10 + 300) / 6;
+        int epf = (ep / 10 + 300) / 6;
         ep = ep * epf / 100;
     }
-    int maxent = static_cast<int>(static_cast<float>(static_cast<int>(ep) * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 1)) / 50);
+    int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 1)) / 50);
     if (maxent < 0) maxent = 0;
     Production::Handle e = std::make_shared<Production>();
     e->itemtype = Items::Types::I_SILVER;
@@ -234,7 +234,7 @@ void ARegion::SetupPop()
     // note: wage factor 10, population factor 5 - included as "/ 50"
     /* More wealth in safe Starting Cities */
     if ((Globals->SAFE_START_CITIES) && (IsStartingCity())) {
-        int wbonus = static_cast<int>(Population() / 5) * Globals->MAINTENANCE_COST;
+        int wbonus = (Population() / 5) * Globals->MAINTENANCE_COST;
         wealth += wbonus;
         w->amount += wbonus / Globals->WORK_FRACTION;
         w->baseamount += wbonus / Globals->WORK_FRACTION;
@@ -248,13 +248,13 @@ void ARegion::SetupPop()
     // hack: include wage factor of 10 in float assignment above
     // Setup Recruiting
     markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                static_cast<int>(Population()/25), 0, 10000, 0, 2000);
+                Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
         markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                    static_cast<int>(Population()/125), 0, 10000, 0, 400);
+                    Population()/125, 0, 10000, 0, 400);
     }
 }
 
@@ -268,18 +268,18 @@ void ARegion::SetIncome()
     maxwages = Wages();
     
     /* taxable region wealth */
-    wealth = static_cast<int>(static_cast<float>(static_cast<int>(Population()) * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
+    wealth = static_cast<int>(static_cast<float>(Population() * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
     if (wealth < 0) wealth = 0;
     
     /* Wages */
     // wage-relevant population (/10 wages /5 popfactor)
-    unsigned int pp = Population();
+    int pp = Population();
     // adjustment for rural areas
     if (pp < 3000) {
         float wpfactor = (120 / (61 - static_cast<float>(pp) / 50));
-        pp += static_cast<unsigned int>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1));
+        pp += static_cast<int>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1));
     }
-    int maxwages = static_cast<int>(static_cast<float>(static_cast<int>(pp) * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
+    int maxwages = static_cast<int>(static_cast<float>(pp * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
     if (maxwages < 0) maxwages = 0;
     Production::WeakHandle w_weak = products.GetProd(Items::Types::I_SILVER,-1);
     Production::Handle w;
@@ -300,13 +300,13 @@ void ARegion::SetIncome()
     w->productivity = wages;
 
     /* Entertainment - setup or adjust */
-    unsigned int ep = Population();
+    int ep = Population();
     // adjustment for rural areas
     if (ep < 3000) {
-        unsigned int epf = (ep / 10 + 300) / 6;
+        int epf = (ep / 10 + 300) / 6;
         ep = ep * epf / 100;
     }
-    int maxent = static_cast<int>(static_cast<float>(static_cast<int>(ep) * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 10)) / 50);
+    int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 10)) / 50);
     if (maxent < 0) maxent = 0;
     Production::Handle e;
     Production::WeakHandle e_w = products.GetProd(Items::Types::I_SILVER,
@@ -331,7 +331,7 @@ void ARegion::SetIncome()
     // note: wage factor 10, population factor 5 - included as "/ 50"
     /* More wealth in safe Starting Cities */
     if ((Globals->SAFE_START_CITIES) && (IsStartingCity())) {
-        int wbonus = static_cast<int>(Population() / 5) * Globals->MAINTENANCE_COST;
+        int wbonus = (Population() / 5) * Globals->MAINTENANCE_COST;
         wealth += wbonus;
         w->amount += wbonus / Globals->WORK_FRACTION;
         w->baseamount += wbonus / Globals->WORK_FRACTION;
@@ -344,7 +344,7 @@ void ARegion::DisbandInRegion(const Items& item, int amt)
 {
     if (!Globals->DYNAMIC_POPULATION) return;
     if (amt > 0) {
-        if (amt > static_cast<int>(Population())) {
+        if (amt > Population()) {
             // exchange region race!
             race = item;
             population = 0;
@@ -365,29 +365,17 @@ void ARegion::Recruit(int amt)
 
 void ARegion::AdjustPop(int adjustment)
 {
-    int pop_i = static_cast<int>(population);
     if (!town) {
-        pop_i += adjustment;
+        population += adjustment;
+        return;
     }
-    else
-    {
-        // split between town and rural pop
-        int town_pop = static_cast<int>(town->pop);
-        int tspace = static_cast<int>(town->hab) - town_pop;
-        int rspace = static_cast<int>(habitat) - pop_i;
-        town_pop += adjustment * tspace / (tspace + rspace);
-        if (town_pop < 0)
-        {
-            town_pop = 0;
-        }
-        town->pop = static_cast<unsigned int>(town_pop);
-        pop_i += adjustment * rspace / (tspace + rspace);
-    }
-    if (pop_i < 0)
-    {
-        pop_i = 0;
-    }
-    population = static_cast<unsigned int>(pop_i);
+    // split between town and rural pop
+    int tspace = town->hab - town->pop;
+    int rspace = habitat - population;
+    town->pop += adjustment * tspace / (tspace + rspace);
+    if (town->pop < 0) town->pop = 0;
+    population += adjustment * rspace / (tspace + rspace);
+    if (population < 0) population = 0;
 }
 
 void ARegion::SetupCityMarket()
@@ -395,7 +383,7 @@ void ARegion::SetupCityMarket()
     int numtrade = 0;
     int cap;
     int offset = 0;
-    unsigned int citymax = Globals->CITY_POP;
+    int citymax = Globals->CITY_POP;
     const auto& locals = [&]() -> const ManType& {
         try
         {
@@ -477,9 +465,9 @@ void ARegion::SetupCityMarket()
                     price = ItemDefs[ i ].baseprice;
                 }
 
-                cap = static_cast<int>(citymax * 3/4) - 5000;
-                if (cap < 0) cap = static_cast<int>(citymax/2);
-                markets.Add(M_SELL, i, static_cast<int>(price), amt, static_cast<int>(population), static_cast<int>(population) + cap, amt, 2*amt);
+                cap = (citymax * 3/4) - 5000;
+                if (cap < 0) cap = citymax/2;
+                markets.Add(M_SELL, i, static_cast<int>(price), amt, population, population + cap, amt, 2*amt);
             } else if (it == Items::Types::I_FOOD) {
                 // Add foodstuffs directly to market
                 int amt = Globals->CITY_MARKET_NORMAL_AMT;
@@ -491,9 +479,9 @@ void ARegion::SetupCityMarket()
                     price = static_cast<int>(ItemDefs[i].baseprice);
                 }
 
-                cap = static_cast<int>(citymax * 3/4) - 5000;
-                if (cap < 0) cap = static_cast<int>(citymax / 2);
-                markets.Add(M_BUY, i, price, amt, static_cast<int>(population), static_cast<int>(population)+2*cap, amt, amt*5);
+                cap = (citymax * 3/4) - 5000;
+                if (cap < 0) cap = citymax/2;
+                markets.Add(M_BUY, i, price, amt, population, population+2*cap, amt, amt*5);
             } else if (!ItemDefs[i].pInput[0].item.isValid()) {
                 // Basic resource
                 // Add to supply?
@@ -554,12 +542,12 @@ void ARegion::SetupCityMarket()
                 price = static_cast<int>(ItemDefs[i].baseprice);
             }
 
-            cap = static_cast<int>(citymax *3/4) - 5000;
-            if (cap < static_cast<int>(citymax / 2)) cap = static_cast<int>(citymax / 2);
-            offset = static_cast<int>(citymax / 8);
-            if (cap+offset < static_cast<int>(citymax)) {
-                markets.Add(M_SELL, i, price, amt/6, static_cast<int>(population)+cap+offset,
-                    static_cast<int>(population+citymax), 0, amt);
+            cap = (citymax *3/4) - 5000;
+            if (cap < citymax/2) cap = citymax / 2;
+            offset = citymax / 8;
+            if (cap+offset < citymax) {
+                markets.Add(M_SELL, i, price, amt/6, population+cap+offset,
+                    population+citymax, 0, amt);
             }
         }
     }
@@ -588,11 +576,11 @@ void ARegion::SetupCityMarket()
                 price = static_cast<int>(ItemDefs[i].baseprice);
             }
     
-            cap = static_cast<int>(citymax *3/4) - 5000;
-            if (cap < static_cast<int>(citymax/2)) cap = static_cast<int>(citymax / 2);
-            offset = static_cast<int>((citymax/20) + ((citymax/5) * 2));
-            markets.Add(M_SELL, i, price, amt/6, static_cast<int>(population)+cap,
-                    static_cast<int>(population+citymax), 0, amt);
+            cap = (citymax *3/4) - 5000;
+            if (cap < citymax/2) cap = citymax / 2;
+            offset = (citymax/20) + ((citymax/5) * 2);
+            markets.Add(M_SELL, i, price, amt/6, population+cap,
+                    population+citymax, 0, amt);
         }
     }
     
@@ -625,10 +613,10 @@ void ARegion::SetupCityMarket()
             price = static_cast<int>(ItemDefs[i].baseprice);
         }
                             
-        cap = static_cast<int>(citymax/4);
-        offset = - static_cast<int>(citymax/20) + ((5-num) * static_cast<int>(citymax * 3/40));
+        cap = (citymax/4);
+        offset = - (citymax/20) + ((5-num) * citymax * 3/40);
         markets.Add(M_SELL, i, price, amt/6,
-            static_cast<int>(population)+cap+offset, static_cast<int>(population+citymax), 0, amt);
+            population+cap+offset, population+citymax, 0, amt);
         demand[i] = 0;
         num--;    
     }
@@ -662,11 +650,11 @@ void ARegion::SetupCityMarket()
             price = static_cast<int>(ItemDefs[i].baseprice);
         }
                             
-        cap = static_cast<int>(citymax/4);
-        offset = ((3-num) * static_cast<int>(citymax * 3 / 40));
-        if (supply[i] < 4) offset += static_cast<int>(citymax / 20);
+        cap = (citymax/4);
+        offset = ((3-num) * citymax * 3 / 40);
+        if (supply[i] < 4) offset += citymax / 20;
         markets.Add(M_BUY, i, price, 0,
-            static_cast<int>(population)+cap+offset, static_cast<int>(population+citymax),
+            population+cap+offset, population+citymax,
             0, amt);
         supply[i] = 0;
         num--;
@@ -722,12 +710,12 @@ void ARegion::SetupCityMarket()
                     price = static_cast<int>(ItemDefs[i].baseprice);
                 }
                 
-                cap = static_cast<int>(citymax/2);
+                cap = (citymax/2);
                 tradesell++;
-                offset = - static_cast<int>(citymax/20) + tradesell * (tradesell * tradesell * static_cast<int>(citymax/40));
-                if (cap + offset < static_cast<int>(citymax)) {
-                    markets.Add(M_SELL, i, price, amt/5, cap+static_cast<int>(population)+offset,
-                        static_cast<int>(citymax+population), 0, amt);
+                offset = - (citymax/20) + tradesell * (tradesell * tradesell * citymax/40);
+                if (cap + offset < citymax) {
+                    markets.Add(M_SELL, i, price, amt/5, cap+population+offset,
+                        citymax+population, 0, amt);
                 }
             }
 
@@ -746,11 +734,11 @@ void ARegion::SetupCityMarket()
                     price = static_cast<int>(ItemDefs[i].baseprice);
                 }
 
-                cap = static_cast<int>(citymax/2);
-                offset = tradebuy++ * static_cast<int>(citymax/6);
-                if (cap+offset < static_cast<int>(citymax)) {
-                    markets.Add(M_BUY, i, price, amt/6, cap+static_cast<int>(population)+offset,
-                        static_cast<int>(citymax+population), 0, amt);
+                cap = (citymax/2);
+                offset = tradebuy++ * (citymax/6);
+                if (cap+offset < citymax) {
+                    markets.Add(M_BUY, i, price, amt/6, cap+population+offset,
+                        citymax+population, 0, amt);
                 }
             }
         }
@@ -874,8 +862,8 @@ void ARegion::SetTownType(TownTypeEnum type)
 
     int level = static_cast<int>(type);
     // increment values
-    int poptown = getrandom((level -1) * (level -1) * static_cast<int>(Globals->CITY_POP/12)) + level * level * static_cast<int>(Globals->CITY_POP/12);
-    town->hab = static_cast<unsigned int>(static_cast<int>(town->hab) + poptown);
+    int poptown = getrandom((level -1) * (level -1) * Globals->CITY_POP/12) + level * level * Globals->CITY_POP/12;
+    town->hab += poptown;
     town->pop = town->hab * 2 / 3;
     development += level * 6 + 2;
     town->dev = TownDevelopment();
@@ -885,7 +873,7 @@ void ARegion::SetTownType(TownTypeEnum type)
         // Increase?
         if (type > town->TownType()) {
             development += static_cast<int>(getrandom(Globals->TOWN_DEVELOPMENT / 10 + 5));
-            unsigned int poplus = getrandom(Globals->CITY_POP/3) + getrandom(Globals->CITY_POP/3);
+            int poplus = getrandom(Globals->CITY_POP/3) + getrandom(Globals->CITY_POP/3);
             // don't overgrow!
             while (town->pop + poplus > Globals->CITY_POP) {
                 poplus = poplus / 2;
@@ -897,7 +885,7 @@ void ARegion::SetTownType(TownTypeEnum type)
             // or decrease...
         else {
             development -= getrandom(20 - static_cast<int>(Globals->TOWN_DEVELOPMENT / 10));
-            unsigned int popdecr = getrandom(Globals->CITY_POP/3) + getrandom(Globals->CITY_POP/3);
+            int popdecr = getrandom(Globals->CITY_POP/3) + getrandom(Globals->CITY_POP/3);
             // don't depopulate
             while ((town->pop < popdecr) || (town->hab < popdecr)) {
                 popdecr = popdecr / 2;    
@@ -914,7 +902,7 @@ void ARegion::UpdateEditRegion()
     // redo markets and entertainment/tax income for extra people.
     SetIncome();
     markets.PostTurn(Population(), Wages());
-
+    
     //Replace man selling
     auto it = markets.begin();
     while(it != markets.end()) {
@@ -929,13 +917,13 @@ void ARegion::UpdateEditRegion()
     float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float calculation above
     markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                            static_cast<int>(Population()/25), 0, 10000, 0, 2000);
+                            Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float calculation above
         markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                        static_cast<int>(Population()/125), 0, 10000, 0, 400);
+                        Population()/125, 0, 10000, 0, 400);
     }    
 }
 
@@ -990,7 +978,7 @@ void ARegion::SetupEditRegion()
     }
     basepopulation = habitat / 3;
     // hmm... somewhere not too far off equilibrium pop
-    population = static_cast<unsigned int>(habitat) * (60 + getrandom(6U) + getrandom(6U)) / 100;
+    population = habitat * (60 + getrandom(6) + getrandom(6)) / 100;
     
     // Setup development
     int level = 1;
@@ -1052,13 +1040,13 @@ void ARegion::SetupEditRegion()
     // hack: include wage factor of 10 in float assignment above
     // Setup Recruiting
     markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                            static_cast<int>(Population()/25), 0, 10000, 0, 2000);
+                            Population()/25, 0, 10000, 0, 2000);
 
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
         markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                        static_cast<int>(Population()/125), 0, 10000, 0, 400);
+                        Population()/125, 0, 10000, 0, 400);
     }
 }
 
@@ -1119,7 +1107,7 @@ int ARegion::ProdDev()
     return basedev;
 }
 
-unsigned int ARegion::TownHabitat()
+int ARegion::TownHabitat()
 {
     // Effect of existing buildings
     int farm = 0;
@@ -1153,7 +1141,7 @@ unsigned int ARegion::TownHabitat()
     hab = (build * build + 1) * hab * hab + habitat / 4 + 50;
     
     // Effect of town development on habitat:
-    unsigned int totalhab = hab + (TownDevelopment() * (habitat + 800 + hab
+    int totalhab = hab + (TownDevelopment() * (habitat + 800 + hab
         + Globals->CITY_POP / 2)) / 100;
     
     return totalhab;
@@ -1221,8 +1209,8 @@ int ARegion::TownGrowth()
     // Don't update population in Starting Cities
     if (!IsStartingCity()) {
         // Calculate target population from market activity
-        unsigned int amt = 0;
-        unsigned int tot = 0;
+        int amt = 0;
+        int tot = 0;
         for(const auto& m: markets) {
             if (Population() > m->minpop) {
                 if (ItemDefs[m->item].type & IT_TRADE) {

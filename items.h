@@ -79,7 +79,7 @@ enum {
 struct Materials
 {
     Items item;
-    unsigned int amt;
+    int amt;
 };
 
 class ItemType
@@ -109,7 +109,7 @@ class ItemType
 
         char const *pSkill; // production skill
         int pLevel; // production skill level
-        unsigned int pMonths; // Man months required for production
+        int pMonths; // Man months required for production
         int pOut; // How many of the item we get
         MaterialInputArray pInput;
 

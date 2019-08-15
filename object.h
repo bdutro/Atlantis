@@ -63,9 +63,9 @@ class ObjectType {
         char const *skill;
         int level;
 
-        size_t maxMaintenance;
-        size_t maxMonthlyDecay;
-        size_t maintFactor;
+        int maxMaintenance;
+        int maxMonthlyDecay;
+        int maintFactor;
 
         Items monster;
 
@@ -122,7 +122,7 @@ class Object
         int CheckShip(int);
         int GetNumShips(int);
         void SetNumShips(int, int);
-        void AddShip(const Items&);
+        void AddShip(int);
         AString FleetDefinition();
         int FleetCapacity();
         int FleetLoad();
@@ -136,7 +136,7 @@ class Object
         ssize_t inner;
         int num;
         Objects type;
-        size_t incomplete;
+        int incomplete;
         int capacity;
         int flying;
         int load;

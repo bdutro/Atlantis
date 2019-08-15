@@ -148,7 +148,7 @@ class Unit
         void SetMoney(size_t);
         void SetMoney(int);
         size_t GetSharedNum(const Items&);
-        void ConsumeShared(const Items&, size_t);
+        void ConsumeShared(const Items&,int);
         int GetSharedMoney();
         void ConsumeSharedMoney(int);
         bool IsAlive();
@@ -168,7 +168,7 @@ class Unit
         // LLS
         int GetAttribute(char const *ident);
         int PracticeAttribute(char const *ident);
-        size_t GetProductionBonus(const Items&);
+        int GetProductionBonus(int);
 
         int GetSkill(const Skills&);
         void SetSkill(const Skills&, int);
