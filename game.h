@@ -552,27 +552,32 @@ private:
     Location::Handle DoAMoveOrder(const Unit::Handle&, const ARegion::Handle&, const Object::Handle&);
     void DoMoveEnter(const Unit::Handle&, const ARegion::Handle&, Object::Handle&);
     void RunMonthOrders();
-    void RunStudyOrders(ARegion *);
-    void Do1StudyOrder(Unit *, Object *);
+    void RunStudyOrders(const ARegion::Handle&);
+    void Do1StudyOrder(const Unit::Handle&, const Object::Handle&);
     void RunTeachOrders();
     void Do1TeachOrder(const ARegion::Handle&, const Unit::Handle&);
-    void RunProduceOrders(ARegion *);
-    void RunIdleOrders(ARegion *);
-    int ValidProd(Unit *, ARegion *, Production *);
-    int FindAttemptedProd(ARegion *, Production *);
-    void RunAProduction(ARegion *, Production *);
-    void RunUnitProduce(ARegion *, Unit *);
+    void RunProduceOrders(const ARegion::Handle&);
+    void RunIdleOrders(const ARegion::Handle&);
+    int ValidProd(const Unit::Handle&, const ARegion::Handle&, const Production::Handle&);
+    int FindAttemptedProd(const ARegion::Handle&, const Production::Handle&);
+    void RunAProduction(const ARegion::Handle&, const Production::Handle&);
+    void RunUnitProduce(const ARegion::Handle&, const Unit::Handle&);
     void Run1BuildOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void RunBuildShipOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
-    void RunBuildHelpers(ARegion *);
-    int ShipConstruction(ARegion *, Unit *, Unit *, int, int, int);
-    void CreateShip(ARegion *, Unit *, int);
+    void RunBuildHelpers(const ARegion::Handle&);
+    unsigned int ShipConstruction(const ARegion::Handle&,
+                                  const Unit::Handle&,
+                                  const Unit::Handle&,
+                                  int,
+                                  size_t,
+                                  const Items&);
+    void CreateShip(const ARegion::Handle&, const Unit::Handle&, const Items&);
     void RunSailOrders();
     void RunMovementOrders();
     Location::Handle Do1SailOrder(ARegion::Handle, const Object::Handle&, const Unit::Handle&);
     void ClearCastEffects();
     void RunCastOrders();
-    void RunACastOrder(ARegion *, Object *, Unit *);
+    void RunACastOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void RunTeleportOrders();
 
     //

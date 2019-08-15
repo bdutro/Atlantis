@@ -159,8 +159,8 @@ class ProduceOrder : public Order {
         ProduceOrder();
         ~ProduceOrder();
 
-        int item;
-        int skill; /* -1 for none */
+        Items item;
+        Skills skill; /* -1 for none */
         int productivity;
         int target;
 };
@@ -204,7 +204,7 @@ class BuildOrder : public Order {
         BuildOrder();
         ~BuildOrder();
 
-        UnitId target;
+        ValidValue<UnitId> target;
         int needtocomplete;
 };
 

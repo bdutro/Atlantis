@@ -122,7 +122,7 @@ class Object
         int CheckShip(int);
         int GetNumShips(int);
         void SetNumShips(int, int);
-        void AddShip(int);
+        void AddShip(const Items&);
         AString FleetDefinition();
         int FleetCapacity();
         int FleetLoad();
