@@ -29,6 +29,7 @@
 #include <array>
 #include <vector>
 
+#include "objecttype.h"
 #include "validenum.h"
 #include "helper.h"
 
@@ -84,9 +85,24 @@ class Directions : public _DirectionsVE
         {
         }
 
+        bool isMoveEnter() const
+        {
+            return static_cast<size_t>(*this) >= MOVE_ENTER;
+        }
+
+        bool isMoveInOutOrEnter() const
+        {
+            return static_cast<size_t>(*this) >= MOVE_IN;
+        }
+
+        int getMoveObject() const
+        {
+            return static_cast<int>(static_cast<size_t>(*this) - MOVE_ENTER);
+        }
+
         virtual bool isValid() const override
         {
-            return (val_ == MOVE_PAUSE) || (val_ == MOVE_IN) || (val_ == MOVE_OUT) || (val_ == MOVE_ENTER) || ValidEnum::isValid();
+            return (val_ == MOVE_PAUSE) || (val_ == MOVE_IN) || (val_ == MOVE_OUT) || (val_ >= MOVE_ENTER) || ValidEnum::isValid();
         }
 
         bool isRegularDirection() const
@@ -106,12 +122,12 @@ extern const MonthStringArray MonthNames;
 using SeasonStringArray = std::array<const char* const, 4>;
 extern const SeasonStringArray SeasonNames;
 
-extern const std::vector<int> allowedMages;
-extern const std::vector<int> allowedApprentices;
-extern const std::vector<int> allowedTaxes;
-extern const std::vector<int> allowedTrades;
-extern const std::vector<int> allowedQuartermasters;
-extern const std::vector<int> allowedTacticians;
+extern const std::vector<unsigned int> allowedMages;
+extern const std::vector<unsigned int> allowedApprentices;
+extern const std::vector<unsigned int> allowedTaxes;
+extern const std::vector<unsigned int> allowedTrades;
+extern const std::vector<unsigned int> allowedQuartermasters;
+extern const std::vector<unsigned int> allowedTacticians;
 
 class GameDefs {
 public:

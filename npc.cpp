@@ -22,6 +22,8 @@
 // http://www.prankster.com/project
 //
 // END A3HEADER
+#include <functional>
+
 #include "game.h"
 #include "gamedata.h"
 
@@ -29,9 +31,8 @@ void Game::CreateCityMons()
 {
     if (!Globals->CITY_MONSTERS_EXIST) return;
 
-    forlist(&regions) {
-        ARegion *r = (ARegion *) elem;
-        if ((r->type == R_NEXUS) || r->IsStartingCity() || r->town) {
+    for(const auto& r: regions) {
+        if ((r->type == Regions::Types::R_NEXUS) || r->IsStartingCity() || r->town) {
             CreateCityMon(r, 100, 1);
         }
     }
@@ -57,40 +58,42 @@ void Game::GrowWMons(int rate)
     // Now, go through each 8x8 block of the map, and make monsters if
     // needed.
     //
-    int level;
-    for (level = 0; level < regions.numLevels; level++) {
-        ARegionArray *pArr = regions.pRegionArrays[level];
-        int xsec;
-        for (xsec=0; xsec< pArr->x / 8; xsec++) {
-            for (int ysec=0; ysec< pArr->y / 16; ysec++) {
+    for (size_t level = 0; level < regions.numLevels; level++) {
+        const auto& pArr = regions.pRegionArrays[level];
+        for (unsigned int xsec=0; xsec< pArr->x / 8; xsec++) {
+            for (unsigned int ysec=0; ysec< pArr->y / 16; ysec++) {
                 /* OK, we have a sector. Count mons, and wanted */
                 int mons=0;
                 int wanted=0;
-                for (int x=0; x<8; x++) {
-                    for (int y=0; y<16; y+=2) {
-                        ARegion *reg = pArr->GetRegion(x+xsec*8, y+ysec*16+x%2);
-                        if (reg && !reg->IsGuarded()) {
-                            mons += reg->CountWMons();
-                            /*
-                             * Make sure there is at least one monster type
-                             * enabled for this region
-                             */
-                            int avail = 0;
-                            int mon = TerrainDefs[reg->type].smallmon;
-                            if (!((mon == -1) ||
-                                 (ItemDefs[mon].flags & ItemType::DISABLED)))
-                                avail = 1;
-                            mon = TerrainDefs[reg->type].bigmon;
-                            if (!((mon == -1) ||
-                                 (ItemDefs[mon].flags & ItemType::DISABLED)))
-                                avail = 1;
-                            mon = TerrainDefs[reg->type].humanoid;
-                            if (!((mon == -1) ||
-                                 (ItemDefs[mon].flags & ItemType::DISABLED)))
-                                avail = 1;
+                for (unsigned int x=0; x<8; x++) {
+                    for (unsigned int y=0; y<16; y+=2) {
+                        const auto reg_w = pArr->GetRegion(x+xsec*8, y+ysec*16+x%2);
+                        if (!reg_w.expired())
+                        {
+                            const auto reg = reg_w.lock();
+                            if(!reg->IsGuarded()) {
+                                mons += reg->CountWMons();
+                                /*
+                                 * Make sure there is at least one monster type
+                                 * enabled for this region
+                                 */
+                                bool avail = false;
+                                const auto& smallmon = TerrainDefs[reg->type].smallmon;
+                                if (!(!smallmon.isValid() ||
+                                     (ItemDefs[smallmon].flags & ItemType::DISABLED)))
+                                    avail = true;
+                                const auto& bigmon = TerrainDefs[reg->type].bigmon;
+                                if (!(!bigmon.isValid() ||
+                                     (ItemDefs[bigmon].flags & ItemType::DISABLED)))
+                                    avail = true;
+                                const auto& humanoid = TerrainDefs[reg->type].humanoid;
+                                if (!(!humanoid.isValid() ||
+                                     (ItemDefs[humanoid].flags & ItemType::DISABLED)))
+                                    avail = true;
 
-                            if (avail)
-                                wanted += TerrainDefs[reg->type].wmonfreq;
+                                if (avail)
+                                    wanted += TerrainDefs[reg->type].wmonfreq;
+                            }
                         }
                     }
                 }
@@ -100,11 +103,15 @@ void Game::GrowWMons(int rate)
                 wanted = (wanted*rate + getrandom(100))/100;
                 if (wanted > 0) {
                     for (int i=0; i< wanted;) {
-                        int m=getrandom(8);
-                        int n=getrandom(8)*2+m%2;
-                        ARegion *reg = pArr->GetRegion(m+xsec*8, n+ysec*16);
-                        if (reg && !reg->IsGuarded() && MakeWMon(reg)) {
-                            i++;
+                        const unsigned int m = getrandom(8U);
+                        const unsigned int n = getrandom(8U) * 2 + m % 2;
+                        const auto reg_w = pArr->GetRegion(m+xsec*8, n+ysec*16);
+                        if (!reg_w.expired())
+                        {
+                            const auto reg = reg_w.lock();
+                            if(!reg->IsGuarded() && MakeWMon(reg)) {
+                                i++;
+                            }
                         }
                     }
                 }
@@ -115,19 +122,17 @@ void Game::GrowWMons(int rate)
 
 void Game::GrowLMons(int rate)
 {
-    forlist(&regions) {
-        ARegion *r = (ARegion *) elem;
+    for(const auto& r: regions) {
         //
         // Don't make lmons in guarded regions
         //
         if (r->IsGuarded()) continue;
         
-        forlist(&r->objects) {
-            Object *obj = (Object *) elem;
-            if (obj->units.Num()) continue;
-            int montype = ObjectDefs[obj->type].monster;
+        for(const auto& obj: r->objects) {
+            if (!obj->units.empty()) continue;
+            const auto& montype = ObjectDefs[obj->type].monster;
             int grow=!(ObjectDefs[obj->type].flags&ObjectType::NOMONSTERGROWTH);
-            if ((montype != -1) && grow) {
+            if (montype.isValid() && grow) {
                 if (getrandom(100) < rate) {
                     MakeLMon(obj);
                 }
@@ -136,206 +141,206 @@ void Game::GrowLMons(int rate)
     }
 }
 
-int Game::MakeWMon(ARegion *pReg)
+bool Game::MakeWMon(const ARegion::Handle& pReg)
 {
-    if (!Globals->WANDERING_MONSTERS_EXIST) return 0;
+    if (!Globals->WANDERING_MONSTERS_EXIST) return false;
 
-    if (TerrainDefs[pReg->type].wmonfreq == 0) return 0;
+    if (TerrainDefs[pReg->type].wmonfreq == 0) return false;
 
-    int montype = TerrainDefs[pReg->type].smallmon;
-    if (getrandom(2) && (TerrainDefs[pReg->type].humanoid != -1))
+    auto montype = TerrainDefs[pReg->type].smallmon;
+    if (getrandom(2) && (TerrainDefs[pReg->type].humanoid.isValid()))
         montype = TerrainDefs[pReg->type].humanoid;
-    if (TerrainDefs[pReg->type].bigmon != -1 && !getrandom(8)) {
+    if (TerrainDefs[pReg->type].bigmon.isValid() && !getrandom(8)) {
         montype = TerrainDefs[pReg->type].bigmon;
     }
-    if ((montype == -1) || (ItemDefs[montype].flags & ItemType::DISABLED))
-        return 0;
+    if (!montype.isValid() || (ItemDefs[montype].flags & ItemType::DISABLED))
+        return false;
 
-    MonType *mp = FindMonster(ItemDefs[montype].abr,
+    const auto& mp = FindMonster(ItemDefs[montype].abr,
             (ItemDefs[montype].type & IT_ILLUSION));
-    Faction *monfac = GetFaction(&factions, monfaction);
-    Unit *u = GetNewUnit(monfac, 0);
-    u->MakeWMon(mp->name, montype, (mp->number+getrandom(mp->number)+1)/2);
+    const auto monfac = GetFaction(factions, monfaction);
+    const auto u = GetNewUnit(monfac, 0);
+    u->MakeWMon(mp.name, montype, (mp.number+getrandom(mp.number)+1)/2);
     u->MoveUnit(pReg->GetDummy());
-    return(1);
+    return true;
 }
 
-void Game::MakeLMon(Object *pObj)
+void Game::MakeLMon(const Object::Handle& pObj)
 {
     if (!Globals->LAIR_MONSTERS_EXIST) return;
     if (ObjectDefs[pObj->type].flags & ObjectType::NOMONSTERGROWTH) return;
 
-    int montype = ObjectDefs[pObj->type].monster;
+    Items montype = ObjectDefs[pObj->type].monster;
 
-    if (montype == I_TRENT)
-        montype = TerrainDefs[pObj->region->type].bigmon;
+    if (montype == Items::Types::I_TRENT)
+    {
+        montype = TerrainDefs[pObj->region.lock()->type].bigmon;
+    }
 
-    if (montype == I_CENTAUR)
-        montype = TerrainDefs[pObj->region->type].humanoid;
+    if (montype == Items::Types::I_CENTAUR)
+    {
+        montype = TerrainDefs[pObj->region.lock()->type].humanoid;
+    }
 
-    if ((montype == -1) || (ItemDefs[montype].flags & ItemType::DISABLED))
+    if (!montype.isValid() || (ItemDefs[montype].flags & ItemType::DISABLED))
         return;
 
-    MonType *mp = FindMonster(ItemDefs[montype].abr,
-            (ItemDefs[montype].type & IT_ILLUSION));
-    Faction *monfac = GetFaction(&factions, monfaction);
-    Unit *u = GetNewUnit(monfac, 0);
-    switch(montype) {
-        case I_IMP:
-            u->MakeWMon("Demons", I_IMP, getrandom(mp->number + 1));
+    std::reference_wrapper<const MonType> mp = FindMonster(ItemDefs[montype].abr,
+                                                           ItemDefs[montype].type & IT_ILLUSION);
+    const auto monfac = GetFaction(factions, monfaction);
+    auto u = GetNewUnit(monfac, 0);
+    switch(montype.asEnum()) {
+        case Items::Types::I_IMP:
+            u->MakeWMon("Demons", Items::Types::I_IMP, getrandom(mp.get().number + 1));
 
-            mp = FindMonster(ItemDefs[I_DEMON].abr,
-                    (ItemDefs[I_DEMON].type & IT_ILLUSION));
-            u->items.SetNum(I_DEMON, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_DEMON].abr,
+                    (ItemDefs[Items::Types::I_DEMON].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_DEMON, getrandom(mp.get().number + 1));
 
-            mp = FindMonster(ItemDefs[I_BALROG].abr,
-                    (ItemDefs[I_BALROG].type & IT_ILLUSION));
-            u->items.SetNum(I_BALROG, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_BALROG].abr,
+                    (ItemDefs[Items::Types::I_BALROG].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_BALROG, getrandom(mp.get().number + 1));
             break;
-        case I_SKELETON:
-            u->MakeWMon("Undead", I_SKELETON, getrandom(mp->number + 1));
+        case Items::Types::I_SKELETON:
+            u->MakeWMon("Undead", Items::Types::I_SKELETON, getrandom(mp.get().number + 1));
 
-            mp = FindMonster(ItemDefs[I_UNDEAD].abr,
-                    (ItemDefs[I_UNDEAD].type & IT_ILLUSION));
-            u->items.SetNum(I_UNDEAD, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_UNDEAD].abr,
+                    (ItemDefs[Items::Types::I_UNDEAD].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_UNDEAD, getrandom(mp.get().number + 1));
 
-            mp = FindMonster(ItemDefs[I_LICH].abr,
-                    (ItemDefs[I_LICH].type & IT_ILLUSION));
-            u->items.SetNum(I_LICH, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_LICH].abr,
+                    (ItemDefs[Items::Types::I_LICH].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_LICH, getrandom(mp.get().number + 1));
             break;
-        case I_MAGICIANS:
-            u->MakeWMon("Evil Mages", I_MAGICIANS,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+        case Items::Types::I_MAGICIANS:
+            u->MakeWMon("Evil Mages", Items::Types::I_MAGICIANS,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
 
-            mp = FindMonster(ItemDefs[I_SORCERERS].abr,
-                    (ItemDefs[I_SORCERERS].type & IT_ILLUSION));
-            u->items.SetNum(I_SORCERERS,
-                    getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_SORCERERS].abr,
+                    (ItemDefs[Items::Types::I_SORCERERS].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_SORCERERS,
+                    getrandom(mp.get().number + 1));
             u->SetFlag(FLAG_BEHIND, 1);
             u->MoveUnit(pObj);
 
             u = GetNewUnit(monfac, 0);
 
-            mp = FindMonster(ItemDefs[I_WARRIORS].abr,
-                    (ItemDefs[I_WARRIORS].type & IT_ILLUSION));
-            u->MakeWMon(mp->name, I_WARRIORS,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+            mp = FindMonster(ItemDefs[Items::Types::I_WARRIORS].abr,
+                    (ItemDefs[Items::Types::I_WARRIORS].type & IT_ILLUSION));
+            u->MakeWMon(mp.get().name, Items::Types::I_WARRIORS,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
 
             break;
-        case I_DARKMAGE:
-            u->MakeWMon("Dark Mages", I_DARKMAGE, (getrandom(mp->number) + 1));
+        case Items::Types::I_DARKMAGE:
+            u->MakeWMon("Dark Mages", Items::Types::I_DARKMAGE, (getrandom(mp.get().number) + 1));
 
-            mp = FindMonster(ItemDefs[I_MAGICIANS].abr,
-                    (ItemDefs[I_MAGICIANS].type & IT_ILLUSION));
-            u->items.SetNum(I_MAGICIANS,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+            mp = FindMonster(ItemDefs[Items::Types::I_MAGICIANS].abr,
+                    (ItemDefs[Items::Types::I_MAGICIANS].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_MAGICIANS,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
 
-            mp = FindMonster(ItemDefs[I_SORCERERS].abr,
-                    (ItemDefs[I_SORCERERS].type & IT_ILLUSION));
-            u->items.SetNum(I_SORCERERS, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_SORCERERS].abr,
+                    (ItemDefs[Items::Types::I_SORCERERS].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_SORCERERS, getrandom(mp.get().number + 1));
 
-            mp = FindMonster(ItemDefs[I_DARKMAGE].abr,
-                    (ItemDefs[I_DARKMAGE].type & IT_ILLUSION));
-            u->items.SetNum(I_DARKMAGE, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_DARKMAGE].abr,
+                    (ItemDefs[Items::Types::I_DARKMAGE].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_DARKMAGE, getrandom(mp.get().number + 1));
             u->SetFlag(FLAG_BEHIND, 1);
             u->MoveUnit(pObj);
 
             u = GetNewUnit(monfac, 0);
 
-            mp = FindMonster(ItemDefs[I_DROW].abr,
-                    (ItemDefs[I_DROW].type & IT_ILLUSION));
-            u->MakeWMon(mp->name, I_DROW,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+            mp = FindMonster(ItemDefs[Items::Types::I_DROW].abr,
+                    (ItemDefs[Items::Types::I_DROW].type & IT_ILLUSION));
+            u->MakeWMon(mp.get().name, Items::Types::I_DROW,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
 
             break;
-        case I_ILLYRTHID:
-            u->MakeWMon(mp->name, I_ILLYRTHID,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+        case Items::Types::I_ILLYRTHID:
+            u->MakeWMon(mp.get().name, Items::Types::I_ILLYRTHID,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
             u->SetFlag(FLAG_BEHIND, 1);
             u->MoveUnit(pObj);
 
             u = GetNewUnit(monfac, 0);
 
-            mp = FindMonster(ItemDefs[I_SKELETON].abr,
-                    (ItemDefs[I_SKELETON].type & IT_ILLUSION));
-            u->MakeWMon("Undead", I_SKELETON, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_SKELETON].abr,
+                    (ItemDefs[Items::Types::I_SKELETON].type & IT_ILLUSION));
+            u->MakeWMon("Undead", Items::Types::I_SKELETON, getrandom(mp.get().number + 1));
 
-            mp = FindMonster(ItemDefs[I_UNDEAD].abr,
-                    (ItemDefs[I_UNDEAD].type & IT_ILLUSION));
-            u->items.SetNum(I_UNDEAD, getrandom(mp->number + 1));
+            mp = FindMonster(ItemDefs[Items::Types::I_UNDEAD].abr,
+                    (ItemDefs[Items::Types::I_UNDEAD].type & IT_ILLUSION));
+            u->items.SetNum(Items::Types::I_UNDEAD, getrandom(mp.get().number + 1));
             break;
-        case I_STORMGIANT:
+        case Items::Types::I_STORMGIANT:
             if (getrandom(3) < 1) {
-                montype = I_CLOUDGIANT;
+                montype = Items::Types::I_CLOUDGIANT;
                 mp = FindMonster(ItemDefs[montype].abr,
                         (ItemDefs[montype].type & IT_ILLUSION));
             }
-            u->MakeWMon(mp->name, montype,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+            u->MakeWMon(mp.get().name, montype,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
             break;
         default:
-            u->MakeWMon(mp->name, montype,
-                    (mp->number + getrandom(mp->number) + 1) / 2);
+            u->MakeWMon(mp.get().name, montype,
+                    (mp.get().number + getrandom(mp.get().number) + 1) / 2);
             break;
     }
     u->MoveUnit(pObj);
 }
 
-Unit *Game::MakeManUnit(Faction *fac, int mantype, size_t num, int level, int weaponlevel, int armor, int behind)
+Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype, size_t num, int level, int weaponlevel, int armor, int behind)
 {
-    Unit *u = GetNewUnit(fac);
-    ManType *men = FindRace(ItemDefs[mantype].abr);
-    int *fitting;
+    const auto u = GetNewUnit(fac);
+    const auto& men = FindRace(ItemDefs[mantype].abr);
 
     // Check skills:
-    int scomb = men->defaultlevel;
-    int sxbow = men->defaultlevel;
-    int slbow = men->defaultlevel;
-    for (unsigned int i=0;
-        i<(sizeof(men->skills)/sizeof(men->skills[0]));
-            i++) {
-                if (men->skills[i] == NULL) continue;
-                if (FindSkill(men->skills[i]) == FindSkill("COMB"))
-                    scomb = men->speciallevel;
-                if (FindSkill(men->skills[i]) == FindSkill("XBOW"))
-                    sxbow = men->speciallevel;
-                if (FindSkill(men->skills[i]) == FindSkill("LBOW"))
-                    slbow = men->speciallevel;
+    int scomb = men.defaultlevel;
+    int sxbow = men.defaultlevel;
+    int slbow = men.defaultlevel;
+    for (const auto& sk: men.skills) {
+                if (sk == nullptr) continue;
+                if (FindSkill(sk) == FindSkill("COMB"))
+                    scomb = men.speciallevel;
+                if (FindSkill(sk) == FindSkill("XBOW"))
+                    sxbow = men.speciallevel;
+                if (FindSkill(sk) == FindSkill("LBOW"))
+                    slbow = men.speciallevel;
     }
     int combat = scomb;
-    AString *s = new AString("COMB");
-    int sk = LookupSkill(s);
+    AString s("COMB");
+    auto sk = LookupSkill(s);
     if (behind) {
         if (slbow >= sxbow) {
-            *s = AString("LBOW");
+            s = AString("LBOW");
             sk = LookupSkill(s);
             combat = slbow;
         } else {
-            *s = AString("XBOW");
+            s = AString("XBOW");
             sk = LookupSkill(s);
             combat = sxbow;
         }
     }
     if (combat < level) weaponlevel += level - combat;
-    int weapon = -1;
-    int witem = -1;
-    fitting = new int[NUMWEAPONS];
-    while (weapon == -1) {
+    ValidValue<size_t> weapon;
+    Items witem;
+    std::vector<int> fitting(WeaponDefs.size(), 0);
+    while (!weapon.isValid()) {
         int n = 0;
-        for (int i=0; i<NUMWEAPONS; i++) {
-            fitting[i] = 0;
-            AString *it = new AString(WeaponDefs[i].abbr);
+        for (size_t i = 0; i < WeaponDefs.size(); ++i) {
+            const AString it(WeaponDefs[i].abbr);
             if (ItemDefs[LookupItem(it)].flags & ItemType::DISABLED) continue;
             // disregard picks!
-            AString *ps = new AString("PICK");
+            const AString ps("PICK");
             if (LookupItem(it) == LookupItem(ps)) continue;
             
             // Sort out the more exotic weapons!
             int producelevel = ItemDefs[LookupItem(it)].pLevel;
-            if (ItemDefs[LookupItem(it)].pSkill != FindSkill("WEAP")->abbr) continue;
+            if (ItemDefs[LookupItem(it)].pSkill != FindSkill("WEAP").abbr) continue;
 
-            AString *s1 = new AString(WeaponDefs[i].baseSkill);
-            AString *s2 = new AString(WeaponDefs[i].orSkill);            
+            const AString s1(WeaponDefs[i].baseSkill);
+            const AString s2(WeaponDefs[i].orSkill);            
             if ((WeaponDefs[i].flags & WeaponType::RANGED)
                 && (!behind)) continue;
             int attack = WeaponDefs[i].attackBonus;
@@ -353,7 +358,7 @@ Unit *Game::MakeManUnit(Faction *fac, int mantype, size_t num, int level, int we
                 } else continue;
             } else {
                 // make Javelins possible
-                AString *cs = new AString("COMB");
+                const AString cs("COMB");
                 if ((behind) && (scomb > combat)) {
                     if ((WeaponDefs[i].flags & WeaponType::RANGED)
                         && ((LookupSkill(s1) == LookupSkill(cs))
@@ -371,47 +376,44 @@ Unit *Game::MakeManUnit(Faction *fac, int mantype, size_t num, int level, int we
         } else {
             int secondtry = -1;
             while(secondtry <= 0) {
-                weapon = -1;
+                weapon.invalidate();
                 int w = getrandom(n);
                 /*
                 Awrite(AString("Roll: ") + w);
                 */
                 n = -1;
-                for (int i=0; i<NUMWEAPONS; i++) {
+                for (size_t i = 0; i < fitting.size(); i++) {
                     if (fitting[i]) {
                         n += fitting[i];
                         /*
                         Awrite(WeaponDefs[i].abbr);
                         */
-                        if ((n >= w) && (weapon == -1))
+                        if ((n >= w) && (!weapon.isValid()))
                             weapon = i;
                     }
                 }
-                if (weapon >= 0) {
-                    AString *ws = new AString(WeaponDefs[weapon].abbr);
+                if (weapon.isValid()) {
+                    const AString ws(WeaponDefs[weapon].abbr);
                     witem = LookupItem(ws);
                     secondtry++;
-                    if (men->CanUse(witem)) break;
+                    if (men.CanUse(witem)) break;
                 }
             }
         }
     }
-    delete[] fitting;
     // Check again which skills the weapon uses
-    AString *ws1 = new AString(WeaponDefs[weapon].baseSkill);
-    AString *ws2 = new AString(WeaponDefs[weapon].orSkill);
+    const AString ws1(WeaponDefs[weapon].baseSkill);
+    const AString ws2(WeaponDefs[weapon].orSkill);
     if ((LookupSkill(ws1) != sk) && (LookupSkill(ws2) != sk))
         sk = LookupSkill(ws1);
-    int maxskill = men->defaultlevel;
-    int special = 0;
-    for (unsigned int i=0;
-        i<(sizeof(men->skills)/sizeof(men->skills[0]));
-        i++) {
-        if (FindSkill(men->skills[i]) == FindSkill(SkillDefs[sk].abbr)) {
-            special = 1;
+    int maxskill = men.defaultlevel;
+    bool special = false;
+    for (const auto& s: men.skills) {
+        if (FindSkill(s) == FindSkill(SkillDefs[sk].abbr)) {
+            special = true;
         }        
     }
-    if (special) maxskill = men->speciallevel;
+    if (special) maxskill = men.speciallevel;
     if (level > maxskill) level = maxskill;
     u->SetMen(mantype, num);
     /*
@@ -421,9 +423,9 @@ Unit *Game::MakeManUnit(Faction *fac, int mantype, size_t num, int level, int we
     u->SetSkill(sk, level);
     if (behind) u->SetFlag(FLAG_BEHIND,1);
     if (armor) {
-        int ar = I_PLATEARMOR;
-        if (!men->CanUse(ar)) ar = I_CHAINARMOR;
-        if (!men->CanUse(ar)) ar = I_LEATHERARMOR;
+        Items ar = Items::Types::I_PLATEARMOR;
+        if (!men.CanUse(ar)) ar = Items::Types::I_CHAINARMOR;
+        if (!men.CanUse(ar)) ar = Items::Types::I_LEATHERARMOR;
         u->items.SetNum(ar, num);
     }
     return u;

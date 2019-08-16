@@ -223,7 +223,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         std::weak_ptr<Object> GetDummy();
         void CheckFleets();
 
-        int MoveCost(int, const ARegion::Handle&, const Directions&, AString *road);
+        unsigned int MoveCost(int, const ARegion::Handle&, const Directions&, AString *road);
         std::weak_ptr<Unit> Forbidden(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         std::weak_ptr<Unit> ForbiddenByAlly(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         bool CanTax(const std::shared_ptr<Unit>&);

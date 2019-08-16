@@ -147,7 +147,7 @@ void Game::RunMovementOrders()
                     const auto& d = mo->dirs.front();
                     if (u->savedmovedir != d->dir)
                         u->savedmovement = 0;
-                    u->savedmovement += u->movepoints / static_cast<int>(Globals->MAX_SPEED);
+                    u->savedmovement += static_cast<int>(u->movepoints / Globals->MAX_SPEED);
                     u->savedmovedir = d->dir;
                 } else {
                     u->savedmovement = 0;
@@ -157,7 +157,7 @@ void Game::RunMovementOrders()
                         (u->monthorders->type == Orders::Types::O_MOVE ||
                         u->monthorders->type == Orders::Types::O_ADVANCE)) {
                     if (!mo->dirs.empty()) {
-                        auto tOrder = std::make_shared<AString>();
+                        auto& tOrder = u->oldorders.emplace_front(std::make_shared<AString>());
                         if (mo->advancing)
                             *tOrder = "ADVANCE";
                         else
@@ -172,7 +172,6 @@ void Game::RunMovementOrders()
                             else if (d->dir == Directions::MOVE_PAUSE) *tOrder += "P";
                             else *tOrder += d->dir - Directions::MOVE_ENTER;
                         }
-                        u->oldorders.push_back(tOrder);
                     }
                 }
             }
@@ -187,7 +186,7 @@ void Game::RunMovementOrders()
                     if (!so->dirs.empty()) {
                         u->Event("SAIL: Can't sail that far;"
                             " remaining moves queued.");
-                        auto tOrder = std::make_shared<AString>("SAIL");
+                        auto& tOrder = u->oldorders.emplace_front(std::make_shared<AString>("SAIL"));
                         for(const auto& d: so->dirs) {
                             *tOrder += " ";
                             if (d->dir == Directions::MOVE_PAUSE)
@@ -195,7 +194,6 @@ void Game::RunMovementOrders()
                             else
                                 *tOrder += DirectionAbrs[d->dir];
                         }
-                        u->oldorders.push_back(tOrder);
                     }
                 }
             }
@@ -376,7 +374,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
                     for(const auto& f: reg->passers) {
                         if (f->unit.lock() == unit) {
                             // We moved into here this turn
-                            f->exits_used[x->dir] = 1;
+                            f->exits_used[x->dir] = true;
                         }
                     }
                     // And mark the hex being entered
@@ -384,7 +382,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
                     f->faction = unit->faction;
                     f->level = 0;
                     f->unit = unit;
-                    f->exits_used[reg->GetRealDirComp(x->dir)] = 1;
+                    f->exits_used[reg->GetRealDirComp(x->dir)] = true;
                 }
             }
             reg = newreg;
@@ -1145,7 +1143,7 @@ void Game::RunUnitProduce(const ARegion::Handle& r, const Unit::Handle& u)
     u->Practice(o->skill);
     o->target -= static_cast<int>(output);
     if (o->target > 0) {
-        auto& tOrder = u->turnorders.emplace_back(std::make_shared<TurnOrder>());
+        auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
         AString order;
         tOrder->repeating = 0;
         order = "PRODUCE ";
@@ -1190,16 +1188,15 @@ int Game::ValidProd(const Unit::Handle& u,
 
     const auto po = std::dynamic_pointer_cast<ProduceOrder>(u->monthorders);
     if (p->itemtype == po->item && p->skill == po->skill) {
-        if (p->skill == -1) {
+        if (!p->skill.isValid()) {
             /* Factor for fractional productivity: 10 */
-            po->productivity = (int) ((float) (u->GetMen() * p->productivity / 10));
+            po->productivity = static_cast<int>(static_cast<float>(u->GetMen() * static_cast<size_t>(p->productivity)) / 10.0);
             return po->productivity;
         }
         int level = u->GetSkill(p->skill);
         if (level < ItemDefs[p->itemtype].pLevel) {
             u->Error("PRODUCE: Unit isn't skilled enough.");
-            delete u->monthorders;
-            u->monthorders = 0;
+            u->monthorders.reset();
             return 0;
         }
 
@@ -1207,10 +1204,9 @@ int Game::ValidProd(const Unit::Handle& u,
         // Check faction limits on production. If the item is silver, then the
         // unit is entertaining or working, and the limit does not apply
         //
-        if (p->itemtype != I_SILVER && !TradeCheck(r, u->faction)) {
+        if (p->itemtype != Items::Types::I_SILVER && !TradeCheck(r, u->faction.lock())) {
             u->Error("PRODUCE: Faction can't produce in that many regions.");
-            delete u->monthorders;
-            u->monthorders = 0;
+            u->monthorders.reset();
             return 0;
         }
 
@@ -1218,7 +1214,7 @@ int Game::ValidProd(const Unit::Handle& u,
         // LLS
         int bonus = u->GetProductionBonus(p->itemtype);
         /* Factor for fractional productivity: 10 */
-        po->productivity = (int) ((float) (u->GetMen() * level * p->productivity / 10)) + bonus;
+        po->productivity = static_cast<int>(static_cast<float>(u->GetMen() * static_cast<size_t>(level * p->productivity)) / 10.0) + bonus;
         if (po->target > 0 && po->productivity > po->target)
             po->productivity = po->target;
         return po->productivity;
@@ -1226,14 +1222,12 @@ int Game::ValidProd(const Unit::Handle& u,
     return 0;
 }
 
-int Game::FindAttemptedProd(ARegion * r, Production * p)
+int Game::FindAttemptedProd(const ARegion::Handle& r, const Production::Handle& p)
 {
     int attempted = 0;
-    forlist((&r->objects)) {
-        Object * obj = (Object *) elem;
-        forlist((&obj->units)) {
-            Unit * u = (Unit *) elem;
-            if ((u->monthorders) && (u->monthorders->type == O_PRODUCE)) {
+    for(const auto& obj: r->objects) {
+        for(const auto& u: obj->units) {
+            if ((u->monthorders) && (u->monthorders->type == Orders::Types::O_PRODUCE)) {
                 attempted += ValidProd(u,r,p);
             }
         }
@@ -1241,9 +1235,9 @@ int Game::FindAttemptedProd(ARegion * r, Production * p)
     return attempted;
 }
 
-void Game::RunAProduction(ARegion * r, Production * p)
+void Game::RunAProduction(const ARegion::Handle& r, const Production::Handle& p)
 {
-    int questcomplete;
+    bool questcomplete;
     p->activity = 0;
     if (p->amount == 0) return;
 
@@ -1251,15 +1245,13 @@ void Game::RunAProduction(ARegion * r, Production * p)
     int attempted = FindAttemptedProd(r,p);
     int amt = p->amount;
     if (attempted < amt) attempted = amt;
-    forlist((&r->objects)) {
-        Object * obj = (Object *) elem;
-        forlist((&obj->units)) {
-            Unit * u = (Unit *) elem;
-            questcomplete = 0;
-            if (!u->monthorders || u->monthorders->type != O_PRODUCE)
+    for(const auto& obj: r->objects) {
+        for(const auto& u: obj->units) {
+            questcomplete = false;
+            if (!u->monthorders || u->monthorders->type != Orders::Types::O_PRODUCE)
                 continue;
 
-            ProduceOrder * po = (ProduceOrder *) u->monthorders;
+            const auto po = std::dynamic_pointer_cast<ProduceOrder>(u->monthorders);
             if (po->skill != p->skill || po->item != p->itemtype)
                 continue;
 
@@ -1269,9 +1261,9 @@ void Game::RunAProduction(ARegion * r, Production * p)
             uatt = po->productivity;
             if (uatt && amt && attempted)
             {
-                double dUbucks = ((double) amt) * ((double) uatt)
-                    / ((double) attempted);
-                ubucks = (int) dUbucks;
+                double dUbucks = static_cast<double>(amt) * static_cast<double>(uatt)
+                    / static_cast<double>(attempted);
+                ubucks = static_cast<int>(dUbucks);
                 questcomplete = quests.CheckQuestHarvestTarget(r, po->item, ubucks, amt, u);
             }
             else
@@ -1281,33 +1273,30 @@ void Game::RunAProduction(ARegion * r, Production * p)
 
             amt -= ubucks;
             attempted -= uatt;
-            u->items.SetNum(po->item,u->items.GetNum(po->item)
-                            + ubucks);
-            u->faction->DiscoverItem(po->item, 0, 1);
+            u->items.SetNum(po->item, u->items.GetNum(po->item) + static_cast<size_t>(ubucks));
+            u->faction.lock()->DiscoverItem(po->item, 0, 1);
             p->activity += ubucks;
             po->target -= ubucks;
             if (po->target > 0) {
-                TurnOrder *tOrder = new TurnOrder;
-                AString order;
+                auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
+                auto& order = *(tOrder->turnOrders.emplace_back(std::make_shared<AString>()));
                 tOrder->repeating = 0;
                 order = "PRODUCE ";
                 order += po->target;
                 order += " ";
                 order += ItemDefs[po->item].abr;
-                tOrder->turnOrders.Add(new AString(order));
-                u->turnorders.Insert(tOrder);
             }
 
             /* Show in unit's events section */
-            if (po->item == I_SILVER)
+            if (po->item == Items::Types::I_SILVER)
             {
                 //
                 // WORK
                 //
-                if (po->skill == -1)
+                if (!po->skill.isValid())
                 {
                     u->Event(AString("Earns ") + ubucks + " silver working in "
-                             + r->ShortPrint(&regions) + ".");
+                             + r->ShortPrint(regions) + ".");
                 }
                 else
                 {
@@ -1316,69 +1305,64 @@ void Game::RunAProduction(ARegion * r, Production * p)
                     //
                     u->Event(AString("Earns ") + ubucks
                              + " silver entertaining in " +
-                             r->ShortPrint(&regions)
+                             r->ShortPrint(regions)
                              + ".");
                     // If they don't have PHEN, then this will fail safely
-                    u->Practice(S_PHANTASMAL_ENTERTAINMENT);
-                    u->Practice(S_ENTERTAINMENT);
+                    u->Practice(Skills::Types::S_PHANTASMAL_ENTERTAINMENT);
+                    u->Practice(Skills::Types::S_ENTERTAINMENT);
                 }
             }
             else
             {
                 /* Everything else */
                 u->Event(AString("Produces ") + ItemString(po->item,ubucks) +
-                         " in " + r->ShortPrint(&regions) + ".");
+                         " in " + r->ShortPrint(regions) + ".");
                 u->Practice(po->skill);
             }
-            delete u->monthorders;
-            u->monthorders = 0;
+            u->monthorders.reset();
             if (questcomplete)
+            {
                 u->Event("You have completed a quest!");
+            }
         }
     }
 }
 
-void Game::RunStudyOrders(ARegion * r)
+void Game::RunStudyOrders(const ARegion::Handle& r)
 {
-    forlist((&r->objects)) {
-        Object * obj = (Object *) elem;
-        forlist((&obj->units)) {
-            Unit * u = (Unit *) elem;
+    for(const auto& obj: r->objects) {
+        for(const auto& u: obj->units) {
             if (u->monthorders) {
-                if (u->monthorders->type == O_STUDY) {
+                if (u->monthorders->type == Orders::Types::O_STUDY) {
                     Do1StudyOrder(u,obj);
-                    delete u->monthorders;
-                    u->monthorders = 0;
+                    u->monthorders.reset();
                 }
             }
         }
     }
 }
 
-void Game::RunIdleOrders(ARegion *r)
+void Game::RunIdleOrders(const ARegion::Handle& r)
 {
-    forlist((&r->objects)) {
-        Object *obj = (Object *)elem;
-        forlist((&obj->units)) {
-            Unit *u = (Unit *)elem;
-            if (u->monthorders && u->monthorders->type == O_IDLE) {
+    for(const auto& obj: r->objects) {
+        for(const auto& u: obj->units) {
+            if (u->monthorders && u->monthorders->type == Orders::Types::O_IDLE) {
                 u->Event("Sits idle.");
-                delete u->monthorders;
-                u->monthorders = 0;
+                u->monthorders.reset();
             }
         }
     }
 }
 
-void Game::Do1StudyOrder(Unit *u,Object *obj)
+void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
 {
-    StudyOrder * o = (StudyOrder *) u->monthorders;
-    int sk, cost, reset_man, skmax, taughtdays, days;
+    const auto o = std::dynamic_pointer_cast<StudyOrder>(u->monthorders);
+    int reset_man, skmax, taughtdays, days;
     AString str;
 
     reset_man = -1;
-    sk = o->skill;
-    if (sk == -1 || SkillDefs[sk].flags & SkillType::DISABLED ||
+    const Skills& sk = o->skill;
+    if (!sk.isValid() || SkillDefs[sk].flags & SkillType::DISABLED ||
             (SkillDefs[sk].flags & SkillType::APPRENTICE &&
                 !Globals->APPRENTICES_EXIST)) {
         u->Error("STUDY: Can't study that.");
@@ -1392,20 +1376,28 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
     }
     
     // Small patch for Ceran Mercs
-    if (u->GetMen(I_MERC)) {
+    if (u->GetMen(Items::Types::I_MERC)) {
         u->Error("STUDY: Mercenaries are not allowed to study.");
         return;
     }
 
-    if (o->level != -1) {
+    if (o->level.isValid()) {
         skmax = u->GetSkillMax(sk);
-        if (skmax < o->level) {
-            o->level = skmax;
+        const int o_level = static_cast<int>(o->level);
+        if (skmax < o_level) {
+            if(skmax >= 0)
+            {
+                o->level = static_cast<unsigned int>(skmax);
+            }
+            else
+            {
+                o->level.invalidate();
+            }
             if (u->GetRealSkill(sk) >= o->level) {
                 str = "STUDY: Cannot study ";
                 str += SkillDefs[sk].name;
                 str += " beyond level ";
-                str += o->level;
+                str += o_level;
                 str += ".";
                 u->Error(str);
                 return;
@@ -1413,7 +1405,7 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
                 str = "STUDY: set study goal for ";
                 str += SkillDefs[sk].name;
                 str += " to the maximum achievable level (";
-                str += o->level;
+                str += o_level;
                 str += ").";
                 u->Error(str);
             }
@@ -1424,12 +1416,13 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
         }
     }
 
-    cost = SkillCost(sk) * u->GetMen();
-    if (cost > u->GetSharedMoney()) {
+    const unsigned int cost = SkillCost(sk) * static_cast<unsigned int>(u->GetMen());
+    if (static_cast<int>(cost) > u->GetSharedMoney()) {
         u->Error("STUDY: Not enough funds.");
         return;
     }
 
+    const auto u_fac = u->faction.lock();
     if ((SkillDefs[sk].flags & SkillType::MAGIC) && u->type != U_MAGE) {
         if (u->type == U_APPRENTICE) {
             u->Error(AString("STUDY: An ") +
@@ -1438,7 +1431,7 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
             return;
         }
         if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_UNLIMITED) {
-            if (CountMages(u->faction) >= AllowedMages(u->faction)) {
+            if (CountMages(u_fac) >= AllowedMages(*u_fac)) {
                 u->Error("STUDY: Can't have another magician.");
                 return;
             }
@@ -1466,7 +1459,7 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
         }
 
         if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_UNLIMITED) {
-            if (CountApprentices(u->faction)>=AllowedApprentices(u->faction)) {
+            if (CountApprentices(u_fac) >= AllowedApprentices(*u_fac)) {
                 u->Error(AString("STUDY: Can't have another ") +                    Globals->APPRENTICE_NAME + ".");
                 return;
             }
@@ -1488,10 +1481,9 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
     }
 
     if ((Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) &&
-            (sk == S_QUARTERMASTER) && (u->GetSkill(S_QUARTERMASTER) == 0) &&
+            (sk == Skills::Types::S_QUARTERMASTER) && (u->GetSkill(Skills::Types::S_QUARTERMASTER) == 0) &&
             (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES)) {
-        if (CountQuarterMasters(u->faction) >=
-                AllowedQuarterMasters(u->faction)) {
+        if (CountQuarterMasters(u_fac) >= AllowedQuarterMasters(*u_fac)) {
             u->Error("STUDY: Can't have another quartermaster.");
             return;
         }
@@ -1503,10 +1495,9 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
 
     // If TACTICS_NEEDS_WAR is enabled, and the unit is trying to study to tact-5,
     // check that there's still space...
-    if (Globals->TACTICS_NEEDS_WAR && sk == S_TACTICS && 
+    if (Globals->TACTICS_NEEDS_WAR && sk == Skills::Types::S_TACTICS && 
             u->GetSkill(sk) == 4 && u->skills.GetDays(sk)/u->GetMen() >= 300) {
-        if (CountTacticians(u->faction) >=
-                AllowedTacticians(u->faction)) {
+        if (CountTacticians(u_fac) >= AllowedTacticians(*u_fac)) {
             u->Error("STUDY: Can't start another level 5 tactics leader.");
             return;
         }
@@ -1518,12 +1509,13 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
     } // end tactics check
     
     // adjust teaching for study rate
-    taughtdays = static_cast<int>(static_cast<long int>(o->days) * u->skills.GetStudyRate(sk, u->GetMen()) / 30);
+    const size_t study_rate = u->skills.GetStudyRate(sk, u->GetMen());
+    taughtdays = static_cast<int>((static_cast<size_t>(o->days) * study_rate) / 30);
 
-    days = u->skills.GetStudyRate(sk, u->GetMen()) * u->GetMen() + taughtdays;
+    days = static_cast<int>(u->skills.GetStudyRate(sk, u->GetMen()) * u->GetMen() + static_cast<size_t>(taughtdays));
 
     if ((SkillDefs[sk].flags & SkillType::MAGIC) && u->GetSkill(sk) >= 2) {
-        if (obj->incomplete > 0 || obj->type == O_DUMMY) {
+        if (obj->incomplete > 0 || obj->type == Objects::Types::O_DUMMY) {
             u->Error("Warning: Magic study rate outside of a building "
                     "cut in half above level 2.");
             days /= 2;
@@ -1551,7 +1543,7 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
         u->ConsumeSharedMoney(cost);
         str = "Studies ";
         str += SkillDefs[sk].name;
-        taughtdays = taughtdays/u->GetMen();
+        taughtdays = taughtdays / static_cast<int>(u->GetMen());
         if (taughtdays) {
             str += " and was taught for ";
             str += taughtdays;
@@ -1560,17 +1552,15 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
         str += ".";
         u->Event(str);
         // study to level order
-        if (o->level != -1) {
-            if (u->GetSkill(sk) < o->level) {
-                TurnOrder *tOrder = new TurnOrder;
-                AString order;
+        if (o->level.isValid()) {
+            if (u->GetSkill(sk) < static_cast<int>(o->level)) {
+                auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
+                auto& order = *(tOrder->turnOrders.emplace_back(std::make_shared<AString>()));
                 tOrder->repeating = 0;
-                order = AString("STUDY ") + SkillDefs[sk].abbr + " " + o->level;
-                tOrder->turnOrders.Add(new AString(order));
-                u->turnorders.Insert(tOrder);
+                order = AString("STUDY ") + SkillDefs[sk].abbr + " " + static_cast<int>(o->level);
             } else {
                 AString msg("Completes study to level ");
-                msg += o->level;
+                msg += static_cast<int>(o->level);
                 msg += " in ";
                 msg += SkillDefs[sk].name;
                 msg += ".";
@@ -1585,64 +1575,67 @@ void Game::Do1StudyOrder(Unit *u,Object *obj)
     }
 }
 
-void Game::DoMoveEnter(Unit *unit,ARegion *region,Object **obj)
+void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, Object::Handle& obj)
 {
-    MoveOrder * o;
     if (!unit->monthorders ||
-            ((unit->monthorders->type != O_MOVE) &&
-             (unit->monthorders->type != O_ADVANCE)))
+            ((unit->monthorders->type != Orders::Types::O_MOVE) &&
+             (unit->monthorders->type != Orders::Types::O_ADVANCE)))
         return;
-    o = (MoveOrder *) unit->monthorders;
+    const auto o = std::dynamic_pointer_cast<MoveOrder>(unit->monthorders);
 
-    while (o->dirs.Num()) {
-        MoveDir * x = (MoveDir *) o->dirs.First();
-        int i = x->dir;
-        if (i != MOVE_OUT && i < MOVE_ENTER) return;
-        o->dirs.Remove(x);
-        delete x;
+    while (!o->dirs.empty()) {
+        const auto& x = o->dirs.front();
+        const auto& i = x->dir;
+        if (i != Directions::MOVE_OUT && !i.isMoveEnter())
+        {
+            return;
+        }
+        o->dirs.pop_front();
 
-        if (i >= MOVE_ENTER) {
-            Object * to = region->GetObject(i - MOVE_ENTER);
-            if (!to) {
+        if (i.isMoveEnter()) {
+            const auto to_w = region->GetObject(i.getMoveObject());
+            if (to_w.expired()) {
                 unit->Error("MOVE: Can't find object.");
                 continue;
             }
 
-            if (!to->CanEnter(region,unit)) {
+            const auto to = to_w.lock();
+            if (!to->CanEnter(region, unit)) {
                 unit->Error("ENTER: Can't enter that.");
                 continue;
             }
 
-            Unit *forbid = to->ForbiddenBy(region, unit);
-            if (forbid && !o->advancing) {
+            auto forbid = to->ForbiddenBy(region, unit);
+            if (!forbid.expired() && !o->advancing) {
                 unit->Error("ENTER: Is refused entry.");
                 continue;
             }
 
-            if (forbid && region->IsSafeRegion())
+            if (!forbid.expired() && region->IsSafeRegion())
             {
                 unit->Error("ENTER: No battles allowed in safe regions.");
                 continue;
             }
 
-            if (forbid && !(unit->canattack && unit->IsAlive())) {
+            if (!forbid.expired() && !(unit->canattack && unit->IsAlive())) {
                 unit->Error(AString("ENTER: Unable to attack ") +
-                        *(forbid->name));
+                        *(forbid.lock()->name));
                 continue;
             }
 
-            int done = 0;
-            while (forbid)
+            bool done = false;
+            while (!forbid.expired())
             {
-                int result = RunBattle(region, unit, forbid, 0, 0);
+                const auto forbid_p = forbid.lock();
+                int result = RunBattle(region, unit, forbid_p, 0, 0);
                 if (result == BATTLE_IMPOSSIBLE) {
                     unit->Error(AString("ENTER: Unable to attack ")+
-                            *(forbid->name));
-                    done = 1;
+                            *(forbid_p->name));
+                    done = true;
                     break;
                 }
                 if (!unit->canattack || !unit->IsAlive()) {
-                    done = 1;
+                    done = true;
                     break;
                 }
                 forbid = to->ForbiddenBy(region, unit);
@@ -1651,10 +1644,10 @@ void Game::DoMoveEnter(Unit *unit,ARegion *region,Object **obj)
 
             unit->MoveUnit(to);
             unit->Event(AString("Enters ") + *(to->name) + ".");
-            *obj = to;
+            obj = to;
         } else {
-            if (i == MOVE_OUT) {
-                if (TerrainDefs[region->type].similar_type == R_OCEAN &&
+            if (i == Directions::MOVE_OUT) {
+                if (TerrainDefs[region->type].similar_type == Regions::Types::R_OCEAN &&
                         (!unit->CanSwim() ||
                          unit->GetFlag(FLAG_NOCROSS_WATER)))
                 {
@@ -1662,42 +1655,42 @@ void Game::DoMoveEnter(Unit *unit,ARegion *region,Object **obj)
                     continue;
                 }
 
-                Object * to = region->GetDummy();
+                auto to = region->GetDummy();
                 unit->MoveUnit(to);
-                *obj = to;
+                obj = to.lock();
             }
         }
     }
 }
 
-Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
+Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
+                                    const ARegion::Handle& region,
+                                    const Object::Handle& obj)
 {
-    MoveOrder *o = (MoveOrder *) unit->monthorders;
-    MoveDir *x;
-    ARegion *newreg;
+    const auto o = std::dynamic_pointer_cast<MoveOrder>(unit->monthorders);
     AString road, temp;
-    int movetype, cost, startmove, weight;
-    Unit *ally, *forbid;
 
-    if (!o->dirs.Num()) {
-        delete o;
-        unit->monthorders = 0;
-        return 0;
+    if (o->dirs.empty()) {
+        unit->monthorders.reset();
+        return nullptr;
     }
 
-    x = (MoveDir *) o->dirs.First();
+    const auto& x = o->dirs.front();
 
-    if (x->dir == MOVE_IN) {
+    ARegion::Handle newreg;
+
+    if (x->dir == Directions::MOVE_IN) {
         if (obj->inner == -1) {
             unit->Error("MOVE: Can't move IN there.");
-            goto done_moving;
+            unit->monthorders.reset();
+            return nullptr;
         }
-        newreg = regions.GetRegion(obj->inner);
-        if (obj->type == O_GATEWAY) {
+        newreg = regions.GetRegion(static_cast<size_t>(obj->inner)).lock();
+        if (obj->type == Objects::Types::O_GATEWAY) {
             // Gateways should only exist in the nexus, and move the
             // user to a semi-random instance of the target terrain
             // type, so select where they will actually move to.
-            ARegionArray *level = regions.GetRegionArray(newreg->zloc);
+            const auto level = regions.GetRegionArray(newreg->zloc);
             // match levels to try for, in order:
             // 0 - completely empty towns
             // 1 - towns with only guardsmen
@@ -1707,11 +1700,14 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
             int match = 0;
             int candidates = 0;
             while (!candidates && match < 5) {
-                for (int x = 0; x < level->x; x++)
-                    for (int y = 0; y < level->y; y++) {
-                        ARegion *scanReg = level->GetRegion(x, y);
-                        if (!scanReg)
+                for (unsigned int x = 0; x < level->x; x++)
+                    for (unsigned int y = 0; y < level->y; y++) {
+                        const auto scanReg_w = level->GetRegion(x, y);
+                        if (scanReg_w.expired())
+                        {
                             continue;
+                        }
+                        const auto scanReg = scanReg_w.lock();
                         if (TerrainDefs[scanReg->type].similar_type != TerrainDefs[newreg->type].similar_type)
                             continue;
                         if (match < 3 && !scanReg->town)
@@ -1720,34 +1716,44 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
                             candidates++;
                             continue;
                         }
-                        int guards = 0;
-                        int others = 0;
-                        forlist(&scanReg->objects) {
-                            Object *o = (Object *) elem;
-                            forlist(&o->units) {
-                                Unit *u = (Unit *) elem;
-                                if (u->faction->num == guardfaction)
-                                    guards = 1;
+                        bool guards = false;
+                        bool others = false;
+                        for(const auto& o: scanReg->objects) {
+                            for(const auto& u: o->units) {
+                                if (u->faction.lock()->num == guardfaction)
+                                {
+                                    guards = true;
+                                }
                                 else
-                                    others = 1;
+                                {
+                                    others = true;
+                                }
                             }
                         }
                         switch (match) {
                             case 0:
                                 if (guards || others)
+                                {
                                     continue;
+                                }
                                 break;
                             case 1:
                                 if (!guards || others)
+                                {
                                     continue;
+                                }
                                 break;
                             case 2:
                                 if (!guards)
+                                {
                                     continue;
+                                }
                                 break;
                             case 3:
                                 if (others)
+                                {
                                     continue;
+                                }
                                 break;
                         }
                         candidates++;
@@ -1757,11 +1763,14 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
             }
             if (candidates) {
                 candidates = getrandom(candidates);
-                for (int x = 0; x < level->x; x++)
-                    for (int y = 0; y < level->y; y++) {
-                        ARegion *scanReg = level->GetRegion(x, y);
-                        if (!scanReg)
+                for (unsigned int x = 0; x < level->x; x++)
+                    for (unsigned int y = 0; y < level->y; y++) {
+                        const auto scanReg_w = level->GetRegion(x, y);
+                        if (scanReg_w.expired())
+                        {
                             continue;
+                        }
+                        const auto scanReg = scanReg_w.lock();
                         if (TerrainDefs[scanReg->type].similar_type != TerrainDefs[newreg->type].similar_type)
                             continue;
                         if (match < 3 && !scanReg->town)
@@ -1770,34 +1779,44 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
                             candidates++;
                             continue;
                         }
-                        int guards = 0;
-                        int others = 0;
-                        forlist(&scanReg->objects) {
-                            Object *o = (Object *) elem;
-                            forlist(&o->units) {
-                                Unit *u = (Unit *) elem;
-                                if (u->faction->num == guardfaction)
-                                    guards = 1;
+                        bool guards = false;
+                        bool others = false;
+                        for(const auto& o: scanReg->objects) {
+                            for(const auto& u: o->units) {
+                                if (u->faction.lock()->num == guardfaction)
+                                {
+                                    guards = true;
+                                }
                                 else
-                                    others = 1;
+                                {
+                                    others = true;
+                                }
                             }
                         }
                         switch (match) {
                             case 0:
                                 if (guards || others)
+                                {
                                     continue;
+                                }
                                 break;
                             case 1:
                                 if (!guards || others)
+                                {
                                     continue;
+                                }
                                 break;
                             case 2:
                                 if (!guards)
+                                {
                                     continue;
+                                }
                                 break;
                             case 3:
                                 if (others)
+                                {
                                     continue;
+                                }
                                 break;
                         }
                         if (!candidates--) {
@@ -1806,47 +1825,51 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
                     }
             }
         }
-    } else if (x->dir == MOVE_PAUSE) {
+    } else if (x->dir == Directions::MOVE_PAUSE) {
         newreg = region;
     } else {
-        newreg = region->neighbors[x->dir];
+        newreg = region->neighbors[x->dir].lock();
     }
 
     if (!newreg) {
         unit->Error(AString("MOVE: Can't move that direction."));
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
 
     unit->movepoints += unit->CalcMovePoints(region);
 
     road = "";
-    startmove = 0;
-    movetype = unit->MoveType(region);
-    cost = newreg->MoveCost(movetype, region, x->dir, &road);
-    if (x->dir == MOVE_PAUSE)
+    int startmove = 0;
+    int movetype = unit->MoveType(region);
+    unsigned int cost = newreg->MoveCost(movetype, region, x->dir, &road);
+    if (x->dir == Directions::MOVE_PAUSE)
         cost = 1;
-    if (region->type == R_NEXUS) {
+    if (region->type == Regions::Types::R_NEXUS) {
         cost = 1;
         startmove = 1;
     }
-    if ((TerrainDefs[region->type].similar_type == R_OCEAN) &&
+    if ((TerrainDefs[region->type].similar_type == Regions::Types::R_OCEAN) &&
             (!unit->CanSwim() ||
             unit->GetFlag(FLAG_NOCROSS_WATER))) {
         unit->Error("MOVE: Can't move while in the ocean.");
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
-    weight = unit->items.Weight();
-    if ((TerrainDefs[region->type].similar_type == R_OCEAN) &&
-            (TerrainDefs[newreg->type].similar_type != R_OCEAN) &&
+    size_t weight = unit->items.Weight();
+    if ((TerrainDefs[region->type].similar_type == Regions::Types::R_OCEAN) &&
+            (TerrainDefs[newreg->type].similar_type != Regions::Types::R_OCEAN) &&
             !unit->CanWalk(weight) &&
             !unit->CanRide(weight) &&
             !unit->CanFly(weight)) {
         unit->Error("Must be able to walk to climb out of the ocean.");
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
     if (movetype == M_NONE) {
         unit->Error("MOVE: Unit is overloaded and cannot move.");
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
 
     // If we're moving in the same direction as last month and
@@ -1867,52 +1890,58 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
     }
 
     if (unit->movepoints < cost * Globals->MAX_SPEED)
-        return 0;
-
-    if (x->dir == MOVE_PAUSE) {
-        unit->Event(AString("Pauses to admire the scenery in ") + region->ShortPrint(&regions) + ".");
-        unit->movepoints -= cost * Globals->MAX_SPEED;
-        unit->moved += cost;
-        o->dirs.Remove(x);
-        delete x;
-        return 0;
+    {
+        return nullptr;
     }
 
-    if ((TerrainDefs[newreg->type].similar_type == R_OCEAN) &&
+    if (x->dir == Directions::MOVE_PAUSE) {
+        unit->Event(AString("Pauses to admire the scenery in ") + region->ShortPrint(regions) + ".");
+        unit->movepoints -= cost * Globals->MAX_SPEED;
+        unit->moved += cost;
+        o->dirs.pop_front();
+        return nullptr;
+    }
+
+    if ((TerrainDefs[newreg->type].similar_type == Regions::Types::R_OCEAN) &&
             (!unit->CanSwim() ||
             unit->GetFlag(FLAG_NOCROSS_WATER))) {
         unit->Event(AString("Discovers that ") +
-                newreg->ShortPrint(&regions) + " is " +
+                newreg->ShortPrint(regions) + " is " +
                 TerrainDefs[newreg->type].name + ".");
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
 
     if (unit->type == U_WMON && newreg->town && newreg->IsGuarded()) {
         unit->Event("Monsters don't move into guarded towns.");
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
 
     if (unit->guard == GUARD_ADVANCE) {
-        ally = newreg->ForbiddenByAlly(unit);
-        if (ally && !startmove) {
+        const auto ally = newreg->ForbiddenByAlly(unit);
+        if (!ally.expired() && !startmove) {
             unit->Event(AString("Can't ADVANCE: ") + *(newreg->name) +
-                        " is guarded by " + *(ally->name) + ", an ally.");
-            goto done_moving;
+                        " is guarded by " + *(ally.lock()->name) + ", an ally.");
+            unit->monthorders.reset();
+            return nullptr;
         }
     }
 
     if (o->advancing) unit->guard = GUARD_ADVANCE;
 
-    forbid = newreg->Forbidden(unit);
-    if (forbid && !startmove && unit->guard != GUARD_ADVANCE) {
+    const auto forbid_w = newreg->Forbidden(unit);
+    if (!forbid_w.expired() && !startmove && unit->guard != GUARD_ADVANCE) {
+        const auto forbid = forbid_w.lock();
         int obs = unit->GetAttribute("observation");
         unit->Event(AString("Is forbidden entry to ") +
-                    newreg->ShortPrint(&regions) + " by " +
+                    newreg->ShortPrint(regions) + " by " +
                     forbid->GetName(obs) + ".");
         obs = forbid->GetAttribute("observation");
         forbid->Event(AString("Forbids entry to ") +
                     unit->GetName(obs) + ".");
-        goto done_moving;
+        unit->monthorders.reset();
+        return nullptr;
     }
 
     if (unit->guard == GUARD_GUARD) unit->guard = GUARD_NONE;
@@ -1930,63 +1959,53 @@ Location *Game::DoAMoveOrder(Unit *unit, ARegion *region, Object *obj)
             break;
         case M_RIDE:
             temp = AString("Rides ") + road;
-            unit->Practice(S_RIDING);
+            unit->Practice(Skills::Types::S_RIDING);
             break;
         case M_FLY:
             temp = "Flies ";
-            unit->Practice(S_SUMMON_WIND);
-            unit->Practice(S_RIDING);
+            unit->Practice(Skills::Types::S_SUMMON_WIND);
+            unit->Practice(Skills::Types::S_RIDING);
             break;
         case M_SWIM:
             temp = AString("Swims ");
             break;
     }
-    unit->Event(temp + AString("from ") + region->ShortPrint(&regions)
-            + AString(" to ") + newreg->ShortPrint(&regions) +
+    unit->Event(temp + AString("from ") + region->ShortPrint(regions)
+            + AString(" to ") + newreg->ShortPrint(regions) +
             AString("."));
 
-    if (forbid) {
+    if (!forbid_w.expired()) {
         unit->advancefrom = region;
     }
 
     // TODO: Should we get a transit report on the starting region?
     if (Globals->TRANSIT_REPORT != GameDefs::REPORT_NOTHING) {
-        if (!(unit->faction->IsNPC())) newreg->visited = 1;
+        if (!(unit->faction.lock()->IsNPC())) newreg->visited = 1;
         // Update our visit record in the region we are leaving.
-        Farsight *f;
-        forlist(&region->passers) {
-            f = (Farsight *)elem;
-            if (f->unit == unit) {
+        for(const auto& f: region->passers) {
+            if (f->unit.lock() == unit) {
                 // We moved into here this turn
-                if (x->dir < MOVE_IN) {
-                    f->exits_used[x->dir] = 1;
+                if (!x->dir.isMoveInOutOrEnter()) {
+                    f->exits_used[x->dir] = true;
                 }
             }
         }
         // And mark the hex being entered
-        f = new Farsight;
+        auto& f= newreg->passers.emplace_back(std::make_shared<Farsight>());
         f->faction = unit->faction;
         f->level = 0;
         f->unit = unit;
-        if (x->dir < MOVE_IN) {
-            f->exits_used[region->GetRealDirComp(x->dir)] = 1;
+        if (!x->dir.isMoveInOutOrEnter()) {
+            f->exits_used[region->GetRealDirComp(x->dir)] = true;
         }
-        newreg->passers.Add(f);
     }
 
-    region = newreg;
+    o->dirs.pop_front();
 
-    o->dirs.Remove(x);
-    delete x;
-
-    loc = new Location;
+    auto loc = std::make_shared<Location>();
     loc->unit = unit;
-    loc->region = region;
-    loc->obj = 0;
+    loc->region = newreg;
+    loc->obj.reset();
     return loc;
 
-done_moving:
-    delete o;
-    unit->monthorders = 0;
-    return 0;
 }

@@ -186,7 +186,7 @@ class ValidEnum : public ValidValue<size_t>
 
         iterator asIter() const
         {
-            return iterator(*this);
+            return iterator(static_cast<size_t>(*this));
         }
 };
 

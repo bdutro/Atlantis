@@ -150,7 +150,7 @@ class Unit
         size_t GetSharedNum(const Items&);
         void ConsumeShared(const Items&, size_t);
         int GetSharedMoney();
-        void ConsumeSharedMoney(int);
+        void ConsumeSharedMoney(size_t);
         bool IsAlive();
 
         int MaintCost();
@@ -191,18 +191,18 @@ class Unit
         int Hostile();
         bool Forbids(const ARegion&,const Unit::Handle&);
         int Weight();
-        int FlyingCapacity();
-        int RidingCapacity();
-        int SwimmingCapacity();
-        int WalkingCapacity();
-        bool CanFly(int);
-        bool CanRide(int);
-        bool CanWalk(int);
+        size_t FlyingCapacity();
+        size_t RidingCapacity();
+        size_t SwimmingCapacity();
+        size_t WalkingCapacity();
+        bool CanFly(size_t);
+        bool CanRide(size_t);
+        bool CanWalk(size_t);
         bool CanFly();
         bool CanSwim();
         bool CanReallySwim();
         int MoveType(const std::shared_ptr<ARegion>& r = nullptr);
-        int CalcMovePoints(const std::shared_ptr<ARegion>& r = nullptr);
+        unsigned int CalcMovePoints(const std::shared_ptr<ARegion>& r = nullptr);
         bool CanMoveTo(const ARegion&, const ARegion&);
         int GetFlag(int);
         void SetFlag(int,int);
@@ -236,7 +236,7 @@ class Unit
         int reveal;
         int flags;
         int taxing;
-        int movepoints;
+        unsigned int movepoints;
         int canattack;
         int nomove;
         int routed;

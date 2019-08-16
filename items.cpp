@@ -87,14 +87,14 @@ static AString DefType(int atype)
     return AttType(atype);
 }
 
-Items LookupItem(AString *token)
+Items LookupItem(const AString& token)
 {
     for (auto i = Items::begin(); i != Items::end(); ++i) {
         const auto& item_def = ItemDefs[*i];
         if (item_def.type & IT_ILLUSION) {
-            if (*token == (AString("i") + item_def.abr)) return *i;
+            if (token == (AString("i") + item_def.abr)) return *i;
         } else {
-            if (*token == item_def.abr) return *i;
+            if (token == item_def.abr) return *i;
         }
     }
     return Items();
@@ -1346,7 +1346,7 @@ void Item::Readin(Ainfile *f)
     num = static_cast<size_t>(token->value());
     delete token;
     token = temp->gettoken();
-    type = LookupItem(token);
+    type = LookupItem(*token);
     delete token;
     delete temp;
 }

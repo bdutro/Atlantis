@@ -196,7 +196,7 @@ class MonType
         size_t silver;
         int spoiltype;
         int hostile; /* Percent */
-        int number;
+        unsigned int number;
         char const *name;
         char const *abbr;
 };
@@ -343,7 +343,7 @@ extern Items ParseGiveableItem(AString *);
 extern Items ParseAllItems(AString *);
 extern Items ParseEnabledItem(AString *);
 extern Items ParseTransportableItem(AString *);
-extern Items LookupItem(AString *);
+extern Items LookupItem(const AString&);
 
 extern const BattleItemType& FindBattleItem(char const *abbr);
 extern const ArmorType& FindArmor(char const *abbr);

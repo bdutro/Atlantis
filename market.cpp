@@ -123,7 +123,7 @@ void Market::Readin(Ainfile *f)
     type = f->GetInt<int>();
 
     temp = f->GetStr();
-    item = LookupItem(temp);
+    item = LookupItem(*temp);
     delete temp;
 
     price = f->GetInt<int>();

@@ -174,8 +174,8 @@ private:
     void CreateWorld();
     void CreateNPCFactions();
     void CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needmage);
-    int MakeWMon(ARegion *pReg);
-    void MakeLMon(Object *pObj);
+    bool MakeWMon(const ARegion::Handle& pReg);
+    void MakeLMon(const Object::Handle& pObj);
 
     void WriteSurfaceMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type);
     void WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type);
@@ -419,13 +419,13 @@ private:
     // The first 4 are game specific and can be found in extra.cpp. They
     // may return -1 to indicate no limit.
     //
-    static int getAllowedPoints(int p, const std::vector<int>& allowed);
-    int AllowedMages(const Faction& pFac);
-    int AllowedApprentices(const Faction& pFact);
-    int AllowedQuarterMasters(const Faction& pFact);
-    int AllowedTacticians(const Faction& pFact);
-    int AllowedTaxes(const Faction& pFac);
-    int AllowedTrades(const Faction& pFac);
+    static unsigned int getAllowedPoints(int p, const std::vector<unsigned int>& allowed);
+    unsigned int AllowedMages(const Faction& pFac);
+    unsigned int AllowedApprentices(const Faction& pFact);
+    unsigned int AllowedQuarterMasters(const Faction& pFact);
+    unsigned int AllowedTacticians(const Faction& pFact);
+    unsigned int AllowedTaxes(const Faction& pFac);
+    unsigned int AllowedTrades(const Faction& pFac);
     int TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
     int TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
 

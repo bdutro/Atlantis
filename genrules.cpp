@@ -586,12 +586,11 @@ int Game::GenRules(const AString &rules, const AString &css,
         fac.type[F_WAR] = w = (Globals->FACTION_POINTS+1)/3;
         fac.type[F_TRADE] = t = Globals->FACTION_POINTS/3;
         fac.type[F_MAGIC] = m = (Globals->FACTION_POINTS+2)/3;
-        int nm, na, nw, nt, nq;
-        nm = AllowedMages(fac);
-        na = AllowedApprentices(fac);
-        nq = AllowedQuarterMasters(fac);
-        nt = AllowedTrades(fac);
-        nw = AllowedTaxes(fac);
+        unsigned int nm = AllowedMages(fac);
+        unsigned int na = AllowedApprentices(fac);
+        unsigned int nq = AllowedQuarterMasters(fac);
+        unsigned int nt = AllowedTrades(fac);
+        unsigned int nw = AllowedTaxes(fac);
         temp = "For example, a well rounded faction might spend ";
         temp += AString(w) + " point" + (w==1?"":"s") + " on War, ";
         temp += AString(t) + " point" + (t==1?"":"s") + " on Trade, and ";

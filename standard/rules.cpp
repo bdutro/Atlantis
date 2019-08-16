@@ -33,17 +33,17 @@
 // the html file containing the rules to correctly reflect the changes!
 //
 
-const std::vector<int> allowedMages = { 0, 1, 2, 3, 5, 7 };
+const std::vector<unsigned int> allowedMages = { 0, 1, 2, 3, 5, 7 };
 
-const std::vector<int> allowedApprentices = { 0, 2, 4, 6, 10, 14 };
+const std::vector<unsigned int> allowedApprentices = { 0, 2, 4, 6, 10, 14 };
 
-const std::vector<int> allowedTaxes = { 0, 10, 24, 40, 60, 100 };
+const std::vector<unsigned int> allowedTaxes = { 0, 10, 24, 40, 60, 100 };
 
-const std::vector<int> allowedTrades = { 0, 10, 24, 40, 60, 100 };
+const std::vector<unsigned int> allowedTrades = { 0, 10, 24, 40, 60, 100 };
 
-const std::vector<int> allowedQuartermasters = { 0, 2, 4, 8, 12, 20 };
+const std::vector<unsigned int> allowedQuartermasters = { 0, 2, 4, 8, 12, 20 };
 
-const std::vector<int> allowedTacticians = { 0, 1, 2, 4, 6, 10 };
+const std::vector<unsigned int> allowedTacticians = { 0, 1, 2, 4, 6, 10 };
 
 static GameDefs g = {
     "Wyreth",                // RULESET_NAME

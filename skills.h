@@ -72,9 +72,14 @@ struct SkillDepend
 class SkillType
 {
     public:
+        bool operator==(const SkillType& rhs) const
+        {
+            return this == &rhs;
+        }
+
         char const * name;
         char const * abbr;
-        int cost;
+        unsigned int cost;
 
         enum {
             MAGIC = 0x1,
@@ -122,7 +127,7 @@ class ShowType {
 };
 extern GameDataArray<ShowType> ShowDefs;
 
-int SkillCost(int);
+unsigned int SkillCost(const Skills&);
 int SkillMax(char const *,int); /* skill, race */
 size_t GetLevelByDays(size_t);
 size_t GetDaysByLevel(int);
@@ -163,7 +168,7 @@ class SkillList {
         void SetDays(const Skills&,size_t); /* Skill, days */
         void SetExp(const Skills&,int); /* Skill, exp */
         void Combine(SkillList *);
-        size_t GetStudyRate(const Skills&, int); /* Skill, num of men */
+        size_t GetStudyRate(const Skills&, size_t); /* Skill, num of men */
         SkillList Split(int,int); /* total men, num to split */
         AString Report(int); /* Number of men */
         void Readin(Ainfile *);

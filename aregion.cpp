@@ -1135,7 +1135,7 @@ void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER
     if (gate > 0) gatemonth = f->GetInt<size_t>();
 
     temp = f->GetStr();
-    race = LookupItem(temp);
+    race = LookupItem(*temp);
     delete temp;
 
     population = f->GetInt<int>();
@@ -1838,7 +1838,7 @@ unsigned int ARegion::IsCoastalOrLakeside()
     return seacount;
 }
 
-int ARegion::MoveCost(int movetype, const ARegion::Handle& fromRegion, const Directions& dir, AString *road)
+unsigned int ARegion::MoveCost(int movetype, const ARegion::Handle& fromRegion, const Directions& dir, AString *road)
 {
     int cost = 1;
     if (Globals->WEATHER_EXISTS) {
@@ -1858,7 +1858,7 @@ int ARegion::MoveCost(int movetype, const ARegion::Handle& fromRegion, const Dir
         }
     }
     if (cost < 1) cost = 1;
-    return cost;
+    return static_cast<unsigned int>(cost);
 }
 
 Unit::WeakHandle ARegion::Forbidden(const Unit::Handle& u)

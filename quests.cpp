@@ -223,7 +223,7 @@ int QuestList::CheckQuestKillTarget(Unit * u, ItemList *reward)
     return 0;
 }
 
-int QuestList::CheckQuestHarvestTarget(ARegion *r,
+bool QuestList::CheckQuestHarvestTarget(ARegion *r,
         int item, int harvested, int max,
         Unit *u)
 {
@@ -243,12 +243,12 @@ int QuestList::CheckQuestHarvestTarget(ARegion *r,
                 }
                 this->Remove(q);
                 delete q;
-                return 1;
+                return true;
             }
         }
     }
 
-    return 0;
+    return false;
 }
 
 int QuestList::CheckQuestBuildTarget(ARegion *r, int building,

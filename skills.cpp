@@ -127,7 +127,7 @@ AString SkillStrs(const Skills& type)
     return SkillStrs(SkillDefs[type]);
 }
 
-int SkillCost(int skill)
+unsigned int SkillCost(const Skills& skill)
 {
     return SkillDefs[skill].cost;
 }
@@ -376,7 +376,7 @@ void SkillList::Combine(SkillList *b)
 /* Returns the rate of study (days/month and man)
  * for studying a skill
  */
-size_t SkillList::GetStudyRate(int skill, int nummen)
+size_t SkillList::GetStudyRate(const Skills& skill, size_t nummen)
 {
     int days = 0;
     int exp = 0;

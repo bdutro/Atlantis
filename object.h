@@ -109,7 +109,7 @@ class Object
         int IsFleet();
         int IsBuilding();
         int CanModify();
-        int CanEnter(ARegion *, Unit *);
+        int CanEnter(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
         std::weak_ptr<Unit> ForbiddenBy(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
         std::weak_ptr<Unit> GetOwner();
 

@@ -139,7 +139,7 @@ class StudyOrder : public Order {
 
         Skills skill;
         size_t days;
-        unsigned int level;
+        ValidValue<unsigned int> level;
 };
 
 class TeachOrder : public Order {

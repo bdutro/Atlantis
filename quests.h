@@ -66,9 +66,9 @@ class QuestList : public AList
         void WriteQuests(Aoutfile *f);
 
         int CheckQuestKillTarget(const Unit::Handle& u, const ItemList& reward);
-        int CheckQuestHarvestTarget(ARegion *r,
-                int item, int harvested, int max,
-                Unit *u);
+        bool CheckQuestHarvestTarget(const ARegion::Handle& r,
+                const Items& item, int harvested, int max,
+                const Unit::Handle& u);
         int CheckQuestBuildTarget(const ARegion::Handle& r, const Objects& building,
                 const Unit::Handle& u);
         int CheckQuestVisitTarget(ARegion *r, Unit *u);

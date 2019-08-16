@@ -168,7 +168,7 @@ void Game::ModifySkillCost(const Skills& sk, int cost)
     {
         return;
     }
-    SkillDefs[sk].cost = cost;
+    SkillDefs[sk].cost = static_cast<unsigned int>(cost);
 }
 
 void Game::ModifySkillSpecial(const Skills& sk, char const *special)
@@ -640,7 +640,7 @@ void Game::ModifyMonsterThreat(char const *mon, int num, int hostileChance)
     {
         auto& pM = FindMonster_(mon, 0);
         pM.hostile = hostileChance;
-        pM.number = num;
+        pM.number = static_cast<unsigned int>(num);
     }
     catch(const NoSuchItemException&)
     {

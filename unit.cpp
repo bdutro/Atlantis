@@ -923,7 +923,7 @@ size_t Unit::GetSharedNum(const Types& item)
     return count;
 }
 
-void Unit::ConsumeShared(int item, int n)
+void Unit::ConsumeShared(const Items& item, unsigned int n)
 {
     if (items.GetNum(item) >= n) {
         // This unit doesn't need to use shared resources
@@ -960,12 +960,12 @@ void Unit::ConsumeShared(int item, int n)
 
 int Unit::GetSharedMoney()
 {
-    return GetSharedNum(I_SILVER);
+    return GetSharedNum(Items::Types::I_SILVER);
 }
 
-void Unit::ConsumeSharedMoney(int n)
+void Unit::ConsumeSharedMoney(unsigned int n)
 {
-    return ConsumeShared(I_SILVER, n);
+    return ConsumeShared(Items::Types::I_SILVER, n);
 }
 
 int Unit::GetAttackRiding()
@@ -1526,7 +1526,7 @@ int Unit::Weight()
     return retval;
 }
 
-int Unit::FlyingCapacity()
+size_t Unit::FlyingCapacity()
 {
     int cap = 0;
     forlist(&items) {
@@ -1539,7 +1539,7 @@ int Unit::FlyingCapacity()
     return cap;
 }
 
-int Unit::RidingCapacity()
+size_t Unit::RidingCapacity()
 {
     int cap = 0;
     forlist(&items) {
@@ -1550,7 +1550,7 @@ int Unit::RidingCapacity()
     return cap;
 }
 
-int Unit::SwimmingCapacity()
+size_t Unit::SwimmingCapacity()
 {
     int cap = 0;
     forlist(&items) {
@@ -1563,7 +1563,7 @@ int Unit::SwimmingCapacity()
     return cap;
 }
 
-int Unit::WalkingCapacity()
+size_t Unit::WalkingCapacity()
 {
     int cap = 0;
     forlist(&items) {
@@ -1583,7 +1583,7 @@ int Unit::WalkingCapacity()
     return cap;
 }
 
-bool Unit::CanFly(int weight)
+bool Unit::CanFly(size_t weight)
 {
     if (FlyingCapacity() >= weight) return true;
     return false;
@@ -1610,13 +1610,13 @@ bool Unit::CanFly()
     return CanFly(weight);
 }
 
-bool Unit::CanRide(int weight)
+bool Unit::CanRide(size_t weight)
 {
     if (RidingCapacity() >= weight) return true;
     return false;
 }
 
-bool Unit::CanWalk(int weight)
+bool Unit::CanWalk(size_t weight)
 {
     if (WalkingCapacity() >= weight) return true;
     return false;
@@ -1677,7 +1677,7 @@ static int ContributesToMovement(int movetype, int item)
     return 0;
 }
 
-int Unit::CalcMovePoints(ARegion *r)
+unsigned int Unit::CalcMovePoints(ARegion *r)
 {
     int movetype, speed, weight, cap, hitches;
     Item *i;

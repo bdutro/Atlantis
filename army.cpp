@@ -501,7 +501,7 @@ void Soldier::RestoreItems()
 
         if (GET_BIT(battleItems, battleType)) {
             AString itm(pBat.abbr);
-            Items item = LookupItem(&itm);
+            Items item = LookupItem(itm);
             unit_sp->items.SetNum(item, unit_sp->items.GetNum(item) + 1);
         }
     }
