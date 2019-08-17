@@ -67,6 +67,7 @@ class Aoutfile {
         void PutStr(const AString &);
         void PutInt(int);
         void PutInt(unsigned int);
+        void PutInt(ssize_t);
         void PutInt(size_t);
         void PutBool(bool);
 

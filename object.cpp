@@ -46,28 +46,40 @@ Objects LookupObject(AString *token)
  * produced using the build order) if the ships
  * argument is given.
  */
-int ParseObject(AString *token, int ships)
+ssize_t ParseShipObject(AString *token)
 {
     // Check for ship-type items:
-    if (ships > 0) {
-        for (int i=0; i<NITEMS; i++) {
-            if (ItemDefs[i].type & IT_SHIP) {
-                if ((*token == ItemDefs[i].name) ||
-                    (*token == ItemDefs[i].abr)) {
-                        if (ItemDefs[i].flags & ItemType::DISABLED) continue;
-                        return -(i+1);
-                }
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        if (ItemDefs[*i].type & IT_SHIP) {
+            if ((*token == ItemDefs[*i].name) ||
+                (*token == ItemDefs[*i].abr)) {
+                    if (ItemDefs[*i].flags & ItemType::DISABLED) continue;
+                    return -(static_cast<ssize_t>(*i)+1);
             }
         }
     }
-    for (int i=O_DUMMY+1; i<NOBJECTS; i++) {
-        if (*token == ObjectDefs[i].name) {
-            if (ObjectDefs[i].flags & ObjectType::DISABLED) return -1;
-            return i;
-        }
+
+    Objects parse_obj_result = ParseObject(token);
+
+    if(parse_obj_result.isValid())
+    {
+        return static_cast<ssize_t>(parse_obj_result);
     }
 
     return -1;
+}
+
+Objects ParseObject(AString *token)
+{
+    // Check for ship-type items:
+    for (auto i = std::next(Objects::begin()); i != Objects::end(); ++i) {
+        if (*token == ObjectDefs[*i].name) {
+            if (ObjectDefs[*i].flags & ObjectType::DISABLED) return Objects();
+            return *i;
+        }
+    }
+
+    return Objects();
 }
 
 bool ObjectIsShip(const Objects& ot)
@@ -76,10 +88,10 @@ bool ObjectIsShip(const Objects& ot)
     return false;
 }
 
-Object::Object(ARegion *reg)
+Object::Object(const ARegion::WeakHandle& reg)
 {
     num = 0;
-    type = O_DUMMY;
+    type = Objects::Types::O_DUMMY;
     name = new AString("Dummy");
     incomplete = 0;
     describe = 0;
@@ -91,21 +103,21 @@ Object::Object(ARegion *reg)
     prevdir = -1;
     flying = 0;
     movepoints = Globals->PHASED_MOVE_OFFSET % Globals->MAX_SPEED;
-    ships.Empty();
+    ships.clear();
 }
 
 Object::~Object()
 {
     if (name) delete name;
     if (describe) delete describe;
-    region = (ARegion *)NULL;
+    region.reset();
 }
 
 void Object::Writeout(Aoutfile *f)
 {
     f->PutInt(num);
-    if (IsFleet()) f->PutStr(ObjectDefs[O_FLEET].name);
-    else if (type != -1) f->PutStr(ObjectDefs[type].name);
+    if (IsFleet()) f->PutStr(ObjectDefs[Objects::Types::O_FLEET].name);
+    else if (type.isValid()) f->PutStr(ObjectDefs[type].name);
     else f->PutStr("NO_OBJECT");
     f->PutInt(incomplete);
     f->PutStr(*name);
@@ -120,9 +132,11 @@ void Object::Writeout(Aoutfile *f)
     else
         f->PutInt(-1);
     f->PutInt(runes);
-    f->PutInt(units.Num());
-    forlist ((&units))
-        ((Unit *) elem)->Writeout(f);
+    f->PutInt(units.size());
+    for(const auto& u: units)
+    {
+        u->Writeout(f);
+    }
     WriteoutFleet(f);
 }
 
@@ -130,13 +144,12 @@ void Object::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER 
 {
     AString *temp;
 
-    num = f->GetInt();
+    num = f->GetInt<int>();
 
     temp = f->GetStr();
     type = LookupObject(temp);
-    delete temp;
 
-    incomplete = f->GetInt();
+    incomplete = f->GetInt<int>();
 
     if (name) delete name;
     name = f->GetStr();
@@ -145,14 +158,14 @@ void Object::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER 
         delete describe;
         describe = 0;
     }
-    inner = f->GetInt();
-    prevdir = f->GetInt();
-    runes = f->GetInt();
+    inner = f->GetInt<ssize_t>();
+    prevdir = f->GetInt<Directions>();
+    runes = f->GetInt<int>();
 
     // Now, fix up a save file if ALLOW_TRIVIAL_PORTAGE is allowed, just
     // in case it wasn't when the save file was made.
-    if (Globals->ALLOW_TRIVIAL_PORTAGE) prevdir = -1;
-    int i = f->GetInt();
+    if (Globals->ALLOW_TRIVIAL_PORTAGE) prevdir.invalidate();
+    int i = f->GetInt<int>();
     for (int j=0; j<i; j++) {
         Unit *temp = new Unit;
         temp->Readin(f, facs, v);

@@ -200,7 +200,7 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                         break;
                     }
 
-                    Objects objType = ParseObject(pToken, 0);
+                    Objects objType = ParseObject(pToken);
                     if ( !objType.isValid() || (ObjectDefs[objType].flags & ObjectType::DISABLED) ) {
                         Awrite( "No such object." );
                         break;

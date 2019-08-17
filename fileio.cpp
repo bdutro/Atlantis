@@ -189,6 +189,12 @@ void Aoutfile::PutInt(size_t x)
     *file << F_ENDLINE;
 }
 
+void Aoutfile::PutInt(ssize_t x)
+{
+    *file << x;
+    *file << F_ENDLINE;
+}
+
 void Aoutfile::PutInt(unsigned int x)
 {
     PutInt(static_cast<size_t>(x));
@@ -196,7 +202,7 @@ void Aoutfile::PutInt(unsigned int x)
 
 void Aoutfile::PutInt(int x)
 {
-    PutInt(static_cast<size_t>(x));
+    PutInt(static_cast<ssize_t>(x));
 }
 
 void Aoutfile::PutBool(bool x)

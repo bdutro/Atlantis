@@ -79,7 +79,8 @@ AString *ObjectDescription(int obj);
 
 Objects LookupObject(AString *token);
 
-Objects ParseObject(AString *, int ships);
+ssize_t ParseShipObject(AString *);
+Objects ParseObject(AString *);
 
 bool ObjectIsShip(const Objects&);
 

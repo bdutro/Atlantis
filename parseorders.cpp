@@ -832,7 +832,7 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
             return;
         }
 
-        obj = ParseObject(token, 1);
+        obj = ParseShipObject(token);
         delete token;
 
         if (!pCheck && obj >= -1) {
@@ -1560,7 +1560,7 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
             order->target = targ;    // set the order's target to the unit number helped
         } else {
             // token exists and != "help": must be something like 'build tower'
-            int ot = ParseObject(token, 1);
+            int ot = ParseShipObject(token);
             delete token;
             if (ot == -1) {
                 ParseError(pCheck, unit, 0, "BUILD: Not a valid object name.");
