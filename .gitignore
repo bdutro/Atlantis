@@ -1,5 +1,6 @@
 .DS_Store
 *.gch
+*.gch.tmp
 obj/
 */obj/
 fracas/fracas
