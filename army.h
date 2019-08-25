@@ -46,7 +46,7 @@ class Location;
 class Soldier {
     public:
         using Handle = std::shared_ptr<Soldier>;
-        Soldier(const Unit::Handle& unit, const std::shared_ptr<Object>& object, const Regions& regType, const Items& race, int ass=0);
+        Soldier(const std::shared_ptr<Unit>& unit, const std::shared_ptr<Object>& object, const Regions& regType, const Items& race, int ass=0);
 
         void SetupSpell();
         void SetupCombatItems();
@@ -68,7 +68,7 @@ class Soldier {
 
         /* Unit info */
         AString name;
-        Unit::WeakHandle unit;
+        std::weak_ptr<Unit> unit;
         Items race;
         Items riding;
         Objects building;
@@ -108,7 +108,7 @@ class Army
     public:
         using Handle = std::shared_ptr<Army>;
 
-        Army(const Unit::Handle&, const std::list<std::shared_ptr<Location>>&, int, int = 0);
+        Army(const std::shared_ptr<Unit>&, const std::list<std::shared_ptr<Location>>&, int, int = 0);
         ~Army() = default;
 
         void WriteLosses(Battle&);
@@ -144,7 +144,7 @@ class Army
         bool CheckSpecialTarget(char const *, size_t);
 
         std::vector<Soldier::Handle> soldiers;
-        Unit::WeakHandle leader;
+        std::weak_ptr<Unit> leader;
         ShieldList shields;
         int round;
         int tac;

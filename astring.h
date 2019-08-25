@@ -43,6 +43,10 @@ public:
     AString(size_t);
     AString(char);
     AString(const AString &);
+    AString(const std::string& s) :
+        AString(s.c_str())
+    {
+    }
     ~AString();
 
     bool operator==(const AString &) const;

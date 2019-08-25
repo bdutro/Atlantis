@@ -33,7 +33,7 @@
 // Make sure this is correct.   The default is 1000 towns and 1000 regions.
 #define NUMBER_OF_TOWNS 1000
 
-static const std::vector<const char *> regionnames {
+static const std::vector<std::string> regionnames {
     "A'irhin",
     "A'vespol",
     "Abernecht",
@@ -2096,7 +2096,7 @@ size_t AGetName(int town, const ARegion::Handle&)
     return j;
 }
 
-char const *AGetNameString( size_t name )
+const std::string& AGetNameString( size_t name )
 {
     return( regionnames[ name ] );
 }

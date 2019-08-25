@@ -138,7 +138,7 @@ void ARegion::ZeroNeighbors()
     }
 }
 
-void ARegion::SetName(char const *c)
+void ARegion::SetName(const std::string& c)
 {
     if (name) delete name;
     name = new AString(c);

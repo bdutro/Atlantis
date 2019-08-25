@@ -272,14 +272,14 @@ class Unit : std::enable_shared_from_this<Unit>
         AList forgetorders;
         CastOrder *castorders;
         TeleportOrder *teleportorders;
-        Order::Handle stealorders;
-        Order::Handle monthorders;
+        std::shared_ptr<Order> stealorders;
+        std::shared_ptr<Order> monthorders;
         AttackOrder *attackorders;
         EvictOrder *evictorders;
         std::weak_ptr<ARegion> advancefrom;
 
         AList exchangeorders;
-        std::list<TurnOrder::Handle> turnorders;
+        std::list<std::shared_ptr<TurnOrder>> turnorders;
         int inTurnBlock;
         Order *presentMonthOrders;
         int presentTaxing;

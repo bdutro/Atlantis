@@ -24,7 +24,7 @@
 // END A3HEADER
 #include "orders.h"
 
-char const *od[] = {
+const std::vector<std::string> OrderStrs = {
     "#atlantis",
     "#end",
     "unit",
@@ -93,284 +93,144 @@ char const *od[] = {
     "work",
 };
 
-char const **OrderStrs = od;
-
-int Parse1Order(AString *token)
+Orders Parse1Order(AString *token)
 {
-    for (int i=0; i<NORDERS; i++)
-        if (*token == OrderStrs[i]) return i;
-    return -1;
+    for (auto i = Orders::begin(); i != Orders::end(); ++i)
+    {
+        if (*token == OrderStrs[*i])
+        {
+            return *i;
+        }
+    }
+    return Orders();
 }
 
 Order::Order()
 {
-    type = NORDERS;
+    type = *Orders::end();
     quiet = 0;
-}
-
-Order::~Order() {
 }
 
 ExchangeOrder::ExchangeOrder()
 {
-    type = O_EXCHANGE;
+    type = Orders::Types::O_EXCHANGE;
     exchangeStatus = -1;
-}
-
-ExchangeOrder::~ExchangeOrder()
-{
-    if (target) delete target;
 }
 
 TurnOrder::TurnOrder()
 {
-    type = O_TURN;
+    type = Orders::Types::O_TURN;
     repeating = 0;
-}
-
-TurnOrder::~TurnOrder()
-{
 }
 
 MoveOrder::MoveOrder()
 {
-    type = O_MOVE;
-}
-
-MoveOrder::~MoveOrder()
-{
+    type = Orders::Types::O_MOVE;
 }
 
 ForgetOrder::ForgetOrder()
 {
-    type = O_FORGET;
-}
-
-ForgetOrder::~ForgetOrder()
-{
+    type = Orders::Types::O_FORGET;
 }
 
 WithdrawOrder::WithdrawOrder()
 {
-    type = O_WITHDRAW;
-}
-
-WithdrawOrder::~WithdrawOrder()
-{
+    type = Orders::Types::O_WITHDRAW;
 }
 
 GiveOrder::GiveOrder()
 {
-    type = O_GIVE;
+    type = Orders::Types::O_GIVE;
     unfinished = 0;
     merge = 0;
 }
 
-GiveOrder::~GiveOrder()
-{
-    if (target) delete target;
-}
-
 StudyOrder::StudyOrder()
 {
-    type = O_STUDY;
-}
-
-StudyOrder::~StudyOrder()
-{
+    type = Orders::Types::O_STUDY;
 }
 
 TeachOrder::TeachOrder()
 {
-    type = O_TEACH;
-}
-
-TeachOrder::~TeachOrder()
-{
+    type = Orders::Types::O_TEACH;
 }
 
 ProduceOrder::ProduceOrder()
 {
-    type = O_PRODUCE;
-}
-
-ProduceOrder::~ProduceOrder()
-{
+    type = Orders::Types::O_PRODUCE;
 }
 
 BuyOrder::BuyOrder()
 {
-    type = O_BUY;
-}
-
-BuyOrder::~BuyOrder()
-{
+    type = Orders::Types::O_BUY;
 }
 
 SellOrder::SellOrder()
 {
-    type = O_SELL;
-}
-
-SellOrder::~SellOrder()
-{
+    type = Orders::Types::O_SELL;
 }
 
 AttackOrder::AttackOrder()
 {
-    type = O_ATTACK;
-}
-
-AttackOrder::~AttackOrder()
-{
+    type = Orders::Types::O_ATTACK;
 }
 
 BuildOrder::BuildOrder()
 {
-    type = O_BUILD;
-}
-
-BuildOrder::~BuildOrder()
-{
-    if (target) delete target;
+    type = Orders::Types::O_BUILD;
 }
 
 SailOrder::SailOrder()
 {
-    type = O_SAIL;
-}
-
-SailOrder::~SailOrder()
-{
+    type = Orders::Types::O_SAIL;
 }
 
 FindOrder::FindOrder()
 {
-    type = O_FIND;
-}
-
-FindOrder::~FindOrder()
-{
+    type = Orders::Types::O_FIND;
 }
 
 StealOrder::StealOrder()
 {
-    type = O_STEAL;
-}
-
-StealOrder::~StealOrder()
-{
-    if (target) delete target;
+    type = Orders::Types::O_STEAL;
 }
 
 AssassinateOrder::AssassinateOrder()
 {
-    type = O_ASSASSINATE;
-}
-
-AssassinateOrder::~AssassinateOrder()
-{
-    if (target) delete target;
+    type = Orders::Types::O_ASSASSINATE;
 }
 
 CastOrder::CastOrder()
 {
-    type = O_CAST;
-}
-
-CastOrder::~CastOrder()
-{
+    type = Orders::Types::O_CAST;
 }
 
 CastMindOrder::CastMindOrder()
 {
-    id = 0;
-}
-
-CastMindOrder::~CastMindOrder()
-{
-    delete id;
-}
-
-TeleportOrder::TeleportOrder()
-{
-}
-
-TeleportOrder::~TeleportOrder()
-{
-}
-
-CastRegionOrder::CastRegionOrder()
-{
-}
-
-CastRegionOrder::~CastRegionOrder()
-{
-}
-
-CastIntOrder::CastIntOrder()
-{
-}
-
-CastIntOrder::~CastIntOrder()
-{
-}
-
-CastUnitsOrder::CastUnitsOrder()
-{
-}
-
-CastUnitsOrder::~CastUnitsOrder()
-{
+    id.invalidate();
 }
 
 EvictOrder::EvictOrder()
 {
-    type = O_EVICT;
-}
-
-EvictOrder::~EvictOrder()
-{
+    type = Orders::Types::O_EVICT;
 }
 
 IdleOrder::IdleOrder()
 {
-    type = O_IDLE;
-}
-
-IdleOrder::~IdleOrder()
-{
+    type = Orders::Types::O_IDLE;
 }
 
 TransportOrder::TransportOrder()
 {
-    type = O_TRANSPORT;
+    type = Orders::Types::O_TRANSPORT;
     item = -1;
     amount = 0;
     except = 0;
-    target = NULL;
-}
-
-TransportOrder::~TransportOrder()
-{
-    if (target) delete target;
-}
-
-CastTransmuteOrder::CastTransmuteOrder()
-{
-}
-
-CastTransmuteOrder::~CastTransmuteOrder()
-{
+    target.invalidate();
 }
 
 JoinOrder::JoinOrder()
 {
-    type = O_JOIN;
-}
-
-JoinOrder::~JoinOrder()
-{
-    if (target) delete target;
+    type = Orders::Types::O_JOIN;
 }
 

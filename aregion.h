@@ -121,7 +121,7 @@ class Location
 
 Location::WeakHandle GetUnit(const std::list<Location::Handle>&, size_t);
 
-char const *AGetNameString(size_t name);
+const std::string& AGetNameString(size_t name);
 
 using ExitArray = std::array<bool, Directions::size()>;
 
@@ -183,7 +183,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Setup();
 
         void ZeroNeighbors();
-        void SetName(char const *);
+        void SetName(const std::string&);
 
         void Writeout(Aoutfile *);
         void Readin(Ainfile *, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);

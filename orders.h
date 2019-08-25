@@ -49,6 +49,7 @@ class EvictOrder;
 class BankOrder;
 class IdleOrder;
 class TransportOrder;
+class TurnOrder;
 
 #include <memory>
 #include <list>
@@ -70,7 +71,7 @@ enum {
     M_SAIL
 };
 
-extern char const ** OrderStrs;
+extern const std::vector<std::string> OrderStrs;
 
 Orders Parse1Order(AString *);
 
@@ -79,7 +80,7 @@ class Order {
         using Handle = std::shared_ptr<Order>;
 
         Order();
-        virtual ~Order();
+        virtual ~Order() = default;
 
         Orders type;
         int quiet;
@@ -96,7 +97,6 @@ class MoveOrder : public Order {
         using Handle = std::shared_ptr<MoveOrder>;
 
         MoveOrder();
-        ~MoveOrder();
 
         int advancing;
         std::list<MoveDir::Handle> dirs;
@@ -107,7 +107,6 @@ class WithdrawOrder : public Order {
         using Handle = std::shared_ptr<WithdrawOrder>;
 
         WithdrawOrder();
-        ~WithdrawOrder();
 
         int item;
         int amount;
@@ -118,7 +117,6 @@ class GiveOrder : public Order {
         using Handle = std::shared_ptr<GiveOrder>;
 
         GiveOrder();
-        ~GiveOrder();
 
         int item;
         /* if amount == -1, transfer whole unit, -2 means all of item */
@@ -135,7 +133,6 @@ class StudyOrder : public Order {
         using Handle = std::shared_ptr<StudyOrder>;
 
         StudyOrder();
-        ~StudyOrder();
 
         Skills skill;
         size_t days;
@@ -147,7 +144,6 @@ class TeachOrder : public Order {
         using Handle = std::shared_ptr<TeachOrder>;
 
         TeachOrder();
-        ~TeachOrder();
 
         std::list<UnitId> targets;
 };
@@ -157,7 +153,6 @@ class ProduceOrder : public Order {
         using Handle = std::shared_ptr<ProduceOrder>;
 
         ProduceOrder();
-        ~ProduceOrder();
 
         Items item;
         Skills skill; /* -1 for none */
@@ -170,7 +165,6 @@ class BuyOrder : public Order {
         using Handle = std::shared_ptr<BuyOrder>;
 
         BuyOrder();
-        ~BuyOrder();
 
         int item;
         int num;
@@ -181,7 +175,6 @@ class SellOrder : public Order {
         using Handle = std::shared_ptr<SellOrder>;
 
         SellOrder();
-        ~SellOrder();
 
         int item;
         int num;
@@ -192,7 +185,6 @@ class AttackOrder : public Order {
         using Handle = std::shared_ptr<AttackOrder>;
 
         AttackOrder();
-        ~AttackOrder();
 
         std::list<UnitId> targets;
 };
@@ -202,7 +194,6 @@ class BuildOrder : public Order {
         using Handle = std::shared_ptr<BuildOrder>;
 
         BuildOrder();
-        ~BuildOrder();
 
         ValidValue<UnitId> target;
         int needtocomplete;
@@ -213,7 +204,6 @@ class SailOrder : public Order {
         using Handle = std::shared_ptr<SailOrder>;
 
         SailOrder();
-        ~SailOrder();
 
         std::list<MoveDir::Handle> dirs;
 };
@@ -223,7 +213,6 @@ class FindOrder : public Order {
         using Handle = std::shared_ptr<FindOrder>;
 
         FindOrder();
-        ~FindOrder();
 
         int find;
 };
@@ -233,7 +222,6 @@ class StealOrder : public Order {
         using Handle = std::shared_ptr<StealOrder>;
 
         StealOrder();
-        ~StealOrder();
 
         UnitId target;
         int item;
@@ -244,7 +232,6 @@ class AssassinateOrder : public Order {
         using Handle = std::shared_ptr<AssassinateOrder>;
 
         AssassinateOrder();
-        ~AssassinateOrder();
 
         UnitId target;
 };
@@ -254,7 +241,6 @@ class ForgetOrder : public Order {
         using Handle = std::shared_ptr<ForgetOrder>;
 
         ForgetOrder();
-        ~ForgetOrder();
 
         int skill;
 };
@@ -265,7 +251,6 @@ class ExchangeOrder : public Order {
         using Handle = std::shared_ptr<ExchangeOrder>;
 
         ExchangeOrder();
-        ~ExchangeOrder();
 
         int giveItem;
         int giveAmount;
@@ -282,7 +267,6 @@ class TurnOrder : public Order {
         using Handle = std::shared_ptr<TurnOrder>;
 
         TurnOrder();
-        ~TurnOrder();
         int repeating;
         std::list<AString::Handle> turnOrders;
 };
@@ -292,7 +276,6 @@ class CastOrder : public Order {
         using Handle = std::shared_ptr<CastOrder>;
 
         CastOrder();
-        ~CastOrder();
 
         int spell;
         int level;
@@ -303,17 +286,15 @@ class CastMindOrder : public CastOrder {
         using Handle = std::shared_ptr<CastMindOrder>;
 
         CastMindOrder();
-        ~CastMindOrder();
 
-        UnitId id;
+        ValidValue<UnitId> id;
 };
 
 class CastRegionOrder : public CastOrder {
     public:
         using Handle = std::shared_ptr<CastRegionOrder>;
 
-        CastRegionOrder();
-        ~CastRegionOrder();
+        CastRegionOrder() = default;
 
         int xloc, yloc, zloc;
 };
@@ -322,8 +303,7 @@ class TeleportOrder : public CastRegionOrder {
     public:
         using Handle = std::shared_ptr<TeleportOrder>;
 
-        TeleportOrder();
-        ~TeleportOrder();
+        TeleportOrder() = default;
 
         int gate;
         std::list<UnitId> units;
@@ -333,8 +313,7 @@ class CastIntOrder : public CastOrder {
     public:
         using Handle = std::shared_ptr<CastIntOrder>;
 
-        CastIntOrder();
-        ~CastIntOrder();
+        CastIntOrder() = default;
 
         int target;
 };
@@ -343,8 +322,7 @@ class CastUnitsOrder : public CastOrder {
     public:
         using Handle = std::shared_ptr<CastUnitsOrder>;
 
-        CastUnitsOrder();
-        ~CastUnitsOrder();
+        CastUnitsOrder() = default;
 
         std::list<UnitId> units;
 };
@@ -353,8 +331,7 @@ class CastTransmuteOrder : public CastOrder {
     public:
         using Handle = std::shared_ptr<CastTransmuteOrder>;
 
-        CastTransmuteOrder();
-        ~CastTransmuteOrder();
+        CastTransmuteOrder() = default;
 
         int item;
         int number;
@@ -365,7 +342,6 @@ class EvictOrder : public Order {
         using Handle = std::shared_ptr<EvictOrder>;
 
         EvictOrder();
-        ~EvictOrder();
 
         std::list<UnitId> targets;
 };
@@ -375,7 +351,6 @@ class IdleOrder : public Order {
         using Handle = std::shared_ptr<IdleOrder>;
 
         IdleOrder();
-        ~IdleOrder();
 };
 
 class TransportOrder : public Order {
@@ -383,14 +358,13 @@ class TransportOrder : public Order {
         using Handle = std::shared_ptr<TransportOrder>;
 
         TransportOrder();
-        ~TransportOrder();
 
         int item;
         // amount == -1 means all available at transport time
         int amount;
         int except;
 
-        UnitId target;
+        ValidValue<UnitId> target;
 };
 
 class JoinOrder : public Order {
@@ -398,7 +372,6 @@ class JoinOrder : public Order {
         using Handle = std::shared_ptr<JoinOrder>;
 
         JoinOrder();
-        ~JoinOrder();
 
         UnitId target;
         int overload;
