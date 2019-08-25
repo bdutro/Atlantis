@@ -286,7 +286,7 @@ static AString EffectStr(char const *effect)
     return temp;
 }
 
-AString ShowSpecial(char const *special, int level, int expandLevel, int fromItem)
+AString ShowSpecial(char const *special, size_t level, int expandLevel, int fromItem)
 {
     AString temp;
     int comma = 0;
@@ -444,7 +444,7 @@ AString ShowSpecial(char const *special, int level, int expandLevel, int fromIte
             val = last->val;
             if (expandLevel) {
                 if (spd.effectflags & SpecialType::FX_USE_LEV)
-                    val *= level;
+                    val *= static_cast<int>(level);
             }
 
             temp += AString("a defensive bonus of ") + val;
@@ -462,7 +462,7 @@ AString ShowSpecial(char const *special, int level, int expandLevel, int fromIte
         val = last->val;
         if (expandLevel) {
             if (spd.effectflags & SpecialType::FX_USE_LEV)
-                val *= level;
+                val *= static_cast<int>(level);
         }
         temp += AString("a defensive bonus of ") + val;
         if (!expandLevel) {
@@ -481,7 +481,7 @@ AString ShowSpecial(char const *special, int level, int expandLevel, int fromIte
         val = damage.value * 2;
         if (expandLevel) {
             if (spd.effectflags & SpecialType::FX_USE_LEV)
-                val *= level;
+                val *= static_cast<int>(level);
         }
         temp += AString(val);
         if (!expandLevel) {
@@ -619,7 +619,7 @@ AString *ItemDescription(const Items& item, int full)
         *temp += AString(", weight ") + ItemDefs[item].weight;
 
         if (ItemDefs[item].walk) {
-            int cap = ItemDefs[item].walk - static_cast<int>(ItemDefs[item].weight);
+            int cap = static_cast<int>(ItemDefs[item].walk - ItemDefs[item].weight);
             if (cap) {
                 *temp += AString(", walking capacity ") + cap;
             } else {
@@ -628,7 +628,7 @@ AString *ItemDescription(const Items& item, int full)
         }
         if (ItemDefs[item].hitchItem.isValid() &&
                 !(ItemDefs[ItemDefs[item].hitchItem].flags & ItemType::DISABLED)) {
-            int cap = ItemDefs[item].walk - static_cast<int>(ItemDefs[item].weight) +
+            int cap = static_cast<int>(ItemDefs[item].walk - ItemDefs[item].weight) +
                 ItemDefs[item].hitchwalk;
             if (cap) {
                 *temp += AString(", walking capacity ") + cap +
@@ -637,7 +637,7 @@ AString *ItemDescription(const Items& item, int full)
             }
         }
         if (ItemDefs[item].ride) {
-            int cap = ItemDefs[item].ride - static_cast<int>(ItemDefs[item].weight);
+            int cap = static_cast<int>(ItemDefs[item].ride - ItemDefs[item].weight);
             if (cap) {
                 *temp += AString(", riding capacity ") + cap;
             } else {
@@ -645,7 +645,7 @@ AString *ItemDescription(const Items& item, int full)
             }
         }
         if (ItemDefs[item].swim) {
-            int cap = ItemDefs[item].swim - static_cast<int>(ItemDefs[item].weight);
+            int cap = static_cast<int>(ItemDefs[item].swim - ItemDefs[item].weight);
             if (cap) {
                 *temp += AString(", swimming capacity ") + cap;
             } else {
@@ -653,7 +653,7 @@ AString *ItemDescription(const Items& item, int full)
             }
         }
         if (ItemDefs[item].fly) {
-            int cap = ItemDefs[item].fly - static_cast<int>(ItemDefs[item].weight);
+            int cap = static_cast<int>(ItemDefs[item].fly - ItemDefs[item].weight);
             if (cap) {
                 *temp += AString(", flying capacity ") + cap;
             } else {

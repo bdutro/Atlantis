@@ -84,7 +84,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
                 abbr = ItemDefs[ship->type].name;
                 objectno = LookupObject(&abbr);
                 if (objectno.isValid() && ObjectDefs[objectno].protect > 0) {
-                    o->capacity = static_cast<int>(static_cast<size_t>(ObjectDefs[objectno].protect) * ship->num);
+                    o->capacity = static_cast<size_t>(ObjectDefs[objectno].protect) * ship->num;
                     o->type = objectno;
                 }
                 o->shipno++;
@@ -356,12 +356,12 @@ void Soldier::SetupCombatItems()
                 for (const auto shield: sp.shield) {
                     if (shield == NUM_ATTACK_TYPES) {
                         for (int j = 0; j < NUM_ATTACK_TYPES; j++) {
-                            if (dskill[j] < pBat.skillLevel)
-                                dskill[j] = pBat.skillLevel;
+                            if (dskill[j] < static_cast<int>(pBat.skillLevel))
+                                dskill[j] = static_cast<int>(pBat.skillLevel);
                         }
                     } else if (shield >= 0) {
-                        if (dskill[shield] < pBat.skillLevel)
-                            dskill[shield] = pBat.skillLevel;
+                        if (dskill[shield] < static_cast<int>(pBat.skillLevel))
+                            dskill[shield] = static_cast<int>(pBat.skillLevel);
                     }
                 }
             }

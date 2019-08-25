@@ -208,7 +208,7 @@ void Unit::Writeout(Aoutfile *s)
     }
 }
 
-void Unit::Readin(Ainfile *s, AList *facs, ATL_VER)
+void Unit::Readin(Ainfile *s, const std::list<Faction::Handle>& facs, ATL_VER)
 {
     name = s->GetStr();
     describe = s->GetStr();
@@ -425,7 +425,7 @@ AString Unit::SpoilsReport() {
     return temp;
 }
 
-void Unit::WriteReport(Areport *f, int obs, int truesight, bool detfac,
+void Unit::WriteReport(Areport *f, int obs, size_t truesight, bool detfac,
                 bool autosee, int attitude, bool showattitudes)
 {
     int stealth = GetAttribute("stealth");
@@ -1520,10 +1520,9 @@ void Unit::Short(int needed, int hunger)
     }
 }
 
-int Unit::Weight()
+size_t Unit::Weight()
 {
-    int retval = items.Weight();
-    return retval;
+    return items.Weight();
 }
 
 size_t Unit::FlyingCapacity()
@@ -2287,16 +2286,16 @@ Items Unit::GetWeapon(AString &itm, const Items& riding, int ridingBonus,
 
 void Unit::Detach()
 {
-    if (!object.expired()) object.lock()->units.Remove(this);
+    if (!object.expired()) object.lock()->units.Remove(shared_from_this());
     object.reset();
 }
 
 void Unit::MoveUnit(const std::weak_ptr<Object>& toobj)
 {
-    if (!object.expired()) object.lock()->units.Remove(this);
+    if (!object.expired()) object.lock()->units.Remove(shared_from_this());
     object = toobj;
     if (!object.expired()) {
-        object->units.Add(this);
+        object->units.Add(shared_from_this());
     }
 }
 

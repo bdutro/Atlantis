@@ -167,12 +167,14 @@ void Object::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER 
     if (Globals->ALLOW_TRIVIAL_PORTAGE) prevdir.invalidate();
     int i = f->GetInt<int>();
     for (int j=0; j<i; j++) {
-        Unit *temp = new Unit;
+        Unit::Handle temp = std::make_shared<Unit>();
         temp->Readin(f, facs, v);
-        if (!temp->faction)
+        if (temp->faction.expired())
+        {
             continue;
-        temp->MoveUnit(this);
-        if (!(temp->faction->IsNPC())) region->visited = 1;
+        }
+        temp->MoveUnit(weak_from_this());
+        if (!(temp->faction.lock()->IsNPC())) region.lock()->visited = 1;
     }
     mages = ObjectDefs[type].maxMages;
     ReadinFleet(f);
@@ -205,12 +207,12 @@ void Object::SetDescribe(AString *s)
     }
 }
 
-int Object::IsFleet()
+bool Object::IsFleet()
 {
-    if (type == O_FLEET) return 1;
-    if (ObjectDefs[type].sailors > 0) return 1;
-    if (ships.Num() > 0) return 1;
-    return 0;
+    if (type == Objects::Types::O_FLEET) return true;
+    if (ObjectDefs[type].sailors > 0) return true;
+    if (!ships.empty()) return true;
+    return false;
 }
 
 int Object::IsBuilding()
@@ -225,7 +227,7 @@ int Object::CanModify()
     return (ObjectDefs[type].flags & ObjectType::CANMODIFY);
 }
 
-Unit::WeakHandle Object::GetUnit(int num)
+Unit::WeakHandle Object::GetUnit(size_t num)
 {
     for(const auto& u: units)
     {
@@ -237,12 +239,12 @@ Unit::WeakHandle Object::GetUnit(int num)
     return Unit::WeakHandle();
 }
 
-Unit::WeakHandle Object::GetUnitAlias(int alias, int faction)
+Unit::WeakHandle Object::GetUnitAlias(int alias, size_t faction)
 {
     // First search for units with the 'formfaction'
     for(const auto& u: units)
     {
-        if (u->alias == alias && u->formfaction->num == faction)
+        if (u->alias == alias && u->formfaction.lock()->num == faction)
         {
             return u;
         }
@@ -250,7 +252,7 @@ Unit::WeakHandle Object::GetUnitAlias(int alias, int faction)
     // Now search against their current faction
     for(const auto& u: units)
     {
-        if (u->alias == alias && u->faction->num == faction)
+        if (u->alias == alias && u->faction.lock()->num == faction)
         {
             return u;
         }
@@ -272,24 +274,24 @@ Unit::WeakHandle Object::GetUnitId(const UnitId& id, size_t faction)
     }
 }
 
-int Object::CanEnter(ARegion *, Unit *u)
+bool Object::CanEnter(const ARegion::Handle&, const Unit::Handle& u)
 {
     if (!(ObjectDefs[type].flags & ObjectType::CANENTER) &&
             (u->type == U_MAGE || u->type == U_NORMAL ||
              u->type == U_APPRENTICE)) {
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
 Unit::WeakHandle Object::ForbiddenBy(const ARegion::Handle& reg, const Unit::Handle& u)
 {
     const auto owner = GetOwner();
-    if (owner.expired() || type == O_GATEWAY) {
+    if (owner.expired() || type == Objects::Types::O_GATEWAY) {
         return Unit::WeakHandle();
     }
 
-    if (owner.lock()->GetAttitude(reg, u) < A_FRIENDLY) {
+    if (owner.lock()->GetAttitude(*reg, u) < A_FRIENDLY) {
         return owner;
     }
     return Unit::WeakHandle();
@@ -304,12 +306,12 @@ Unit::WeakHandle Object::GetOwner()
     return units.front();
 }
 
-void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,
-        bool detfac, int passobs, int passtrue, bool passdetfac, bool present)
+void Object::Report(Areport *f, const Faction& fac, int obs, size_t truesight,
+        bool detfac, int passobs, size_t passtrue, bool passdetfac, bool present)
 {
-    ObjectType *ob = &ObjectDefs[type];
+    const auto& ob = ObjectDefs[type];
 
-    if ((type != O_DUMMY) && !present) {
+    if ((type != Objects::Types::O_DUMMY) && !present) {
         if (IsFleet() &&
                 !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_SHIPS)) {
             // This is a ship and we don't see ships in transit
@@ -342,7 +344,8 @@ void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,
             }
         }
         */
-        if ((GetOwner() && fac == GetOwner()->faction) || (obs > 9)){
+        const auto owner = GetOwner();
+        if ((!owner.expired() && &fac == owner.lock()->faction.lock().get()) || (obs > 9)){
             temp += ";";
             if (incomplete > 0) {
                 temp += AString(" ") + incomplete + "% damaged;";
@@ -357,15 +360,15 @@ void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,
         temp += ".";
         f->PutStr(temp);
         f->AddTab();
-    } else if (type != O_DUMMY) {
-        AString temp = AString("+ ") + *name + " : " + ob->name;
+    } else if (type != Objects::Types::O_DUMMY) {
+        AString temp = AString("+ ") + *name + " : " + ob.name;
         if (incomplete > 0) {
             temp += AString(", needs ") + incomplete;
         } else if (Globals->DECAY &&
-                !(ob->flags & ObjectType::NEVERDECAY) && incomplete < 1) {
-            if (incomplete > (0 - ob->maxMonthlyDecay)) {
+                !(ob.flags & ObjectType::NEVERDECAY) && incomplete < 1) {
+            if (incomplete > (0 - ob.maxMonthlyDecay)) {
                 temp += ", about to decay";
-            } else if (incomplete > (0 - ob->maxMaintenance/2)) {
+            } else if (incomplete > (0 - ob.maxMaintenance/2)) {
                 temp += ", needs maintenance";
             }
         }
@@ -378,7 +381,7 @@ void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,
         if (describe) {
             temp += AString("; ") + *describe;
         }
-        if (!(ob->flags & ObjectType::CANENTER)) {
+        if (!(ob.flags & ObjectType::CANENTER)) {
             temp += ", closed to player units";
         }
         temp += ".";
@@ -386,95 +389,103 @@ void Object::Report(Areport *f, const Faction& fac, int obs, int truesight,
         f->AddTab();
     }
 
-    forlist ((&units)) {
-        Unit *u = (Unit *) elem;
-        int attitude = fac->GetAttitude(u->faction->num);
-        if (u->faction == fac) {
-            u->WriteReport(f, -1, 1, 1, 1, attitude, fac->showunitattitudes);
+    for(const auto& u: units) {
+        const auto u_fac = u->faction.lock();
+        int attitude = fac.GetAttitude(u_fac->num);
+        if (u_fac.get() == &fac) {
+            u->WriteReport(f, -1, 1, 1, 1, attitude, fac.showunitattitudes);
         } else {
             if (present) {
-                u->WriteReport(f, obs, truesight, detfac, type != O_DUMMY, attitude, fac->showunitattitudes);
+                u->WriteReport(f, obs, truesight, detfac, type != Objects::Types::O_DUMMY, attitude, fac.showunitattitudes);
             } else {
-                if (((type == O_DUMMY) &&
+                if (((type == Objects::Types::O_DUMMY) &&
                     (Globals->TRANSIT_REPORT &
                      GameDefs::REPORT_SHOW_OUTDOOR_UNITS)) ||
-                    ((type != O_DUMMY) &&
+                    ((type != Objects::Types::O_DUMMY) &&
                         (Globals->TRANSIT_REPORT &
                          GameDefs::REPORT_SHOW_INDOOR_UNITS)) ||
                     ((u->guard == GUARD_GUARD) &&
                         (Globals->TRANSIT_REPORT &
                          GameDefs::REPORT_SHOW_GUARDS))) {
                     u->WriteReport(f, passobs, passtrue, passdetfac,
-                            type != O_DUMMY, attitude, fac->showunitattitudes);
+                            type != Objects::Types::O_DUMMY, attitude, fac.showunitattitudes);
                 }
             }
         }
     }
     f->EndLine();
-    if (type != O_DUMMY) {
+    if (type != Objects::Types::O_DUMMY) {
         f->DropTab();
     }
 }
 
-void Object::SetPrevDir(int newdir)
+void Object::SetPrevDir(const Directions& newdir)
 {
     prevdir = newdir;
 }
 
-void Object::MoveObject(ARegion *toreg)
+void Object::MoveObject(const ARegion::Handle& toreg)
 {
-    region->objects.Remove(this);
+    auto& reg_objs = region.lock()->objects;
+    auto it = reg_objs.begin();
+    while(it != reg_objs.end())
+    {
+        if(it->get() == this)
+        {
+            it = reg_objs.erase(it);
+            continue;
+        }
+        ++it;
+    }
     region = toreg;
-    toreg->objects.Add(this);
+    toreg->objects.push_back(shared_from_this());
 }
 
-int Object::IsRoad()
+bool Object::IsRoad()
 {
-    if (type >= O_ROADN && type <= O_ROADS) return 1;
-    return 0;
+    return type.isRoad();
 }
 
 /* Performs a basic check on items for ship-types.
  * (note: always fails for non-Fleet Objects.)
  */
-int Object::CheckShip(int item)
+bool Object::CheckShip(const Items& item)
 {
-    if (item < 0) return 0;
-    if (!IsFleet()) return 0;
-    if (ItemDefs[item].type & IT_SHIP) return 1;
-    return 0;
+    if (!item.isValid()) return false;
+    if (!IsFleet()) return false;
+    if (ItemDefs[item].type & IT_SHIP) return true;
+    return false;
 }
 
 void Object::WriteoutFleet(Aoutfile *f)
 {
     if (!IsFleet()) return;
-    int nships = (int) ships.Num();
-    f->PutInt(nships);
-    forlist(&ships)
-        ((Item *) elem)->Writeout(f);
+    f->PutInt(ships.size());
+    for(const auto& s: ships)
+    {
+        s->Writeout(f);
+    }
 }
 
 void Object::ReadinFleet(Ainfile *f)
 {
-    if (type != O_FLEET) return;
-    int nships = f->GetInt();
-    for (int i=0; i<nships; i++) {
-        Item *ship = new Item;
-        ship->Readin(f);
-        if (ship->type >= 0)
-            SetNumShips(ship->type, ship->num);
-        delete ship;
+    if (type != Objects::Types::O_FLEET) return;
+    size_t nships = f->GetInt<size_t>();
+    for (size_t i = 0; i < nships; i++) {
+        Item ship;
+        ship.Readin(f);
+        if (ship.type.isValid())
+            SetNumShips(ship.type, ship.num);
     }
 }
 
 /* Returns the number of component ships of a given
  * type.
  */
-int Object::GetNumShips(int type)
+size_t Object::GetNumShips(const Items& type)
 {
-    if (CheckShip(type) != 0) {
-        forlist(&ships) {
-            Item *ship = (Item *) elem;
+    if (CheckShip(type)) {
+        for(const auto& ship: ships) {
             if (ship->type == type) {
                 return ship->num;
             }
@@ -486,29 +497,26 @@ int Object::GetNumShips(int type)
 /* Erases possible previous entries for ship type
  * and resets the number of ships.
  */
-void Object::SetNumShips(int type, int num)
+void Object::SetNumShips(const Items& type, size_t num)
 {
-    if (CheckShip(type) != 0) {
+    if (CheckShip(type)) {
         if (num > 0) {
-            forlist(&ships) {
-                Item *ship = (Item *) elem;
+            for(const auto& ship: ships) {
                 if (ship->type == type) {
                     ship->num = num;
                     FleetCapacity();
                     return;
                 }
             }
-            Item *ship = new Item;
+            auto& ship = ships.emplace_back(std::make_shared<Item>());
             ship->type = type;
             ship->num = num;
-            ships.Add(ship);
             FleetCapacity();
         } else {
-            forlist(&ships) {
-                Item *ship = (Item *) elem;
+            for(auto it = ships.begin(); it != ships.end(); ++it) {
+                const auto& ship = *it;
                 if (ship->type == type) {
-                    ships.Remove(ship);
-                    delete ship;
+                    ships.erase(it);
                     FleetCapacity();
                     return;
                 }
@@ -519,10 +527,10 @@ void Object::SetNumShips(int type, int num)
 
 /* Adds one ship of the given type.
  */
-void Object::AddShip(int type)
+void Object::AddShip(const Items& type)
 {    
-    if (CheckShip(type) == 0) return;
-    int num = GetNumShips(type);
+    if (!CheckShip(type)) return;
+    size_t num = GetNumShips(type);
     num++;
     SetNumShips(type, num);    
 }
@@ -533,22 +541,26 @@ void Object::AddShip(int type)
 AString Object::FleetDefinition()
 {
     AString fleet;
-    int shiptype = -1;
-    int num = 0;
-    for (int i=0; i<NITEMS; i++) {
-        if (ItemDefs[i].type & IT_SHIP) {
-            int sn = GetNumShips(i);
+    Items shiptype;
+    size_t num = 0;
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        if (ItemDefs[*i].type & IT_SHIP) {
+            size_t sn = GetNumShips(*i);
             if (sn > 0) {
                 num += sn;
-                shiptype = i;
+                shiptype = *i;
             }
         }
     }
-    if (num == 1) fleet = ItemDefs[shiptype].name;
+    if (num == 1)
+    {
+        fleet = ItemDefs[shiptype].name;
+    }
     else {
         fleet = ObjectDefs[type].name;
         // report ships:
-        for (int item=0; item<NITEMS; item++) {
+        for (auto i = Items::begin(); i != Items::end(); ++i) {
+            const auto item = *i;
             num = GetNumShips(item);
             if (num > 0) {
                 if (num > 1) {
@@ -564,10 +576,9 @@ AString Object::FleetDefinition()
 
 /* Sets a fleet's sailing capacity.
  */
-int Object::FleetCapacity()
+size_t Object::FleetCapacity()
 {
     AString *oname;
-    int ot;
 
     capacity = 0;
     // Calculate the maximum number of mages while we're at it
@@ -576,8 +587,9 @@ int Object::FleetCapacity()
     // Fleets are assumed to be flying, at least until we find any
     // non-flying vessels in them
     flying = 1;
-    for (int item=0; item < NITEMS; item++) {
-        int num = GetNumShips(item);
+    for (auto i= Items::begin(); i != Items::end(); ++i) {
+        const auto item = *i;
+        size_t num = GetNumShips(item);
         if (num < 1) continue;
         if (ItemDefs[item].fly > 0) {
             capacity += num * ItemDefs[item].fly;
@@ -586,9 +598,9 @@ int Object::FleetCapacity()
             flying = 0;
         }
         oname = new AString(ItemDefs[item].name);
-        ot = LookupObject(oname);
+        const auto ot = LookupObject(oname);
         delete oname;
-        if (ot > 0) {
+        if (ot.isValid() && !ot.isDummy()) {
             mages += num * ObjectDefs[ot].maxMages;
         }
     }
@@ -600,13 +612,12 @@ int Object::FleetCapacity()
 int Object::FleetLoad()
 {
     int load = -1;
-    int wgt = 0;
     if (IsFleet()) {
-        forlist(&units) {
-            Unit * unit = (Unit *) elem;
+        size_t wgt = 0;
+        for(const auto& unit: units) {
             wgt += unit->Weight();
         }
-        load = wgt;
+        load = static_cast<int>(wgt);
     }
     return load;
 }
@@ -619,16 +630,15 @@ int Object::FleetLoad()
 int Object::FleetSailingSkill(int report)
 {
     int skill = -1;
-    int slvl = 0;
+    size_t slvl = 0;
     if (IsFleet()) {
-        forlist(&units) {
-            Unit * unit = (Unit *) elem;
+        for(const auto& unit: units) {
             if ((report != 0) ||
-                (unit->monthorders && unit->monthorders->type == O_SAIL)) {
-                slvl += unit->GetSkill(S_SAILING) * unit->GetMen();
+                (unit->monthorders && unit->monthorders->type == Orders::Types::O_SAIL)) {
+                slvl += unit->GetSkill(Skills::Types::S_SAILING) * unit->GetMen();
             }
         }
-        skill = slvl;
+        skill = static_cast<int>(slvl);
     }
     return skill;
 }
@@ -636,12 +646,13 @@ int Object::FleetSailingSkill(int report)
 /* Returns fleet size - which is the total of
  * sailors needed to move the fleet.
  */
-int Object::GetFleetSize()
+size_t Object::GetFleetSize()
 {
     if (!IsFleet()) return 0;
-    int inertia = 0;
-    for (int item=0; item<NITEMS; item++) {
-        int num = GetNumShips(item);
+    size_t inertia = 0;
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        const auto item = *i;
+        size_t num = GetNumShips(item);
         if (num > 0) inertia += num * ItemDefs[item].weight;
     }
     return (inertia / 50);
@@ -654,19 +665,20 @@ int Object::GetFleetSize()
  * functions for moving the fleet provide a zero
  * argument.
  */
-int Object::GetFleetSpeed(int report)
+unsigned int Object::GetFleetSpeed(int report)
 {
     int tskill = FleetSailingSkill(report);
-    int speed = Globals->MAX_SPEED;
-    int weight = 0;
-    int capacity = 0;
-    int bonus;
-    int windbonus = 0;
+    size_t speed = Globals->MAX_SPEED;
+    size_t weight = 0;
+    size_t capacity = 0;
+    size_t bonus;
+    size_t windbonus = 0;
 
     if (!IsFleet()) return 0;
 
-    for (int item = 0; item < NITEMS; item++) {
-        int num = GetNumShips(item);
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        const auto item = *i;
+        size_t num = GetNumShips(item);
         if (num > 0) {
             weight += num * ItemDefs[item].weight;
             if (ItemDefs[item].fly > 0) {
@@ -684,14 +696,13 @@ int Object::GetFleetSpeed(int report)
     if (weight < 1) return 0;
 
     // check for sufficient sailing skill!
-    if (tskill < (weight / 50)) return 0;
+    if (tskill < static_cast<int>(weight / 50)) return 0;
     
     // count wind mages
-    forlist(&units) {
-        Unit * unit = (Unit *) elem;
+    for(const auto& unit: units) {
         int wb = unit->GetAttribute("wind");
         if (wb > 0) {
-            windbonus += wb * 12 * Globals->FLEET_WIND_BOOST;
+            windbonus += static_cast<size_t>(wb) * 12 * Globals->FLEET_WIND_BOOST;
         }
     }
     // speed gain through wind:
@@ -702,7 +713,7 @@ int Object::GetFleetSpeed(int report)
 
     // speed bonus due to more / better skilled sailors:
     bonus = 0;
-    while (tskill >= (weight / 25)) {
+    while (tskill >= static_cast<int>(weight / 25)) {
         bonus++;
         tskill /= 2;
     }
@@ -711,10 +722,10 @@ int Object::GetFleetSpeed(int report)
     speed += bonus;
 
     // check for being overloaded
-    if (FleetLoad() > capacity) return 0;
+    if (FleetLoad() > static_cast<int>(capacity)) return 0;
     
     // speed bonus due to low load:
-    int loadfactor = (capacity / FleetLoad());
+    int loadfactor = (static_cast<int>(capacity) / FleetLoad());
     bonus = 0;
     while (loadfactor >= 2) {
         bonus++;
@@ -727,10 +738,10 @@ int Object::GetFleetSpeed(int report)
     // Cap everything at max speed
     if (speed > Globals->MAX_SPEED) speed = Globals->MAX_SPEED;
 
-    return speed;
+    return static_cast<unsigned int>(speed);
 }
 
-AString *ObjectDescription(int obj)
+AString *ObjectDescription(const Objects& obj)
 {
     if (ObjectDefs[obj].flags & ObjectType::DISABLED)
         return NULL;
@@ -746,7 +757,7 @@ AString *ObjectDescription(int obj)
         *temp += "This is a building.";
     }
 
-    if (Globals->LAIR_MONSTERS_EXIST && (o->monster != -1)) {
+    if (Globals->LAIR_MONSTERS_EXIST && o->monster.isValid()) {
         *temp += " Monsters can potentially lair in this structure.";
         if (o->flags & ObjectType::NOMONSTERGROWTH) {
             *temp += " Monsters in this structures will never regenerate.";
@@ -789,22 +800,21 @@ AString *ObjectDescription(int obj)
     /*
      * Handle all the specials
      */
-    for (int i = 0; i < NUMSPECIALS; i++) {
-        SpecialType *spd = &SpecialDefs[i];
+    for (const auto& spd: SpecialDefs) {
         AString effect = "are";
         int match = 0;
-        if (!(spd->targflags & SpecialType::HIT_BUILDINGIF) &&
-                !(spd->targflags & SpecialType::HIT_BUILDINGEXCEPT)) {
+        if (!(spd.targflags & SpecialType::HIT_BUILDINGIF) &&
+                !(spd.targflags & SpecialType::HIT_BUILDINGEXCEPT)) {
             continue;
         }
-        for (int j = 0; j < SPECIAL_BUILDINGS; j++)
-            if (spd->buildings[j] == obj) match = 1;
+        for (size_t j = 0; j < SPECIAL_BUILDINGS; j++)
+            if (spd.buildings[j] == obj) match = 1;
         if (!match) continue;
-        if (spd->targflags & SpecialType::HIT_BUILDINGEXCEPT) {
+        if (spd.targflags & SpecialType::HIT_BUILDINGEXCEPT) {
             effect += " not";
         }
         *temp += " Units in this structure ";
-        *temp += effect + " affected by " + spd->specialname + ".";
+        *temp += effect + " affected by " + spd.specialname + ".";
     }
 
     if (o->sailors) {
@@ -822,27 +832,44 @@ AString *ObjectDescription(int obj)
         }
         *temp += " to study above level 2.";
     }
-    int buildable = 1;
-    SkillType *pS = NULL;
-    if (o->item == -1 || o->skill == NULL) buildable = 0;
-    if (o->skill != NULL) pS = FindSkill(o->skill);
-    if (!pS) buildable = 0;
-    if (pS && (pS->flags & SkillType::DISABLED)) buildable = 0;
-    if (o->item != I_WOOD_OR_STONE &&
-            (ItemDefs[o->item].flags & ItemType::DISABLED))
-        buildable = 0;
-    if (o->item == I_WOOD_OR_STONE &&
-            (ItemDefs[I_WOOD].flags & ItemType::DISABLED) &&
-            (ItemDefs[I_STONE].flags & ItemType::DISABLED))
-        buildable = 0;
+    bool buildable = true;
+    if (!o->item.isValid() || o->skill == NULL)
+    {
+        buildable = false;
+    }
+    if (o->skill != NULL)
+    {
+        try
+        {
+            const auto& pS = FindSkill(o->skill);
+            if (pS.flags & SkillType::DISABLED)
+            {
+                buildable = false;
+            }
+        }
+        catch(const NoSuchItemException&)
+        {
+            buildable = false;
+        }
+    }
+    if (!o->item.isWoodOrStone() && (ItemDefs[o->item].flags & ItemType::DISABLED))
+    {
+        buildable = false;
+    }
+    if (o->item.isWoodOrStone() &&
+            (ItemDefs[Items::Types::I_WOOD].flags & ItemType::DISABLED) &&
+            (ItemDefs[Items::Types::I_STONE].flags & ItemType::DISABLED))
+    {
+        buildable = false;
+    }
     if (!buildable && !(ObjectDefs[obj].flags & ObjectType::GROUP)) {
         *temp += " This structure cannot be built by players.";
     }
 
-    if (o->productionAided != -1 &&
+    if (o->productionAided.isValid() &&
             !(ItemDefs[o->productionAided].flags & ItemType::DISABLED)) {
         *temp += " This trade structure increases the amount of ";
-        if (o->productionAided == I_SILVER) {
+        if (o->productionAided == Items::Types::I_SILVER) {
             *temp += "entertainment";
         } else {
             *temp += ItemDefs[o->productionAided].names;
@@ -862,7 +889,7 @@ AString *ObjectDescription(int obj)
                 *temp += AString(" Repair of damage is accomplished at ") +
                     "a rate of " + o->maintFactor + " damage units per " +
                     "unit of ";
-                if (o->item == I_WOOD_OR_STONE) {
+                if (o->item.isWoodOrStone()) {
                     *temp += "wood or stone.";
                 } else {
                     *temp += ItemDefs[o->item].name;

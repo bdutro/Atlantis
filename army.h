@@ -86,7 +86,7 @@ class Soldier {
         int askill;
         int attacks;
         char const *special;
-        int slevel;
+        size_t slevel;
 
         /* Defense info */
         int dskill[NUM_ATTACK_TYPES];

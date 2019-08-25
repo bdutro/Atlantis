@@ -108,7 +108,7 @@ class ItemType
         int flags;
 
         char const *pSkill; // production skill
-        int pLevel; // production skill level
+        size_t pLevel; // production skill level
         int pMonths; // Man months required for production
         int pOut; // How many of the item we get
         MaterialInputArray pInput;
@@ -123,11 +123,11 @@ class ItemType
         size_t baseprice;
         int combat;
 
-        int walk;
-        int ride;
-        int fly;
-        int swim;
-        int speed;
+        unsigned int walk;
+        unsigned int ride;
+        unsigned int fly;
+        unsigned int swim;
+        unsigned int speed;
 
         Items hitchItem;
         int hitchwalk;
@@ -191,7 +191,7 @@ class MonType
         int obs;
 
         char const *special;
-        int specialLevel;
+        size_t specialLevel;
 
         size_t silver;
         int spoiltype;
@@ -315,7 +315,7 @@ class MountType
         // If the mount has a special effect it generates when ridden in
         // combat
         char const *mountSpecial;
-        int specialLev;
+        unsigned int specialLev;
 };
 
 extern GameDataArray<MountType> MountDefs;
@@ -334,7 +334,7 @@ class BattleItemType
 
         int flags;
         char const *special;
-        int skillLevel;
+        size_t skillLevel;
 };
 
 extern GameDataArray<BattleItemType> BattleItemDefs;
@@ -416,7 +416,6 @@ class ItemList
         std::list<Item::Handle> items_;
 };
 
-extern AString ShowSpecial(char const *special, int level, int expandLevel,
-        int fromItem);
+extern AString ShowSpecial(char const *special, size_t level, int expandLevel, int fromItem);
 
 #endif

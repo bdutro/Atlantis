@@ -208,7 +208,7 @@ private:
     void ModifyItemSpeed(const Items& it, int speed);
     void ModifyItemProductionBooster(const Items& it, const Items& item, int bonus);
     void ModifyItemHitch(const Items& it, const Items& item, int bonus);
-    void ModifyItemProductionSkill(const Items& it, char *sk, int lev);
+    void ModifyItemProductionSkill(const Items& it, char *sk, size_t lev);
     void ModifyItemProductionOutput(const Items& it, int months, int count);
     void ModifyItemProductionInput(const Items& it, int i, const Items& input, int amount);
     void ModifyItemMagicSkill(const Items& it, char *sk, int lev);
@@ -568,7 +568,7 @@ private:
     unsigned int ShipConstruction(const ARegion::Handle&,
                                   const Unit::Handle&,
                                   const Unit::Handle&,
-                                  int,
+                                  size_t,
                                   size_t,
                                   const Items&);
     void CreateShip(const ARegion::Handle&, const Unit::Handle&, const Items&);

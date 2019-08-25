@@ -207,8 +207,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Kill(const std::shared_ptr<Unit>&);
         void ClearHell();
 
-        std::weak_ptr<Unit> GetUnit(int);
-        std::weak_ptr<Unit> GetUnitAlias(int, int); /* alias, faction number */
+        std::weak_ptr<Unit> GetUnit(size_t);
+        std::weak_ptr<Unit> GetUnitAlias(int, size_t); /* alias, faction number */
         std::weak_ptr<Unit> GetUnitId(const UnitId&, size_t);
         void DeduplicateUnitList(std::list<UnitId>&, size_t);
         Location::Handle GetLocation(const UnitId&, size_t) const;
@@ -217,7 +217,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         bool Present(const Faction&);
         std::list<std::weak_ptr<Faction>> PresentFactions();
         int GetObservation(const Faction&, bool);
-        int GetTrueSight(const Faction&, bool);
+        size_t GetTrueSight(const Faction&, bool);
 
         std::weak_ptr<Object> GetObject(int);
         std::weak_ptr<Object> GetDummy();

@@ -644,7 +644,7 @@ void Faction::RemoveAttitude(size_t f)
     }
 }
 
-int Faction::GetAttitude(size_t n)
+int Faction::GetAttitude(size_t n) const
 {
     if (n == num) return A_ALLY;
     for(const auto& a: attitudes) {

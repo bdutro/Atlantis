@@ -1301,7 +1301,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(1, "td align=\"left\" nowrap");
         f.PutStr(item_def.weight);
         f.Enclose(0, "td");
-        cap = item_def.walk - static_cast<int>(item_def.weight);
+        cap = static_cast<int>(item_def.walk - item_def.weight);
         f.Enclose(1, "td align=\"left\" nowrap");
         if (item_def.walk || item_def.hitchItem.isValid()) {
             if (!item_def.hitchItem.isValid())
@@ -1379,7 +1379,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     }
     temp = "Example: One man with a horse, sword, and chain mail wants to "
         "move north, then northeast.  The capacity of the horse is ";
-    cap = ItemDefs[Items::Types::I_HORSE].ride - static_cast<int>(ItemDefs[Items::Types::I_HORSE].weight);
+    cap = static_cast<int>(ItemDefs[Items::Types::I_HORSE].ride - ItemDefs[Items::Types::I_HORSE].weight);
     temp += cap;
     temp += " and the weight of the man and other items is ";
     int weight = static_cast<int>(ItemDefs[Items::Types::I_MAN].weight + ItemDefs[Items::Types::I_SWORD].weight +
@@ -1397,7 +1397,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         temp += NumToWord(ItemDefs[Items::Types::I_HORSE].speed);
     else
         temp += NumToWord(ItemDefs[Items::Types::I_MAN].speed);
-    int travel = ItemDefs[Items::Types::I_HORSE].speed;
+    int travel = static_cast<int>(ItemDefs[Items::Types::I_HORSE].speed);
     temp += " movement point";
     temp += AString((ItemDefs[Items::Types::I_HORSE].speed == 1) ? "" : "s") + ". ";
     temp += "He issues the order MOVE NORTH NORTHEAST. First he moves north, "
@@ -1537,7 +1537,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             }
             if (pub == 0) continue;
             if (item_def.mLevel > 0) continue;
-            int slevel = item_def.pLevel;
+            size_t slevel = item_def.pLevel;
             if (slevel > 3) continue;
             f.Enclose(1, "tr");
             f.Enclose(1, "td align=\"center\"");
@@ -2397,7 +2397,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(0, "td");
         f.Enclose(1, "td align=\"left\" nowrap");
         temp = item_def.weight;
-        cap = item_def.walk - static_cast<int>(item_def.weight);
+        cap = static_cast<int>(item_def.walk - item_def.weight);
         if (item_def.walk || item_def.hitchItem.isValid()) {
             temp += " (";
             if (!item_def.hitchItem.isValid())
@@ -2963,7 +2963,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             }
             if (pub == 0) continue;
             if (item_def.mLevel > 0) continue;
-            int slevel = item_def.pLevel;
+            size_t slevel = item_def.pLevel;
             if (slevel > 3) continue;
             f.Enclose(1, "tr");
             f.Enclose(1, "td align=\"center\"");

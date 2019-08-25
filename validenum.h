@@ -5,6 +5,11 @@
 
 #include "validvalue.h"
 
+template<typename EnumType, EnumType EndType> class ValidEnum;
+
+template<typename EnumType, EnumType EndType>
+std::istream& operator>>(std::istream& is, ValidEnum<EnumType, EndType>& e);
+
 template<typename EnumType, EnumType EndType>
 class ValidEnum : public ValidValue<size_t>
 {
@@ -188,6 +193,17 @@ class ValidEnum : public ValidValue<size_t>
         {
             return iterator(static_cast<size_t>(*this));
         }
+
+        friend std::istream& operator>><EnumType, EndType>(std::istream&, ValidEnum<EnumType, EndType>&);
 };
+
+template<typename EnumType, EnumType EndType>
+std::istream& operator>>(std::istream& is, ValidEnum<EnumType, EndType>& e)
+{
+    int temp;
+    is >> temp;
+    e = ValidEnum<EnumType, EndType>(temp);
+    return is;
+}
 
 #endif

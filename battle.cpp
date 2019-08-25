@@ -91,11 +91,11 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
             for (const auto& damage: spd.damage) {
                 int times = damage.value;
                 if (spd.effectflags & SpecialType::FX_USE_LEV)
-                    times *= pMt.specialLev;
+                    times *= static_cast<int>(pMt.specialLev);
                 int realtimes = damage.minnum + getrandom(times) +
                     getrandom(times);
                 num = def->DoAnAttack(pMt.mountSpecial, realtimes,
-                        damage.type, pMt.specialLev,
+                        damage.type, static_cast<int>(pMt.specialLev),
                         damage.flags, damage.dclass,
                         damage.effect, 0, a);
                 if (num != -1) {
@@ -714,7 +714,7 @@ void Game::GetSides(const ARegion::Handle& r,
     for(const auto& o: r->objects) {
         /* Set building capacity */
         if (o->incomplete < 1 && o->IsBuilding()) {
-            o->capacity = ObjectDefs[o->type].protect;
+            o->capacity = static_cast<size_t>(ObjectDefs[o->type].protect);
             o->shipno = 0;
         } else if (o->IsFleet()) {
             o->capacity = 0;

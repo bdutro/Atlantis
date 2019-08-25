@@ -1557,7 +1557,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
 {
     AString tmp;
     int linked = 0;
-    using MapType = std::map<int, int>;
+    using MapType = std::map<int, size_t>;
     MapType chances;
 
     if (u->type != U_WMON) {
@@ -1579,7 +1579,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                 if (ItemDefs[i->type].escape & ItemType::HAS_SKILL) {
                     tmp = ItemDefs[i->type].esc_skill;
                     skill = LookupSkill(tmp);
-                    if (u->GetSkill(skill) >= static_cast<int>(ItemDefs[i->type].esc_val))
+                    if (u->GetSkill(skill) >= ItemDefs[i->type].esc_val)
                         losses = 0;
                 }
                 if (losses) {
@@ -1594,7 +1594,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
             } else if (ItemDefs[i->type].escape & ItemType::HAS_SKILL) {
                 tmp = ItemDefs[i->type].esc_skill;
                 skill = LookupSkill(tmp);
-                if (u->GetSkill(skill) < static_cast<int>(ItemDefs[i->type].esc_val)) {
+                if (u->GetSkill(skill) < ItemDefs[i->type].esc_val) {
                     if (Globals->WANDERING_MONSTERS_EXIST) {
                         const auto mfac = GetFaction(factions, monfaction);
                         const auto mon = GetNewUnit(mfac, 0);
@@ -1615,19 +1615,18 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                 // ESC_LEV_*
                 tmp = ItemDefs[i->type].esc_skill;
                 skill = LookupSkill(tmp);
-                int level = u->GetSkill(skill);
-                int chance;
+                size_t level = u->GetSkill(skill);
+                size_t chance;
 
                 if (!level)
                     chance = 10000;
                 else {
-                    int top;
-                    int i_num = static_cast<int>(i->num);
+                    size_t top;
                     if (ItemDefs[i->type].escape & ItemType::ESC_NUM_SQUARE)
-                        top = i_num * i_num;
+                        top = i->num * i->num;
                     else
-                        top = i_num;
-                    int bottom = 0;
+                        top = i->num;
+                    size_t bottom = 0;
                     if (ItemDefs[i->type].escape & ItemType::ESC_LEV_LINEAR)
                         bottom = level;
                     else if (ItemDefs[i->type].escape & ItemType::ESC_LEV_SQUARE)
@@ -1638,7 +1637,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                         bottom = level * level * level * level;
                     else
                         bottom = 1;
-                    bottom = bottom * static_cast<int>(ItemDefs[i->type].esc_val);
+                    bottom = bottom * ItemDefs[i->type].esc_val;
                     chance = (top * 10000)/bottom;
                 }
 
@@ -1646,7 +1645,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                     if (chance > chances[ItemDefs[i->type].type])
                         chances[ItemDefs[i->type].type] = chance;
                     linked = 1;
-                } else if (chance > getrandom(10000)) {
+                } else if (chance > getrandom(10000U)) {
                     if (Globals->WANDERING_MONSTERS_EXIST) {
                         const auto mfac = GetFaction(factions, monfaction);
                         const auto mon = GetNewUnit(mfac, 0);
@@ -1672,7 +1671,7 @@ void Game::MonsterCheck(ARegion *r, Unit *u)
                 // walk the chances list and for each chance, see if
                 // escape happens and if escape happens then walk all items
                 // and everything that is that type, get rid of it.
-                if ((*i).second < getrandom(10000)) continue;
+                if ((*i).second < getrandom(10000U)) continue;
                 for(const auto& it: u->items) {
                     if (ItemDefs[it->type].type == (*i).first) {
                         if (Globals->WANDERING_MONSTERS_EXIST) {

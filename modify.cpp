@@ -277,10 +277,10 @@ void Game::ModifyItemCapacities(const Items& it, int wlk, int rid, int fly, int 
     if (swm < 0) swm = 0;
 
     auto& item_def = ItemDefs[it];
-    item_def.walk = wlk;
-    item_def.ride = rid;
-    item_def.fly = fly;
-    item_def.swim = swm;
+    item_def.walk = static_cast<unsigned int>(wlk);
+    item_def.ride = static_cast<unsigned int>(rid);
+    item_def.fly = static_cast<unsigned int>(fly);
+    item_def.swim = static_cast<unsigned int>(swm);
 }
 
 void Game::ModifyItemSpeed(const Items& it, int speed)
@@ -290,7 +290,7 @@ void Game::ModifyItemSpeed(const Items& it, int speed)
         return;
     }
     if (speed < 0) speed = 0;
-    ItemDefs[it].speed = speed;
+    ItemDefs[it].speed = static_cast<unsigned int>(speed);
 }
 
 void Game::ModifyItemProductionBooster(const Items& it, const Items& item, int bonus)
@@ -321,7 +321,7 @@ void Game::ModifyItemHitch(const Items& it, const Items& item, int capacity)
     item_def.hitchwalk = capacity;
 }
 
-void Game::ModifyItemProductionSkill(const Items& it, char *sk, int lev)
+void Game::ModifyItemProductionSkill(const Items& it, char *sk, size_t lev)
 {
     if (!it.isValid())
     {
@@ -596,7 +596,7 @@ void Game::ModifyMonsterSpecial(char const *mon, char const *special, int lev)
         auto& pM = FindMonster_(mon, 0);
         FindSpecial_(special);
         pM.special = special;
-        pM.specialLevel = lev;
+        pM.specialLevel = static_cast<size_t>(lev);
     }
     catch(const NoSuchItemException&)
     {
@@ -816,7 +816,7 @@ void Game::ModifyMountSpecial(char const *mount, char const *special, int level)
         auto& pm = FindMount_(mount);
         FindSpecial_(special);
         pm.mountSpecial = special;
-        pm.specialLev = level;
+        pm.specialLev = static_cast<unsigned int>(level);
     }
     catch(const NoSuchItemException&)
     {
@@ -920,7 +920,7 @@ void Game::ModifyObjectConstruction(const Objects& ob, const ObjectTypeItems& it
         ObjectDefs[ob].item = it;
         ObjectDefs[ob].cost = num;
         ObjectDefs[ob].skill = sk;
-        ObjectDefs[ob].level = lev;
+        ObjectDefs[ob].level = static_cast<unsigned int>(lev);
     }
     catch(const NoSuchItemException&)
     {
@@ -952,7 +952,7 @@ void Game::ModifyObjectManpower(const Objects& ob, int prot, int cap, int sail, 
     ObjectDefs[ob].protect = prot;
     ObjectDefs[ob].capacity = cap;
     ObjectDefs[ob].sailors = sail;
-    ObjectDefs[ob].maxMages = mages;
+    ObjectDefs[ob].maxMages = static_cast<unsigned int>(mages);
 }
 
 void Game::ModifyObjectDefence(const Objects& ob, int co, int en, int sp, int we, int ri, int ra)
@@ -1206,7 +1206,7 @@ void Game::ModifyBattleItemSpecial(char const *item, char const *special, int le
         auto& pb = FindBattleItem_(item);
         FindSpecial(special);
         pb.special = special;
-        pb.skillLevel = level;
+        pb.skillLevel = static_cast<size_t>(level);
     }
     catch(const NoSuchItemException&)
     {

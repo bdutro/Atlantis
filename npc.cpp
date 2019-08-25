@@ -336,7 +336,7 @@ Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype,
             if (LookupItem(it) == LookupItem(ps)) continue;
             
             // Sort out the more exotic weapons!
-            int producelevel = ItemDefs[LookupItem(it)].pLevel;
+            int producelevel = static_cast<int>(ItemDefs[LookupItem(it)].pLevel);
             if (ItemDefs[LookupItem(it)].pSkill != FindSkill("WEAP").abbr) continue;
 
             const AString s1(WeaponDefs[i].baseSkill);

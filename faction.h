@@ -137,7 +137,7 @@ public:
     
     void SetAttitude(size_t,int); /* faction num, attitude */
     /* if attitude == -1, clear it */
-    int GetAttitude(size_t);
+    int GetAttitude(size_t) const;
     void RemoveAttitude(size_t);
     
     bool CanCatch(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);

@@ -11,7 +11,7 @@ class UnitId {
 
         size_t unitnum; /* if 0, it is a new unit */
         int alias;
-        int faction;
+        size_t faction;
 
         bool operator<(const UnitId& rhs) const
         {

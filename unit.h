@@ -103,7 +103,7 @@ enum {
 #define FLAG_SWIMSPOILS            0x2000
 #define FLAG_SAILSPOILS            0x4000
 
-class Unit
+class Unit : std::enable_shared_from_this<Unit>
 {
     public:
         using Handle = std::shared_ptr<Unit>;
@@ -117,11 +117,11 @@ class Unit
         void MakeWMon(char const *, const Items&, size_t);
 
         void Writeout( Aoutfile *f );
-        void Readin( Ainfile *f, AList *, ATL_VER v );
+        void Readin( Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v );
 
         AString SpoilsReport(void);
         bool CanGetSpoil(const Item::Handle& i);
-        void WriteReport(Areport *,int,int,bool, bool, int, bool);
+        void WriteReport(Areport *,int,size_t,bool, bool, int, bool);
         AString GetName(int);
         AString MageReport();
         AString ReadyItem();
@@ -170,7 +170,7 @@ class Unit
         int PracticeAttribute(char const *ident);
         int GetProductionBonus(const Items&);
 
-        int GetSkill(const Skills&);
+        size_t GetSkill(const Skills&);
         void SetSkill(const Skills&, int);
         int GetSkillMax(const Skills&);
         int GetAvailSkill(const Skills&);
@@ -190,7 +190,7 @@ class Unit
                                               the Unit parameter */
         int Hostile();
         bool Forbids(const ARegion&,const Unit::Handle&);
-        int Weight();
+        size_t Weight();
         size_t FlyingCapacity();
         size_t RidingCapacity();
         size_t SwimmingCapacity();

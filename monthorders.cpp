@@ -208,7 +208,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
 
     fleet->movepoints += fleet->GetFleetSpeed(0);
     bool stop = false;
-    int wgt = 0;
+    size_t wgt = 0;
     size_t slr = 0;
     bool nomove = false;
 
@@ -551,7 +551,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
         return;
     }
 
-    int usk = u->GetSkill(sk);
+    size_t usk = u->GetSkill(sk);
     if (usk < ObjectDefs[buildobj->type].level) {
         u->Error("BUILD: Can't build that.");
         u->monthorders.reset();
@@ -656,14 +656,13 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
  */
 void Game::RunBuildShipOrder(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    int level;
     size_t unfinished;
     AString skname;
 
     Items ship(abs(u->build));
     skname = ItemDefs[ship].pSkill;
     size_t skill = LookupSkill(skname);
-    level = u->GetSkill(skill);
+    size_t level = u->GetSkill(skill);
 
     unsigned int output;
 
@@ -764,7 +763,7 @@ void Game::RunBuildHelpers(const ARegion::Handle& r)
                             Items ship(abs(target->build));
                             AString skname = ItemDefs[ship].pSkill;
                             Skills skill = LookupSkill(skname);
-                            int level = u->GetSkill(skill);
+                            size_t level = u->GetSkill(skill);
                             size_t needed = 0;
                             if ((target->monthorders) && 
                                     (target->monthorders->type == Orders::Types::O_BUILD)) {
@@ -876,7 +875,7 @@ void Game::CreateShip(const ARegion::Handle& r, const Unit::Handle& u, const Ite
 unsigned int Game::ShipConstruction(const ARegion::Handle& r,
                                     const Unit::Handle& u,
                                     const Unit::Handle& target,
-                                    int level,
+                                    size_t level,
                                     size_t needed,
                                     const Items& ship)
 {
@@ -895,7 +894,7 @@ unsigned int Game::ShipConstruction(const ARegion::Handle& r,
     // are there unfinished ship items of the given type?
     size_t unfinished = target->items.GetNum(ship);
 
-    size_t number = u->GetMen() * static_cast<size_t>(level) + static_cast<size_t>(u->GetProductionBonus(ship));
+    size_t number = u->GetMen() * level + static_cast<size_t>(u->GetProductionBonus(ship));
 
     // find the max we can possibly produce based on man-months of labor
     size_t maxproduced;
@@ -1039,7 +1038,7 @@ void Game::RunUnitProduce(const ARegion::Handle& r, const Unit::Handle& u)
         return;
     }
 
-    int level = u->GetSkill(o->skill);
+    size_t level = u->GetSkill(o->skill);
     if (level < ItemDefs[o->item].pLevel) {
         u->Error("PRODUCE: Can't produce that.");
         u->monthorders.reset();
@@ -1047,7 +1046,7 @@ void Game::RunUnitProduce(const ARegion::Handle& r, const Unit::Handle& u)
     }
 
     // LLS
-    int number = static_cast<int>(u->GetMen()) * level + u->GetProductionBonus(o->item);
+    int number = static_cast<int>(u->GetMen() * level) + u->GetProductionBonus(o->item);
 
     if (!TradeCheck(r, u->faction.lock())) {
         u->Error("PRODUCE: Faction can't produce in that many regions.");
@@ -1193,7 +1192,7 @@ int Game::ValidProd(const Unit::Handle& u,
             po->productivity = static_cast<int>(static_cast<float>(u->GetMen() * static_cast<size_t>(p->productivity)) / 10.0);
             return po->productivity;
         }
-        int level = u->GetSkill(p->skill);
+        size_t level = u->GetSkill(p->skill);
         if (level < ItemDefs[p->itemtype].pLevel) {
             u->Error("PRODUCE: Unit isn't skilled enough.");
             u->monthorders.reset();
@@ -1214,7 +1213,7 @@ int Game::ValidProd(const Unit::Handle& u,
         // LLS
         int bonus = u->GetProductionBonus(p->itemtype);
         /* Factor for fractional productivity: 10 */
-        po->productivity = static_cast<int>(static_cast<float>(u->GetMen() * static_cast<size_t>(level * p->productivity)) / 10.0) + bonus;
+        po->productivity = static_cast<int>(static_cast<float>(u->GetMen() * level * static_cast<size_t>(p->productivity)) / 10.0) + bonus;
         if (po->target > 0 && po->productivity > po->target)
             po->productivity = po->target;
         return po->productivity;
@@ -1553,7 +1552,7 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
         u->Event(str);
         // study to level order
         if (o->level.isValid()) {
-            if (u->GetSkill(sk) < static_cast<int>(o->level)) {
+            if (u->GetSkill(sk) < o->level) {
                 auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
                 auto& order = *(tOrder->turnOrders.emplace_back(std::make_shared<AString>()));
                 tOrder->repeating = 0;

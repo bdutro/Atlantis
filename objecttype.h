@@ -94,7 +94,44 @@ enum class _ObjectTypes : size_t {
     NOBJECTS
 };
 
-using Objects = ValidEnum<_ObjectTypes, _ObjectTypes::NOBJECTS>;
+class Objects : public ValidEnum<_ObjectTypes, _ObjectTypes::NOBJECTS>
+{
+    public:
+        Objects() :
+            ValidEnum()
+        {
+        }
+
+        Objects(size_t type) :
+            ValidEnum(type)
+        {
+        }
+
+        Objects(const Types& type) :
+            ValidEnum(type)
+        {
+        }
+
+        Objects(const ValidEnum& rhs) :
+            ValidEnum(rhs)
+        {
+        }
+
+        Objects(int type) :
+            ValidEnum(type)
+        {
+        }
+
+        bool isRoad() const
+        {
+            return isValid() && *this >= Objects(Objects::Types::O_ROADN) && *this <= Objects(Objects::Types::O_ROADS);
+        }
+
+        bool isDummy() const
+        {
+            return isValid() && *this == Objects::Types::O_DUMMY;
+        }
+};
 
 class ObjectTypeItems : public Items
 {

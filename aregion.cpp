@@ -906,7 +906,7 @@ void ARegion::CheckFleets()
     }
 }
 
-Unit::WeakHandle ARegion::GetUnit(int num)
+Unit::WeakHandle ARegion::GetUnit(size_t num)
 {
     for(const auto&obj: objects) {
         const auto& u = obj->GetUnit(num);
@@ -934,7 +934,7 @@ Location::Handle ARegion::GetLocation(const UnitId& id, size_t faction) const
     return nullptr;
 }
 
-Unit::WeakHandle ARegion::GetUnitAlias(int alias, int faction)
+Unit::WeakHandle ARegion::GetUnitAlias(int alias, size_t faction)
 {
     for(const auto& obj: objects) {
         Unit::WeakHandle u = obj->GetUnitAlias(alias, faction);
@@ -1547,11 +1547,11 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
         }
 
         int obs = GetObservation(fac, false);
-        int truesight = GetTrueSight(fac, false);
+        size_t truesight = GetTrueSight(fac, false);
         bool detfac = false;
 
         int passobs = GetObservation(fac, true);
-        int passtrue = GetTrueSight(fac, true);
+        size_t passtrue = GetTrueSight(fac, true);
         bool passdetfac = detfac;
 
         if (fac.IsNPC()) {
@@ -1727,14 +1727,14 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
     }
 }
 
-int ARegion::GetTrueSight(const Faction& f, bool usepassers)
+size_t ARegion::GetTrueSight(const Faction& f, bool usepassers)
 {
-    int truesight = 0;
+    size_t truesight = 0;
 
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& farsight: farsees) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
-                int t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
+                size_t t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
         }
@@ -1745,7 +1745,7 @@ int ARegion::GetTrueSight(const Faction& f, bool usepassers)
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
-                int t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
+                size_t t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
                 if (t > truesight) truesight = t;
             }
         }
@@ -1754,7 +1754,7 @@ int ARegion::GetTrueSight(const Faction& f, bool usepassers)
     for(const auto& obj: objects) {
         for(const auto& u: obj->units) {
             if (u->faction.lock().get() == &f) {
-                int temp = u->GetSkill(Skills::Types::S_TRUE_SEEING);
+                size_t temp = u->GetSkill(Skills::Types::S_TRUE_SEEING);
                 if (temp>truesight) truesight = temp;
             }
         }

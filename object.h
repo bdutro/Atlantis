@@ -56,12 +56,12 @@ class ObjectType {
         int protect;
         int capacity;
         int sailors;
-        int maxMages;
+        unsigned int maxMages;
 
         ObjectTypeItems item;
         int cost;
         char const *skill;
-        int level;
+        unsigned int level;
 
         int maxMaintenance;
         int maxMonthlyDecay;
@@ -75,7 +75,7 @@ class ObjectType {
 
 extern GameDataArray<ObjectType> ObjectDefs;
 
-AString *ObjectDescription(int obj);
+AString *ObjectDescription(const Objects& obj);
 
 Objects LookupObject(AString *token);
 
@@ -84,7 +84,7 @@ Objects ParseObject(AString *);
 
 bool ObjectIsShip(const Objects&);
 
-class Object
+class Object : public std::enable_shared_from_this<Object>
 {
     public:
         using Handle = std::shared_ptr<Object>;
@@ -95,22 +95,22 @@ class Object
 
         void Readin(Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
         void Writeout(Aoutfile *f);
-        void Report(Areport *, const Faction&, int, int, bool, int, int, bool, bool);
+        void Report(Areport *, const Faction&, int, size_t, bool, int, size_t, bool, bool);
 
         void SetName(AString *);
         void SetDescribe(AString *);
 
-        std::weak_ptr<Unit> GetUnit(int);
-        std::weak_ptr<Unit> GetUnitAlias(int, int); /* alias, faction number */
+        std::weak_ptr<Unit> GetUnit(size_t);
+        std::weak_ptr<Unit> GetUnitAlias(int, size_t); /* alias, faction number */
         std::weak_ptr<Unit> GetUnitId(const UnitId&, size_t);
 
         // AS
-        int IsRoad();
+        bool IsRoad();
 
-        int IsFleet();
+        bool IsFleet();
         int IsBuilding();
         int CanModify();
-        int CanEnter(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
+        bool CanEnter(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
         std::weak_ptr<Unit> ForbiddenBy(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
         std::weak_ptr<Unit> GetOwner();
 
@@ -120,12 +120,12 @@ class Object
         // Fleets
         void ReadinFleet(Ainfile *f);
         void WriteoutFleet(Aoutfile *f);
-        int CheckShip(int);
-        int GetNumShips(int);
-        void SetNumShips(int, int);
+        bool CheckShip(const Items&);
+        size_t GetNumShips(const Items&);
+        void SetNumShips(const Items&, size_t);
         void AddShip(const Items&);
         AString FleetDefinition();
-        int FleetCapacity();
+        size_t FleetCapacity();
         int FleetLoad();
         int FleetSailingSkill(int);
         size_t GetFleetSize();
@@ -138,12 +138,12 @@ class Object
         int num;
         Objects type;
         int incomplete;
-        int capacity;
+        size_t capacity;
         int flying;
         int load;
         int runes;
         Directions prevdir;
-        int mages;
+        size_t mages;
         size_t shipno;
         unsigned int movepoints;
         std::list<std::shared_ptr<Unit>> units;

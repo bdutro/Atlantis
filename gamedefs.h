@@ -137,9 +137,9 @@ public:
     unsigned int MAX_SPEED;
     unsigned int PHASED_MOVE_OFFSET;
     // Maximum speed boost for fleets from various sources
-    int FLEET_WIND_BOOST; // Mages with SWIN
-    int FLEET_CREW_BOOST; // Extra crew
-    int FLEET_LOAD_BOOST; // Low load
+    unsigned int FLEET_WIND_BOOST; // Mages with SWIN
+    unsigned int FLEET_CREW_BOOST; // Extra crew
+    unsigned int FLEET_LOAD_BOOST; // Low load
 
     unsigned int STUDENTS_PER_TEACHER;
 
