@@ -31,14 +31,14 @@
 
 Production::Production()
 {
-    itemtype = -1;
+    itemtype.invalidate();
     amount = 0;
     baseamount = 0;
     productivity = 0;
-    skill = -1;
+    skill.invalidate();
 }
 
-Production::Production(int it, int maxamt)
+Production::Production(const Items& it, int maxamt)
 {
     itemtype = it;
     amount = maxamt;
@@ -47,18 +47,30 @@ Production::Production(int it, int maxamt)
     baseamount = amount;
     productivity = 10;
     AString skname = ItemDefs[it].pSkill;
-    skill = LookupSkill(&skname);
+    skill = LookupSkill(skname);
 }
 
 void Production::Writeout(Aoutfile *f)
 {
-    if (itemtype != -1) f->PutStr(ItemDefs[itemtype].abr);
-    else f->PutStr("NO_ITEM");
+    if (itemtype.isValid())
+    {
+        f->PutStr(ItemDefs[itemtype].abr);
+    }
+    else
+    {
+        f->PutStr("NO_ITEM");
+    }
     f->PutInt(amount);
     f->PutInt(baseamount);
-    if (itemtype == I_SILVER) {
-        if (skill != -1) f->PutStr(SkillDefs[skill].abbr);
-        else f->PutStr("NO_SKILL");
+    if (itemtype == Items::Types::I_SILVER) {
+        if (skill.isValid())
+        {
+            f->PutStr(SkillDefs[skill].abbr);
+        }
+        else
+        {
+            f->PutStr("NO_SKILL");
+        }
     }
     f->PutInt(productivity);
 }
@@ -68,18 +80,24 @@ void Production::Readin(Ainfile *f)
     AString *temp;
 
     temp = f->GetStr();
-    itemtype = LookupItem(temp);
+    itemtype = LookupItem(*temp);
     delete temp;
 
-    amount = f->GetInt();
-    baseamount = f->GetInt();
+    amount = f->GetInt<int>();
+    baseamount = f->GetInt<int>();
 
-    if (itemtype == I_SILVER) temp = f->GetStr();
-    else temp = new AString(ItemDefs[itemtype].pSkill);
-    skill = LookupSkill(temp);
+    if (itemtype == Items::Types::I_SILVER)
+    {
+        temp = f->GetStr();
+    }
+    else
+    {
+        temp = new AString(ItemDefs[itemtype].pSkill);
+    }
+    skill = LookupSkill(*temp);
     delete temp;
 
-    productivity = f->GetInt();
+    productivity = f->GetInt<int>();
 }
 
 AString Production::WriteReport()
@@ -99,9 +117,9 @@ void ProductionList::Writeout(Aoutfile *f)
 
 void ProductionList::Readin(Ainfile *f)
 {
-    int n = f->GetInt();
-    for (int i = 0; i<n; i++) {
-        p = products.emplace_back(std::make_shared<Production());
+    size_t n = f->GetInt<size_t>();
+    for (size_t i = 0; i < n; ++i) {
+        auto& p = products_.emplace_back(std::make_shared<Production>());
         p->Readin(f);
     }
 }
@@ -137,7 +155,7 @@ ProductionList::iterator ProductionList::GetProd_(const Items& t, const Skills& 
 
 void ProductionList::AddProd(const Production::Handle& p)
 {
-    iterator it = GetProd(p->itemtype, p->skill);
+    iterator it = GetProd_(p->itemtype, p->skill);
     if (it != end()) {
         products_.erase(it);
     }

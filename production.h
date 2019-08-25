@@ -43,7 +43,7 @@ public:
     using Handle = std::shared_ptr<Production>;
     using WeakHandle = std::weak_ptr<Production>;
 
-    Production(int,int); /* item type, amt max */
+    Production(const Items&, int); /* item type, amt max */
     Production();
     
     void Writeout(Aoutfile *);
@@ -67,7 +67,7 @@ public:
     using const_iterator = list_type::const_iterator;
 
     Production::WeakHandle GetProd(const Items&, const Skills&); /* item type, skill */
-    void AddProd(Production *);
+    void AddProd(const Production::Handle&);
 
     void Writeout(Aoutfile *);
     void Readin(Ainfile *);
