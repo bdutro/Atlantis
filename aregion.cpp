@@ -28,7 +28,7 @@
 #include "game.h"
 #include "gamedata.h"
 
-Location::WeakHandle GetUnit(const std::list<Location::Handle>& list, size_t n)
+Location::WeakHandle GetUnit(const PtrList<Location>& list, size_t n)
 {
     for(const auto& l: list) {
         if (l->unit.lock()->num == n) return l;
@@ -36,7 +36,7 @@ Location::WeakHandle GetUnit(const std::list<Location::Handle>& list, size_t n)
     return Location::WeakHandle();
 }
 
-ARegion::WeakHandle GetRegion(const std::list<ARegion::WeakHandle>& l, size_t n)
+ARegion::WeakHandle GetRegion(const WeakPtrList<ARegion>& l, size_t n)
 {
     for(const auto& p: l) {
         if (p.lock()->num == n) return p;
@@ -53,7 +53,7 @@ Farsight::Farsight()
     std::fill(exits_used.begin(), exits_used.end(), false);
 }
 
-Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>& l, const Faction& fac)
+Farsight::WeakHandle GetFarsight(const PtrList<Farsight>& l, const Faction& fac)
 {
     for(const auto& f: l) {
         if (f->faction.lock().get() == &fac) return f;
@@ -174,7 +174,7 @@ unsigned int ARegion::GetNearestProd(const Items& item)
     //ARegionPtr *p = new ARegionPtr;
     //p->ptr = this;
     //regs.Add(p);
-    std::list<ARegion::WeakHandle> regs, regs2;
+    WeakPtrList<ARegion> regs, regs2;
     regs.push_back(weak_from_this());
 
     for (unsigned int i=0; i<5; i++) {
@@ -297,7 +297,7 @@ void ARegion::Setup()
         LairCheck();
 }
 
-int ARegion::TraceConnectedRoad(const Directions& dir, int sum, std::list<ARegion::WeakHandle>& con, int range, int dev)
+int ARegion::TraceConnectedRoad(const Directions& dir, int sum, WeakPtrList<ARegion>& con, int range, int dev)
 {
     ARegion::WeakHandle rn = weak_from_this();
     bool isnew = true;
@@ -347,7 +347,7 @@ int ARegion::TraceConnectedRoad(const Directions& dir, int sum, std::list<ARegio
 int ARegion::RoadDevelopmentBonus(int range, int dev)
 {
     int bonus = 0;
-    std::list<ARegion::WeakHandle> con;
+    WeakPtrList<ARegion> con;
     con.push_back(weak_from_this());
     for (auto d = Directions::begin(); d != Directions::end(); ++d) {
         if (!HasExitRoad(*d)) continue;
@@ -398,7 +398,7 @@ void ARegion::DoDecayClicks(const Object::Handle& o, const ARegionList& pRegs)
 // AS
 void ARegion::RunDecayEvent(const Object::Handle& o, const ARegionList& pRegs)
 {
-    std::list<Faction::WeakHandle> pFactions = PresentFactions();
+    WeakPtrList<Faction> pFactions = PresentFactions();
     for(const auto& fp: pFactions) {
         const auto f = fp.lock();
         f->Event(GetDecayFlavor() + *o->name + " " +
@@ -1031,9 +1031,9 @@ bool ARegion::Present(const Faction& f)
     return false;
 }
 
-std::list<Faction::WeakHandle> ARegion::PresentFactions()
+WeakPtrList<Faction> ARegion::PresentFactions()
 {
-    std::list<Faction::WeakHandle> facs;
+    WeakPtrList<Faction> facs;
     for(const auto& obj: objects)
     {
         for(const auto& u: obj->units)
@@ -1120,7 +1120,7 @@ Regions LookupRegionType(AString *token)
     return Regions();
 }
 
-void ARegion::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER v)
+void ARegion::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
 {
     AString *temp;
 
@@ -1897,7 +1897,7 @@ bool ARegion::HasCityGuard()
 
 bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const ARegionList& pRegs)
 {
-    std::list<Faction::Handle> flist;
+    PtrList<Faction> flist;
 
     const auto& pS = FindSkill(spell);
 
@@ -1941,7 +1941,7 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
 // Procedure to notify all units in city about city name change
 void ARegion::NotifyCity(const Unit::Handle& caster, AString& oldname, AString& newname)
 {
-    std::list<Faction::WeakHandle> flist;
+    WeakPtrList<Faction> flist;
     for(const auto& o: objects) {
         for(const auto& u: o->units) {
             if (u->faction.lock() == caster->faction.lock()) continue;
@@ -2102,7 +2102,7 @@ void ARegionList::WriteRegions(Aoutfile *f)
     }
 }
 
-bool ARegionList::ReadRegions(Ainfile *f, const std::list<Faction::Handle>& factions, ATL_VER v)
+bool ARegionList::ReadRegions(Ainfile *f, const PtrList<Faction>& factions, ATL_VER v)
 {
     unsigned int num = f->GetInt<unsigned int>();
 

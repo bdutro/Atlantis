@@ -46,11 +46,13 @@ class Game;
 class OrdersCheck
 {
 public:
+    using Handle = std::shared_ptr<OrdersCheck>;
+
     OrdersCheck();
 
     Aoutfile *pCheckFile;
-    Unit dummyUnit;
-    Faction dummyFaction;
+    Unit::Handle dummyUnit;
+    Faction::Handle dummyFaction;
     Order dummyOrder;
     int numshows;
     int numerrors;
@@ -288,9 +290,9 @@ private:
             int type, int val);
     void ModifyHealing(int level, int patients, int success);
 
-    std::list<Faction::Handle> factions;
+    PtrList<Faction> factions;
     std::list<AString> newfactions; /* List of strings */
-    std::list<Battle::Handle> battles;
+    PtrList<Battle> battles;
     ARegionList regions;
     size_t factionseq;
     size_t unitseq;
@@ -315,76 +317,82 @@ private:
     //
     // Parsing functions
     //
-    void ParseError(OrdersCheck *pCheck, const Unit::Handle&pUnit, Faction *pFac,
-                     const AString &strError);
-    UnitId *ParseUnit(AString *s);
-    int ParseDir(AString *token);
+    void ParseError(const OrdersCheck::Handle& pCheck,
+                    const Unit::Handle& pUnit,
+                    const Faction::Handle& pFac,
+                    const AString &strError);
+    UnitId::Handle ParseUnit(AString *s);
+    Directions ParseDir(AString *token);
 
 
-    void ParseOrders(size_t faction, Aorders *ordersFile, OrdersCheck *pCheck);
-    void ProcessOrder(Orders orderNum, const Unit::Handle& unit, AString *order,
-                       OrdersCheck *pCheck);
-    void ProcessMoveOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessAdvanceOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    Unit::WeakHandle ProcessFormOrder(const Unit::Handle& former, AString *order,
-                       OrdersCheck *pCheck, int atsign);
-    void ProcessAddressOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessAvoidOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessGuardOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessNameOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessDescribeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessBehindOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessGiveOrder(int, const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessWithdrawOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessDeclareOrder(Faction *, AString *, OrdersCheck *pCheck);
-    void ProcessStudyOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessTeachOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessWorkOrder(const Unit::Handle&, int quiet, OrdersCheck *pCheck);
-    void ProcessProduceOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessBuyOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessSellOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessAttackOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessBuildOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessSailOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessEnterOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessLeaveOrder(const Unit::Handle&, OrdersCheck *pCheck);
-    void ProcessPromoteOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessEvictOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessTaxOrder(const Unit::Handle&, OrdersCheck *pCheck);
-    void ProcessPillageOrder(const Unit::Handle&, OrdersCheck *pCheck);
-    void ProcessConsumeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessRevealOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessFindOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessDestroyOrder(const Unit::Handle&, OrdersCheck *pCheck);
-    void ProcessQuitOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessRestartOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessAssassinateOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessStealOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessFactionOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessClaimOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessCombatOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessPrepareOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessWeaponOrder(const Unit::Handle& u, AString *o, OrdersCheck *pCheck);
-    void ProcessArmorOrder(const Unit::Handle& u, AString *o, OrdersCheck *pCheck);
-    void ProcessCastOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessEntertainOrder(const Unit::Handle&, OrdersCheck *pCheck);
-    void ProcessForgetOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessReshowOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessHoldOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessNoaidOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessNocrossOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessNospoilsOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessSpoilsOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessAutoTaxOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessOptionOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessPasswordOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessExchangeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessIdleOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessTransportOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessDistributeOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    void ProcessShareOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
-    AString *ProcessTurnOrder(const Unit::Handle&, Aorders *, OrdersCheck *pCheck, int);
-    void ProcessJoinOrder(const Unit::Handle&, AString *, OrdersCheck *pCheck);
+    void ParseOrders(size_t faction, Aorders& ordersFile, const OrdersCheck::Handle& pCheck = nullptr);
+    void ProcessOrder(const Orders& orderNum,
+                      const Unit::Handle& unit,
+                      AString *order,
+                      const OrdersCheck::Handle& pCheck);
+    void ProcessMoveOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessAdvanceOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    Unit::Handle ProcessFormOrder(const Unit::Handle& former,
+                                  AString *order,
+                                  const OrdersCheck::Handle& pCheck,
+                                  int atsign);
+    void ProcessAddressOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessAvoidOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessGuardOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessNameOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessDescribeOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessBehindOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessGiveOrder(const Orders&, const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessWithdrawOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessDeclareOrder(const Faction::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessStudyOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessTeachOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessWorkOrder(const Unit::Handle&, bool quiet, const OrdersCheck::Handle& pCheck);
+    void ProcessProduceOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessBuyOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessSellOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessAttackOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessBuildOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessSailOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessEnterOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessLeaveOrder(const Unit::Handle&, const OrdersCheck::Handle& pCheck);
+    void ProcessPromoteOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessEvictOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessTaxOrder(const Unit::Handle&, const OrdersCheck::Handle& pCheck);
+    void ProcessPillageOrder(const Unit::Handle&, const OrdersCheck::Handle& pCheck);
+    void ProcessConsumeOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessRevealOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessFindOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessDestroyOrder(const Unit::Handle&, const OrdersCheck::Handle& pCheck);
+    void ProcessQuitOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessRestartOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessAssassinateOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessStealOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessFactionOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessClaimOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessCombatOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessPrepareOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessWeaponOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck);
+    void ProcessArmorOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck);
+    void ProcessCastOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessEntertainOrder(const Unit::Handle&, const OrdersCheck::Handle& pCheck);
+    void ProcessForgetOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessReshowOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessHoldOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessNoaidOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessNocrossOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessNospoilsOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessSpoilsOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessAutoTaxOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessOptionOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessPasswordOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessExchangeOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessIdleOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessTransportOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessDistributeOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    void ProcessShareOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
+    AString *ProcessTurnOrder(const Unit::Handle&, Aorders&, const OrdersCheck::Handle& pCheck, int);
+    void ProcessJoinOrder(const Unit::Handle&, AString *, const OrdersCheck::Handle& pCheck);
 
     void RemoveInactiveFactions();
 
@@ -509,7 +517,7 @@ private:
     void DoAutoAttacks();
     void DoAdvanceAttack(ARegion *, Unit *);
     void DoAutoAttack(ARegion *, Unit *);
-    void DoMovementAttacks(const std::list<Location::Handle>&);
+    void DoMovementAttacks(const PtrList<Location>&);
     void DoMovementAttack(ARegion *, Unit *);
     void DoAutoAttackOn(ARegion *, Unit *);
     void RemoveEmptyObjects();
@@ -539,7 +547,7 @@ private:
     void RunStealOrders();
     void RunTransportOrders();
     void CheckTransportOrders();
-    std::list<Faction::WeakHandle> CanSeeSteal(const ARegion::Handle&, const Unit::Handle&);
+    WeakPtrList<Faction> CanSeeSteal(const ARegion::Handle&, const Unit::Handle&);
     void Do1Steal(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void Do1Assassinate(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void AdjustCityMons(const ARegion::Handle& pReg);
@@ -594,10 +602,10 @@ private:
     int RunBattle(const ARegion::Handle&, const Unit::Handle&, const Unit::Handle&, int = 0, bool = false);
     void GetSidesForRegion_(const ARegion::Handle&,
                             const ARegion::Handle&,
-                            std::list<Faction::WeakHandle>&,
-                            std::list<Faction::WeakHandle>&,
-                            std::list<Location::Handle>&,
-                            std::list<Location::Handle>&,
+                            WeakPtrList<Faction>&,
+                            WeakPtrList<Faction>&,
+                            PtrList<Location>&,
+                            PtrList<Location>&,
                             const Unit::Handle&,
                             const Unit::Handle&,
                             bool,
@@ -605,26 +613,26 @@ private:
                             bool&,
                             bool = false);
     void GetSides(const ARegion::Handle&,
-                  std::list<Faction::WeakHandle>&,
-                  std::list<Faction::WeakHandle>&,
-                  std::list<Location::Handle>&,
-                  std::list<Location::Handle>&,
+                  WeakPtrList<Faction>&,
+                  WeakPtrList<Faction>&,
+                  PtrList<Location>&,
+                  PtrList<Location>&,
                   const Unit::Handle&,
                   const Unit::Handle&,
                   int = 0,
                   bool = false);
     bool CanAttack(const ARegion::Handle&,
-                   const std::list<Faction::WeakHandle>&,
+                   const WeakPtrList<Faction>&,
                    const Unit::Handle&);
     void GetAFacs(const ARegion::Handle&,
                   const Unit::Handle&,
                   const Unit::Handle&,
-                  std::list<Faction::WeakHandle>&,
-                  std::list<Faction::WeakHandle>&,
-                  std::list<Location::Handle>&);
+                  WeakPtrList<Faction>&,
+                  WeakPtrList<Faction>&,
+                  PtrList<Location>&);
     void GetDFacs(const ARegion::Handle&,
                   const Unit::Handle&,
-                  std::list<Faction::WeakHandle>&);
+                  WeakPtrList<Faction>&);
 };
 
 #endif

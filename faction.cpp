@@ -187,7 +187,7 @@ void Faction::Readin(Ainfile *f, ATL_VER v)
     }
 
     lastchange = f->GetInt<int>();
-    lastorders = f->GetInt<int>();
+    lastorders = f->GetInt<size_t>();
     unclaimed = f->GetInt<size_t>();
 
     name = f->GetStr();
@@ -372,7 +372,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     }
 
     if (Globals->MAX_INACTIVE_TURNS != -1) {
-        int cturn = static_cast<int>(pGame->TurnNumber()) - lastorders;
+        int cturn = static_cast<int>(pGame->TurnNumber() - lastorders);
         if ((cturn >= (Globals->MAX_INACTIVE_TURNS - 3)) && !IsNPC()) {
             cturn = Globals->MAX_INACTIVE_TURNS - cturn;
             f->PutStr(AString("WARNING: You have ") + cturn +
@@ -769,7 +769,7 @@ bool Faction::IsNPC() const
     return false;
 }
 
-Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, size_t n)
+Faction::Handle GetFaction(const PtrList<Faction>& facs, size_t n)
 {
     for(const auto& f: facs)
     {
@@ -781,7 +781,7 @@ Faction::Handle GetFaction(const std::list<Faction::Handle>& facs, size_t n)
     return nullptr;
 }
 
-Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>& facs, size_t n)
+Faction::WeakHandle GetFaction2(const WeakPtrList<Faction>& facs, size_t n)
 {
     for(const auto& f: facs)
     {

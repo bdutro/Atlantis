@@ -85,6 +85,11 @@ class Directions : public _DirectionsVE
         {
         }
 
+        bool isMovePause() const
+        {
+            return static_cast<size_t>(*this) == MOVE_PAUSE;
+        }
+
         bool isMoveEnter() const
         {
             return static_cast<size_t>(*this) >= MOVE_ENTER;
@@ -380,7 +385,7 @@ public:
 
     // Do cities have a cost to rename them?  If this value is set,
     // the cost is the city size (1, 2, 3) * this value
-    int CITY_RENAME_COST;
+    unsigned int CITY_RENAME_COST;
 
     // Are we allowing a multi-hex nexus
     int MULTI_HEX_NEXUS;

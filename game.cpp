@@ -749,7 +749,7 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
         // faction if the game itself isn't maintaining them.
         pTemp = pLine->gettoken();
         if (Globals->LASTORDERS_MAINTAINED_BY_SCRIPTS)
-            pFac->lastorders = pTemp->value();
+            pFac->lastorders = static_cast<size_t>(pTemp->value());
     } else if (*pToken == "FirstTurn:") {
         pTemp = pLine->gettoken();
         pFac->startturn = static_cast<size_t>(pTemp->value());
@@ -1006,10 +1006,10 @@ int Game::DoOrdersCheck(const AString &strOrders, const AString &strCheck)
         return(0);
     }
 
-    OrdersCheck check;
-    check.pCheckFile = &checkFile;
+    OrdersCheck::Handle check = std::make_shared<OrdersCheck>();
+    check->pCheckFile = &checkFile;
 
-    ParseOrders(0, &ordersFile, &check);
+    ParseOrders(0, ordersFile, check);
 
     ordersFile.Close();
     checkFile.Close();
@@ -1106,7 +1106,7 @@ void Game::ReadOrders()
 
             Aorders file;
             if (file.OpenByName(str) != -1) {
-                ParseOrders(fac->num, &file, 0);
+                ParseOrders(fac->num, file);
                 file.Close();
             }
             DefaultWorkOrder();
@@ -1214,7 +1214,7 @@ Faction::Handle Game::AddFaction(int noleader, const ARegion::Handle& pStart)
     Faction::Handle temp = std::make_shared<Faction>(factionseq);
     AString x("NoAddress");
     temp->SetAddress(x);
-    temp->lastorders = static_cast<int>(TurnNumber());
+    temp->lastorders = TurnNumber();
     temp->startturn = TurnNumber();
     temp->pStartLoc = pStart;
     temp->pReg = pStart;
@@ -1394,10 +1394,11 @@ void Game::RemoveInactiveFactions()
 {
     if (Globals->MAX_INACTIVE_TURNS == -1) return;
 
-    int cturn = static_cast<int>(TurnNumber());
-    for(const auto& fac: factions) {
-        if ((cturn - fac->lastorders) >= Globals->MAX_INACTIVE_TURNS &&
-                !fac->IsNPC()) {
+    size_t cturn = TurnNumber();
+    for(const auto& fac: factions)
+    {
+        if ((cturn - fac->lastorders) >= static_cast<size_t>(Globals->MAX_INACTIVE_TURNS) && !fac->IsNPC())
+        {
             fac->quit = QUIT_BY_GM;
         }
     }

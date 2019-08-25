@@ -30,6 +30,7 @@ class Object;
 
 #include <memory>
 
+#include "ptrlist.h"
 #include "gamedataarray.h"
 #include "objecttype.h"
 #include "alist.h"
@@ -93,7 +94,7 @@ class Object : public std::enable_shared_from_this<Object>
         Object(const std::weak_ptr<ARegion>& region);
         ~Object();
 
-        void Readin(Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
+        void Readin(Ainfile *f, const PtrList<Faction>&, ATL_VER v);
         void Writeout(Aoutfile *f);
         void Report(Areport *, const Faction&, int, size_t, bool, int, size_t, bool, bool);
 
@@ -146,8 +147,8 @@ class Object : public std::enable_shared_from_this<Object>
         size_t mages;
         size_t shipno;
         unsigned int movepoints;
-        std::list<std::shared_ptr<Unit>> units;
-        std::list<std::shared_ptr<Item>> ships;
+        PtrList<Unit> units;
+        PtrList<Item> ships;
 };
 
 #endif

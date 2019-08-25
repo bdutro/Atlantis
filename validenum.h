@@ -114,6 +114,11 @@ class ValidEnum : public ValidValue<size_t>
             }
         }
 
+        ValidEnum(ssize_t type) :
+            ValidEnum(static_cast<size_t>(type))
+        {
+        }
+
         constexpr ValidEnum(const ValidEnum& rhs) = default;
 
         ValidEnum& operator=(const ValidEnum& rhs) = default;

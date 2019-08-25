@@ -35,6 +35,7 @@ class Soldier;
 class Army;
 class Location;
 
+#include "ptrlist.h"
 #include "unit.h"
 #include "alist.h"
 #include "items.h"
@@ -108,7 +109,7 @@ class Army
     public:
         using Handle = std::shared_ptr<Army>;
 
-        Army(const std::shared_ptr<Unit>&, const std::list<std::shared_ptr<Location>>&, int, int = 0);
+        Army(const std::shared_ptr<Unit>&, const PtrList<Location>&, int, int = 0);
         ~Army() = default;
 
         void WriteLosses(Battle&);
@@ -158,7 +159,7 @@ class Army
         int hitstotal; // Number of hits at start of battle.
 
     private:
-        size_t BuildArmy_(const std::list<std::shared_ptr<Location>>& locs, int regtype, int ass);
+        size_t BuildArmy_(const PtrList<Location>& locs, int regtype, int ass);
 };
 
 #endif

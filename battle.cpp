@@ -210,7 +210,7 @@ void Battle::NormalRound(int round, const Army::Handle& a, const Army::Handle& b
     b->Reset();
 }
 
-void Battle::GetSpoils(const std::list<Location::Handle>& losers, ItemList& spoils, int ass)
+void Battle::GetSpoils(const PtrList<Location>& losers, ItemList& spoils, int ass)
 {
     ItemList ships;
     for(const auto& l: losers) {
@@ -262,9 +262,9 @@ void Battle::GetSpoils(const std::list<Location::Handle>& losers, ItemList& spoi
 
 int Battle::Run(const ARegion::Handle& region,
                 const Unit::Handle& att,
-                const std::list<Location::Handle>& atts,
+                const PtrList<Location>& atts,
                 const Unit::Handle& tar,
-                const std::list<Location::Handle>& defs,
+                const PtrList<Location>& defs,
                 int ass,
                 const ARegionList& pRegs)
 {
@@ -362,8 +362,8 @@ int Battle::Run(const ARegion::Handle& region,
 void Battle::WriteSides(const ARegion::Handle& r,
                         const Unit::Handle& att,
                         const Unit::Handle& tar,
-                        const std::list<Location::Handle>& atts,
-                        const std::list<Location::Handle>& defs,
+                        const PtrList<Location>& atts,
+                        const PtrList<Location>& defs,
                         int ass,
                         const ARegionList& pRegs )
 {
@@ -423,7 +423,7 @@ void Battle::AddLine(const AString & s) {
     text.emplace_back(std::make_unique<AString>(s));
 }
 
-void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, std::list<Faction::WeakHandle>& facs)
+void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, WeakPtrList<Faction>& facs)
 {
     int AlliesIncluded = 0;
     
@@ -469,9 +469,9 @@ void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, std::list<F
 void Game::GetAFacs(const ARegion::Handle& r,
                     const Unit::Handle& att,
                     const Unit::Handle& tar,
-                    std::list<Faction::WeakHandle>& dfacs,
-                    std::list<Faction::WeakHandle>& afacs,
-                    std::list<Location::Handle>& atts)
+                    WeakPtrList<Faction>& dfacs,
+                    WeakPtrList<Faction>& afacs,
+                    PtrList<Location>& atts)
 {
     for(const auto& obj: r->objects) {
         for(const auto& u: obj->units) {
@@ -532,7 +532,7 @@ void Game::GetAFacs(const ARegion::Handle& r,
     }
 }
 
-bool Game::CanAttack(const ARegion::Handle& r, const std::list<Faction::WeakHandle>& afacs, const Unit::Handle& u)
+bool Game::CanAttack(const ARegion::Handle& r, const WeakPtrList<Faction>& afacs, const Unit::Handle& u)
 {
     bool see = false;
     bool ride = false;
@@ -557,10 +557,10 @@ bool Game::CanAttack(const ARegion::Handle& r, const std::list<Faction::WeakHand
 
 void Game::GetSidesForRegion_(const ARegion::Handle& r,
                               const ARegion::Handle& r2,
-                              std::list<Faction::WeakHandle>& afacs,
-                              std::list<Faction::WeakHandle>& dfacs,
-                              std::list<Location::Handle>& atts,
-                              std::list<Location::Handle>& defs,
+                              WeakPtrList<Faction>& afacs,
+                              WeakPtrList<Faction>& dfacs,
+                              PtrList<Location>& atts,
+                              PtrList<Location>& defs,
                               const Unit::Handle& att,
                               const Unit::Handle& tar,
                               bool adv,
@@ -681,10 +681,10 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
 }
 
 void Game::GetSides(const ARegion::Handle& r,
-                    std::list<Faction::WeakHandle>& afacs,
-                    std::list<Faction::WeakHandle>& dfacs,
-                    std::list<Location::Handle>& atts,
-                    std::list<Location::Handle>& defs,
+                    WeakPtrList<Faction>& afacs,
+                    WeakPtrList<Faction>& dfacs,
+                    PtrList<Location>& atts,
+                    PtrList<Location>& defs,
                     const Unit::Handle& att,
                     const Unit::Handle& tar,
                     int ass,
@@ -801,10 +801,10 @@ size_t Game::KillDead(const Location::Handle& l, const Battle::Handle& b)
 
 int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, const Unit::Handle& target, int ass, bool adv)
 {
-    std::list<Faction::WeakHandle> afacs;
-    std::list<Faction::WeakHandle> dfacs;
-    std::list<Location::Handle> atts;
-    std::list<Location::Handle> defs;
+    WeakPtrList<Faction> afacs;
+    WeakPtrList<Faction> dfacs;
+    PtrList<Location> atts;
+    PtrList<Location> defs;
     int result;
 
     const auto attacker_faction = attacker->faction.lock();

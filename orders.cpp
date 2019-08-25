@@ -223,7 +223,7 @@ IdleOrder::IdleOrder()
 TransportOrder::TransportOrder()
 {
     type = Orders::Types::O_TRANSPORT;
-    item = -1;
+    item.invalidate();
     amount = 0;
     except = 0;
     target.invalidate();

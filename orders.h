@@ -50,6 +50,7 @@ class BankOrder;
 class IdleOrder;
 class TransportOrder;
 class TurnOrder;
+class ExchangeOrder;
 
 #include <memory>
 #include <list>
@@ -83,7 +84,7 @@ class Order {
         virtual ~Order() = default;
 
         Orders type;
-        int quiet;
+        bool quiet;
 };
 
 class MoveDir {
@@ -99,7 +100,7 @@ class MoveOrder : public Order {
         MoveOrder();
 
         int advancing;
-        std::list<MoveDir::Handle> dirs;
+        PtrList<MoveDir> dirs;
 };
 
 class WithdrawOrder : public Order {
@@ -108,7 +109,7 @@ class WithdrawOrder : public Order {
 
         WithdrawOrder();
 
-        int item;
+        Items item;
         int amount;
 };
 
@@ -118,7 +119,7 @@ class GiveOrder : public Order {
 
         GiveOrder();
 
-        int item;
+        ssize_t item;
         /* if amount == -1, transfer whole unit, -2 means all of item */
         int amount;
         int except;
@@ -166,7 +167,7 @@ class BuyOrder : public Order {
 
         BuyOrder();
 
-        int item;
+        Items item;
         int num;
 };
 
@@ -176,7 +177,7 @@ class SellOrder : public Order {
 
         SellOrder();
 
-        int item;
+        Items item;
         int num;
 };
 
@@ -205,7 +206,7 @@ class SailOrder : public Order {
 
         SailOrder();
 
-        std::list<MoveDir::Handle> dirs;
+        PtrList<MoveDir> dirs;
 };
 
 class FindOrder : public Order {
@@ -224,7 +225,7 @@ class StealOrder : public Order {
         StealOrder();
 
         UnitId target;
-        int item;
+        Items item;
 };
 
 class AssassinateOrder : public Order {
@@ -242,7 +243,7 @@ class ForgetOrder : public Order {
 
         ForgetOrder();
 
-        int skill;
+        Skills skill;
 };
 
 // Add class for exchange
@@ -252,9 +253,9 @@ class ExchangeOrder : public Order {
 
         ExchangeOrder();
 
-        int giveItem;
+        Items giveItem;
         int giveAmount;
-        int expectItem;
+        Items expectItem;
         int expectAmount;
 
         int exchangeStatus;
@@ -268,7 +269,7 @@ class TurnOrder : public Order {
 
         TurnOrder();
         int repeating;
-        std::list<AString::Handle> turnOrders;
+        PtrList<AString> turnOrders;
 };
 
 class CastOrder : public Order {
@@ -359,7 +360,7 @@ class TransportOrder : public Order {
 
         TransportOrder();
 
-        int item;
+        Items item;
         // amount == -1 means all available at transport time
         int amount;
         int except;

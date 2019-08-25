@@ -32,6 +32,7 @@ class ItemType;
 #include <memory>
 #include <exception>
 
+#include "ptrlist.h"
 #include "gamedataarray.h"
 #include "itemtype.h"
 #include "regiontype.h"
@@ -383,9 +384,12 @@ class Item
 
 class ItemList
 {
+    private:
+        using list_type = PtrList<Item>;
+
     public:
-        using iterator = std::list<Item::Handle>::iterator;
-        using const_iterator = std::list<Item::Handle>::const_iterator;
+        using iterator = list_type::iterator;
+        using const_iterator = list_type::const_iterator;
 
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
@@ -413,7 +417,7 @@ class ItemList
         bool empty() const { return items_.empty(); }
 
     private:
-        std::list<Item::Handle> items_;
+        list_type items_;
 };
 
 extern AString ShowSpecial(char const *special, size_t level, int expandLevel, int fromItem);

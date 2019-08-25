@@ -33,10 +33,12 @@
 
 OrdersCheck::OrdersCheck()
 {
-    pCheckFile = 0;
+    pCheckFile = nullptr;
     numshows = 0;
     numerrors = 0;
-    dummyUnit.monthorders = 0;
+    dummyFaction = std::make_shared<Faction>();
+    dummyUnit = std::make_shared<Unit>();
+    dummyUnit->monthorders = 0;
 }
 
 void OrdersCheck::Error(const AString &strError)
@@ -49,19 +51,40 @@ void OrdersCheck::Error(const AString &strError)
     numerrors++;
 }
 
-int Game::ParseDir(AString *token)
+Directions Game::ParseDir(AString *token)
 {
-    for (int i=0; i<NDIRS; i++) {
-        if (*token == DirectionStrs[i]) return i;
-        if (*token == DirectionAbrs[i]) return i;
+    for (auto i = Directions::begin(); i != Directions::end(); ++i) {
+        if (*token == DirectionStrs[*i])
+        {
+            return *i;
+        }
+        if (*token == DirectionAbrs[*i])
+        {
+            return *i;
+        }
     }
-    if (*token == "in") return MOVE_IN;
-    if (*token == "out") return MOVE_OUT;
-    if (*token == "pause" || *token == "p") return MOVE_PAUSE;
+    if (*token == "in")
+    {
+        return Directions::MOVE_IN;
+    }
+    if (*token == "out")
+    {
+        return Directions::MOVE_OUT;
+    }
+    if (*token == "pause" || *token == "p")
+    {
+        return Directions::MOVE_PAUSE;
+    }
+
     int num = token->value();
-    if (num) return MOVE_ENTER + num;
-    return -1;
+    if (num)
+    {
+        return Directions::MOVE_ENTER + static_cast<unsigned int>(num);
+    }
+    return Directions();
 }
+
+int ParseTF(AString *token);
 
 int ParseTF(AString *token)
 {
@@ -78,15 +101,15 @@ int ParseTF(AString *token)
     return -1;
 }
 
-UnitId *Game::ParseUnit(AString *s)
+UnitId::Handle Game::ParseUnit(AString *s)
 {
     AString *token = s->gettoken();
-    if (!token) return 0;
+    if (!token) return nullptr;
 
     if (*token == "0") {
         delete token;
-        UnitId *id = new UnitId;
-        id->unitnum = -1;
+        UnitId::Handle id = std::make_shared<UnitId>();
+        id->unitnum.invalidate();
         id->alias = 0;
         id->faction = 0;
         return id;
@@ -96,48 +119,48 @@ UnitId *Game::ParseUnit(AString *s)
         delete token;
         /* Get faction number */
         token = s->gettoken();
-        if (!token) return 0;
+        if (!token) return nullptr;
 
         int fn = token->value();
         delete token;
-        if (!fn) return 0;
+        if (!fn) return nullptr;
 
         /* Next token should be "new" */
         token = s->gettoken();
-        if (!token) return 0;
+        if (!token) return nullptr;
 
         if (!(*token == "new")) {
             delete token;
-            return 0;
+            return nullptr;
         }
         delete token;
 
         /* Get alias number */
         token = s->gettoken();
-        if (!token) return 0;
+        if (!token) return nullptr;
 
         int un = token->value();
         delete token;
-        if (!un) return 0;
+        if (!un) return nullptr;
 
         /* Return UnitId */
-        UnitId *id = new UnitId;
+        UnitId::Handle id = std::make_shared<UnitId>();
         id->unitnum = 0;
         id->alias = un;
-        id->faction = fn;
+        id->faction = static_cast<size_t>(fn);
         return id;
     }
 
     if (*token == "new") {
         delete token;
         token = s->gettoken();
-        if (!token) return 0;
+        if (!token) return nullptr;
 
         int un = token->value();
         delete token;
-        if (!un) return 0;
+        if (!un) return nullptr;
 
-        UnitId *id = new UnitId;
+        UnitId::Handle id = std::make_shared<UnitId>();
         id->unitnum = 0;
         id->alias = un;
         id->faction = 0;
@@ -145,15 +168,17 @@ UnitId *Game::ParseUnit(AString *s)
     } else {
         int un = token->value();
         delete token;
-        if (!un) return 0;
+        if (!un) return nullptr;
 
-        UnitId *id = new UnitId;
-        id->unitnum = un;
+        UnitId::Handle id = std::make_shared<UnitId>();
+        id->unitnum = static_cast<size_t>(un);
         id->alias = 0;
         id->faction = 0;
         return id;
     }
 }
+
+int ParseFactionType(AString *o, int *type);
 
 int ParseFactionType(AString *o, int *type)
 {
@@ -198,264 +223,309 @@ int ParseFactionType(AString *o, int *type)
     return 0;
 }
 
-void Game::ParseError(OrdersCheck *pCheck, Unit *pUnit, Faction *pFaction,
-        const AString &strError)
+void Game::ParseError(const OrdersCheck::Handle& pCheck,
+                      const Unit::Handle& pUnit,
+                      const Faction::Handle& pFaction,
+                      const AString &strError)
 {
     if (pCheck) pCheck->Error(strError);
     else if (pUnit) pUnit->Error(strError);
     else if (pFaction) pFaction->Error(strError);
 }
 
-void Game::ParseOrders(int faction, Aorders *f, OrdersCheck *pCheck)
+void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pCheck)
 {
-    Faction *fac = 0;
-    Unit *unit = 0;
-    int indent = 0, code, i;
-    AString *order, prefix;
+    Faction::Handle fac = nullptr;
+    Unit::Handle unit = nullptr;
+    int indent = 0, i;
 
-    order = f->GetLine();
+    AString* order = f.GetLine();
     while (order) {
         AString saveorder = *order;
         int getatsign = order->getat();
         AString *token = order->gettoken();
+        Orders code;
 
         if (token) {
             code = Parse1Order(token);
-            switch (code) {
-            case -1:
+            if(!code.isValid())
+            {
                 ParseError(pCheck, unit, fac, *token+" is not a valid order.");
-                break;
-            case O_ATLANTIS:
-                if (fac)
-                    ParseError(pCheck, 0, fac, "No #END statement given.");
-                delete token;
-                token = order->gettoken();
-                if (!token) {
-                    ParseError(pCheck, 0, 0,
-                            "No faction number given on #atlantis line.");
-                    fac = 0;
-                    break;
-                }
-                if (pCheck) {
-                    fac = &(pCheck->dummyFaction);
-                    pCheck->numshows = 0;
-                } else {
-                    fac = GetFaction(&factions, token->value());
-                }
-
-                if (!fac) break;
-
-                delete token;
-                token = order->gettoken();
-
-                if (pCheck) {
-                    if (!token) {
-                        ParseError(pCheck, 0, fac,
-                                "Warning: No password on #atlantis line.");
-                        ParseError(pCheck, 0, fac,
-                                "If this is your first turn, ignore this "
-                                "error.");
-                    }
-                } else {
-                    if (!(*(fac->password) == "none")) {
-                        if (!token || !(*(fac->password) == *token)) {
-                            ParseError(pCheck, 0, fac,
-                                    "Incorrect password on #atlantis line.");
-                            fac = 0;
+            }
+            else
+            {
+                switch (code.asEnum()) {
+                    case Orders::Types::O_ATLANTIS:
+                        if (fac)
+                            ParseError(pCheck, 0, fac, "No #END statement given.");
+                        delete token;
+                        token = order->gettoken();
+                        if (!token) {
+                            ParseError(pCheck, 0, 0,
+                                    "No faction number given on #atlantis line.");
+                            fac = nullptr;
                             break;
                         }
-                    }
-
-                    if (fac->num == monfaction || fac->num == guardfaction) {
-                        fac = 0;
-                        break;
-                    }
-                    if (!Globals->LASTORDERS_MAINTAINED_BY_SCRIPTS)
-                        fac->lastorders = TurnNumber();
-                }
-
-                unit = 0;
-                break;
-
-            case O_END:
-                indent = 0;
-                while (unit) {
-                    Unit *former = unit->former;
-                    if (unit->inTurnBlock)
-                        ParseError(pCheck, unit, fac, "TURN: without ENDTURN");
-                    if (unit->former)
-                        ParseError(pCheck, unit, fac, "FORM: without END.");
-                    if (unit && pCheck) unit->ClearOrders();
-                    if (pCheck && former) delete unit;
-                    unit = former;
-                }
-
-                unit = 0;
-                fac = 0;
-                break;
-
-            case O_UNIT:
-                indent = 0;
-                if (fac) {
-                    while (unit) {
-                        Unit *former = unit->former;
-                        if (unit->inTurnBlock)
-                            ParseError(pCheck, unit, fac, "TURN: without ENDTURN");
-                        if (unit->former)
-                            ParseError(pCheck, unit, fac, "FORM: without END.");
-                        if (unit && pCheck) unit->ClearOrders();
-                        if (pCheck && former) delete unit;
-                        unit = former;
-                    }
-                    unit = 0;
-                    delete token;
-
-                    token = order->gettoken();
-                    if (!token) {
-                        ParseError(pCheck, 0, fac, "UNIT without unit number.");
-                        unit = 0;
-                        break;
-                    }
-
-                    if (pCheck) {
-                        if (!token->value()) {
-                            ParseError(pCheck, 0, fac, "Invalid unit number.");
+                        if (pCheck) {
+                            fac = pCheck->dummyFaction;
+                            pCheck->numshows = 0;
                         } else {
-                            unit = &(pCheck->dummyUnit);
-                            unit->monthorders = 0;
+                            fac = GetFaction(factions, static_cast<size_t>(token->value()));
                         }
-                    } else {
-                        unit = GetUnit(token->value());
-                        if (!unit || unit->faction != fac) {
-                            fac->Error(*token + " is not your unit.");
-                            unit = 0;
+
+                        if (!fac) break;
+
+                        delete token;
+                        token = order->gettoken();
+
+                        if (pCheck) {
+                            if (!token) {
+                                ParseError(pCheck, 0, fac,
+                                        "Warning: No password on #atlantis line.");
+                                ParseError(pCheck, 0, fac,
+                                        "If this is your first turn, ignore this "
+                                        "error.");
+                            }
                         } else {
-                            unit->ClearOrders();
+                            if (!(*(fac->password) == "none")) {
+                                if (!token || !(*(fac->password) == *token)) {
+                                    ParseError(pCheck, 0, fac,
+                                            "Incorrect password on #atlantis line.");
+                                    fac = nullptr;
+                                    break;
+                                }
+                            }
+
+                            if (fac->num == monfaction || fac->num == guardfaction) {
+                                fac = nullptr;
+                                break;
+                            }
+                            if (!Globals->LASTORDERS_MAINTAINED_BY_SCRIPTS)
+                                fac->lastorders = TurnNumber();
                         }
-                    }
-                }
-                break;
-            case O_FORM:
-                if (fac) {
-                    if (unit) {
-                        if (unit->former && !unit->inTurnBlock) {
-                            ParseError(pCheck, unit, fac, "FORM: cannot nest.");
+
+                        unit = nullptr;
+                        break;
+
+                    case Orders::Types::O_END:
+                        indent = 0;
+                        while (unit) {
+                            const auto& former = unit->former;
+                            if (unit->inTurnBlock)
+                            {
+                                ParseError(pCheck, unit, fac, "TURN: without ENDTURN");
+                            }
+                            if (unit->former)
+                            {
+                                ParseError(pCheck, unit, fac, "FORM: without END.");
+                            }
+                            if (unit && pCheck)
+                            {
+                                unit->ClearOrders();
+                            }
+                            unit = former;
                         }
-                        else {
-                            unit = ProcessFormOrder(unit, order, pCheck, getatsign);
-                            if (!pCheck && unit && unit->former && unit->former->format)
-                                unit->former->oldorders.Add(new AString(saveorder));
-                            if (!pCheck) {
-                                if (unit) unit->ClearOrders();
+
+                        unit = nullptr;
+                        fac = nullptr;
+                        break;
+
+                    case Orders::Types::O_UNIT:
+                        indent = 0;
+                        if (fac) {
+                            while (unit) {
+                                const auto& former = unit->former;
+                                if (unit->inTurnBlock)
+                                {
+                                    ParseError(pCheck, unit, fac, "TURN: without ENDTURN");
+                                }
+                                if (unit->former)
+                                {
+                                    ParseError(pCheck, unit, fac, "FORM: without END.");
+                                }
+                                if (unit && pCheck)
+                                {
+                                    unit->ClearOrders();
+                                }
+                                unit = former;
+                            }
+                            unit = nullptr;
+                            delete token;
+
+                            token = order->gettoken();
+                            if (!token) {
+                                ParseError(pCheck, 0, fac, "UNIT without unit number.");
+                                unit = nullptr;
+                                break;
+                            }
+
+                            if (pCheck) {
+                                if (!token->value()) {
+                                    ParseError(pCheck, 0, fac, "Invalid unit number.");
+                                } else {
+                                    unit = pCheck->dummyUnit;
+                                    unit->monthorders = 0;
+                                }
+                            } else {
+                                unit = GetUnit(token->value()).lock();
+                                if (!unit || unit->faction.lock() != fac) {
+                                    fac->Error(*token + " is not your unit.");
+                                    unit = nullptr;
+                                } else {
+                                    unit->ClearOrders();
+                                }
                             }
                         }
-                    } else {
-                        ParseError(pCheck, 0, fac,
-                                "Order given without a unit selected.");
-                    }
-                }
-                break;
-            case O_ENDFORM:
-                if (fac) {
-                    if (unit && unit->former) {
-                        Unit *former = unit->former;
-
-                        if (unit->inTurnBlock)
-                            ParseError(pCheck, unit, fac, "TURN: without ENDTURN");
-                        if (!pCheck && unit->former && unit->former->format)
-                            unit->former->oldorders.Add(new AString(saveorder));
-                        if (pCheck && former) delete unit;
-                        unit = former;
-                    } else {
-                        ParseError(pCheck, unit, fac, "END: without FORM.");
-                    }
-                }
-                break;
-            case O_TURN:
-                if (unit && unit->inTurnBlock) {
-                    ParseError(pCheck, unit, fac, "TURN: cannot nest");
-                } else if (!unit)
-                    ParseError(pCheck, 0, fac, "Order given without a unit selected.");
-                else {
-                    // faction is 0 if checking syntax only, not running turn.
-                    if (faction != 0) {
-                        AString *retval;
-                        if (!pCheck && unit->former && unit->former->format)
-                            unit->former->oldorders.Add(new AString(saveorder));
-                        retval = ProcessTurnOrder(unit, f, pCheck, getatsign);
-                        if (retval) {
-                            delete order;
-                            order = retval;
-                            continue;
+                        break;
+                    case Orders::Types::O_FORM:
+                        if (fac) {
+                            if (unit) {
+                                if (unit->former && !unit->inTurnBlock) {
+                                    ParseError(pCheck, unit, fac, "FORM: cannot nest.");
+                                }
+                                else {
+                                    unit = ProcessFormOrder(unit, order, pCheck, getatsign);
+                                    if (!pCheck && unit && unit->former && unit->former->format)
+                                    {
+                                        unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                    }
+                                    if (!pCheck) {
+                                        if (unit) unit->ClearOrders();
+                                    }
+                                }
+                            } else {
+                                ParseError(pCheck, 0, fac,
+                                        "Order given without a unit selected.");
+                            }
                         }
-                    } else {
-                        unit->inTurnBlock = 1;
-                        unit->presentMonthOrders = unit->monthorders;
-                        unit->monthorders = 0;
-                        unit->presentTaxing = unit->taxing;
-                        unit->taxing = 0;
-                    }
-                }
-                break;
-            case O_ENDTURN:
-                if (unit && unit->inTurnBlock) {
-                    if (unit->monthorders) delete unit->monthorders;
-                    unit->monthorders = unit->presentMonthOrders;
-                    unit->presentMonthOrders = 0;
-                    unit->taxing = unit->presentTaxing;
-                    unit->presentTaxing = 0;
-                    unit->inTurnBlock = 0;
-                    if (!pCheck && unit->former && unit->former->format)
-                        unit->former->oldorders.Add(new AString(saveorder));
-                } else
-                    ParseError(pCheck, unit, fac, "ENDTURN: without TURN.");
-                break;
-            default:
-                if (fac) {
-                    if (unit) {
-                        if (!pCheck && getatsign)
-                            unit->oldorders.Add(new AString(saveorder));
-                        if (!pCheck && unit->former && unit->former->format)
-                            unit->former->oldorders.Add(new AString(saveorder));
+                        break;
+                    case Orders::Types::O_ENDFORM:
+                        if (fac) {
+                            if (unit && unit->former) {
+                                const auto& former = unit->former;
 
-                        ProcessOrder(code, unit, order, pCheck);
-                    } else {
-                        ParseError(pCheck, 0, fac,
-                                "Order given without a unit selected.");
-                    }
+                                if (unit->inTurnBlock)
+                                {
+                                    ParseError(pCheck, unit, fac, "TURN: without ENDTURN");
+                                }
+                                if (!pCheck && unit->former && unit->former->format)
+                                {
+                                    unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                }
+                                unit = former;
+                            } else {
+                                ParseError(pCheck, unit, fac, "END: without FORM.");
+                            }
+                        }
+                        break;
+                    case Orders::Types::O_TURN:
+                        if (unit && unit->inTurnBlock) {
+                            ParseError(pCheck, unit, fac, "TURN: cannot nest");
+                        } else if (!unit)
+                            ParseError(pCheck, 0, fac, "Order given without a unit selected.");
+                        else {
+                            // faction is 0 if checking syntax only, not running turn.
+                            if (faction != 0) {
+                                AString *retval;
+                                if (!pCheck && unit->former && unit->former->format)
+                                {
+                                    unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                }
+                                retval = ProcessTurnOrder(unit, f, pCheck, getatsign);
+                                if (retval) {
+                                    delete order;
+                                    order = retval;
+                                    continue;
+                                }
+                            } else {
+                                unit->inTurnBlock = 1;
+                                unit->presentMonthOrders = unit->monthorders;
+                                unit->monthorders = nullptr;
+                                unit->presentTaxing = unit->taxing;
+                                unit->taxing = 0;
+                            }
+                        }
+                        break;
+                    case Orders::Types::O_ENDTURN:
+                        if (unit && unit->inTurnBlock) {
+                            unit->monthorders = unit->presentMonthOrders;
+                            unit->presentMonthOrders = nullptr;
+                            unit->taxing = unit->presentTaxing;
+                            unit->presentTaxing = 0;
+                            unit->inTurnBlock = 0;
+                            if (!pCheck && unit->former && unit->former->format)
+                            {
+                                unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                            }
+                        } else
+                            ParseError(pCheck, unit, fac, "ENDTURN: without TURN.");
+                        break;
+                    default:
+                        if (fac) {
+                            if (unit) {
+                                if (!pCheck && getatsign)
+                                {
+                                    unit->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                }
+                                if (!pCheck && unit->former && unit->former->format)
+                                {
+                                    unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                }
+
+                                ProcessOrder(code, unit, order, pCheck);
+                            } else {
+                                ParseError(pCheck, 0, fac,
+                                        "Order given without a unit selected.");
+                            }
+                        }
                 }
             }
             SAFE_DELETE(token);
         } else {
-            code = NORDERS;
+            code = *Orders::end();
             if (!pCheck) {
                 if (getatsign && fac && unit)
-                    unit->oldorders.Add(new AString(saveorder));
+                {
+                    unit->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                }
             }
         }
 
         delete order;
         if (pCheck) {
-            if (code == O_ENDTURN || code == O_ENDFORM)
+            if (code == Orders::Types::O_ENDTURN || code == Orders::Types::O_ENDFORM)
+            {
                 indent--;
+            }
+            AString prefix;
             for (i = 0, prefix = ""; i < indent; i++)
+            {
                 prefix += "  ";
+            }
             pCheck->pCheckFile->PutStr(prefix + saveorder);
-            if (code == O_TURN || code == O_FORM)
+            if (code == Orders::Types::O_TURN || code == Orders::Types::O_FORM)
+            {
                 indent++;
+            }
         }
 
-        order = f->GetLine();
+        order = f.GetLine();
     }
 
     while (unit) {
-        Unit *former = unit->former;
+        const auto& former = unit->former;
         if (unit->inTurnBlock)
+        {
             ParseError(pCheck, 0, fac, "TURN: without ENDTURN");
+        }
         if (unit->former)
+        {
             ParseError(pCheck, 0, fac, "FORM: without END.");
-        if (unit && pCheck) unit->ClearOrders();
-        if (pCheck && former) delete unit;
+        }
+        if (unit && pCheck)
+        {
+            unit->ClearOrders();
+        }
         unit = former;
     }
 
@@ -474,206 +544,214 @@ void Game::ParseOrders(int faction, Aorders *f, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessOrder(int orderNum, Unit *unit, AString *o,
-        OrdersCheck *pCheck)
+void Game::ProcessOrder(const Orders& orderNum,
+                        const Unit::Handle& unit,
+                        AString *o,
+                        const OrdersCheck::Handle& pCheck)
 {
-    switch(orderNum) {
-        case O_ADDRESS:
+    switch(orderNum.asEnum()) {
+        case Orders::Types::O_ADDRESS:
             ProcessAddressOrder(unit, o, pCheck);
             break;
-        case O_ADVANCE:
+        case Orders::Types::O_ADVANCE:
             ProcessAdvanceOrder(unit, o, pCheck);
             break;
-        case O_ASSASSINATE:
+        case Orders::Types::O_ASSASSINATE:
             ProcessAssassinateOrder(unit, o, pCheck);
             break;
-        case O_ATTACK:
+        case Orders::Types::O_ATTACK:
             ProcessAttackOrder(unit, o, pCheck);
             break;
-        case O_AUTOTAX:
+        case Orders::Types::O_AUTOTAX:
             ProcessAutoTaxOrder(unit, o, pCheck);
             break;
-        case O_AVOID:
+        case Orders::Types::O_AVOID:
             ProcessAvoidOrder(unit, o, pCheck);
             break;
-        case O_IDLE:
+        case Orders::Types::O_IDLE:
             ProcessIdleOrder(unit, o, pCheck);
             break;
-        case O_BEHIND:
+        case Orders::Types::O_BEHIND:
             ProcessBehindOrder(unit, o, pCheck);
             break;
-        case O_BUILD:
+        case Orders::Types::O_BUILD:
             ProcessBuildOrder(unit, o, pCheck);
             break;
-        case O_BUY:
+        case Orders::Types::O_BUY:
             ProcessBuyOrder(unit, o, pCheck);
             break;
-        case O_CAST:
+        case Orders::Types::O_CAST:
             ProcessCastOrder(unit, o, pCheck);
             break;
-        case O_CLAIM:
+        case Orders::Types::O_CLAIM:
             ProcessClaimOrder(unit, o, pCheck);
             break;
-        case O_COMBAT:
+        case Orders::Types::O_COMBAT:
             ProcessCombatOrder(unit, o, pCheck);
             break;
-        case O_CONSUME:
+        case Orders::Types::O_CONSUME:
             ProcessConsumeOrder(unit, o, pCheck);
             break;
-        case O_DECLARE:
-            ProcessDeclareOrder(unit->faction, o, pCheck);
+        case Orders::Types::O_DECLARE:
+            ProcessDeclareOrder(unit->faction.lock(), o, pCheck);
             break;
-        case O_DESCRIBE:
+        case Orders::Types::O_DESCRIBE:
             ProcessDescribeOrder(unit, o, pCheck);
             break;
-        case O_DESTROY:
+        case Orders::Types::O_DESTROY:
             ProcessDestroyOrder(unit, pCheck);
             break;
-        case O_ENTER:
+        case Orders::Types::O_ENTER:
             ProcessEnterOrder(unit, o, pCheck);
             break;
-        case O_ENTERTAIN:
+        case Orders::Types::O_ENTERTAIN:
             ProcessEntertainOrder(unit, pCheck);
             break;
-        case O_EVICT:
+        case Orders::Types::O_EVICT:
             ProcessEvictOrder(unit, o, pCheck);
             break;
-        case O_EXCHANGE:
+        case Orders::Types::O_EXCHANGE:
             ProcessExchangeOrder(unit, o, pCheck);
             break;
-        case O_FACTION:
+        case Orders::Types::O_FACTION:
             ProcessFactionOrder(unit, o, pCheck);
             break;
-        case O_FIND:
+        case Orders::Types::O_FIND:
             ProcessFindOrder(unit, o, pCheck);
             break;
-        case O_FORGET:
+        case Orders::Types::O_FORGET:
             ProcessForgetOrder(unit, o, pCheck);
             break;
-        case O_WITHDRAW:
+        case Orders::Types::O_WITHDRAW:
             ProcessWithdrawOrder(unit, o, pCheck);
             break;
-        case O_GIVE:
+        case Orders::Types::O_GIVE:
             ProcessGiveOrder(orderNum, unit, o, pCheck);
             break;
-        case O_GUARD:
+        case Orders::Types::O_GUARD:
             ProcessGuardOrder(unit, o, pCheck);
             break;
-        case O_HOLD:
+        case Orders::Types::O_HOLD:
             ProcessHoldOrder(unit, o, pCheck);
             break;
-        case O_JOIN:
+        case Orders::Types::O_JOIN:
             ProcessJoinOrder(unit, o, pCheck);
             break;
-        case O_LEAVE:
+        case Orders::Types::O_LEAVE:
             ProcessLeaveOrder(unit, pCheck);
             break;
-        case O_MOVE:
+        case Orders::Types::O_MOVE:
             ProcessMoveOrder(unit, o, pCheck);
             break;
-        case O_NAME:
+        case Orders::Types::O_NAME:
             ProcessNameOrder(unit, o, pCheck);
             break;
-        case O_NOAID:
+        case Orders::Types::O_NOAID:
             ProcessNoaidOrder(unit, o, pCheck);
             break;
-        case O_NOCROSS:
+        case Orders::Types::O_NOCROSS:
             ProcessNocrossOrder(unit, o, pCheck);
             break;
-        case O_NOSPOILS:
+        case Orders::Types::O_NOSPOILS:
             ProcessNospoilsOrder(unit, o, pCheck);
             break;
-        case O_OPTION:
+        case Orders::Types::O_OPTION:
             ProcessOptionOrder(unit, o, pCheck);
             break;
-        case O_PASSWORD:
+        case Orders::Types::O_PASSWORD:
             ProcessPasswordOrder(unit, o, pCheck);
             break;
-        case O_PILLAGE:
+        case Orders::Types::O_PILLAGE:
             ProcessPillageOrder(unit, pCheck);
             break;
-        case O_PREPARE:
+        case Orders::Types::O_PREPARE:
             ProcessPrepareOrder(unit, o, pCheck);
             break;
-        case O_WEAPON:
+        case Orders::Types::O_WEAPON:
             ProcessWeaponOrder(unit, o, pCheck);
             break;
-        case O_ARMOR:
+        case Orders::Types::O_ARMOR:
             ProcessArmorOrder(unit, o, pCheck);
             break;
-        case O_PRODUCE:
+        case Orders::Types::O_PRODUCE:
             ProcessProduceOrder(unit, o, pCheck);
             break;
-        case O_PROMOTE:
+        case Orders::Types::O_PROMOTE:
             ProcessPromoteOrder(unit, o, pCheck);
             break;
-        case O_QUIT:
+        case Orders::Types::O_QUIT:
             ProcessQuitOrder(unit, o, pCheck);
             break;
-        case O_RESTART:
+        case Orders::Types::O_RESTART:
             ProcessRestartOrder(unit, o, pCheck);
             break;
-        case O_REVEAL:
+        case Orders::Types::O_REVEAL:
             ProcessRevealOrder(unit, o, pCheck);
             break;
-        case O_SAIL:
+        case Orders::Types::O_SAIL:
             ProcessSailOrder(unit, o, pCheck);
             break;
-        case O_SELL:
+        case Orders::Types::O_SELL:
             ProcessSellOrder(unit, o, pCheck);
             break;
-        case O_SHARE:
+        case Orders::Types::O_SHARE:
             ProcessShareOrder(unit, o, pCheck);
             break;
-        case O_SHOW:
+        case Orders::Types::O_SHOW:
             ProcessReshowOrder(unit, o, pCheck);
             break;
-        case O_SPOILS:
+        case Orders::Types::O_SPOILS:
             ProcessSpoilsOrder(unit, o, pCheck);
             break;
-        case O_STEAL:
+        case Orders::Types::O_STEAL:
             ProcessStealOrder(unit, o, pCheck);
             break;
-        case O_STUDY:
+        case Orders::Types::O_STUDY:
             ProcessStudyOrder(unit, o, pCheck);
             break;
-        case O_TAKE:
+        case Orders::Types::O_TAKE:
             ProcessGiveOrder(orderNum, unit, o, pCheck);
             break;
-        case O_TAX:
+        case Orders::Types::O_TAX:
             ProcessTaxOrder(unit, pCheck);
             break;
-        case O_TEACH:
+        case Orders::Types::O_TEACH:
             ProcessTeachOrder(unit, o, pCheck);
             break;
-        case O_WORK:
+        case Orders::Types::O_WORK:
             ProcessWorkOrder(unit, 0, pCheck);
             break;
-        case O_TRANSPORT:
+        case Orders::Types::O_TRANSPORT:
             ProcessTransportOrder(unit, o, pCheck);
             break;
-        case O_DISTRIBUTE:
+        case Orders::Types::O_DISTRIBUTE:
             ProcessDistributeOrder(unit, o, pCheck);
+            break;
+        default:
             break;
     }
 }
 
-void Game::ProcessPasswordOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessPasswordOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (pCheck) return;
 
     AString *token = o->gettoken();
-    if (u->faction->password) delete u->faction->password;
+    const auto u_fac = u->faction.lock();
+    if (u_fac->password)
+    {
+        delete u_fac->password;
+    }
     if (token) {
-        u->faction->password = token;
-        u->faction->Event(AString("Password is now: ") + *token);
+        u_fac->password = token;
+        u_fac->Event(AString("Password is now: ") + *token);
     } else {
-        u->faction->password = new AString("none");
-        u->faction->Event("Password cleared.");
+        u_fac->password = new AString("none");
+        u_fac->Event("Password cleared.");
     }
 }
 
-void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessOptionOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -681,11 +759,12 @@ void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         return;
     }
 
+    const auto u_fac = u->faction.lock();
     if (*token == "times") {
         delete token;
         if (!pCheck) {
-            u->faction->Event("Times will be sent to your faction.");
-            u->faction->times = 1;
+            u_fac->Event("Times will be sent to your faction.");
+            u_fac->times = 1;
         }
         return;
     }
@@ -693,8 +772,8 @@ void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     if (*token == "notimes") {
         delete token;
         if (!pCheck) {
-            u->faction->Event("Times will not be sent to your faction.");
-            u->faction->times = 0;
+            u_fac->Event("Times will not be sent to your faction.");
+            u_fac->times = 0;
         }
         return;
     }
@@ -702,9 +781,9 @@ void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     if (*token == "showattitudes") {
         delete token;
         if (!pCheck) {
-            u->faction->Event("Units will now have a leading sign to show your " 
+            u_fac->Event("Units will now have a leading sign to show your " 
                         "attitude to them.");
-            u->faction->showunitattitudes = 1;
+            u_fac->showunitattitudes = 1;
         }
         return;
     }
@@ -712,9 +791,9 @@ void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     if (*token == "dontshowattitudes") {
         delete token;
         if (!pCheck) {
-            u->faction->Event("Units will now have a leading minus sign regardless"
+            u_fac->Event("Units will now have a leading minus sign regardless"
                         " of your attitude to them.");
-            u->faction->showunitattitudes = 0;
+            u_fac->showunitattitudes = 0;
         }
         return;
     }
@@ -750,7 +829,7 @@ void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         }
 
         if (!pCheck) {
-            u->faction->temformat = newformat;
+            u_fac->temformat = newformat;
         }
 
         return;
@@ -761,9 +840,10 @@ void Game::ProcessOptionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     ParseError(pCheck, u, 0, "OPTION: Invalid option.");
 }
 
-void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessReshowOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    int sk, lvl, item, obj;
+    Skills sk;
+    size_t lvl;
     AString *token;
     
     token = o->gettoken();
@@ -773,6 +853,7 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         return;
     }
 
+    const auto u_fac = u->faction.lock();
     if (pCheck) {
         if (pCheck->numshows++ > 100) {
             if (pCheck->numshows == 102) {
@@ -781,8 +862,8 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
             return;
         }
     } else {
-        if (u->faction->numshows++ > 100) {
-            if (u->faction->numshows == 102) {
+        if (u_fac->numshows++ > 100) {
+            if (u_fac->numshows == 102) {
                 u->Error("Too many SHOW orders.");
             }
             return;
@@ -805,20 +886,20 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
             ParseError(pCheck, u, 0, "SHOW: No skill level given.");
             return;
         }
-        lvl = token->value();
+        lvl = static_cast<size_t>(token->value());
         delete token;
 
         if (!pCheck) {
-            if (sk == -1 ||
+            if (!sk.isValid() ||
                     SkillDefs[sk].flags & SkillType::DISABLED ||
                     (SkillDefs[sk].flags & SkillType::APPRENTICE &&
                                                      !Globals->APPRENTICES_EXIST) ||
-                    lvl > u->faction->skills.GetDays(sk)) {
+                    lvl > u_fac->skills.GetDays(sk)) {
                 u->Error("SHOW: Faction doesn't have that skill.");
                 return;
             }
 
-            u->faction->shows.Add(new ShowSkill(sk, lvl));
+            u_fac->shows.emplace_back(std::make_shared<ShowSkill>(sk, lvl));
         }
         return;
     }
@@ -832,22 +913,23 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
             return;
         }
 
-        obj = ParseShipObject(token);
+        ssize_t obj = ParseShipObject(token);
         delete token;
 
         if (!pCheck && obj >= -1) {
+            const Objects obj2 = Objects(obj);
             if (obj == -1 ||
-                    obj == O_DUMMY ||
-                    (ObjectDefs[obj].flags & ObjectType::DISABLED)) {
+                    obj2 == Objects::Types::O_DUMMY ||
+                    (ObjectDefs[obj2].flags & ObjectType::DISABLED)) {
                 u->Error("SHOW: No such object.");
                 return;
             }
-            u->faction->objectshows.Add(ObjectDescription(obj));
+            u_fac->objectshows.Add(ObjectDescription(obj2));
         }
         if (obj >= -1)
             return;
         token = new AString("item");
-        o = new AString(ItemDefs[-(obj + 1)].abr);
+        o = new AString(ItemDefs[static_cast<size_t>(-(obj + 1))].abr);
     }
 
     if (*token == "item") {
@@ -859,38 +941,38 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
             return;
         }
 
-        item = ParseEnabledItem(token);
+        const Items item = ParseEnabledItem(token);
         delete token;
 
         if (!pCheck) {
-            if (item == -1 || (ItemDefs[item].flags & ItemType::DISABLED)) {
+            if (!item.isValid() || (ItemDefs[item].flags & ItemType::DISABLED)) {
                 u->Error("SHOW: You don't know anything about that item.");
                 return;
             }
             if (ItemDefs[item].pSkill) {
                 token = new AString(ItemDefs[item].pSkill);
-                sk = LookupSkill(token);
+                sk = LookupSkill(*token);
                 delete token;
-                if (ItemDefs[item].pLevel <= u->faction->skills.GetDays(sk)) {
-                    u->faction->DiscoverItem(item, 1, 1);
+                if (ItemDefs[item].pLevel <= u_fac->skills.GetDays(sk)) {
+                    u_fac->DiscoverItem(item, 1, 1);
                     return;
                 }
             }
             if (ItemDefs[item].mSkill) {
                 token = new AString(ItemDefs[item].mSkill);
-                sk = LookupSkill(token);
+                sk = LookupSkill(*token);
                 delete token;
-                if (ItemDefs[item].mLevel <= u->faction->skills.GetDays(sk)) {
-                    u->faction->DiscoverItem(item, 1, 1);
+                if (static_cast<size_t>(ItemDefs[item].mLevel) <= u_fac->skills.GetDays(sk)) {
+                    u_fac->DiscoverItem(item, 1, 1);
                     return;
                 }
             }
-            if (u->faction->items.GetNum(item)) {
-                u->faction->DiscoverItem(item, 1, 0);
+            if (u_fac->items.GetNum(item)) {
+                u_fac->DiscoverItem(item, 1, 0);
                 return;
             }
             if (ItemDefs[item].type & (IT_MAN | IT_NORMAL | IT_TRADE | IT_MONSTER)) {
-                u->faction->DiscoverItem(item, 1, 0);
+                u_fac->DiscoverItem(item, 1, 0);
                 return;
             }
 
@@ -902,7 +984,7 @@ void Game::ProcessReshowOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     ParseError(pCheck, u, 0, "SHOW: Show what?");
 }
 
-void Game::ProcessForgetOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessForgetOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -910,55 +992,56 @@ void Game::ProcessForgetOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         return;
     }
 
-    int sk = ParseSkill(token);
+    const Skills sk = ParseSkill(token);
     delete token;
 
-    if (sk==-1) {
+    if (!sk.isValid()) {
         ParseError(pCheck, u, 0, "FORGET: Invalid skill.");
         return;
     }
 
     if (!pCheck) {
-        ForgetOrder *ord = new ForgetOrder;
+        auto& ord = u->forgetorders.emplace_back(std::make_shared<ForgetOrder>());
         ord->skill = sk;
-        u->forgetorders.Add(ord);
     }
 }
 
-void Game::ProcessEntertainOrder(Unit *unit, OrdersCheck *pCheck)
+void Game::ProcessEntertainOrder(const Unit::Handle& unit, const OrdersCheck::Handle& pCheck)
 {
     if (unit->monthorders ||
             (Globals->TAX_PILLAGE_MONTH_LONG &&
                 ((unit->taxing == TAX_TAX) ||
                     (unit->taxing == TAX_PILLAGE)))) {
         AString err = "ENTERTAIN: Overwriting previous ";
-        if (unit->inTurnBlock) err += "DELAYED ";
+        if (unit->inTurnBlock)
+        {
+            err += "DELAYED ";
+        }
         err += "month-long order.";
         ParseError(pCheck, unit, 0, err);
-        if (unit->monthorders) delete unit->monthorders;
     }
-    ProduceOrder *o = new ProduceOrder;
-    o->item = I_SILVER;
-    o->skill = S_ENTERTAINMENT;
+    ProduceOrder::Handle o = std::make_shared<ProduceOrder>();
+    o->item = Items::Types::I_SILVER;
+    o->skill = Skills::Types::S_ENTERTAINMENT;
     o->target = 0;
     unit->monthorders = o;
 }
 
-void Game::ProcessCombatOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessCombatOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
         if (!pCheck) {
-            u->combat = -1;
+            u->combat.invalidate();
             u->Event("Combat spell set to none.");
         }
         return;
     }
-    int sk = ParseSkill(token);
+    const Skills sk = ParseSkill(token);
     delete token;
 
     if (!pCheck) {
-        if (sk==-1) {
+        if (!sk.isValid()) {
             ParseError(pCheck, u, 0, "COMBAT: Invalid skill.");
             return;
         }
@@ -984,7 +1067,7 @@ void Game::ProcessCombatOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         u->combat = sk;
         AString temp = AString("Combat spell set to ") + SkillDefs[sk].name;
         if (Globals->USE_PREPARE_COMMAND) {
-            u->readyItem = -1;
+            u->readyItem.invalidate();
             temp += " and prepared item set to none";
         }
         temp += ".";
@@ -994,7 +1077,7 @@ void Game::ProcessCombatOrder(Unit *u, AString *o, OrdersCheck *pCheck)
 }
 
 // Lacandon's prepare command
-void Game::ProcessPrepareOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessPrepareOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (!(Globals->USE_PREPARE_COMMAND)) {
         ParseError(pCheck, u, 0, "PREPARE is not a valid order.");
@@ -1004,50 +1087,63 @@ void Game::ProcessPrepareOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     AString *token = o->gettoken();
     if (!token) {
         if (!pCheck) {
-            u->readyItem = -1;
+            u->readyItem.invalidate();
             u->Event("Prepared battle item set to none.");
         }
         return;
     }
-    int it = ParseEnabledItem(token);
-    BattleItemType *bt = FindBattleItem(token->Str());
-    delete token;
-    if (!pCheck) {
-        AString temp;
-        if (it == -1 || !u->items.GetNum(it)) {
-            u->Error("PREPARE: Unit does not possess that item.");
-            return;
-        }
 
-        if (bt == NULL || !(bt->flags & BattleItemType::SPECIAL)) {
+    const Items it = ParseEnabledItem(token);
+
+    try
+    {
+        const auto& bt = FindBattleItem(token->Str());
+        delete token;
+        if (!pCheck) {
+            AString temp;
+            if (!it.isValid() || !u->items.GetNum(it)) {
+                u->Error("PREPARE: Unit does not possess that item.");
+                return;
+            }
+
+            if (!(bt.flags & BattleItemType::SPECIAL)) {
+                u->Error("PREPARE: That item cannot be prepared.");
+                return;
+            }
+
+            if ((bt.flags & BattleItemType::MAGEONLY) &&
+                !((u->type == U_MAGE) || (u->type == U_APPRENTICE) ||
+                    (u->type == U_GUARDMAGE))) {
+                temp = "PREPARE: Only a mage";
+                if (Globals->APPRENTICES_EXIST) {
+                    temp += " or ";
+                    temp += Globals->APPRENTICE_NAME;
+                }
+                temp += " may use this item.";
+                u->Error(temp);
+                return;
+            }
+            u->readyItem = it;
+            temp = AString("Prepared item set to ") + ItemDefs[it].name;
+            if (u->combat.isValid()) {
+                u->combat.invalidate();
+                temp += " and combat spell set to none";
+            }
+            temp += ".";
+            u->Event(temp);
+        }
+    }
+    catch(const NoSuchItemException&)
+    {
+        if(!pCheck)
+        {
             u->Error("PREPARE: That item cannot be prepared.");
             return;
         }
-
-        if ((bt->flags & BattleItemType::MAGEONLY) &&
-            !((u->type == U_MAGE) || (u->type == U_APPRENTICE) ||
-                (u->type == U_GUARDMAGE))) {
-            temp = "PREPARE: Only a mage";
-            if (Globals->APPRENTICES_EXIST) {
-                temp += " or ";
-                temp += Globals->APPRENTICE_NAME;
-            }
-            temp += " may use this item.";
-            u->Error(temp);
-            return;
-        }
-        u->readyItem = it;
-        temp = AString("Prepared item set to ") + ItemDefs[it].name;
-        if (u->combat != -1) {
-            u->combat = -1;
-            temp += " and combat spell set to none";
-        }
-        temp += ".";
-        u->Event(temp);
     }
 }
 
-void Game::ProcessWeaponOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessWeaponOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (!(Globals->USE_WEAPON_ARMOR_COMMAND)) {
         ParseError(pCheck, u, 0, "WEAPON is not a valid order.");
@@ -1055,10 +1151,12 @@ void Game::ProcessWeaponOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 
     AString *token = o->gettoken();
-    int i;
     if (!token) {
         if (!pCheck) {
-            for (i = 0; i < MAX_READY; ++i) u->readyWeapon[i] = -1;
+            for (auto& r: u->readyWeapon)
+            {
+                r.invalidate();
+            }
             u->Event("Preferred weapons set to none.");
         }
         return;
@@ -1067,13 +1165,13 @@ void Game::ProcessWeaponOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         delete token;
         return;
     }
-    int it;
-    int items[MAX_READY];
-    i = 0;
+    Items items[MAX_READY];
+    size_t i = 0;
+    const auto u_fac = u->faction.lock();
     while (token && (i < MAX_READY)) {
-        it = ParseEnabledItem(token);
+        const Items it = ParseEnabledItem(token);
         delete token;
-        if (it == -1 || u->faction->items.GetNum(it) < 1) {
+        if (!it.isValid() || u_fac->items.GetNum(it) < 1) {
             u->Error("WEAPON: Unknown item.");
         } else if (!(ItemDefs[it].type & IT_WEAPON)) {
             u->Error("WEAPON: Item is not a weapon.");
@@ -1085,13 +1183,16 @@ void Game::ProcessWeaponOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     if (token) delete token;
 
     while (i < MAX_READY) {
-        items[i++] = -1;
+        items[i++].invalidate();
     }
-    if (items[0] == -1) return;
+    if (!items[0].isValid())
+    {
+        return;
+    }
     AString temp = "Preferred weapons set to: ";
-    for (i=0; i<MAX_READY;++i) {
+    for (i = 0; i < MAX_READY; ++i) {
         u->readyWeapon[i] = items[i];
-        if (items[i] != -1) {
+        if (items[i].isValid()) {
             if (i > 0) temp += ", ";
             temp += ItemDefs[items[i]].name;
         }
@@ -1100,7 +1201,7 @@ void Game::ProcessWeaponOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     u->Event(temp);
 }
 
-void Game::ProcessArmorOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessArmorOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (!(Globals->USE_WEAPON_ARMOR_COMMAND)) {
         ParseError(pCheck, u, 0, "ARMOR is not a valid order.");
@@ -1108,10 +1209,12 @@ void Game::ProcessArmorOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 
     AString *token = o->gettoken();
-    int i;
     if (!token) {
         if (!pCheck) {
-            for (i = 0; i < MAX_READY; ++i) u->readyArmor[i] = -1;
+            for (auto& r: u->readyArmor)
+            {
+                r.invalidate();
+            }
             u->Event("Preferred armor set to none.");
         }
         return;
@@ -1120,13 +1223,13 @@ void Game::ProcessArmorOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         delete token;
         return;
     }
-    int it;
-    int items[MAX_READY];
-    i = 0;
+    Items items[MAX_READY];
+    size_t i = 0;
+    const auto u_fac = u->faction.lock();
     while (token && (i < MAX_READY)) {
-        it = ParseEnabledItem(token);
+        const Items it = ParseEnabledItem(token);
         delete token;
-        if (it == -1 || u->faction->items.GetNum(it) < 1) {
+        if (!it.isValid() || u_fac->items.GetNum(it) < 1) {
             u->Error("ARMOR: Unknown item.");
         } else if (!(ItemDefs[it].type & IT_ARMOR)) {
             u->Error("ARMOR: Item is not armor.");
@@ -1138,13 +1241,13 @@ void Game::ProcessArmorOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     if (token) delete token;
 
     while (i < MAX_READY) {
-        items[i++] = -1;
+        items[i++].invalidate();
     }
-    if (items[0] == -1) return;
+    if (!items[0] .isValid()) return;
     AString temp = "Preferred armor set to: ";
     for (i=0; i<MAX_READY;++i) {
         u->readyArmor[i] = items[i];
-        if (items[i] != -1) {
+        if (items[i].isValid()) {
             if (i > 0) temp += ", ";
             temp += ItemDefs[items[i]].name;
         }
@@ -1153,7 +1256,7 @@ void Game::ProcessArmorOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     u->Event(temp);
 }
 
-void Game::ProcessClaimOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessClaimOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -1169,18 +1272,19 @@ void Game::ProcessClaimOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 
     if (!pCheck) {
-        if (value > u->faction->unclaimed) {
+        const auto u_fac = u->faction.lock();
+        if (value > static_cast<int>(u_fac->unclaimed)) {
             u->Error("CLAIM: Don't have that much unclaimed silver.");
-            value = u->faction->unclaimed;
+            value = static_cast<int>(u_fac->unclaimed);
         }
-        u->faction->unclaimed -= value;
+        u_fac->unclaimed -= static_cast<size_t>(value);
         u->SetMoney(u->GetMoney() + value);
-        u->faction->DiscoverItem(I_SILVER, 0, 1);
+        u_fac->DiscoverItem(Items::Types::I_SILVER, 0, 1);
         u->Event(AString("Claims $") + value + ".");
     }
 }
 
-void Game::ProcessFactionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessFactionOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_FACTION_TYPES) {
         ParseError(pCheck, u, 0,
@@ -1191,10 +1295,10 @@ void Game::ProcessFactionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     int oldfactype[NFACTYPES];
     int factype[NFACTYPES];
 
-    int i;
+    const auto u_fac = u->faction.lock();
     if (!pCheck) {
-        for (i = 0; i < NFACTYPES; i++) {
-            oldfactype[i] = u->faction->type[i];
+        for (size_t i = 0; i < NFACTYPES; i++) {
+            oldfactype[i] = u_fac->type[i];
         }
     }
 
@@ -1205,167 +1309,172 @@ void Game::ProcessFactionOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 
     if (!pCheck) {
-        int m = CountMages(u->faction);
-        int a = CountApprentices(u->faction);
+        const size_t m = CountMages(u_fac);
+        const size_t a = CountApprentices(u_fac);
 
-        for (i = 0; i < NFACTYPES; i++) u->faction->type[i] = factype[i];
+        for (size_t i = 0; i < NFACTYPES; i++)
+        {
+            u_fac->type[i] = factype[i];
+        }
 
-        if (m > AllowedMages(u->faction)) {
+        if (m > AllowedMages(*u_fac)) {
             u->Error(AString("FACTION: Too many mages to change to that "
                              "faction type."));
 
-            for (i = 0; i < NFACTYPES; i++)
-                u->faction->type[i] = oldfactype[i];
+            for (size_t i = 0; i < NFACTYPES; i++)
+            {
+                u_fac->type[i] = oldfactype[i];
+            }
 
             return;
         }
 
-        if (a > AllowedApprentices(u->faction)) {
+        if (a > AllowedApprentices(*u_fac)) {
             u->Error(AString("FACTION: Too many ") +
                 Globals->APPRENTICE_NAME +
                 "s to change to that "
                  "faction type.");
 
-            for (i = 0; i < NFACTYPES; i++)
-                u->faction->type[i] = oldfactype[i];
+            for (size_t i = 0; i < NFACTYPES; i++)
+            {
+                u_fac->type[i] = oldfactype[i];
+            }
 
             return;
         }
 
         if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
-            int q = CountQuarterMasters(u->faction);
+            const size_t q = CountQuarterMasters(u_fac);
             if ((Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) &&
-                    (q > AllowedQuarterMasters(u->faction))) {
+                    (q > AllowedQuarterMasters(*u_fac))) {
                 u->Error(AString("FACTION: Too many quartermasters to "
                             "change to that faction type."));
 
-                for (i = 0; i < NFACTYPES; i++)
-                    u->faction->type[i] = oldfactype[i];
+                for (size_t i = 0; i < NFACTYPES; i++)
+                {
+                    u_fac->type[i] = oldfactype[i];
+                }
 
                 return;
             }
         }
 
-        u->faction->lastchange = TurnNumber();
-        u->faction->DefaultOrders();
+        u_fac->lastchange = static_cast<int>(TurnNumber());
+        u_fac->DefaultOrders();
     }
 }
 
-void Game::ProcessAssassinateOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessAssassinateOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *id = ParseUnit(o);
-    if (!id || id->unitnum == -1) {
+    UnitId::Handle id = ParseUnit(o);
+    if (!id || !id->unitnum.isValid()) {
         ParseError(pCheck, u, 0, "ASSASSINATE: No target given.");
         return;
     }
     if (!pCheck) {
-        if (u->stealorders) delete u->stealorders;
-        AssassinateOrder *ord = new AssassinateOrder;
-        ord->target = id;
+        AssassinateOrder::Handle ord = std::make_shared<AssassinateOrder>();
+        ord->target = *id;
         u->stealorders = ord;
     }
 }
 
-void Game::ProcessStealOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessStealOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *id = ParseUnit(o);
-    if (!id || id->unitnum == -1) {
+    UnitId::Handle id = ParseUnit(o);
+    if (!id || !id->unitnum.isValid()) {
         ParseError(pCheck, u, 0, "STEAL: No target given.");
         return;
     }
     AString *token = o->gettoken();
     if (!token) {
         ParseError(pCheck, u, 0, "STEAL: No item given.");
-        delete id;
         return;
     }
-    int i = ParseEnabledItem(token);
+    const Items i = ParseEnabledItem(token);
     delete token;
     if (!pCheck) {
-        if (i == -1) {
+        if (!i.isValid()) {
             u->Error("STEAL: Bad item given.");
-            delete id;
             return;
         }
 
         if (IsSoldier(i)) {
             u->Error("STEAL: Can't steal that.");
-            delete id;
             return;
         }
-        StealOrder *ord = new StealOrder;
-        ord->target = id;
+        StealOrder::Handle ord = std::make_shared<StealOrder>();
+        ord->target = *id;
         ord->item = i;
-        if (u->stealorders) delete u->stealorders;
         u->stealorders = ord;
     }
 }
 
-void Game::ProcessQuitOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessQuitOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (!pCheck) {
-        if (u->faction->password && !(*(u->faction->password) == "none")) {
+        const auto u_fac = u->faction.lock();
+        if (u_fac->password && !(*(u_fac->password) == "none")) {
             AString *token = o->gettoken();
             if (!token) {
-                u->faction->Error("QUIT: Must give the correct password.");
+                u_fac->Error("QUIT: Must give the correct password.");
                 return;
             }
 
-            if (!(*token == *(u->faction->password))) {
+            if (!(*token == *(u_fac->password))) {
                 delete token;
-                u->faction->Error("QUIT: Must give the correct password.");
+                u_fac->Error("QUIT: Must give the correct password.");
                 return;
             }
 
             delete token;
         }
 
-        if (u->faction->quit != QUIT_AND_RESTART) {
-            u->faction->quit = QUIT_BY_ORDER;
+        if (u_fac->quit != QUIT_AND_RESTART) {
+            u_fac->quit = QUIT_BY_ORDER;
         }
     }
 }
 
-void Game::ProcessRestartOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessRestartOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (!pCheck) {
-        if (u->faction->password && !(*(u->faction->password) == "none")) {
+        const auto u_fac = u->faction.lock();
+        if (u_fac->password && !(*(u_fac->password) == "none")) {
             AString *token = o->gettoken();
             if (!token) {
-                u->faction->Error("RESTART: Must give the correct password.");
+                u_fac->Error("RESTART: Must give the correct password.");
                 return;
             }
 
-            if (!(*token == *(u->faction->password))) {
+            if (!(*token == *(u_fac->password))) {
                 delete token;
-                u->faction->Error("RESTART: Must give the correct password.");
+                u_fac->Error("RESTART: Must give the correct password.");
                 return;
             }
 
             delete token;
         }
 
-        if (u->faction->quit != QUIT_AND_RESTART) {
-            u->faction->quit = QUIT_AND_RESTART;
-            Faction *pFac = AddFaction(0, NULL);
-            pFac->SetAddress(*(u->faction->address));
-            AString *pass = new AString(*(u->faction->password));
+        if (u_fac->quit != QUIT_AND_RESTART) {
+            u_fac->quit = QUIT_AND_RESTART;
+            Faction::Handle pFac = AddFaction(0, NULL);
+            pFac->SetAddress(*(u_fac->address));
+            AString *pass = new AString(*(u_fac->password));
             pFac->password = pass;
-            AString *facstr = new AString(AString("Restarting ")
-                    + *(pFac->address) + ".");
-            newfactions.Add(facstr);
+            AString facstr = AString("Restarting ") + *(pFac->address) + ".";
+            newfactions.push_back(facstr);
         }
     }
 }
 
-void Game::ProcessDestroyOrder(Unit *u, OrdersCheck *pCheck)
+void Game::ProcessDestroyOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCheck)
 {
     if (!pCheck) {
         u->destroy = 1;
     }
 }
 
-void Game::ProcessFindOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessFindOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -1380,13 +1489,12 @@ void Game::ProcessFindOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         return;
     }
     if (!pCheck) {
-        FindOrder *f = new FindOrder;
+        auto& f = u->findorders.emplace_back(std::make_shared<FindOrder>());
         f->find = n;
-        u->findorders.Add(f);
     }
 }
 
-void Game::ProcessConsumeOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessConsumeOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (token) {
@@ -1427,7 +1535,7 @@ void Game::ProcessConsumeOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessRevealOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessRevealOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (token) {
@@ -1452,15 +1560,14 @@ void Game::ProcessRevealOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessTaxOrder(Unit *u, OrdersCheck *pCheck)
+void Game::ProcessTaxOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCheck)
 {
     if (u->taxing == TAX_PILLAGE) {
         ParseError(pCheck, u, 0, "TAX: The unit is already pillaging.");
         return;
     }
     if (Globals->TAX_PILLAGE_MONTH_LONG && u->monthorders) {
-        delete u->monthorders;
-        u->monthorders = NULL;
+        u->monthorders.reset();
         AString err = "TAX: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1470,15 +1577,14 @@ void Game::ProcessTaxOrder(Unit *u, OrdersCheck *pCheck)
     u->taxing = TAX_TAX;
 }
 
-void Game::ProcessPillageOrder(Unit *u, OrdersCheck *pCheck)
+void Game::ProcessPillageOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCheck)
 {
     if (u->taxing == TAX_TAX) {
         ParseError(pCheck, u, 0, "PILLAGE: The unit is already taxing.");
         return;
     }
     if (Globals->TAX_PILLAGE_MONTH_LONG && u->monthorders) {
-        delete u->monthorders;
-        u->monthorders = NULL;
+        u->monthorders.reset();
         AString err = "PILLAGE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1488,22 +1594,19 @@ void Game::ProcessPillageOrder(Unit *u, OrdersCheck *pCheck)
     u->taxing = TAX_PILLAGE;
 }
 
-void Game::ProcessPromoteOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessPromoteOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *id = ParseUnit(o);
-    if (!id || id->unitnum == -1) {
+    UnitId::Handle id = ParseUnit(o);
+    if (!id || !id->unitnum.isValid()) {
         ParseError(pCheck, u, 0, "PROMOTE: No target given.");
         return;
     }
     if (!pCheck) {
-        if (u->promote) {
-            delete u->promote;
-        }
         u->promote = id;
     }
 }
 
-void Game::ProcessLeaveOrder(Unit *u, OrdersCheck *pCheck)
+void Game::ProcessLeaveOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCheck)
 {
     if (!pCheck) {    
         // if the unit isn't already trying to enter a building,
@@ -1512,7 +1615,7 @@ void Game::ProcessLeaveOrder(Unit *u, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessEnterOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessEnterOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token;
     int i = 0;
@@ -1531,10 +1634,10 @@ void Game::ProcessEnterOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
+void Game::ProcessBuildOrder(const Unit::Handle& unit, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString * token = o->gettoken();
-    BuildOrder * order = new BuildOrder;
+    BuildOrder::Handle order = std::make_shared<BuildOrder>();
     int maxbuild, i;
 
     // 'incomplete' for ships:
@@ -1544,7 +1647,7 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
     if (token) {
         if (*token == "help") {
             // "build help unitnum"
-            UnitId *targ = 0;
+            UnitId::Handle targ = nullptr;
             delete token;
             if (!pCheck) {
                 targ = ParseUnit(o);
@@ -1552,15 +1655,15 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
                     unit->Error("BUILD: Non-existent unit to help.");
                     return;
                 }
-                if (targ->unitnum == -1) {
+                if (!targ->unitnum.isValid()) {
                     unit->Error("BUILD: Non-existent unit to help.");
                     return;
                 }
             }
-            order->target = targ;    // set the order's target to the unit number helped
+            order->target = *targ;    // set the order's target to the unit number helped
         } else {
             // token exists and != "help": must be something like 'build tower'
-            int ot = ParseShipObject(token);
+            const ssize_t ot = ParseShipObject(token);
             delete token;
             if (ot == -1) {
                 ParseError(pCheck, unit, 0, "BUILD: Not a valid object name.");
@@ -1568,59 +1671,64 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
             }
             
             if (!pCheck) {
-                ARegion *reg = unit->object->region;
-                if (TerrainDefs[reg->type].similar_type == R_OCEAN){
+                const auto u_obj = unit->object.lock();
+                const auto reg = u_obj->region.lock();
+                if (TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN){
                     unit->Error("BUILD: Can't build in an ocean.");
                     return;
                 }
                 
                 if (ot < 0) {
                     /* Build SHIP item */
-                    int st = abs(ot+1);
+                    const Items st(static_cast<size_t>(abs(ot+1)));
                     if (ItemDefs[st].flags & ItemType::DISABLED) {
                         ParseError(pCheck, unit, 0, "BUILD: Not a valid object name.");
                         return;
                     }
-                    int flying = ItemDefs[st].fly;
+                    const auto& flying = ItemDefs[st].fly;
                     if (!reg->IsCoastalOrLakeside() && (flying <= 0)) {
                         unit->Error("BUILD: Can't build ship in "
                                 "non-coastal or lakeside region.");
                         return;
                     }
-                    unit->build = -st;
+                    unit->build = -static_cast<int>(st);
                     maxbuild = ItemDefs[st].pMonths;
                     // if we already have an unfinished
                     // ship, see how much work is left
                     if (unit->items.GetNum(st) > 0)
-                        maxbuild = unit->items.GetNum(st);
+                        maxbuild = static_cast<int>(unit->items.GetNum(st));
                     // Don't create a fleet yet    
                 } else {
+                    const size_t ot2 = static_cast<size_t>(ot);
                     /* build standard OBJECT */
-                    if (ObjectDefs[ot].flags & ObjectType::DISABLED) {
+                    if (ObjectDefs[ot2].flags & ObjectType::DISABLED) {
                         ParseError(pCheck, unit, 0, "BUILD: Not a valid object name.");
                         return;
                     }
-                    if (!(ObjectDefs[ot].flags & ObjectType::CANENTER)) {
+                    if (!(ObjectDefs[ot2].flags & ObjectType::CANENTER)) {
                         ParseError(pCheck, unit, 0, "BUILD: Can't build that.");
                         return;
                     }
-                    AString skname = ObjectDefs[ot].skill;
-                    int sk = LookupSkill(&skname);
-                    if (sk == -1) {
+                    AString skname = ObjectDefs[ot2].skill;
+                    const Skills sk = LookupSkill(skname);
+                    if (!sk.isValid()) {
                         ParseError(pCheck, unit, 0, "BUILD: Can't build that.");
                         return;
                     }
                     for (i = 1; i < 100; i++)
-                        if (!reg->GetObject(i))
+                    {
+                        if (reg->GetObject(i).expired())
+                        {
                             break;
+                        }
+                    }
                     if (i < 100) {
-                        Object * obj = new Object(reg);
-                        obj->type = ot;
+                        auto& obj = reg->objects.emplace_back(std::make_shared<Object>(reg));
+                        obj->type = ot2;
                         obj->incomplete = ObjectDefs[obj->type].cost;
                         obj->num = i;
                         obj->SetName(new AString("Building"));
                         unit->build = obj->num;
-                        unit->object->region->objects.Add(obj);
                         unit->MoveUnit(obj);
                     } else {
                         unit->Error("BUILD: The region is full.");
@@ -1628,30 +1736,29 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
                     }
                 }
             }
-            order->target = NULL; // Not helping anyone...
+            order->target.invalidate(); // Not helping anyone...
         }
     } else {
         // just a 'build' order
-        order->target = NULL;
+        order->target.invalidate();
         if (!pCheck) {
             // look for an incomplete ship type in inventory
-            int st = O_DUMMY;
-            forlist(&unit->items) {
-                Item * it = (Item *) elem;
+            ssize_t st = static_cast<ssize_t>(Objects::Types::O_DUMMY);
+            for(const auto& it: unit->items) {
                 if ((ItemDefs[it->type].type & IT_SHIP)
                     && (!(ItemDefs[it->type].flags & ItemType::DISABLED))) {
-                        st = -(it->type);
+                        st = -static_cast<ssize_t>(it->type);
                         break;
                 }
             }
             
-            if (st == O_DUMMY) {
+            if (st == static_cast<ssize_t>(Objects::Types::O_DUMMY)) {
                 // Build whatever we happen to be in when
                 // we get to the build phase
                 unit->build = 0;
             } else {
-                unit->build = st;
-                maxbuild = unit->items.GetNum(-st);
+                unit->build = static_cast<int>(st);
+                maxbuild = static_cast<int>(unit->items.GetNum(Items(-st)));
             }
         }
     }
@@ -1665,7 +1772,6 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
             (Globals->TAX_PILLAGE_MONTH_LONG &&
                 ((unit->taxing == TAX_TAX) || 
                     (unit->taxing == TAX_PILLAGE)))) {
-        if (unit->monthorders) delete unit->monthorders;
         AString err = "BUILD: Overwriting previous ";
         if (unit->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1677,19 +1783,22 @@ void Game::ProcessBuildOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
     unit->monthorders = order;
 }
 
-void Game::ProcessAttackOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessAttackOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *id = ParseUnit(o);
-    while (id && id->unitnum != -1) {
+    UnitId::Handle id = ParseUnit(o);
+    while (id && id->unitnum.isValid()) {
         if (!pCheck) {
-            if (!u->attackorders) u->attackorders = new AttackOrder;
-            u->attackorders->targets.Add(id);
+            if (!u->attackorders)
+            {
+                u->attackorders = std::make_shared<AttackOrder>();
+            }
+            u->attackorders->targets.push_back(*id);
         }
         id = ParseUnit(o);
     }
 }
 
-void Game::ProcessSellOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessSellOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -1712,18 +1821,17 @@ void Game::ProcessSellOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, u, 0, "SELL: Item not given.");
         return;
     }
-    int it = ParseGiveableItem(token);
+    const Items it = ParseGiveableItem(token);
     delete token;
 
     if (!pCheck) {
-        SellOrder *s = new SellOrder;
+        auto& s = u->sellorders.emplace_back(std::make_shared<SellOrder>());
         s->item = it;
         s->num = num;
-        u->sellorders.Add(s);
     }
 }
 
-void Game::ProcessBuyOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessBuyOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -1746,35 +1854,34 @@ void Game::ProcessBuyOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, u, 0, "BUY: Item not given.");
         return;
     }
-    int it = ParseGiveableItem(token);
-    if (it == -1) {
+    Items it = ParseGiveableItem(token);
+    if (!it.isValid()) {
         if (*token == "peasant" || *token == "peasants" || *token == "peas") {
             if (pCheck) {
-                it = -1;
-                for (int i = 0; i < NITEMS; i++) {
-                    if (ItemDefs[i].flags & ItemType::DISABLED) continue;
-                    if (ItemDefs[i].type & IT_LEADER) continue;
-                    if (ItemDefs[i].type & IT_MAN) {
-                        it = i;
+                it.invalidate();
+                for (auto i = Items::begin(); i != Items::end(); ++i) {
+                    if (ItemDefs[*i].flags & ItemType::DISABLED) continue;
+                    if (ItemDefs[*i].type & IT_LEADER) continue;
+                    if (ItemDefs[*i].type & IT_MAN) {
+                        it = *i;
                         break;
                     }
                 }
             } else {
-                it = u->object->region->race;
+                it = u->object.lock()->region.lock()->race;
             }
         }
     }
     delete token;
 
     if (!pCheck) {
-        BuyOrder *b = new BuyOrder;
+        auto& b = u->buyorders.emplace_back(std::make_shared<BuyOrder>());
         b->item = it;
         b->num = num;
-        u->buyorders.Add(b);
     }
 }
 
-void Game::ProcessProduceOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessProduceOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     int target = 0;
     AString *token = o->gettoken();
@@ -1788,22 +1895,21 @@ void Game::ProcessProduceOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, u, 0, "PRODUCE: No item given.");
         return;
     }
-    int it = ParseEnabledItem(token);
+    const Items it = ParseEnabledItem(token);
     delete token;
 
-    ProduceOrder *p = new ProduceOrder;
+    ProduceOrder::Handle p = std::make_shared<ProduceOrder>();
     p->item = it;
-    if (it != -1) {
+    if (it.isValid()) {
         AString skname = ItemDefs[it].pSkill;
-        p->skill = LookupSkill(&skname);
+        p->skill = LookupSkill(skname);
     } else {
-        p->skill = -1;
+        p->skill.invalidate();
     }
     p->target = target;
     if (u->monthorders ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
-        if (u->monthorders) delete u->monthorders;
         AString err = "PRODUCE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1813,18 +1919,19 @@ void Game::ProcessProduceOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     u->monthorders = p;
 }
 
-void Game::ProcessWorkOrder(Unit *u, int quiet, OrdersCheck *pCheck)
+void Game::ProcessWorkOrder(const Unit::Handle& u, bool quiet, const OrdersCheck::Handle& pCheck)
 {
-    ProduceOrder *order = new ProduceOrder;
-    order->skill = -1;
-    order->item = I_SILVER;
+    ProduceOrder::Handle order = std::make_shared<ProduceOrder>();
+    order->skill.invalidate();
+    order->item = Items::Types::I_SILVER;
     order->target = 0;
     if (quiet)
-        order->quiet = 1;
+    {
+        order->quiet = true;
+    }
     if (u->monthorders ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
-        if (u->monthorders) delete u->monthorders;
         AString err = "WORK: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1834,22 +1941,22 @@ void Game::ProcessWorkOrder(Unit *u, int quiet, OrdersCheck *pCheck)
     u->monthorders = order;
 }
 
-void Game::ProcessTeachOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessTeachOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    TeachOrder *order = 0;
+    TeachOrder::Handle order = nullptr;
 
-    if (u->monthorders && u->monthorders->type == O_TEACH) {
-        order = (TeachOrder *) u->monthorders;
+    if (u->monthorders && u->monthorders->type == Orders::Types::O_TEACH) {
+        order = std::dynamic_pointer_cast<TeachOrder>(u->monthorders);
     } else {
-        order = new TeachOrder;
+        order = std::make_shared<TeachOrder>();
     }
 
     int students = 0;
-    UnitId *id = ParseUnit(o);
-    while (id && id->unitnum != -1) {
+    UnitId::Handle id = ParseUnit(o);
+    while (id && id->unitnum.isValid()) {
         students++;
         if (order) {
-            order->targets.Add(id);
+            order->targets.push_back(*id);
         }
         id = ParseUnit(o);
     }
@@ -1859,10 +1966,9 @@ void Game::ProcessTeachOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         return;
     }
 
-    if ((u->monthorders && u->monthorders->type != O_TEACH) ||
+    if ((u->monthorders && u->monthorders->type != Orders::Types::O_TEACH) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
-        if (u->monthorders) delete u->monthorders;
         AString err = "TEACH: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1872,31 +1978,34 @@ void Game::ProcessTeachOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     u->monthorders = order;
 }
 
-void Game::ProcessStudyOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessStudyOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
         ParseError(pCheck, u, 0, "STUDY: No skill given.");
         return;
     }
-    int sk = ParseSkill(token);
+    Skills sk = ParseSkill(token);
     delete token;
 
-    StudyOrder *order = new StudyOrder;
+    StudyOrder::Handle order = std::make_shared<StudyOrder>();
     order->skill = sk;
     order->days = 0;
     // parse study level:
     token = o->gettoken();
-    if (token) {
-        order->level = token->value();
+    if (token)
+    {
+        order->level = static_cast<unsigned int>(token->value());
         delete token;
-    } else
-        order->level = -1;
+    }
+    else
+    {
+        order->level.invalidate();
+    }
     
     if (u->monthorders ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
-        if (u->monthorders) delete u->monthorders;
         AString err = "STUDY: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1906,27 +2015,25 @@ void Game::ProcessStudyOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     u->monthorders = order;
 }
 
-void Game::ProcessDeclareOrder(Faction *f, AString *o, OrdersCheck *pCheck)
+void Game::ProcessDeclareOrder(const Faction::Handle& f, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
         ParseError(pCheck, 0, f, "DECLARE: No faction given.");
         return;
     }
-    int fac;
-    if (*token == "default") {
-        fac = -1;
-    } else {
-        fac = token->value();
+    ValidValue<size_t> fac;
+    if (*token != "default") {
+        fac = static_cast<size_t>(token->value());
     }
     delete token;
 
     if (!pCheck) {
-        Faction *target;
-        if (fac != -1) {
-            target = GetFaction(&factions, fac);
+        Faction::Handle target;
+        if (fac.isValid()) {
+            target = GetFaction(factions, fac);
             if (!target) {
-                f->Error(AString("DECLARE: Non-existent faction ")+fac+".");
+                f->Error(AString("DECLARE: Non-existent faction ") + static_cast<int>(fac) + ".");
                 return;
             }
             if (target == f) {
@@ -1939,7 +2046,7 @@ void Game::ProcessDeclareOrder(Faction *f, AString *o, OrdersCheck *pCheck)
 
     token = o->gettoken();
     if (!token) {
-        if (fac != -1) {
+        if (fac.isValid()) {
             if (!pCheck) {
                 f->SetAttitude(fac, -1);
             }
@@ -1955,7 +2062,7 @@ void Game::ProcessDeclareOrder(Faction *f, AString *o, OrdersCheck *pCheck)
     }
 
     if (!pCheck) {
-        if (fac == -1) {
+        if (!fac.isValid()) {
             f->defaultattitude = att;
         } else {
             f->SetAttitude(fac, att);
@@ -1963,7 +2070,7 @@ void Game::ProcessDeclareOrder(Faction *f, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessWithdrawOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
+void Game::ProcessWithdrawOrder(const Unit::Handle& unit, AString *o, const OrdersCheck::Handle& pCheck)
 {
     if (!(Globals->ALLOW_WITHDRAW)) {
         ParseError(pCheck, unit, 0, "WITHDRAW is not a valid order.");
@@ -1986,10 +2093,10 @@ void Game::ProcessWithdrawOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
             return;
         }
     }
-    int item = ParseGiveableItem(token);
+    const Items item = ParseGiveableItem(token);
     delete token;
 
-    if (item == -1) {
+    if (!item.isValid()) {
         ParseError(pCheck, unit, 0, "WITHDRAW: Invalid item.");
         return;
     }
@@ -2001,34 +2108,32 @@ void Game::ProcessWithdrawOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, unit, 0, "WITHDRAW: Invalid item.");
         return;
     }
-    if (item == I_SILVER) {
+    if (item == Items::Types::I_SILVER) {
         ParseError(pCheck, unit, 0, "WITHDRAW: Invalid item.");
         return;
     }
 
     if (!pCheck) {
-        WithdrawOrder *order = new WithdrawOrder;
+        auto& order = unit->withdraworders.emplace_back(std::make_shared<WithdrawOrder>());
         order->item = item;
         order->amount = amt;
-        unit->withdraworders.Add(order);
     }
     return;
 }
 
-AString *Game::ProcessTurnOrder(Unit *unit, Aorders *f, OrdersCheck *pCheck,
-        int repeat)
+AString *Game::ProcessTurnOrder(const Unit::Handle& unit, Aorders& f, const OrdersCheck::Handle& pCheck, int repeat)
 {
     int turnDepth = 1;
     int turnLast = 1;
     int formDepth = 0;
-    TurnOrder *tOrder = new TurnOrder;
+    TurnOrder::Handle tOrder = std::make_shared<TurnOrder>();
     tOrder->repeating = repeat;
 
     AString *order, *token;
 
     while (turnDepth) {
         // get the next line
-        order = f->GetLine();
+        order = f.GetLine();
         if (!order) {
             // Fake end of commands to invoke appropriate processing
             order = new AString("#end");
@@ -2037,27 +2142,27 @@ AString *Game::ProcessTurnOrder(Unit *unit, Aorders *f, OrdersCheck *pCheck,
         token = order->gettoken();
 
         if (token) {
-            int i = Parse1Order(token);
-            switch (i) {
-                case O_TURN:
+            const Orders i = Parse1Order(token);
+            switch (i.asEnum()) {
+                case Orders::Types::O_TURN:
                     if (turnLast) {
                         ParseError(pCheck, unit, 0, "TURN: cannot nest.");
                         break;
                     }
                     turnDepth++;
-                    tOrder->turnOrders.Add(new AString(saveorder));
+                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
                     turnLast = 1;
                     break;
-                case O_FORM:
+                case Orders::Types::O_FORM:
                     if (!turnLast) {
                         ParseError(pCheck, unit, 0, "FORM: cannot nest.");
                         break;
                     }
                     turnLast = 0;
                     formDepth++;
-                    tOrder->turnOrders.Add(new AString(saveorder));
+                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
                     break;
-                case O_ENDFORM:
+                case Orders::Types::O_ENDFORM:
                     if (turnLast) {
                         if (!(formDepth + (unit->former != 0))) {
                             ParseError(pCheck, unit, 0, "END: without FORM.");
@@ -2065,17 +2170,17 @@ AString *Game::ProcessTurnOrder(Unit *unit, Aorders *f, OrdersCheck *pCheck,
                         } else {
                             ParseError(pCheck, unit, 0, "TURN: without ENDTURN.");
                             if (!--turnDepth) {
-                                unit->turnorders.Add(tOrder);
+                                unit->turnorders.push_back(tOrder);
                                 return new AString(saveorder);
                             }
                         }
                     }
                     formDepth--;
-                    tOrder->turnOrders.Add(new AString(saveorder));
+                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
                     turnLast = 1;
                     break;
-                case O_UNIT:
-                case O_END:
+                case Orders::Types::O_UNIT:
+                case Orders::Types::O_END:
                     if (!turnLast)
                         ParseError(pCheck, unit, 0, "FORM: without END.");
                     while (--turnDepth) {
@@ -2083,37 +2188,41 @@ AString *Game::ProcessTurnOrder(Unit *unit, Aorders *f, OrdersCheck *pCheck,
                         ParseError(pCheck, unit, 0, "FORM: without END.");
                     }
                     ParseError(pCheck, unit, 0, "TURN: without ENDTURN.");
-                    unit->turnorders.Add(tOrder);
+                    unit->turnorders.push_back(tOrder);
                     return new AString(saveorder);
                     break;
-                case O_ENDTURN:
+                case Orders::Types::O_ENDTURN:
                     if (!turnLast) {
                         ParseError(pCheck, unit, 0, "ENDTURN: without TURN.");
                     } else {
-                        if (--turnDepth) 
-                            tOrder->turnOrders.Add(new AString(saveorder));
+                        if (--turnDepth)
+                        {
+                            tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
+                        }
                         turnLast = 0;
                     }
                     break;
                 default:
-                    tOrder->turnOrders.Add(new AString(saveorder));
+                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
                     break;
             }
             if (!pCheck && unit->former && unit->former->format)
-                unit->former->oldorders.Add(new AString(saveorder));
+            {
+                unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+            }
             delete token;
         }
         delete order;
     }
 
-    unit->turnorders.Add(tOrder);
+    unit->turnorders.push_back(tOrder);
 
-    return NULL;
+    return nullptr;
 }
 
-void Game::ProcessExchangeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
+void Game::ProcessExchangeOrder(const Unit::Handle& unit, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *t = ParseUnit(o);
+    UnitId::Handle t = ParseUnit(o);
     if (!t) {
         ParseError(pCheck, unit, 0, "EXCHANGE: Invalid target.");
         return;
@@ -2123,8 +2232,8 @@ void Game::ProcessExchangeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, unit, 0, "EXCHANGE: No amount given.");
         return;
     }
-    int amtGive;
-    amtGive = token->value();
+
+    const int amtGive = token->value();
     delete token;
 
     if (amtGive < 0) {
@@ -2137,11 +2246,11 @@ void Game::ProcessExchangeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, unit, 0, "EXCHANGE: No item given.");
         return;
     }
-    int itemGive;
-    itemGive = ParseGiveableItem(token);
+
+    const Items itemGive = ParseGiveableItem(token);
     delete token;
 
-    if (itemGive == -1) {
+    if (!itemGive.isValid()) {
         ParseError(pCheck, unit, 0, "EXCHANGE: Invalid item.");
         return;
     }
@@ -2155,8 +2264,8 @@ void Game::ProcessExchangeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, unit, 0, "EXCHANGE: No amount expected.");
         return;
     }
-    int amtExpected;
-    amtExpected = token->value();
+
+    const int amtExpected = token->value();
     delete token;
 
     if (amtExpected < 0) {
@@ -2169,11 +2278,11 @@ void Game::ProcessExchangeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, unit, 0, "EXCHANGE: No item expected.");
         return;
     }
-    int itemExpected;
-    itemExpected = ParseGiveableItem(token);
+
+    const Items itemExpected = ParseGiveableItem(token);
     delete token;
 
-    if (itemExpected == -1) {
+    if (!itemExpected.isValid()) {
         ParseError(pCheck, unit, 0, "EXCHANGE: Invalid item.");
         return;
     }
@@ -2183,23 +2292,24 @@ void Game::ProcessExchangeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
     }
 
     if (!pCheck) {
-        ExchangeOrder *order = new ExchangeOrder;
+        auto& order = unit->exchangeorders.emplace_back(std::make_shared<ExchangeOrder>());
         order->giveItem = itemGive;
         order->giveAmount = amtGive;
         order->expectAmount = amtExpected;
         order->expectItem = itemExpected;
-        order->target = t;
-        unit->exchangeorders.Add(order);
+        order->target = *t;
     }
 }
 
-void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pCheck)
+void Game::ProcessGiveOrder(const Orders& order,
+                            const Unit::Handle& unit,
+                            AString *o,
+                            const OrdersCheck::Handle& pCheck)
 {
-    UnitId *t;
     AString *token, ord;
-    int unfinished, amt, item, excpt;
+    int unfinished, amt, excpt;
 
-    if (order == O_TAKE) {
+    if (order == Orders::Types::O_TAKE) {
         ord = "TAKE";
         token = o->gettoken();
         if (!token || !(*token == "from")) {
@@ -2209,12 +2319,12 @@ void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pChe
     } else
         ord = "GIVE";
 
-    t = ParseUnit(o);
+    UnitId::Handle t = ParseUnit(o);
     if (!t) {
         ParseError(pCheck, unit, 0, ord + ": Invalid target.");
         return;
     }
-    if (t->unitnum == -1 && order == O_TAKE) {
+    if (!t->unitnum.isValid() && order == Orders::Types::O_TAKE) {
         ParseError(pCheck, unit, 0, ord + ": Invalid target.");
         return;
     }
@@ -2223,7 +2333,7 @@ void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pChe
         ParseError(pCheck, unit, 0, ord + ": No amount given.");
         return;
     }
-    if (*token == "unit" && order == O_GIVE) {
+    if (*token == "unit" && order == Orders::Types::O_GIVE) {
         amt = -1;
     } else if (*token == "all") {
         amt = -2;
@@ -2235,7 +2345,8 @@ void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pChe
         }
     }
     delete token;
-    item = -1;
+    Items item;
+    ssize_t item_s = -1;
     unfinished = 0;
     if (amt != -1) {
         token = o->gettoken();
@@ -2244,73 +2355,85 @@ void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pChe
             token = o->gettoken();
         }
         if (token) {
-            if (t->unitnum == -1)
+            if (!t->unitnum.isValid())
+            {
                 item = ParseEnabledItem(token);
+            }
             else
+            {
                 item = ParseGiveableItem(token);
+            }
+
+            item_s = item.isValid() ? static_cast<ssize_t>(item) : -1;
             if (amt == -2) {
-                int found = 0;
+                bool found = false;
                 if (*token == "normal") {
-                    item = -IT_NORMAL;
-                    found = 1;
+                    item_s = -IT_NORMAL;
+                    found = true;
                 } else if (*token == "advanced") {
-                    item = -IT_ADVANCED;
-                    found = 1;
+                    item_s = -IT_ADVANCED;
+                    found = true;
                 } else if (*token == "trade") {
-                    item = -IT_TRADE;
-                    found = 1;
+                    item_s = -IT_TRADE;
+                    found = true;
                 } else if ((*token == "man") || (*token == "men")) {
-                    item = -IT_MAN;
-                    found = 1;
+                    item_s = -IT_MAN;
+                    found = true;
                 } else if ((*token == "monster") || (*token == "monsters")) {
-                    item = -IT_MONSTER;
-                    found = 1;
+                    item_s = -IT_MONSTER;
+                    found = true;
                 } else if (*token == "magic") {
-                    item = -IT_MAGIC;
-                    found = 1;
+                    item_s = -IT_MAGIC;
+                    found = true;
                 } else if ((*token == "weapon") || (*token == "weapons")) {
-                    item = -IT_WEAPON;
-                    found = 1;
+                    item_s = -IT_WEAPON;
+                    found = true;
                 } else if (*token == "armor") {
-                    item = -IT_ARMOR;
-                    found = 1;
+                    item_s = -IT_ARMOR;
+                    found = true;
                 } else if ((*token == "mount") || (*token == "mounts")) {
-                    item = -IT_MOUNT;
-                    found = 1;
+                    item_s = -IT_MOUNT;
+                    found = true;
                 } else if (*token == "battle") {
-                    item = -IT_BATTLE;
-                    found = 1;
+                    item_s = -IT_BATTLE;
+                    found = true;
                 } else if (*token == "special") {
-                    item = -IT_SPECIAL;
-                    found = 1;
+                    item_s = -IT_SPECIAL;
+                    found = true;
                 } else if (*token == "food") {
-                    item = -IT_FOOD;
-                    found = 1;
+                    item_s = -IT_FOOD;
+                    found = true;
                 } else if ((*token == "tool") || (*token == "tools")) {
-                    item = -IT_TOOL;
-                    found = 1;
-                } else if ((*token == "item") || (*token == "items")) {
-                    item = -NITEMS;
-                    found = 1;
+                    item_s = -IT_TOOL;
+                    found = true;
+                } else if ((*token == "item_s") || (*token == "items")) {
+                    item_s = -static_cast<ssize_t>(*Items::end());
+                    found = true;
                 } else if ((*token == "ship") || (*token == "ships")) {
-                    item = -IT_SHIP;
-                    found = 1;
-                } else if (item != -1) {
-                    found = 1;
+                    item_s = -IT_SHIP;
+                    found = true;
+                } else if (item.isValid()) {
+                    found = true;
                 }
                 if (!found) {
                     ParseError(pCheck, unit, 0,
                             ord + ": Invalid item or item class.");
                     return;
                 }
-            } else if (item == -1) {
+            } else if (!item.isValid()) {
                 ParseError(pCheck, unit, 0, ord + ": Invalid item.");
                 return;
             }
+
+            if(item_s >= 0)
+            {
+                item = static_cast<size_t>(item_s);
+            }
+
             if (unfinished &&
-                    item != -IT_SHIP &&
-                    item != -NITEMS &&
-                    !(item >= 0 &&
+                    item_s != -IT_SHIP &&
+                    item_s != -static_cast<ssize_t>(*Items::end()) &&
+                    !(item.isValid() &&
                     ItemDefs[item].type & IT_SHIP)) {
                 ParseError(pCheck, unit, 0, ord + ": That item does not have an unfinished version.");
                 return;
@@ -2327,7 +2450,7 @@ void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pChe
     if (token && *token == "except") {
         if (amt == -2) {
             delete token;
-            if (item < 0) {
+            if (item_s < 0) {
                 ParseError(pCheck, unit, 0,
                         ord + ": EXCEPT only valid with specific items.");
                 return;
@@ -2350,19 +2473,18 @@ void Game::ProcessGiveOrder(int order, Unit *unit, AString *o, OrdersCheck *pChe
     }
 
     if (!pCheck) {
-        GiveOrder *go = new GiveOrder;
+        auto& go = unit->giveorders.emplace_back(std::make_shared<GiveOrder>());
         go->type = order;
-        go->item = item;
-        go->target = t;
+        go->item = item_s;
+        go->target = *t;
         go->amount = amt;
         go->except = excpt;
         go->unfinished = unfinished;
-        unit->giveorders.Add(go);
     }
     return;
 }
 
-void Game::ProcessDescribeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
+void Game::ProcessDescribeOrder(const Unit::Handle& unit, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -2384,18 +2506,19 @@ void Game::ProcessDescribeOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         if (!pCheck) {
             // ALT, 25-Jul-2000
             // Fix to prevent non-owner units from describing objects
-            if (unit != unit->object->GetOwner()) {
+            const auto u_obj = unit->object.lock();
+            if (unit != u_obj->GetOwner().lock()) {
                 unit->Error("DESCRIBE: Unit is not owner.");
                 return;
             }
-            unit->object->SetDescribe(token);
+            u_obj->SetDescribe(token);
         }
         return;
     }
     ParseError(pCheck, unit, 0, "DESCRIBE: Can't describe that.");
 }
 
-void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
+void Game::ProcessNameOrder(const Unit::Handle& unit, AString *o, const OrdersCheck::Handle& pCheck)
 {
     AString *token = o->gettoken();
     if (!token) {
@@ -2411,7 +2534,7 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
             return;
         }
         if (!pCheck) {
-            unit->faction->SetName(token);
+            unit->faction.lock()->SetName(token);
         }
         return;
     }
@@ -2429,6 +2552,7 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         return;
     }
 
+    const auto u_obj = unit->object.lock();
     if (*token == "building" || *token == "ship" || *token == "object" ||
         *token == "structure") {
         delete token;
@@ -2440,15 +2564,15 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         if (!pCheck) {
             // ALT, 25-Jul-2000
             // Fix to prevent non-owner units from renaming objects
-            if (unit != unit->object->GetOwner()) {
+            if (unit != u_obj->GetOwner().lock()) {
                 unit->Error("NAME: Unit is not owner.");
                 return;
             }
-            if (!unit->object->CanModify()) {
+            if (!u_obj->CanModify()) {
                 unit->Error("NAME: Can't name this type of object.");
                 return;
             }
-            unit->object->SetName(token);
+            u_obj->SetName(token);
         }
         return;
     }
@@ -2467,67 +2591,79 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
         }
 
         if (!pCheck) {
-            if (!unit->object) {
+            if (!u_obj) {
                 unit->Error("NAME: Unit is not in a structure.");
                 return;
             }
-            if (!unit->object->region->town) {
+
+            const auto u_obj_reg = u_obj->region.lock();
+            if (!u_obj_reg->town) {
                 unit->Error("NAME: Unit is not in a village, town or city.");
                 return;
             }
-            int cost = 0;
-            int towntype = unit->object->region->town->TownType();
+            size_t cost = 0;
+            const auto towntype = u_obj_reg->town->TownType();
             AString tstring;
             switch(towntype) {
-                case TOWN_VILLAGE:
+                case TownTypeEnum::TOWN_VILLAGE:
                     tstring = "village";
                     break;
-                case TOWN_TOWN:
+                case TownTypeEnum::TOWN_TOWN:
                     tstring = "town";
                     break;
-                case TOWN_CITY:
+                case TownTypeEnum::TOWN_CITY:
                     tstring = "city";
+                    break;
+                default:
                     break;
             }
             if (Globals->CITY_RENAME_COST) {
-                cost = (towntype+1)* Globals->CITY_RENAME_COST;
+                cost = (static_cast<size_t>(towntype)+1)* Globals->CITY_RENAME_COST;
             }
             int ok = 0;
             switch(towntype) {
-                case TOWN_VILLAGE:
-                    switch(unit->object->type) {
-                        case O_TOWER:
-                        case O_MTOWER:
+                case TownTypeEnum::TOWN_VILLAGE:
+                    switch(u_obj->type.asEnum()) {
+                        case Objects::Types::O_TOWER:
+                        case Objects::Types::O_MTOWER:
                             ok = 1;
+                        default:
+                            break;
                     }
                     /* FALLTHRU */
-                case TOWN_TOWN:
-                    switch(unit->object->type) {
-                        case O_FORT:
-                        case O_MFORTRESS:
+                case TownTypeEnum::TOWN_TOWN:
+                    switch(u_obj->type.asEnum()) {
+                        case Objects::Types::O_FORT:
+                        case Objects::Types::O_MFORTRESS:
                             ok = 1;
+                        default:
+                            break;
                     }
                     /* FALLTHRU */
-                case TOWN_CITY:
-                    switch(unit->object->type) {
-                        case O_CASTLE:
-                        case O_CITADEL:
-                        case O_MCASTLE:
-                        case O_MCITADEL:
+                case TownTypeEnum::TOWN_CITY:
+                    switch(u_obj->type.asEnum()) {
+                        case Objects::Types::O_CASTLE:
+                        case Objects::Types::O_CITADEL:
+                        case Objects::Types::O_MCASTLE:
+                        case Objects::Types::O_MCITADEL:
                             ok = 1;
+                        default:
+                            break;
                     }
+                default:
+                    break;
             }
             if (!ok) {
                 unit->Error(AString("NAME: Unit is not in a large ")+
                             "enough structure to rename a "+tstring+".");
                 return;
             }
-            if (unit != unit->object->GetOwner()) {
+            if (unit != u_obj->GetOwner().lock()) {
                 unit->Error(AString("NAME: Cannot name ")+tstring+
                             ".  Unit is not the owner of object.");
                 return;
             }
-            if (unit->object->incomplete > 0) {
+            if (u_obj->incomplete > 0) {
                 unit->Error(AString("NAME: Cannot name ")+tstring+
                             ".  Object is not finished.");
                 return;
@@ -2539,22 +2675,22 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
                 return;
             }
             if (cost) {
-                int silver = unit->items.GetNum(I_SILVER);
+                size_t silver = unit->items.GetNum(Items::Types::I_SILVER);
                 if (silver < cost) {
                     unit->Error(AString("NAME: Unit doesn't have enough ")+
                                 "silver to rename a "+tstring+".");
                     return;
                 }
-                unit->items.SetNum(I_SILVER, silver-cost);
+                unit->items.SetNum(Items::Types::I_SILVER, silver-cost);
             }
 
             unit->Event(AString("Renames ") +
-                    *(unit->object->region->town->name) + " to " +
+                    *(u_obj_reg->town->name) + " to " +
                     *newname + ".");
-            unit->object->region->NotifyCity(unit,
-                    *(unit->object->region->town->name), *newname);
-            delete unit->object->region->town->name;
-            unit->object->region->town->name = newname;
+            u_obj_reg->NotifyCity(unit,
+                    *(u_obj_reg->town->name), *newname);
+            delete u_obj_reg->town->name;
+            u_obj_reg->town->name = newname;
         }
         return;
     }
@@ -2563,7 +2699,7 @@ void Game::ProcessNameOrder(Unit *unit, AString *o, OrdersCheck *pCheck)
     ParseError(pCheck, unit, 0, "NAME: Can't name that.");
 }
 
-void Game::ProcessGuardOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessGuardOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* This is an instant order */
     AString *token = o->gettoken();
@@ -2588,7 +2724,7 @@ void Game::ProcessGuardOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessBehindOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessBehindOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* This is an instant order */
     AString *token = o->gettoken();
@@ -2606,7 +2742,7 @@ void Game::ProcessBehindOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessNoaidOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessNoaidOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* Instant order */
     AString *token = o->gettoken();
@@ -2625,7 +2761,7 @@ void Game::ProcessNoaidOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessSpoilsOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessSpoilsOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* Instant order */
     AString *token = o->gettoken();
@@ -2659,7 +2795,7 @@ void Game::ProcessSpoilsOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessNospoilsOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessNospoilsOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     ParseError(pCheck, u, 0, "NOSPOILS: This command is deprecated.  "
             "Use the 'SPOILS' command instead");
@@ -2684,17 +2820,24 @@ void Game::ProcessNospoilsOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessNocrossOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessNocrossOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    int move_over_water = 0;
+    bool move_over_water = false;
 
     if (Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE)
-        move_over_water = 1;
+    {
+        move_over_water = true;
+    }
     if (!move_over_water) {
-        int i;
-        for (i = 0; i < NITEMS; i++) {
-            if (ItemDefs[i].flags & ItemType::DISABLED) continue;
-            if (ItemDefs[i].swim > 0) move_over_water = 1;
+        for (const auto& i: ItemDefs) {
+            if (i.flags & ItemType::DISABLED)
+            {
+                continue;
+            }
+            if (i.swim > 0)
+            {
+                move_over_water = true;
+            }
         }
     }
     if (!move_over_water) {
@@ -2719,7 +2862,7 @@ void Game::ProcessNocrossOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessHoldOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessHoldOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* Instant order */
     AString *token = o->gettoken();
@@ -2738,7 +2881,7 @@ void Game::ProcessHoldOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessAutoTaxOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessAutoTaxOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* Instant order */
     AString *token = o->gettoken();
@@ -2757,7 +2900,7 @@ void Game::ProcessAutoTaxOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessAvoidOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessAvoidOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* This is an instant order */
     AString *token = o->gettoken();
@@ -2782,33 +2925,37 @@ void Game::ProcessAvoidOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-Unit *Game::ProcessFormOrder(Unit *former, AString *o, OrdersCheck *pCheck, int atsign)
+Unit::Handle Game::ProcessFormOrder(const Unit::Handle& former,
+                                    AString *o,
+                                    const OrdersCheck::Handle& pCheck,
+                                    int atsign)
 {
     AString *t = o->gettoken();
     if (!t) {
         ParseError(pCheck, former, 0, "Must give alias in FORM order.");
-        return 0;
+        return nullptr;
     }
 
     int an = t->value();
     delete t;
     if (!an) {
         ParseError(pCheck, former, 0, "Must give alias in FORM order.");
-        return 0;
+        return nullptr;
     }
     if (pCheck) {
-        Unit *retval = new Unit;
+        Unit::Handle retval = std::make_shared<Unit>();
         retval->former = former;
         former->format = atsign;
         return retval;
     } else {
-        if (former->object->region->GetUnitAlias(an, former->faction->num)) {
+        const auto f_obj = former->object.lock();
+        if (!f_obj->region.lock()->GetUnitAlias(an, former->faction.lock()->num).expired()) {
             former->Error("Alias multiply defined.");
-            return 0;
+            return nullptr;
         }
-        Unit *temp = GetNewUnit(former->faction, an);
+        Unit::Handle temp = GetNewUnit(former->faction.lock(), an);
         temp->CopyFlags(former);
-        temp->DefaultOrders(former->object);
+        temp->DefaultOrders(f_obj);
         temp->MoveUnit(former->object);
         temp->former = former;
         former->format = atsign;
@@ -2816,51 +2963,48 @@ Unit *Game::ProcessFormOrder(Unit *former, AString *o, OrdersCheck *pCheck, int 
     }
 }
 
-void Game::ProcessAddressOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessAddressOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* This is an instant order */
     AString *token = o->gettoken();
     if (token) {
         if (!pCheck) {
-            u->faction->address = token;
+            u->faction.lock()->address = token;
         }
     } else {
         ParseError(pCheck, u, 0, "ADDRESS: No address given.");
     }
 }
 
-void Game::ProcessAdvanceOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessAdvanceOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    MoveOrder *m = 0;
-
-    if ((u->monthorders && u->monthorders->type != O_ADVANCE) ||
+    if ((u->monthorders && u->monthorders->type != Orders::Types::O_ADVANCE) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
         AString err = "ADVANCE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long orders";
         ParseError(pCheck, u, 0, err);
-        if (u->monthorders) delete u->monthorders;
-        u->monthorders = 0;
+        u->monthorders.reset();
     }
     if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
     if (!u->monthorders) {
-        u->monthorders = new MoveOrder;
-        u->monthorders->type = O_ADVANCE;
+        u->monthorders = std::make_shared<MoveOrder>();
+        u->monthorders->type = Orders::Types::O_ADVANCE;
     }
-    m = (MoveOrder *) u->monthorders;
+
+    const auto m = std::dynamic_pointer_cast<MoveOrder>(u->monthorders);
     m->advancing = 1;
 
     for (;;) {
         AString *t = o->gettoken();
         if (!t) return;
-        int d = ParseDir(t);
+        const Directions d = ParseDir(t);
         delete t;
-        if (d!=-1) {
+        if (d.isValid()) {
             if (!pCheck) {
-                MoveDir *x = new MoveDir;
+                auto& x = m->dirs.emplace_back(std::make_shared<MoveDir>());
                 x->dir = d;
-                m->dirs.Add(x);
             }
         } else {
             ParseError(pCheck, u, 0, "ADVANCE: Warning, bad direction.");
@@ -2869,37 +3013,33 @@ void Game::ProcessAdvanceOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessMoveOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessMoveOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    MoveOrder *m = 0;
-
-    if ((u->monthorders && u->monthorders->type != O_MOVE) ||
+    if ((u->monthorders && u->monthorders->type != Orders::Types::O_MOVE) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
         AString err = "MOVE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
-        if (u->monthorders) delete u->monthorders;
-        u->monthorders = 0;
+        u->monthorders.reset();
     }
     if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
     if (!u->monthorders) {
-        u->monthorders = new MoveOrder;
+        u->monthorders = std::make_shared<MoveOrder>();
     }
-    m = (MoveOrder *) u->monthorders;
+    const auto m = std::dynamic_pointer_cast<MoveOrder>(u->monthorders);
     m->advancing = 0;
 
     for (;;) {
         AString *t = o->gettoken();
         if (!t) return;
-        int d = ParseDir(t);
+        const Directions d = ParseDir(t);
         delete t;
-        if (d!=-1) {
+        if (d.isValid()) {
             if (!pCheck) {
-                MoveDir *x = new MoveDir;
+                auto& x = m->dirs.emplace_back(std::make_shared<MoveDir>());
                 x->dir = d;
-                m->dirs.Add(x);
             }
         } else {
             ParseError(pCheck, u, 0, "MOVE: Warning, bad direction.");
@@ -2908,40 +3048,37 @@ void Game::ProcessMoveOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessSailOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessSailOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    SailOrder *m = 0;
-
-    if ((u->monthorders && u->monthorders->type != O_SAIL) ||
+    if ((u->monthorders && u->monthorders->type != Orders::Types::O_SAIL) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
          ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
         AString err = "SAIL: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
-        if (u->monthorders) delete u->monthorders;
-        u->monthorders = 0;
+        u->monthorders.reset();
     }
     if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
     if (!u->monthorders) {
-        u->monthorders = new SailOrder;
+        u->monthorders = std::make_shared<SailOrder>();
     }
-    m = (SailOrder *) u->monthorders;
+
+    const auto m = std::dynamic_pointer_cast<SailOrder>(u->monthorders);
 
     for (;;) {
         AString *t = o->gettoken();
         if (!t) return;
-        int d = ParseDir(t);
+        const Directions d = ParseDir(t);
         delete t;
-        if (d == -1) {
+        if (!d.isValid()) {
             ParseError(pCheck, u, 0, "SAIL: Warning, bad direction.");
             return;
         } else {
-            if (d < NDIRS || d == MOVE_PAUSE) {
+            if (d.isRegularDirection() || d.isMovePause()) {
                 if (!pCheck) {
-                    MoveDir *x = new MoveDir;
+                    auto& x = m->dirs.emplace_back(std::make_shared<MoveDir>());
                     x->dir = d;
-                    m->dirs.Add(x);
                 }
             } else {
                 ParseError(pCheck, u, 0, "SAIL: Warning, bad direction.");
@@ -2951,36 +3088,37 @@ void Game::ProcessSailOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessEvictOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessEvictOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *id = ParseUnit(o);
-    while (id && id->unitnum != -1) {
+    UnitId::Handle id = ParseUnit(o);
+    while (id && id->unitnum.isValid()) {
         if (!pCheck) {
-            if (!u->evictorders) u->evictorders = new EvictOrder;
-            u->evictorders->targets.Add(id);
+            if (!u->evictorders)
+            {
+                u->evictorders = std::make_shared<EvictOrder>();
+            }
+            u->evictorders->targets.push_back(*id);
         }
         id = ParseUnit(o);
     }
 }
 
-void Game::ProcessIdleOrder(Unit *u, AString *, OrdersCheck *pCheck)
+void Game::ProcessIdleOrder(const Unit::Handle& u, AString *, const OrdersCheck::Handle& pCheck)
 {
     if (u->monthorders || (Globals->TAX_PILLAGE_MONTH_LONG &&
         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
-        if (u->monthorders) delete u->monthorders;
         AString err = "IDLE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
     }
     if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
-    IdleOrder *i = new IdleOrder;
-    u->monthorders = i;
+    u->monthorders = std::make_shared<IdleOrder>();
 }
 
-void Game::ProcessTransportOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessTransportOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *tar = ParseUnit(o);
+    UnitId::Handle tar = ParseUnit(o);
     if (!tar) {
         ParseError(pCheck, u, 0, "TRANSPORT: Invalid target.");
         return;
@@ -3002,9 +3140,9 @@ void Game::ProcessTransportOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, u, 0, "TRANSPORT: No item given.");
         return;
     }
-    int item = ParseTransportableItem(token);
+    const Items item = ParseTransportableItem(token);
     delete token;
-    if (item == -1) {
+    if (!item.isValid()) {
         ParseError(pCheck, u, 0, "TRANSPORT: Invalid item.");
         return;
     }
@@ -3027,19 +3165,18 @@ void Game::ProcessTransportOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 
     if (!pCheck) {
-        TransportOrder *order = new TransportOrder;
+        auto& order = u->transportorders.emplace_back(std::make_shared<TransportOrder>());
         order->item = item;
-        order->target = tar;
+        order->target = *tar;
         order->amount = amt;
         order->except = except;
-        u->transportorders.Add(order);
     }
     return;
 }
 
-void Game::ProcessDistributeOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessDistributeOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
-    UnitId *tar = ParseUnit(o);
+    UnitId::Handle tar = ParseUnit(o);
     if (!tar) {
         ParseError(pCheck, u, 0, "DISTRIBUTE: Invalid target.");
         return;
@@ -3061,9 +3198,9 @@ void Game::ProcessDistributeOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         ParseError(pCheck, u, 0, "DISTRIBUTE: No item given.");
         return;
     }
-    int item = ParseTransportableItem(token);
+    const Items item = ParseTransportableItem(token);
     delete token;
-    if (item == -1) {
+    if (!item.isValid()) {
         ParseError(pCheck, u, 0, "DISTRIBUTE: Invalid item.");
         return;
     }
@@ -3086,18 +3223,17 @@ void Game::ProcessDistributeOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 
     if (!pCheck) {
-        TransportOrder *order = new TransportOrder;
-        order->type = O_DISTRIBUTE;
+        auto& order = u->transportorders.emplace_back(std::make_shared<TransportOrder>());
+        order->type = Orders::Types::O_DISTRIBUTE;
         order->item = item;
-        order->target = tar;
+        order->target = *tar;
         order->amount = amt;
         order->except = except;
-        u->transportorders.Add(order);
     }
     return;
 }
 
-void Game::ProcessShareOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessShareOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     /* Instant order */
     AString *token = o->gettoken();
@@ -3116,13 +3252,13 @@ void Game::ProcessShareOrder(Unit *u, AString *o, OrdersCheck *pCheck)
     }
 }
 
-void Game::ProcessJoinOrder(Unit *u, AString *o, OrdersCheck *pCheck)
+void Game::ProcessJoinOrder(const Unit::Handle& u, AString *o, const OrdersCheck::Handle& pCheck)
 {
     int overload = 1;
     int merge = 0;
 
-    UnitId *id = ParseUnit(o);
-    if (!id || id->unitnum == -1) {
+    UnitId::Handle id = ParseUnit(o);
+    if (!id || !id->unitnum.isValid()) {
         ParseError(pCheck, u, 0, "JOIN: No target given.");
         return;
     }
@@ -3135,11 +3271,10 @@ void Game::ProcessJoinOrder(Unit *u, AString *o, OrdersCheck *pCheck)
         delete token;
     }
     if (!pCheck) {
-        JoinOrder *ord = new JoinOrder;
-        ord->target = id;
+        JoinOrder::Handle ord = std::make_shared<JoinOrder>();
+        ord->target = *id;
         ord->overload = overload;
         ord->merge = merge;
-        if (u->joinorders) delete u->joinorders;
         u->joinorders = ord;
     }
 }

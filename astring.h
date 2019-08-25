@@ -52,6 +52,9 @@ public:
     bool operator==(const AString &) const;
     bool operator==(char *) const;
     bool operator==(const char *) const;
+    bool operator!=(const AString &) const;
+    bool operator!=(char *) const;
+    bool operator!=(const char *) const;
     int CheckPrefix(const AString &);
     AString operator+(const AString &);
     AString & operator+=(const AString &);

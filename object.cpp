@@ -140,7 +140,7 @@ void Object::Writeout(Aoutfile *f)
     WriteoutFleet(f);
 }
 
-void Object::Readin(Ainfile *f, const std::list<Faction::Handle>& facs, ATL_VER v)
+void Object::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
 {
     AString *temp;
 

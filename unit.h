@@ -43,9 +43,10 @@ class Object;
 #include <memory>
 #include <set>
 #include <string>
+
+#include "ptrlist.h"
 #include "unitid.h"
 #include "faction.h"
-#include "alist.h"
 #include "gameio.h"
 #include "orders.h"
 #include "fileio.h"
@@ -117,7 +118,7 @@ class Unit : std::enable_shared_from_this<Unit>
         void MakeWMon(char const *, const Items&, size_t);
 
         void Writeout( Aoutfile *f );
-        void Readin( Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v );
+        void Readin( Ainfile *f, const PtrList<Faction>&, ATL_VER v );
 
         AString SpoilsReport(void);
         bool CanGetSpoil(const Item::Handle& i);
@@ -206,7 +207,7 @@ class Unit : std::enable_shared_from_this<Unit>
         bool CanMoveTo(const ARegion&, const ARegion&);
         int GetFlag(int);
         void SetFlag(int,int);
-        void CopyFlags(Unit *);
+        void CopyFlags(const Unit::Handle&);
         Items GetBattleItem(AString &itm);
         Items GetArmor(AString &itm, int ass);
         Items GetMount(AString &itm, int canFly, int canRide, int &bonus);
@@ -246,7 +247,7 @@ class Unit : std::enable_shared_from_this<Unit>
         Items readyItem;
         Items readyWeapon[MAX_READY];
         Items readyArmor[MAX_READY];
-        std::list<AString::Handle> oldorders;
+        PtrList<AString> oldorders;
         int needed; /* For assessing maintenance */
         int hunger;
         int stomach_space;
@@ -262,30 +263,30 @@ class Unit : std::enable_shared_from_this<Unit>
         int destroy;
         int enter;
         int build;
-        UnitId *promote;
-        AList findorders;
-        AList giveorders;
-        AList withdraworders;
-        AList bankorders;
-        AList buyorders;
-        AList sellorders;
-        AList forgetorders;
-        CastOrder *castorders;
-        TeleportOrder *teleportorders;
+        UnitId::Handle promote;
+        PtrList<FindOrder> findorders;
+        PtrList<GiveOrder> giveorders;
+        PtrList<WithdrawOrder> withdraworders;
+        PtrList<BankOrder> bankorders;
+        PtrList<BuyOrder> buyorders;
+        PtrList<SellOrder> sellorders;
+        PtrList<ForgetOrder> forgetorders;
+        std::shared_ptr<CastOrder> castorders;
+        std::shared_ptr<TeleportOrder> teleportorders;
         std::shared_ptr<Order> stealorders;
         std::shared_ptr<Order> monthorders;
-        AttackOrder *attackorders;
-        EvictOrder *evictorders;
+        std::shared_ptr<AttackOrder> attackorders;
+        std::shared_ptr<EvictOrder> evictorders;
         std::weak_ptr<ARegion> advancefrom;
 
-        AList exchangeorders;
-        std::list<std::shared_ptr<TurnOrder>> turnorders;
+        PtrList<ExchangeOrder> exchangeorders;
+        PtrList<TurnOrder> turnorders;
         int inTurnBlock;
-        Order *presentMonthOrders;
+        std::shared_ptr<Order> presentMonthOrders;
         int presentTaxing;
-        AList transportorders;
-        Order *joinorders;
-        Unit *former;
+        PtrList<TransportOrder> transportorders;
+        std::shared_ptr<Order> joinorders;
+        Unit::Handle former;
         int format;
 
         // Used for tracking VISIT quests
@@ -293,6 +294,6 @@ class Unit : std::enable_shared_from_this<Unit>
         size_t raised;
 };
 
-Unit::WeakHandle GetUnitList(const std::list<Unit::WeakHandle>&, const Unit::Handle&);
+Unit::WeakHandle GetUnitList(const WeakPtrList<Unit>&, const Unit::Handle&);
 
 #endif

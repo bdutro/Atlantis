@@ -537,7 +537,7 @@ void Soldier::Dead()
     unit_sp->SetMen(race,unit_sp->GetMen(race) - 1);
 }
 
-size_t Army::BuildArmy_(const std::list<Location::Handle>& locs, int regtype, int ass)
+size_t Army::BuildArmy_(const PtrList<Location>& locs, int regtype, int ass)
 {
     size_t x = 0;
     size_t y = count;
@@ -585,7 +585,7 @@ size_t Army::BuildArmy_(const std::list<Location::Handle>& locs, int regtype, in
     return x;
 }
 
-Army::Army(const Unit::Handle& ldr, const std::list<Location::Handle>& locs, int regtype, int ass)
+Army::Army(const Unit::Handle& ldr, const PtrList<Location>& locs, int regtype, int ass)
 {
     int tacspell = 0;
     Unit::Handle tactician = ldr;
@@ -649,7 +649,7 @@ void Army::WriteLosses(Battle& b) {
     b.AddLine(*(leader.lock()->name) + " loses " + (count - NumAlive()) + ".");
 
     if (notbehind != count) {
-        std::list<Unit::WeakHandle> units;
+        WeakPtrList<Unit> units;
         for (size_t i = notbehind; i<count; i++) {
             const auto& u_w = soldiers[i]->unit;
             const auto up = u_w.lock();
@@ -876,7 +876,7 @@ void Army::Win(Battle& b, const ItemList& spoils)
     if (count - na) wintype = WIN_DEAD;
     else wintype = WIN_NO_DEAD;
 
-    std::list<Unit::WeakHandle> units;
+    WeakPtrList<Unit> units;
 
     for (size_t x = 0; x < count; x++) {
         const auto& s = soldiers[x];

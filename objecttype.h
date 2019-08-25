@@ -117,6 +117,11 @@ class Objects : public ValidEnum<_ObjectTypes, _ObjectTypes::NOBJECTS>
         {
         }
 
+        Objects(ssize_t type) :
+            ValidEnum(static_cast<size_t>(type))
+        {
+        }
+
         Objects(int type) :
             ValidEnum(type)
         {

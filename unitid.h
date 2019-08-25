@@ -1,15 +1,19 @@
 #ifndef UNITID_CLASS
 #define UNITID_CLASS
 
+#include <memory>
+#include "validvalue.h"
 #include "astring.h"
 
 class UnitId {
     public:
+        using Handle = std::shared_ptr<UnitId>;
+
         UnitId();
         ~UnitId();
         AString Print();
 
-        size_t unitnum; /* if 0, it is a new unit */
+        ValidValue<size_t> unitnum; /* if 0, it is a new unit */
         int alias;
         size_t faction;
 

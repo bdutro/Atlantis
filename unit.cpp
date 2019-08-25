@@ -48,7 +48,7 @@ AString UnitId::Print()
     }
 }
 
-Unit::WeakHandle GetUnitList(const std::list<Unit::WeakHandle>& list, const Unit::Handle& u)
+Unit::WeakHandle GetUnitList(const WeakPtrList<Unit>& list, const Unit::Handle& u)
 {
     for(const auto& p: list) {
         if (p.lock() == u) return p;
@@ -208,7 +208,7 @@ void Unit::Writeout(Aoutfile *s)
     }
 }
 
-void Unit::Readin(Ainfile *s, const std::list<Faction::Handle>& facs, ATL_VER)
+void Unit::Readin(Ainfile *s, const PtrList<Faction>& facs, ATL_VER)
 {
     name = s->GetStr();
     describe = s->GetStr();
@@ -2295,7 +2295,7 @@ void Unit::MoveUnit(const std::weak_ptr<Object>& toobj)
     if (!object.expired()) object.lock()->units.Remove(shared_from_this());
     object = toobj;
     if (!object.expired()) {
-        object->units.Add(shared_from_this());
+        object.lock()->units.Add(shared_from_this());
     }
 }
 

@@ -133,6 +133,21 @@ bool AString::operator==(const AString &s) const
     return isEqual(s.str);
 }
 
+bool AString::operator!=(char *s) const
+{
+    return !isEqual(s);
+}
+
+bool AString::operator!=(const char *s) const
+{
+    return !isEqual(s);
+}
+
+bool AString::operator!=(const AString &s) const
+{
+    return !isEqual(s.str);
+}
+
 bool AString::isEqual(const char *temp2) const
 {
     char *temp1 = str;

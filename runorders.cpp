@@ -271,9 +271,9 @@ void Game::RunStealOrders()
     }
 }
 
-std::list<Faction::WeakHandle> Game::CanSeeSteal(const ARegion::Handle& r, const Unit::Handle& u)
+WeakPtrList<Faction> Game::CanSeeSteal(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    std::list<Faction::WeakHandle> retval;
+    WeakPtrList<Faction> retval;
     for(const auto& f: factions) {
         if (r->Present(f)) {
             if (f->CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) {

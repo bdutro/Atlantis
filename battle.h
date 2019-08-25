@@ -60,9 +60,9 @@ class Battle
 
         int Run(const std::shared_ptr<ARegion>&,
                 const std::shared_ptr<Unit>&,
-                const std::list<std::shared_ptr<Location>>&,
+                const PtrList<Location>&,
                 const std::shared_ptr<Unit>&,
-                const std::list<std::shared_ptr<Location>>&,
+                const PtrList<Location>&,
                 int ass,
                 const ARegionList& pRegs);
         void FreeRound(const std::shared_ptr<Army>&, const std::shared_ptr<Army>&, int ass = 0);
@@ -74,7 +74,7 @@ class Battle
                       bool behind,
                       int ass = 0);
 
-        void GetSpoils(const std::list<std::shared_ptr<Location>>&, ItemList&, int);
+        void GetSpoils(const PtrList<Location>&, ItemList&, int);
 
         //
         // These functions should be implemented in specials.cpp
@@ -89,15 +89,15 @@ class Battle
         void WriteSides(const std::shared_ptr<ARegion>&,
                         const std::shared_ptr<Unit>&,
                         const std::shared_ptr<Unit>&,
-                        const std::list<std::shared_ptr<Location>>&,
-                        const std::list<std::shared_ptr<Location>>&,
+                        const PtrList<Location>&,
+                        const PtrList<Location>&,
                         int,
                         const ARegionList& pRegs);
 
         int assassination;
         std::weak_ptr<Faction> attacker; /* Only matters in the case of an assassination */
         AString * asstext;
-        std::list<std::unique_ptr<AString>> text;
+        UniquePtrList<AString> text;
 };
 
 #endif

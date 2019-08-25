@@ -2496,7 +2496,7 @@ bool ARegion::CanBeStartingCity(const ARegionArray &)
     if (town && town->pop == 5000) return false;
 
     int regs = 0;
-    std::list<ARegion::WeakHandle> inlist, donelist;
+    WeakPtrList<ARegion> inlist, donelist;
     inlist.push_back(weak_from_this());
 
     while(!inlist.empty()) {

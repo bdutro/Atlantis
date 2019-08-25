@@ -41,6 +41,7 @@ class ARegionArray;
 #include <array>
 #include <memory>
 
+#include "ptrlist.h"
 #include "gamedataarray.h"
 #include "gamedefs.h"
 #include "gameio.h"
@@ -119,7 +120,7 @@ class Location
         std::weak_ptr<ARegion> region;
 };
 
-Location::WeakHandle GetUnit(const std::list<Location::Handle>&, size_t);
+Location::WeakHandle GetUnit(const PtrList<Location>&, size_t);
 
 const std::string& AGetNameString(size_t name);
 
@@ -140,7 +141,7 @@ class Farsight
         ExitArray exits_used;
 };
 
-Farsight::WeakHandle GetFarsight(const std::list<Farsight::Handle>&, const Faction&);
+Farsight::WeakHandle GetFarsight(const PtrList<Farsight>&, const Faction&);
 
 enum class TownTypeEnum {
     TOWN_VILLAGE = 0,
@@ -186,7 +187,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void SetName(const std::string&);
 
         void Writeout(Aoutfile *);
-        void Readin(Ainfile *, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
+        void Readin(Ainfile *, const PtrList<Faction>&, ATL_VER v);
 
         bool CanMakeAdv(const Faction&, const Items&);
         bool HasItem(const Faction&, const Items&);
@@ -215,7 +216,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         void SetLoc(unsigned int, unsigned int, unsigned int);
         bool Present(const Faction&);
-        std::list<std::weak_ptr<Faction>> PresentFactions();
+        WeakPtrList<Faction> PresentFactions();
         int GetObservation(const Faction&, bool);
         size_t GetTrueSight(const Faction&, bool);
 
@@ -273,7 +274,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void Migrate();
         void SetTownType(TownTypeEnum);
         TownTypeEnum DetermineTownSize();
-        int TraceConnectedRoad(const Directions&, int, std::list<std::weak_ptr<ARegion>>&, int, int);
+        int TraceConnectedRoad(const Directions&, int, WeakPtrList<ARegion>&, int, int);
         int RoadDevelopmentBonus(int, int);
         int BaseDev();
         int ProdDev();
@@ -325,7 +326,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int vegetation;
         int culture;
         // migration origins
-        std::list<ARegion::WeakHandle> migfrom;
+        WeakPtrList<ARegion> migfrom;
         // mid-way migration development
         int migdev;
         int immigrants;
@@ -377,13 +378,13 @@ class ARegion : std::enable_shared_from_this<ARegion>
         };
         
         NeighborArray neighbors;
-        std::list<std::shared_ptr<Object>> objects;
+        PtrList<Object> objects;
         std::map<int,int> newfleets;
         int fleetalias;
-        std::list<std::shared_ptr<Unit>> hell; /* Where dead units go */
-        std::list<Farsight::Handle> farsees;
+        PtrList<Unit> hell; /* Where dead units go */
+        PtrList<Farsight> farsees;
         // List of units which passed through the region
-        std::list<Farsight::Handle> passers;
+        PtrList<Farsight> passers;
         ProductionList products;
         MarketList markets;
         unsigned int xloc, yloc, zloc;
@@ -417,7 +418,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
 size_t AGetName(int town, const ARegion::Handle& r);
 
-ARegion::WeakHandle GetRegion(const std::list<ARegion::WeakHandle>&, size_t);
+ARegion::WeakHandle GetRegion(const WeakPtrList<ARegion>&, size_t);
 
 class ARegionArray
 {
@@ -486,13 +487,16 @@ class GeoMap
 
 class ARegionList
 {
+    private:
+        using list_type = PtrList<ARegion>;
+
     public:
         ARegionList();
         ~ARegionList() = default;
 
         ARegion::WeakHandle GetRegion(size_t);
         ARegion::WeakHandle GetRegion(unsigned int, unsigned int, unsigned int);
-        bool ReadRegions(Ainfile *f, const std::list<std::shared_ptr<Faction>>&, ATL_VER v);
+        bool ReadRegions(Ainfile *f, const PtrList<Faction>&, ATL_VER v);
         void WriteRegions(Aoutfile *f);
         Location::Handle FindUnit(size_t);
         Location::Handle GetUnitId(const UnitId& id, size_t faction, const ARegion& cur);
@@ -506,8 +510,8 @@ class ARegionList
 
         const ARegionArray::Handle& GetRegionArray(size_t level);
 
-        using iterator = std::list<ARegion::Handle>::iterator;
-        using const_iterator = std::list<ARegion::Handle>::const_iterator;
+        using iterator = list_type::iterator;
+        using const_iterator = list_type::const_iterator;
         const ARegion::Handle& front() const { return regions_.front(); }
         iterator begin() { return regions_.begin(); }
         iterator end() { return regions_.end(); }
@@ -593,7 +597,7 @@ class ARegionList
         //
         Regions GetRegType(const ARegion::Handle& pReg);
         int CheckRegionExit(const ARegion::Handle& pFrom, const ARegion::Handle& pTo);
-        std::list<ARegion::Handle> regions_;
+        list_type regions_;
 };
 
 template<typename T>

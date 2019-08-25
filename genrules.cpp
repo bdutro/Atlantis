@@ -5241,7 +5241,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             "better to rename a village, a fort or better to rename a town "
             "and a castle or mystic fortress to rename a city. ";
         if (Globals->CITY_RENAME_COST) {
-            int c=Globals->CITY_RENAME_COST;
+            unsigned int c=Globals->CITY_RENAME_COST;
             temp += AString("It also costs $") + c + " to rename a village, $";
             temp += AString(2*c) + " to rename a town, and $";
             temp += AString(3*c) + " to rename a city.";

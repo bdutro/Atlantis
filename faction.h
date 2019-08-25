@@ -161,7 +161,7 @@ public:
     int type[NFACTYPES];
 
     int lastchange;
-    int lastorders;
+    size_t lastorders;
     size_t unclaimed;
     int bankaccount;
     int interest; // not written to game.out
@@ -179,14 +179,14 @@ public:
     int numapprentices;
     int numqms;
     int numtacts;
-    std::list<std::weak_ptr<ARegion>> war_regions;
-    std::list<std::weak_ptr<ARegion>> trade_regions;
+    WeakPtrList<ARegion> war_regions;
+    WeakPtrList<ARegion> trade_regions;
 
     /* Used when writing reports */
-    std::list<std::weak_ptr<ARegion>> present_regions;
+    WeakPtrList<ARegion> present_regions;
     
     int defaultattitude;
-    std::list<Attitude::Handle> attitudes;
+    PtrList<Attitude> attitudes;
     SkillList skills;
     ItemList items;
     
@@ -196,8 +196,8 @@ public:
     AList extraPlayers;
     AList errors;
     AList events;
-    std::list<std::weak_ptr<Battle>> battles;
-    std::list<ShowSkill::Handle> shows;
+    WeakPtrList<Battle> battles;
+    PtrList<ShowSkill> shows;
     AList itemshows;
     AList objectshows;
 
@@ -231,7 +231,7 @@ public:
     size_t vectorsize;
 };
     
-Faction::Handle GetFaction(const std::list<Faction::Handle>&, size_t);
-Faction::WeakHandle GetFaction2(const std::list<Faction::WeakHandle>&, size_t); /*This AList is a list of FactionPtr*/
+Faction::Handle GetFaction(const PtrList<Faction>&, size_t);
+Faction::WeakHandle GetFaction2(const WeakPtrList<Faction>&, size_t); /*This AList is a list of FactionPtr*/
 
 #endif

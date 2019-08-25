@@ -27,6 +27,8 @@
 
 #include <memory>
 #include <list>
+
+#include "ptrlist.h"
 #include "gamedefs.h"
 #include "alist.h"
 #include "fileio.h"
@@ -57,9 +59,12 @@ public:
 };
 
 class ProductionList {
+private:
+    using list_type = PtrList<Production>;
+
 public:
-    using iterator = std::list<Production::Handle>::iterator;
-    using const_iterator = std::list<Production::Handle>::const_iterator;
+    using iterator = list_type::iterator;
+    using const_iterator = list_type::const_iterator;
 
     Production::WeakHandle GetProd(const Items&, const Skills&); /* item type, skill */
     void AddProd(Production *);
@@ -80,7 +85,7 @@ public:
 
 private:
     iterator GetProd_(const Items&, const Skills&); /* item type, skill */
-    std::list<Production::Handle> products_;
+    list_type products_;
 };
 
 #endif

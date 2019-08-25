@@ -38,7 +38,7 @@
 void Game::RunMovementOrders()
 {
     int error;
-    std::list<Location::Handle> locs;
+    PtrList<Location> locs;
     AString order;
 
     for (size_t phase = 0; phase < Globals->MAX_SPEED; ++phase) {
@@ -204,7 +204,7 @@ void Game::RunMovementOrders()
 Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& fleet, const Unit::Handle& cap)
 {
     const auto o = std::dynamic_pointer_cast<SailOrder>(cap->monthorders);
-    std::list<Faction::WeakHandle> facs;
+    WeakPtrList<Faction> facs;
 
     fleet->movepoints += fleet->GetFleetSpeed(0);
     bool stop = false;
