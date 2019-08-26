@@ -31,50 +31,38 @@ QuestList quests;
 
 Quest::Quest()
 {
-    type = -1;
+    type.invalidate();
     target = -1;
-    objective.type = -1;
+    objective.type.invalidate();
     objective.num = 0;
-    building = -1;
+    building.invalidate();
     regionnum = -1;
     regionname = "-";
 }
 
-Quest::~Quest()
-{
-    Item *i;
-
-    forlist(&rewards) {
-        i = (Item *) elem;
-        rewards.Remove(i);
-        delete i;
-    }
-}
-
 int QuestList::ReadQuests(Ainfile *f)
 {
-        int count, dests, rewards;
-    Quest *quest;
     AString *name;
-    Item *item;
 
-    quests.DeleteAll();
+    quests.clear();
 
-        count = f->GetInt();
+    int count = f->GetInt<int>();
     if (count < 0)
+    {
         return 0;
+    }
     while (count-- > 0) {
-        quest = new Quest();
-        quest->type = f->GetInt();
-        switch (quest->type) {
-            case Quest::SLAY:
-                quest->target = f->GetInt();
+        Quest::Handle quest = std::make_shared<Quest>();
+        quest->type = f->GetInt<Quests>();
+        switch (quest->type.asEnum()) {
+            case Quests::Types::SLAY:
+                quest->target = f->GetInt<int>();
                 break;
-            case Quest::HARVEST:
+            case Quests::Types::HARVEST:
                 quest->objective.Readin(f);
-                quest->regionnum = f->GetInt();
+                quest->regionnum = f->GetInt<int>();
                 break;
-            case Quest::BUILD:
+            case Quests::Types::BUILD:
                 name = f->GetStr();
                 quest->building = LookupObject(name);
                 delete name;
@@ -82,78 +70,81 @@ int QuestList::ReadQuests(Ainfile *f)
                 quest->regionname = *name;
                 delete name;
                 break;
-            case Quest::VISIT:
+            case Quests::Types::VISIT:
+            {
                 name = f->GetStr();
                 quest->building = LookupObject(name);
                 delete name;
-                dests = f->GetInt();
+                int dests = f->GetInt<int>();
                 while (dests-- > 0) {
                     name = f->GetStr();
                     quest->destinations.insert(name->Str());
                 }
                 break;
-            case Quest::DEMOLISH:
-                quest->target = f->GetInt();
-                quest->regionnum = f->GetInt();
+            }
+            case Quests::Types::DEMOLISH:
+                quest->target = f->GetInt<int>();
+                quest->regionnum = f->GetInt<int>();
                 break;
             default:
-                quest->target = f->GetInt();
+            {
+                quest->target = f->GetInt<int>();
                 quest->objective.Readin(f);
                 name = f->GetStr();
                 quest->building = LookupObject(name);
                 delete name;
-                quest->regionnum = f->GetInt();
+                quest->regionnum = f->GetInt<int>();
                 name = f->GetStr();
                 quest->regionname = *name;
                 delete name;
-                dests = f->GetInt();
+                int dests = f->GetInt<int>();
                 while (dests-- > 0) {
                     name = f->GetStr();
                     quest->destinations.insert(name->Str());
                 }
                 break;
+            }
         }
-        rewards = f->GetInt();
+        int rewards = f->GetInt<int>();
         while (rewards-- > 0) {
-            item = new Item();
+            Item::Handle item = std::make_shared<Item>();
             item->Readin(f);
-            if (-1 == item->type)
+            if (!item->type.isValid())
+            {
                 return 0;
-            quest->rewards.Add(item);
+            }
+            quest->rewards.push_back(item);
         }
-        quests.Add(quest);
+        quests.push_back(quest);
     }
 
-        return 1;
+    return 1;
 }
 
 void QuestList::WriteQuests(Aoutfile *f)
 {
-    Quest *q;
-    Item *i;
-    set<string>::iterator it;
+    std::set<std::string>::iterator it;
 
-        f->PutInt(quests.Num());
-    forlist(this) {
-        q = (Quest *) elem;
+    f->PutInt(quests.size());
+    for(const auto& q: *this) {
         f->PutInt(q->type);
-        switch(q->type) {
-            case Quest::SLAY:
+        switch(q->type.asEnum()) {
+            case Quests::Types::SLAY:
                 f->PutInt(q->target);
                 break;
-            case Quest::HARVEST:
+            case Quests::Types::HARVEST:
                 q->objective.Writeout(f);
                 f->PutInt(q->regionnum);
                 break;
-            case Quest::BUILD:
-                if (q->building != -1)
+            case Quests::Types::BUILD:
+                if (q->building.isValid())
                     f->PutStr(ObjectDefs[q->building].name);
                 else
                     f->PutStr("NO_OBJECT");
                 f->PutStr(q->regionname);
                 break;
-            case Quest::VISIT:
-                if (q->building != -1)
+            case Quests::Types::VISIT:
+                if (q->building.isValid())
                 {
                     f->PutStr(ObjectDefs[q->building].name);
                 }
@@ -168,14 +159,14 @@ void QuestList::WriteQuests(Aoutfile *f)
                     f->PutStr(it->c_str());
                 }
                 break;
-            case Quest::DEMOLISH:
+            case Quests::Types::DEMOLISH:
                 f->PutInt(q->target);
                 f->PutInt(q->regionnum);
                 break;
             default:
                 f->PutInt(q->target);
                 q->objective.Writeout(f);
-                if (q->building != -1)
+                if (q->building.isValid())
                     f->PutStr(ObjectDefs[q->building].name);
                 else
                     f->PutStr("NO_OBJECT");
@@ -189,60 +180,52 @@ void QuestList::WriteQuests(Aoutfile *f)
                 }
                 break;
         }
-        f->PutInt(q->rewards.Num());
-        forlist(&q->rewards) {
-            i = (Item *) elem;
+        f->PutInt(q->rewards.size());
+        for(const auto& i: q->rewards) {
             i->Writeout(f);
         }
     }
 
     f->PutInt(0);
 
-        return;
+    return;
 }
 
-int QuestList::CheckQuestKillTarget(Unit * u, ItemList *reward)
+bool QuestList::CheckQuestKillTarget(const Unit::Handle& u, ItemList& reward)
 {
-    Quest *q;
-    Item *i;
-
-    forlist(this) {
-        q = (Quest *) elem;
-        if (q->type == Quest::SLAY && q->target == u->num) {
+    for(auto it = begin(); it != end(); ++it) {
+        const auto& q = *it;
+        if (q->type == Quests::Types::SLAY && q->target == static_cast<int>(u->num)) {
             // This dead thing was the target of a quest!
-            forlist (&q->rewards) {
-                i = (Item *) elem;
-                reward->SetNum(i->type, reward->GetNum(i->type) + i->num);
+            for(const auto& i: q->rewards) {
+                reward.SetNum(i->type, reward.GetNum(i->type) + i->num);
             }
-            this->Remove(q);
-            delete q;
-            return 1;
+            quests_.erase(it);
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
-bool QuestList::CheckQuestHarvestTarget(ARegion *r,
-        int item, int harvested, int max,
-        Unit *u)
+bool QuestList::CheckQuestHarvestTarget(const ARegion::Handle& r,
+                                        const Items& item,
+                                        int harvested,
+                                        int max,
+                                        const Unit::Handle& u)
 {
-    Quest *q;
-    Item *i;
-
-    forlist(this) {
-        q = (Quest *) elem;
-        if (q->type == Quest::HARVEST &&
-                q->regionnum == r->num &&
+    for(auto it = begin(); it != end(); ++it) {
+        const auto& q = *it;
+        if (q->type == Quests::Types::HARVEST &&
+                q->regionnum == static_cast<int>(r->num) &&
                 q->objective.type == item) {
             if (getrandom(max) < harvested) {
-                forlist (&q->rewards) {
-                    i = (Item *) elem;
+                const auto u_fac = u->faction.lock();
+                for(const auto& i: q->rewards) {
                     u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
-                    u->faction->DiscoverItem(i->type, 0, 1);
+                    u_fac->DiscoverItem(i->type, 0, 1);
                 }
-                this->Remove(q);
-                delete q;
+                quests_.erase(it);
                 return true;
             }
         }
@@ -251,47 +234,38 @@ bool QuestList::CheckQuestHarvestTarget(ARegion *r,
     return false;
 }
 
-int QuestList::CheckQuestBuildTarget(ARegion *r, int building,
-        Unit *u)
+bool QuestList::CheckQuestBuildTarget(const ARegion::Handle& r, const Objects& building, const Unit::Handle& u)
 {
-    Quest *q;
-    Item *i;
-
-    forlist(this) {
-        q = (Quest *) elem;
-        if (q->type == Quest::BUILD &&
+    for(auto it = begin(); it != end(); ++it) {
+        const auto& q = *it;
+        if (q->type == Quests::Types::BUILD &&
                 q->building == building &&
                 q->regionname == *r->name) {
-            forlist (&q->rewards) {
-                i = (Item *) elem;
+            const auto u_fac = u->faction.lock();
+            for(const auto& i: q->rewards) {
                 u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
-                u->faction->DiscoverItem(i->type, 0, 1);
+                u_fac->DiscoverItem(i->type, 0, 1);
             }
-            this->Remove(q);
-            delete q;
-            return 1;
+            quests_.erase(it);
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
-int QuestList::CheckQuestVisitTarget(ARegion *r, Unit *u)
+bool QuestList::CheckQuestVisitTarget(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    Quest *q;
-    Object *o;
-    Item *i;
-    set<string> intersection;
-    set<string>::iterator it;
+    std::set<std::string> intersection;
+    std::set<std::string>::iterator it;
 
-    forlist(this) {
-        q = (Quest *) elem;
-        if (q->type != Quest::VISIT)
+    for(auto it = begin(); it != end(); ++it) {
+        const auto& q = *it;
+        if (q->type != Quests::Types::VISIT)
             continue;
         if (!q->destinations.count(r->name->Str()))
             continue;
-        forlist(&r->objects) {
-            o = (Object *) elem;
+        for(const auto& o: r->objects) {
             if (o->type == q->building) {
                 u->visited.insert(r->name->Str());
                 intersection.clear();
@@ -302,50 +276,44 @@ int QuestList::CheckQuestVisitTarget(ARegion *r, Unit *u)
                     u->visited.end(),
                     inserter(intersection,
                         intersection.begin()),
-                    less<string>()
+                    std::less<std::string>()
                 );
                 if (intersection.size() == q->destinations.size()) {
                     // This unit has visited the
                     // required buildings in all those
                     // regions, so they win
-                    forlist (&q->rewards) {
-                        i = (Item *) elem;
+                    const auto u_fac = u->faction.lock();
+                    for(const auto& i: q->rewards) {
                         u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
-                        u->faction->DiscoverItem(i->type, 0, 1);
+                        u_fac->DiscoverItem(i->type, 0, 1);
                     }
-                    this->Remove(q);
-                    delete q;
-                    return 1;
+                    quests_.erase(it);
+                    return true;
                 }
             }
         }
     }
 
-    return 0;
+    return false;
 }
 
-int QuestList::CheckQuestDemolishTarget(ARegion *r, int building,
-        Unit *u)
+bool QuestList::CheckQuestDemolishTarget(const ARegion::Handle& r, const Objects& building, const Unit::Handle& u)
 {
-    Quest *q;
-    Item *i;
-
-    forlist(this) {
-        q = (Quest *) elem;
-        if (q->type == Quest::DEMOLISH &&
-                q->regionnum == r->num &&
-                q->target == building) {
-            forlist (&q->rewards) {
-                i = (Item *) elem;
+    for(auto it = begin(); it != end(); ++it) {
+        const auto& q = *it;
+        if (q->type == Quests::Types::DEMOLISH &&
+                q->regionnum == static_cast<int>(r->num) &&
+                q->target == static_cast<int>(building)) {
+            const auto u_fac = u->faction.lock();
+            for (const auto& i: q->rewards) {
                 u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
-                u->faction->DiscoverItem(i->type, 0, 1);
+                u_fac->DiscoverItem(i->type, 0, 1);
             }
-            this->Remove(q);
-            delete q;
-            return 1;
+            quests_.erase(it);
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
