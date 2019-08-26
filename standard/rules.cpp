@@ -37,9 +37,9 @@ const std::vector<unsigned int> allowedMages = { 0, 1, 2, 3, 5, 7 };
 
 const std::vector<unsigned int> allowedApprentices = { 0, 2, 4, 6, 10, 14 };
 
-const std::vector<unsigned int> allowedTaxes = { 0, 10, 24, 40, 60, 100 };
+const std::vector<int> allowedTaxes = { 0, 10, 24, 40, 60, 100 };
 
-const std::vector<unsigned int> allowedTrades = { 0, 10, 24, 40, 60, 100 };
+const std::vector<int> allowedTrades = { 0, 10, 24, 40, 60, 100 };
 
 const std::vector<unsigned int> allowedQuartermasters = { 0, 2, 4, 8, 12, 20 };
 

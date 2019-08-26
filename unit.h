@@ -186,7 +186,7 @@ class Unit : std::enable_shared_from_this<Unit>
         /* Return 1 if can see, 2 if can see faction */
         bool CanSee(const ARegion&, const Unit::Handle&, int practice = 0);
         bool CanCatch(const ARegion&, const Unit::Handle&);
-        int AmtsPreventCrime(Unit *);
+        int AmtsPreventCrime(const Unit::Handle&);
         int GetAttitude(const ARegion&, const Unit::Handle&); /* Get this unit's attitude toward
                                               the Unit parameter */
         int Hostile();

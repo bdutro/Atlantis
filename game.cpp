@@ -1483,22 +1483,6 @@ size_t Game::CountApprentices(const Faction::Handle& pFac)
     return i;
 }
 
-unsigned int Game::getAllowedPoints(int p, const std::vector<unsigned int>& allowed)
-{
-    if(p < 0)
-    {
-        return allowed.front();
-    }
-
-    size_t points = static_cast<size_t>(p);
-    if(points >= allowed.size())
-    {
-        return allowed.back();
-    }
-
-    return allowed[points];
-}
-
 unsigned int Game::AllowedMages(const Faction& pFac)
 {
     return getAllowedPoints(pFac.type[F_MAGIC], allowedMages);
@@ -1519,12 +1503,12 @@ unsigned int Game::AllowedApprentices(const Faction& pFac)
     return getAllowedPoints(pFac.type[F_MAGIC], allowedApprentices);
 }
 
-unsigned int Game::AllowedTaxes(const Faction& pFac)
+int Game::AllowedTaxes(const Faction& pFac)
 {
     return getAllowedPoints(pFac.type[F_WAR], allowedTaxes);
 }
 
-unsigned int Game::AllowedTrades(const Faction& pFac)
+int Game::AllowedTrades(const Faction& pFac)
 {
     return getAllowedPoints(pFac.type[F_TRADE], allowedTrades);
 }

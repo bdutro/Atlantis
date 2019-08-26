@@ -117,12 +117,9 @@ void Game::RunOrders()
 
 void Game::ClearCastEffects()
 {
-    forlist(&regions) {
-        ARegion *r = (ARegion *) elem;
-        forlist(&r->objects) {
-            Object *o = (Object *) elem;
-            forlist(&o->units) {
-                Unit *u = (Unit *) elem;
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(const auto& u: o->units) {
                 u->SetFlag(FLAG_INVIS, 0);
             }
         }
@@ -131,16 +128,12 @@ void Game::ClearCastEffects()
 
 void Game::RunCastOrders()
 {
-    forlist(&regions) {
-        ARegion *r = (ARegion *) elem;
-        forlist(&r->objects) {
-            Object *o = (Object *) elem;
-            forlist(&o->units) {
-                Unit *u = (Unit *) elem;
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(const auto& u: o->units) {
                 if (u->castorders) {
                     RunACastOrder(r, o, u);
-                    delete u->castorders;
-                    u->castorders = 0;
+                    u->castorders.reset();
                 }
             }
         }
@@ -165,106 +158,98 @@ int Game::CountMages(Faction *pFac)
 }
 */
 
-int Game::TaxCheck(ARegion *pReg, Faction *pFac)
+bool Game::TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac)
 {
     if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
-        if (AllowedTaxes(pFac) == -1) {
+        const int allowed_taxes = AllowedTaxes(*pFac);
+        if (allowed_taxes == -1) {
             //
             // No limit.
             //
-            return(1);
+            return true;
         }
 
-        forlist(&(pFac->war_regions)) {
-            ARegion *x = ((ARegionPtr *) elem)->ptr;
-            if (x == pReg) {
+        for(const auto& x: pFac->war_regions) {
+            if (x.lock() == pReg) {
                 //
                 // This faction already performed a tax action in this
                 // region.
                 //
-                return 1;
+                return true;
             }
         }
-        if (pFac->war_regions.Num() >= AllowedTaxes(pFac)) {
+        if (static_cast<int>(pFac->war_regions.size()) >= allowed_taxes) {
             //
             // Can't tax here.
             //
-            return 0;
+            return false;
         } else {
             //
             // Add this region to the faction's tax list.
             //
-            ARegionPtr *y = new ARegionPtr;
-            y->ptr = pReg;
-            pFac->war_regions.Add(y);
-            return 1;
+            pFac->war_regions.emplace_back(pReg);
+            return true;
         }
     } else {
         //
         // No limit on taxing regions in this game.
         //
-        return(1);
+        return true;
     }
 }
 
-int Game::TradeCheck(ARegion *pReg, Faction *pFac)
+bool Game::TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac)
 {
     if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
-        if (AllowedTrades(pFac) == -1) {
+        const int allowed_trades = AllowedTrades(*pFac);
+        if (allowed_trades == -1) {
             //
             // No limit on trading on this faction.
             //
-            return(1);
+            return true;
         }
 
-        forlist(&(pFac->trade_regions)) {
-            ARegion *x = ((ARegionPtr *) elem)->ptr;
-            if (x == pReg) {
+        for(const auto& x: pFac->trade_regions) {
+            if (x.lock() == pReg) {
                 //
                 // This faction has already performed a trade action in this
                 // region.
                 //
-                return 1;
+                return true;
             }
         }
-        if (pFac->trade_regions.Num() >= AllowedTrades(pFac)) {
+        if (static_cast<int>(pFac->trade_regions.size()) >= allowed_trades) {
             //
             // This faction is over its trade limit.
             //
-            return 0;
+            return false;
         } else {
             //
             // Add this region to the faction's trade list, and return 1.
             //
-            ARegionPtr *y = new ARegionPtr;
-            y->ptr = pReg;
-            pFac->trade_regions.Add(y);
-            return 1;
+            pFac->trade_regions.emplace_back(pReg);
+            return true;
         }
     } else {
         //
         // No limit on trade in this game.
         //
-        return(1);
+        return true;
     }
 }
 
 void Game::RunStealOrders()
 {
-    forlist(&regions) {
-        ARegion *r = (ARegion *) elem;
-        forlist(&r->objects) {
-            Object *o = (Object *) elem;
-            forlist_safe(&o->units) {
-                Unit *u = (Unit *) elem;
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(const auto& u: o->units) {
                 if (u->stealorders) {
-                    if (u->stealorders->type == O_STEAL) {
+                    if (u->stealorders->type == Orders::Types::O_STEAL) {
                         Do1Steal(r, o, u);
-                    } else if (u->stealorders->type == O_ASSASSINATE) {
+                    } else if (u->stealorders->type == Orders::Types::O_ASSASSINATE) {
                         Do1Assassinate(r, o, u);
                     }
-                    delete u->stealorders;
-                    u->stealorders = 0;
+                    u->stealorders.reset();
                 }
             }
         }
@@ -275,7 +260,7 @@ WeakPtrList<Faction> Game::CanSeeSteal(const ARegion::Handle& r, const Unit::Han
 {
     WeakPtrList<Faction> retval;
     for(const auto& f: factions) {
-        if (r->Present(f)) {
+        if (r->Present(*f)) {
             if (f->CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) {
                 retval.push_back(f);
             }
@@ -284,22 +269,24 @@ WeakPtrList<Faction> Game::CanSeeSteal(const ARegion::Handle& r, const Unit::Han
     return retval;
 }
 
-void Game::Do1Assassinate(ARegion *r, Object *, Unit *u)
+void Game::Do1Assassinate(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    AssassinateOrder *so = (AssassinateOrder *) u->stealorders;
-    Unit *tar = r->GetUnitId(so->target, u->faction->num);
+    const auto so = std::dynamic_pointer_cast<AssassinateOrder>(u->stealorders);
+    const auto tar_w = r->GetUnitId(so->target, u->faction.lock()->num);
 
-    if (!tar) {
+    if (tar_w.expired()) {
         u->Error("ASSASSINATE: Invalid unit given.");
         return;
     }
+
+    const auto tar = tar_w.lock();
     if (!tar->IsAlive()) {
         u->Error("ASSASSINATE: Invalid unit given.");
         return;
     }
 
     // New rule -- You can only assassinate someone you can see
-    if (!u->CanSee(r, tar)) {
+    if (!u->CanSee(*r, tar)) {
         u->Error("ASSASSINATE: Invalid unit given.");
         return;
     }
@@ -316,15 +303,17 @@ void Game::Do1Assassinate(ARegion *r, Object *, Unit *u)
         return;
     }
 
-    AList *seers = CanSeeSteal(r, u);
+    const WeakPtrList<Faction> seers = CanSeeSteal(r, u);
     int succ = 1;
-    forlist(seers) {
-        Faction *f = ((FactionPtr *) elem)->ptr;
-        if (f == tar->faction) {
+    const auto tar_fac = tar->faction.lock();
+
+    for(const auto& f_w: seers) {
+        const auto f = f_w.lock();
+        if (f == tar_fac) {
             succ = 0;
             break;
         }
-        if (f->GetAttitude(tar->faction->num) == A_ALLY) {
+        if (f->GetAttitude(tar_fac->num) == A_ALLY) {
             succ = 0;
             break;
         }
@@ -336,9 +325,8 @@ void Game::Do1Assassinate(ARegion *r, Object *, Unit *u)
     if (!succ) {
         AString temp = *(u->name) + " is caught attempting to assassinate " +
             *(tar->name) + " in " + *(r->name) + ".";
-        forlist(seers) {
-            Faction *f = ((FactionPtr *) elem)->ptr;
-            f->Event(temp);
+        for(const auto& f: seers) {
+            f.lock()->Event(temp);
         }
         // One learns from one's mistakes.  Surviving them is another matter!
         u->PracticeAttribute("stealth");
@@ -346,7 +334,7 @@ void Game::Do1Assassinate(ARegion *r, Object *, Unit *u)
     }
 
     int ass = 1;
-    if (u->items.GetNum(I_RINGOFI)) {
+    if (u->items.GetNum(Items::Types::I_RINGOFI)) {
         ass = 2; // Check if assassin has a ring.
         // New rule: if a target has an amulet of true seeing they
         // cannot be assassinated by someone with a ring of invisibility
@@ -361,10 +349,10 @@ void Game::Do1Assassinate(ARegion *r, Object *, Unit *u)
     RunBattle(r, u, tar, ass);
 }
 
-void Game::Do1Steal(ARegion *r, Object *, Unit *u)
+void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    StealOrder *so = (StealOrder *) u->stealorders;
-    Unit *tar = r->GetUnitId(so->target, u->faction->num);
+    const auto so = std::dynamic_pointer_cast<StealOrder>(u->stealorders);
+    const auto tar_w = r->GetUnitId(so->target, u->faction.lock()->num);
 
     if (!tar) {
         u->Error("STEAL: Invalid unit given.");

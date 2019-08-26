@@ -589,8 +589,8 @@ int Game::GenRules(const AString &rules, const AString &css,
         unsigned int nm = AllowedMages(fac);
         unsigned int na = AllowedApprentices(fac);
         unsigned int nq = AllowedQuarterMasters(fac);
-        unsigned int nt = AllowedTrades(fac);
-        unsigned int nw = AllowedTaxes(fac);
+        int nt = AllowedTrades(fac);
+        int nw = AllowedTaxes(fac);
         temp = "For example, a well rounded faction might spend ";
         temp += AString(w) + " point" + (w==1?"":"s") + " on War, ";
         temp += AString(t) + " point" + (t==1?"":"s") + " on Trade, and ";

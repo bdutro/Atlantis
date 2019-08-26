@@ -129,8 +129,8 @@ extern const SeasonStringArray SeasonNames;
 
 extern const std::vector<unsigned int> allowedMages;
 extern const std::vector<unsigned int> allowedApprentices;
-extern const std::vector<unsigned int> allowedTaxes;
-extern const std::vector<unsigned int> allowedTrades;
+extern const std::vector<int> allowedTaxes;
+extern const std::vector<int> allowedTrades;
 extern const std::vector<unsigned int> allowedQuartermasters;
 extern const std::vector<unsigned int> allowedTacticians;
 

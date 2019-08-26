@@ -427,15 +427,31 @@ private:
     // The first 4 are game specific and can be found in extra.cpp. They
     // may return -1 to indicate no limit.
     //
-    static unsigned int getAllowedPoints(int p, const std::vector<unsigned int>& allowed);
+    template<typename T>
+    T getAllowedPoints(int p, const std::vector<T>& allowed) const
+    {
+        if(p < 0)
+        {
+            return allowed.front();
+        }
+
+        size_t points = static_cast<size_t>(p);
+        if(points >= allowed.size())
+        {
+            return allowed.back();
+        }
+    
+        return allowed[points];
+    }
+
     unsigned int AllowedMages(const Faction& pFac);
     unsigned int AllowedApprentices(const Faction& pFact);
     unsigned int AllowedQuarterMasters(const Faction& pFact);
     unsigned int AllowedTacticians(const Faction& pFact);
-    unsigned int AllowedTaxes(const Faction& pFac);
-    unsigned int AllowedTrades(const Faction& pFac);
-    int TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
-    int TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
+    int AllowedTaxes(const Faction& pFac);
+    int AllowedTrades(const Faction& pFac);
+    bool TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
+    bool TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
 
     //
     // The DoGiveOrder returns 0 normally, or 1 if no more GIVE orders
