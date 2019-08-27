@@ -49,10 +49,10 @@ void Battle::FreeRound(const Army::Handle& att, const Army::Handle& def, int ass
     AddLine(*(att->leader.lock()->name) + " gets a free round of attacks.");
 
     /* Update both army's shields */
-    att->shields.DeleteAll();
+    att->shields.clear();
     UpdateShields(att);
 
-    def->shields.DeleteAll();
+    def->shields.clear();
     UpdateShields(def);
 
     //

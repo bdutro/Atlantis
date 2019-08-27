@@ -1188,7 +1188,6 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
 {
     /* 1. Check against Global effects (not sure how yet) */
     /* 2. Attack shield */
-    Shield *hi;
     int combat = 0;
     int canShield = 0;
     switch(attackType) {
@@ -1209,8 +1208,8 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
     if (canShield) {
         int shieldType = attackType;
 
-        hi = shields.GetHighShield(shieldType);
-        if (hi) {
+        const auto hi = shields.GetHighShield(shieldType);
+        if (hi != shields.end()) {
             /* Check if we get through shield */
             if (!Hits(attackLevel, hi->shieldskill)) {
                 return -1;
@@ -1218,8 +1217,7 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
 
             if (effect != NULL && !combat) {
                 /* We got through shield... if killing spell, destroy shield */
-                shields.Remove(hi);
-                delete hi;
+                shields.erase(hi);
             }
         }
     }

@@ -25,17 +25,63 @@
 #ifndef SHIELD_CLASS
 #define SHIELD_CLASS
 
-#include "alist.h"
+#include <list>
 
-class Shield : public AListElem {
-public:
-    int shieldtype;
-    int shieldskill;
+class Shield {
+    public:
+        int shieldtype;
+        int shieldskill;
 };
 
-class ShieldList : public AList {
-public:
-    Shield * GetHighShield(int);
+class ShieldList {
+    private:
+        using list_type = std::list<Shield>;
+        list_type shields_;
+
+    public:
+        using iterator = list_type::iterator;
+        using const_iterator = list_type::const_iterator;
+        const_iterator GetHighShield(int) const;
+
+        iterator begin()
+        {
+            return shields_.begin();
+        }
+
+        iterator end()
+        {
+            return shields_.end();
+        }
+
+        const_iterator begin() const
+        {
+            return shields_.begin();
+        }
+
+        const_iterator end() const
+        {
+            return shields_.end();
+        }
+
+        const_iterator cbegin() const
+        {
+            return shields_.cbegin();
+        }
+        
+        const_iterator cend() const
+        {
+            return shields_.cend();
+        }
+
+        void erase(const_iterator it)
+        {
+            shields_.erase(it);
+        }
+
+        void clear()
+        {
+            shields_.clear();
+        }
 };
 
 #endif /* SHIELD_CLASS */

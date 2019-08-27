@@ -24,17 +24,18 @@
 // END A3HEADER
 #include "shields.h"
 
-Shield * ShieldList::GetHighShield(int type)
+ShieldList::const_iterator ShieldList::GetHighShield(int type) const
 {
-    Shield * hi = 0;
-    forlist(this) {
-        Shield * sh = (Shield *) elem;
-        if (sh->shieldtype == type) {
-            if (!hi) {
-                hi = sh;
+    const_iterator hi = shields_.end();
+    for(const_iterator it = shields_.begin(); it != shields_.end(); ++it) {
+        if (it->shieldtype == type) {
+            if (hi == shields_.end()) {
+                hi = it;
             } else {
-                if (sh->shieldskill > hi->shieldskill)
-                    hi = sh;
+                if (it->shieldskill > hi->shieldskill)
+                {
+                    hi = it;
+                }
             }
         }
     }
