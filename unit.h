@@ -145,9 +145,8 @@ class Unit : std::enable_shared_from_this<Unit>
         size_t GetSoldiers();
         size_t GetMen(const Items&);
         void SetMen(const Items&, size_t);
-        int GetMoney();
+        unsigned int GetMoney();
         void SetMoney(size_t);
-        void SetMoney(int);
         size_t GetSharedNum(const Items&);
         void ConsumeShared(const Items&, size_t);
         int GetSharedMoney();

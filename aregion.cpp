@@ -2803,3 +2803,15 @@ Regions ParseTerrain(AString *token)
     return Regions();
 }
 
+void ARegion::RemoveObject(const Object::Handle& o)
+{
+    for(auto it = objects.begin(); it != objects.end(); ++it)
+    {
+        const auto& obj = *it;
+        if(obj == o)
+        {
+            objects.erase(it);
+            return;
+        }
+    }
+}

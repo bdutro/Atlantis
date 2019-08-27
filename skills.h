@@ -151,7 +151,7 @@ class Skill {
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
 
-        Skill * Split(int,int); /* total num, num leaving */
+        Skill Split(size_t, int); /* total num, num leaving */
 
         Skills type;
         unsigned int days;
@@ -160,19 +160,53 @@ class Skill {
 
 class SkillList {
     private:
-        std::list<Skill> skills_;
+        using list_type = std::list<Skill>;
+        list_type skills_;
 
     public:
+        using iterator = list_type::iterator;
+        using const_iterator = list_type::const_iterator;
+
         size_t GetDays(const Skills&); /* Skill */
         int GetExp(const Skills&); /* Skill */
         void SetDays(const Skills&,size_t); /* Skill, days */
         void SetExp(const Skills&,int); /* Skill, exp */
-        void Combine(SkillList *);
+        void Combine(const SkillList&);
         size_t GetStudyRate(const Skills&, size_t); /* Skill, num of men */
-        SkillList Split(int,int); /* total men, num to split */
+        SkillList Split(size_t, int); /* total men, num to split */
         AString Report(int); /* Number of men */
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
+
+        iterator begin()
+        {
+            return skills_.begin();
+        }
+
+        iterator end()
+        {
+            return skills_.end();
+        }
+
+        const_iterator begin() const
+        {
+            return skills_.begin();
+        }
+
+        const_iterator end() const
+        {
+            return skills_.end();
+        }
+
+        const_iterator cbegin() const
+        {
+            return skills_.cbegin();
+        }
+
+        const_iterator cend() const
+        {
+            return skills_.cend();
+        }
 
         bool empty() const
         {

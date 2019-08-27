@@ -419,7 +419,9 @@ private:
     void WriteTimesArticle(AString);
 
     void DoExchangeOrders();
-    void DoExchangeOrder(const ARegion::Handle&, const Unit::Handle&, ExchangeOrder *);
+    void DoExchangeOrder(const ARegion::Handle&,
+                         const Unit::Handle&,
+                         const ExchangeOrder::Handle&);
 
     //
     // Faction limit functions.
@@ -457,12 +459,14 @@ private:
     // The DoGiveOrder returns 0 normally, or 1 if no more GIVE orders
     // should be allowed
     //
-    int DoGiveOrder(const ARegion::Handle&, const Unit::Handle&, GiveOrder *);
+    int DoGiveOrder(const ARegion::Handle&, const Unit::Handle&, GiveOrder&);
     //
     // The DoWithdrawOrder returns 0 normally, or 1 if no more WITHDRAW
     // orders should be allowed
     //
-    int DoWithdrawOrder(const ARegion::Handle&, const Unit::Handle&, WithdrawOrder *);
+    bool DoWithdrawOrder(const ARegion::Handle&,
+                         const Unit::Handle&,
+                         const WithdrawOrder::Handle&);
 
     //
     // These are game specific, and can be found in extra.cpp
@@ -490,16 +494,16 @@ private:
     void GrowWMons(int);
     void GrowLMons(int);
     void GrowVMons();
-    void PostProcessUnit(ARegion *, Unit *);
-    void MidProcessUnit(ARegion *, Unit *);
+    void PostProcessUnit(const ARegion::Handle&, const Unit::Handle&);
+    void MidProcessUnit(const ARegion::Handle&, const Unit::Handle&);
 
     //
     // Mid and PostProcessUnitExtra can be used to provide game-specific
     // unit processing at the approrpriate times.
     //
-    void MidProcessUnitExtra(ARegion *, Unit *);
+    void MidProcessUnitExtra(const ARegion::Handle&, const Unit::Handle&);
     void MidProcessTurn();
-    void PostProcessUnitExtra(ARegion *, Unit *);
+    void PostProcessUnitExtra(const ARegion::Handle&, const Unit::Handle&);
     void PostProcessTurn();
     
     // Migration effects for alternate player-driven economy
@@ -510,54 +514,58 @@ private:
     void Equilibrate();
 
     // Handle escaped monster check
-    void MonsterCheck(ARegion *r, Unit *u);
+    void MonsterCheck(const ARegion::Handle& r, const Unit::Handle& u);
 
     //
     // CheckVictory is used to see if the game is over.
     //
     Faction::WeakHandle CheckVictory();
 
-    void EndGame(Faction *pVictor);
+    void EndGame(const Faction::Handle& pVictor);
 
     void RunBuyOrders();
-    void DoBuy(ARegion *, Market *);
-    int GetBuyAmount(ARegion *, Market *);
+    void DoBuy(const ARegion::Handle&, const Market::Handle&);
+    int GetBuyAmount(const ARegion::Handle&, const Market::Handle&);
     void RunSellOrders();
-    void DoSell(ARegion *, Market *);
-    int GetSellAmount(ARegion *, Market *);
+    void DoSell(const ARegion::Handle&, const Market::Handle&);
+    int GetSellAmount(const ARegion::Handle&, const Market::Handle&);
     void DoAttackOrders();
-    void CheckWMonAttack(ARegion *, Unit *);
-    Unit *GetWMonTar(ARegion *, int, Unit *);
-    int CountWMonTars(ARegion *, Unit *);
-    void AttemptAttack(ARegion *, Unit *, Unit *, int, int=0);
+    void CheckWMonAttack(const ARegion::Handle&, const Unit::Handle&);
+    Unit::WeakHandle GetWMonTar(const ARegion::Handle&, int, const Unit::Handle&);
+    size_t CountWMonTars(const ARegion::Handle&, const Unit::Handle&);
+    void AttemptAttack(const ARegion::Handle&,
+                       const Unit::Handle&,
+                       const Unit::Handle&,
+                       int,
+                       int=0);
     void DoAutoAttacks();
-    void DoAdvanceAttack(ARegion *, Unit *);
-    void DoAutoAttack(ARegion *, Unit *);
+    void DoAdvanceAttack(const ARegion::Handle&, const Unit::Handle&);
+    void DoAutoAttack(const ARegion::Handle&, const Unit::Handle&);
     void DoMovementAttacks(const PtrList<Location>&);
-    void DoMovementAttack(ARegion *, Unit *);
-    void DoAutoAttackOn(ARegion *, Unit *);
+    void DoMovementAttack(const ARegion::Handle&, const Unit::Handle&);
+    void DoAutoAttackOn(const ARegion::Handle&, const Unit::Handle&);
     void RemoveEmptyObjects();
     void RunEnterOrders(int);
-    void Do1EnterOrder(ARegion *, Object *, Unit *);
-    void Do1JoinOrder(ARegion *, Object *, Unit *);
+    void Do1EnterOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
+    void Do1JoinOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void RunPromoteOrders();
-    void Do1PromoteOrder(Object *, Unit *);
-    void Do1EvictOrder(Object *, Unit *);
+    void Do1PromoteOrder(const Object::Handle&, const Unit::Handle&);
+    void Do1EvictOrder(const Object::Handle&, const Unit::Handle&);
     void RunPillageOrders();
-    int CountPillagers(ARegion *);
-    void ClearPillagers(ARegion *);
-    void RunPillageRegion(ARegion *);
+    int CountPillagers(const ARegion::Handle&);
+    void ClearPillagers(const ARegion::Handle&);
+    void RunPillageRegion(const ARegion::Handle&);
     void RunTaxOrders();
-    void RunTaxRegion(ARegion *);
-    int FortTaxBonus(Object *, Unit *);
-    int CountTaxes(ARegion *);
+    void RunTaxRegion(const ARegion::Handle&);
+    int FortTaxBonus(const Object::Handle&, const Unit::Handle&);
+    int CountTaxes(const ARegion::Handle&);
     void RunFindOrders();
-    void RunFindUnit(Unit *);
+    void RunFindUnit(const Unit::Handle&);
     void RunDestroyOrders();
-    void Do1Destroy(ARegion *, Object *, Unit *);
+    void Do1Destroy(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
     void RunQuitOrders();
     void RunForgetOrders();
-    void Do1Quit(Faction *);
+    void Do1Quit(const Faction::Handle&);
     void SinkUncrewedFleets();
     void DrownUnits();
     void RunStealOrders();

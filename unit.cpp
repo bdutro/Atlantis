@@ -34,7 +34,7 @@ UnitId::~UnitId()
 {
 }
 
-AString UnitId::Print()
+AString UnitId::Print() const
 {
     if (unitnum) {
         return AString(unitnum);
@@ -890,15 +890,10 @@ size_t Unit::GetSoldiers()
 
 void Unit::SetMoney(size_t n)
 {
-    SetMoney(static_cast<int>(n));
-}
-
-void Unit::SetMoney(int n)
-{
     items.SetNum(I_SILVER, n);
 }
 
-int Unit::GetMoney()
+unsigned int Unit::GetMoney()
 {
     return items.GetNum(I_SILVER);
 }

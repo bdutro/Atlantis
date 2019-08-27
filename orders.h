@@ -126,7 +126,7 @@ class GiveOrder : public Order {
         int unfinished;
         int merge;
 
-        UnitId target;
+        ValidValue<UnitId> target;
 };
 
 class StudyOrder : public Order {
@@ -378,5 +378,18 @@ class JoinOrder : public Order {
         int overload;
         int merge;
 };
+
+template<typename T>
+typename std::enable_if<std::is_base_of<Order, T>::value>::type RemoveOrder(PtrList<T>& orders, const std::shared_ptr<T>& o)
+{
+    for(auto it = orders.begin(); it != orders.end(); ++it)
+    {
+        if(*it == o)
+        {
+            orders.erase(it);
+            return;
+        }
+    }
+}
 
 #endif

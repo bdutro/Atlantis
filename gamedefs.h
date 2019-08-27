@@ -670,7 +670,7 @@ public:
 
     // Options on using food for upkeep
     // Note that all these values are in silver equivalents!
-    int UPKEEP_MINIMUM_FOOD;
+    unsigned int UPKEEP_MINIMUM_FOOD;
     // MAXIMUM_FOOD is the maximum contribution of food to upkeep
     // per man, and therefore CAN be lower than MINIMUM_FOOD
     // (although this seems a silly thing to do).
@@ -717,14 +717,14 @@ public:
     int TRANSPORT;
 
     // Base hexes for local transport and distribute (0 to disable)
-    int LOCAL_TRANSPORT;
+    unsigned int LOCAL_TRANSPORT;
 
     // Base hexes for long range transport and distribute (-1 to disable)
     // (0 to allow instant transport between structures anywhere in world)
     int NONLOCAL_TRANSPORT;
 
     // Base cost per weight unit to ship items.
-    int SHIPPING_COST;
+    unsigned int SHIPPING_COST;
 
     // Will 0 weight items have a fractional weight so that large
     // quantities actually have some heft?

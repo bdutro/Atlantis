@@ -1278,7 +1278,7 @@ void Game::ProcessClaimOrder(const Unit::Handle& u, AString *o, const OrdersChec
             value = static_cast<int>(u_fac->unclaimed);
         }
         u_fac->unclaimed -= static_cast<size_t>(value);
-        u->SetMoney(u->GetMoney() + value);
+        u->SetMoney(u->GetMoney() + static_cast<size_t>(value));
         u_fac->DiscoverItem(Items::Types::I_SILVER, 0, 1);
         u->Event(AString("Claims $") + value + ".");
     }

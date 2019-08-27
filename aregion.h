@@ -298,6 +298,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int calculateWagesWithRatio(float ratio, int multiplier = Market::DEFAULT_WAGE_MULTIPLIER);
         AString WagesForReport();
         int Population();
+        void RemoveObject(const std::shared_ptr<Object>&);
 
 
         AString *name;

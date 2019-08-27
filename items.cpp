@@ -220,6 +220,16 @@ Items ParseTransportableItem(AString *token)
     return r;
 }
 
+AString ItemString(const Items& type, size_t num, int flags)
+{
+    return ItemString(type, static_cast<int>(num), flags);
+}
+
+AString ItemString(const Items& type, unsigned int num, int flags)
+{
+    return ItemString(type, static_cast<int>(num), flags);
+}
+
 AString ItemString(const Items& type, int num, int flags)
 {
     AString temp;

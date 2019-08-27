@@ -359,6 +359,8 @@ enum {
     FULLNUM = 0x01,
     ALWAYSPLURAL = 0x02
 };
+extern AString ItemString(const Items& type, size_t num, int flags=0);
+extern AString ItemString(const Items& type, unsigned int num, int flags=0);
 extern AString ItemString(const Items& type, int num, int flags=0);
 extern AString *ItemDescription(const Items& item, int full);
 

@@ -276,14 +276,14 @@ void Skill::Writeout(Aoutfile *f)
     f->PutStr(temp);
 }
 
-Skill *Skill::Split(int total, int leave)
+Skill Skill::Split(size_t total, int leave)
 {
-    Skill *temp = new Skill;
-    temp->type = type;
-    temp->days = (days * leave) / total;
-    days = days - temp->days;
-    temp->exp = (exp * leave) / total;
-    exp = exp - temp->exp;
+    Skill temp;
+    temp.type = type;
+    temp.days = (days * leave) / total;
+    days = days - temp.days;
+    temp.exp = (exp * leave) / total;
+    exp = exp - temp.exp;
     return temp;
 }
 
@@ -349,25 +349,29 @@ void SkillList::SetExp(int skill, int exp)
     Add(s);
 }
 
-SkillList *SkillList::Split(int total, int leave)
+SkillList SkillList::Split(size_t total, int leave)
 {
-    SkillList *ret = new SkillList;
-    forlist (this) {
-        Skill *s = (Skill *) elem;
-        Skill *n = s->Split(total, leave);
-        if ((s->days == 0) && (s->exp == 0)) {
-            Remove(s);
-            delete s;
+    SkillList ret;
+    auto it = skills_.begin();
+    while(it != skills_.end()) {
+        const auto& s = *it;
+        Skill n = s->Split(total, leave);
+        ret.push_back(n);
+        if ((s->days == 0) && (s->exp == 0))
+        {
+            it = skills_.erase(it);
         }
-        ret->Add(n);
+        else
+        {
+            ++it;
+        }
     }
     return ret;
 }
 
-void SkillList::Combine(SkillList *b)
+void SkillList::Combine(const SkillList& b)
 {
-    forlist(b) {
-        Skill *s = (Skill *) elem;
+    for(const auto& s: b) {
         SetDays(s->type, GetDays(s->type) + s->days);
         SetExp(s->type, GetExp(s->type) + s->exp);
     }

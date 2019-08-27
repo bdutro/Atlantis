@@ -900,3 +900,16 @@ AString *ObjectDescription(const Objects& obj)
 
     return temp;
 }
+
+void Object::RemoveUnit(const Unit::Handle& u)
+{
+    for(auto it = units.begin(); it != units.end(); ++it)
+    {
+        const auto& unit = *it;
+        if(unit == u)
+        {
+            units.erase(it);
+            return;
+        }
+    }
+}

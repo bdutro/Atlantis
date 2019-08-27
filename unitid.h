@@ -11,7 +11,7 @@ class UnitId {
 
         UnitId();
         ~UnitId();
-        AString Print();
+        AString Print() const;
 
         ValidValue<size_t> unitnum; /* if 0, it is a new unit */
         int alias;

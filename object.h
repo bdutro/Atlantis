@@ -131,7 +131,8 @@ class Object : public std::enable_shared_from_this<Object>
         int FleetSailingSkill(int);
         size_t GetFleetSize();
         unsigned int GetFleetSpeed(int);
-        
+        void RemoveUnit(const std::shared_ptr<Unit>&);
+
         AString *name;
         AString *describe;
         std::weak_ptr<ARegion> region;

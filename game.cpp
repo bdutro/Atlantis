@@ -1528,17 +1528,17 @@ int Game::UpgradePatchLevel(ATL_VER)
     return 1;
 }
 
-void Game::MidProcessUnitExtra(ARegion *r, Unit *u)
+void Game::MidProcessUnitExtra(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (Globals->CHECK_MONSTER_CONTROL_MID_TURN) MonsterCheck(r, u);
 }
 
-void Game::PostProcessUnitExtra(ARegion *r, Unit *u)
+void Game::PostProcessUnitExtra(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (!Globals->CHECK_MONSTER_CONTROL_MID_TURN) MonsterCheck(r, u);
 }
 
-void Game::MonsterCheck(ARegion *r, Unit *u)
+void Game::MonsterCheck(const ARegion::Handle& r, const Unit::Handle& u)
 {
     AString tmp;
     int linked = 0;
@@ -1807,7 +1807,7 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         u->SetMen(Items::Types::I_LEADERS,num);
         u->items.SetNum(Items::Types::I_SWORD,num);
         if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,num);
-        u->SetMoney(static_cast<int>(num * Globals->GUARD_MONEY));
+        u->SetMoney(num * Globals->GUARD_MONEY);
         u->SetSkill(Skills::Types::S_COMBAT, skilllevel);
         u->SetName(s);
         u->type = U_GUARD;
