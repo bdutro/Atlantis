@@ -238,7 +238,7 @@ public:
     // Are taxing and pillaging month-long actions?
     int TAX_PILLAGE_MONTH_LONG;
 
-    int HEALS_PER_MAN;
+    unsigned int HEALS_PER_MAN;
 
     int GUARD_REGEN; /* percent */
     size_t CITY_GUARD;

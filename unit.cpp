@@ -1018,7 +1018,7 @@ int Unit::GetDefenseRiding()
     return riding;
 }
 
-int Unit::GetSkill(const Skills& sk)
+unsigned int Unit::GetSkill(const Skills& sk)
 {
     if (sk == S_TACTICS) return GetAttribute("tactics");
     if (sk == S_STEALTH) return GetAttribute("stealth");
@@ -1034,7 +1034,7 @@ void Unit::SetSkill(const Skills& sk, int level)
     skills.SetExp(sk, 0);
 }
 
-int Unit::GetAvailSkill(const Skills& sk)
+unsigned int Unit::GetAvailSkill(const Skills& sk)
 {
     AString str;
     int retval = GetRealSkill(sk);
@@ -1089,7 +1089,7 @@ int Unit::GetAvailSkill(const Skills& sk)
     return retval;
 }
 
-size_t Unit::GetRealSkill(const Skills& sk)
+unsigned int Unit::GetRealSkill(const Skills& sk)
 {
     if (GetMen()) {
         return GetLevelByDays(skills.GetDays(sk)/GetMen());

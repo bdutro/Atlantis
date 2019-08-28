@@ -1540,7 +1540,7 @@ void Game::ModifyRangeLevelPenalty(char const *range, int pen)
 }
 
 void Game::ModifyAttribMod(char const *mod, int index, int flags, char const *ident,
-        int type, int val)
+        int type, unsigned int val)
 {
     if (!ident)
     {

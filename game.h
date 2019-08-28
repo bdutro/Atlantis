@@ -287,7 +287,7 @@ private:
     void ModifyRangeLevelPenalty(char const *range, int pen);
 
     void ModifyAttribMod(char const *mod, int index, int flags, char const *ident,
-            int type, int val);
+            int type, unsigned int val);
     void ModifyHealing(int level, int patients, int success);
 
     PtrList<Faction> factions;

@@ -1153,13 +1153,27 @@ template<typename T>
 bool Hits(T a, T d)
 {
     T tohit = 1,tomiss = 1;
-    if (a>d) {
+    if (a > d) {
         tohit = 1 << (a-d);
-    } else if (d>a) {
+    } else if (d > a) {
         tomiss = 1 << (d-a);
     }
     if (getrandom(tohit+tomiss) < tohit) return true;
     return false;
+}
+
+template<typename T, typename U>
+typename std::enable_if<std::is_signed<T>::value && !std::is_signed<U>::value, bool>::type
+Hits(T a, U b)
+{
+    return Hits(a, static_cast<T>(b));
+}
+
+template<typename T, typename U>
+typename std::enable_if<!std::is_signed<T>::value && std::is_signed<U>::value, bool>::type
+Hits(T a, U b)
+{
+    return Hits(static_cast<U>(a), b);
 }
 
 int Army::RemoveEffects(int num, char const *effect)

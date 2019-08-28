@@ -30,7 +30,7 @@
 class Shield {
     public:
         int shieldtype;
-        int shieldskill;
+        size_t shieldskill;
 };
 
 class ShieldList {
@@ -81,6 +81,12 @@ class ShieldList {
         void clear()
         {
             shields_.clear();
+        }
+
+        template<typename... Args>
+        Shield& emplace_back(Args&&... args)
+        {
+            return shields_.emplace_back(args...);
         }
 };
 

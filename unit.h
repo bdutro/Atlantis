@@ -170,11 +170,11 @@ class Unit : std::enable_shared_from_this<Unit>
         int PracticeAttribute(char const *ident);
         int GetProductionBonus(const Items&);
 
-        size_t GetSkill(const Skills&);
+        unsigned int GetSkill(const Skills&);
         void SetSkill(const Skills&, int);
         int GetSkillMax(const Skills&);
-        int GetAvailSkill(const Skills&);
-        size_t GetRealSkill(const Skills&);
+        unsigned int GetAvailSkill(const Skills&);
+        unsigned int GetRealSkill(const Skills&);
         void ForgetSkill(const Skills&);
         bool CheckDepend(int,SkillDepend &s);
         bool CanStudy(const Skills&);

@@ -76,7 +76,7 @@ class Soldier {
 
         /* Healing information */
         unsigned int healing;
-        int healtype;
+        unsigned int healtype;
         Items healitem;
         int canbehealed;
         int regen;

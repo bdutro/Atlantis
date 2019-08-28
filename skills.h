@@ -370,7 +370,7 @@ class AttribModItem {
         };
         int modtype;
 
-        int val;
+        unsigned int val;
 };
 
 class AttribModType {
