@@ -666,7 +666,7 @@ public:
     // this amount of experience less than current days of
     // study. Zero disables experience system. (50 is a
     // recommended value for enabling this feature)
-    int REQUIRED_EXPERIENCE;
+    unsigned int REQUIRED_EXPERIENCE;
 
     // Options on using food for upkeep
     // Note that all these values are in silver equivalents!

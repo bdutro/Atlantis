@@ -59,9 +59,9 @@ typename std::enable_if<std::is_integral<T>::value, AString>::type NumToWord(T n
     return AString("error");
 }
 
-size_t StudyRate(size_t days, int exp);
+size_t StudyRate(size_t days, size_t exp);
 
-size_t StudyRate(size_t days, int exp)
+size_t StudyRate(size_t days, size_t exp)
 {
     SkillList sl;
     sl.SetDays(1,days);

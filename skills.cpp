@@ -101,17 +101,20 @@ Skills LookupSkill(const AString& token)
     return Skills();
 }
 
-int ParseSkill(AString *token)
+Skills ParseSkill(AString *token)
 {
-    int r = -1;
-    for (int i=0; i<NSKILLS; i++) {
-        if ((*token == SkillDefs[i].name) || (*token == SkillDefs[i].abbr)) {
-            r = i;
+    Skills r;
+    for (auto i = Skills::begin(); i != Skills::end(); ++i) {
+        if ((*token == SkillDefs[*i].name) || (*token == SkillDefs[*i].abbr)) {
+            r = *i;
             break;
         }
     }
-    if (r != -1) {
-        if (SkillDefs[r].flags & SkillType::DISABLED) r = -1;
+    if (r.isValid()) {
+        if (SkillDefs[r].flags & SkillType::DISABLED)
+        {
+            r.invalidate();
+        }
     }
     return r;
 }
@@ -132,29 +135,41 @@ unsigned int SkillCost(const Skills& skill)
     return SkillDefs[skill].cost;
 }
 
-int SkillMax(char const *skill, int race)
+int SkillMax(char const *skill, const Items& race)
 {
-    ManType *mt = FindRace(ItemDefs[race].abr);
+    try
+    {
+        const ManType& mt = FindRace(ItemDefs[race].abr);
 
-    if (mt == NULL) return 0;
-
-    SkillType *pS = FindSkill(skill);
-    if (!Globals->MAGE_NONLEADERS) {
-        if (pS && (pS->flags & SkillType::MAGIC)) {
-            if (!(ItemDefs[race].type & IT_LEADER)) return(0);
+        const SkillType& pS = FindSkill(skill);
+        if (!Globals->MAGE_NONLEADERS) {
+            if (pS.flags & SkillType::MAGIC) {
+                if (!(ItemDefs[race].type & IT_LEADER))
+                {
+                    return 0;
+                }
+            }
         }
-    }
 
-    AString skname = pS->abbr;
-    AString mani = "MANI";
-    for (unsigned int c=0; c < sizeof(mt->skills)/sizeof(mt->skills[0]); c++) {
-        if (skname == mt->skills[c])
-            return mt->speciallevel;
-        // Allow MANI to act as a placeholder for all magical skills
-        if ((pS->flags & SkillType::MAGIC) && mani == mt->skills[c])
-            return mt->speciallevel;
+        const AString& skname = pS.abbr;
+        AString mani = "MANI";
+        for (const auto& c: mt.skills) {
+            if (skname == c)
+            {
+                return mt.speciallevel;
+            }
+            // Allow MANI to act as a placeholder for all magical skills
+            if ((pS.flags & SkillType::MAGIC) && mani == c)
+            {
+                return mt.speciallevel;
+            }
+        }
+        return mt.defaultlevel;
     }
-    return mt->defaultlevel;
+    catch(const NoSuchItemException&)
+    {
+        return 0;
+    }
 }
 
 size_t GetLevelByDays(size_t dayspermen)
@@ -169,11 +184,11 @@ size_t GetLevelByDays(size_t dayspermen)
     return i;
 }
 
-size_t GetDaysByLevel(int level)
+size_t GetDaysByLevel(size_t level)
 {
     size_t days = 0;
 
-    for (;level>0; level--) {
+    for (; level>0; level--) {
         days += level * 30;
     }
 
@@ -182,41 +197,44 @@ size_t GetDaysByLevel(int level)
 
 /* Returns the adjusted study rate,
  */
-size_t StudyRateAdjustment(int days, int exp)
+size_t StudyRateAdjustment(size_t days, size_t exp)
 {
     size_t rate = 30;
-    if (!Globals->REQUIRED_EXPERIENCE) return rate;
-    int slope = 62;
-    int inc = Globals->REQUIRED_EXPERIENCE * 10;
-    long int cdays = inc;
-    int prevd = 0;
-    int diff = days - exp;
+    if (!Globals->REQUIRED_EXPERIENCE)
+    {
+        return rate;
+    }
+    size_t slope = 62;
+    const unsigned int inc = Globals->REQUIRED_EXPERIENCE * 10;
+    size_t cdays = inc;
+    size_t prevd = 0;
+    ssize_t diff = static_cast<ssize_t>(days - exp);
     if (diff <= 0) {
-        rate += abs(diff) / 3;
-    } else     {
-        int level = 0;
-        long int ctr = 0;
-        while((((cdays + ctr) / slope + prevd) <= diff)
+        rate += static_cast<size_t>(abs(diff) / 3);
+    } else {
+        size_t level = 0;
+        size_t ctr = 0;
+        while((((cdays + ctr) / slope + prevd) <= static_cast<size_t>(diff))
             && (rate > 0)) {
             rate -= 1;
             if (rate <= 5) {
-                prevd += static_cast<int>(cdays / slope);
+                prevd += cdays / slope;
                 ctr += cdays;
                 cdays = 0;
                 slope = (slope * 2)/3;
             }
             cdays += inc;
-            int clevel = GetLevelByDays(static_cast<int>(cdays / slope));
-            if ((clevel > level)    && (rate > 5)) {
+            size_t clevel = GetLevelByDays(cdays / slope);
+            if ((clevel > level) && (rate > 5)) {
                 level = clevel;
                 switch(level) {
                     case 1: slope = 80;    
-                        prevd += static_cast<int>(cdays / slope);
+                        prevd += cdays / slope;
                         ctr += cdays;
                         cdays = 0;
                         break;
                     case 2: slope = 125;
-                        prevd += static_cast<int>(cdays / slope);
+                        prevd += cdays / slope;
                         ctr += cdays;
                         cdays = 0;
                         break;
@@ -239,28 +257,28 @@ void Skill::Readin(Ainfile *f)
 
     temp = f->GetStr();
     token = temp->gettoken();
-    type = LookupSkill(token);
+    type = LookupSkill(*token);
     delete token;
 
     token = temp->gettoken();
-    days = token->value();
+    days = static_cast<unsigned int>(token->value());
     delete token;
-    
+
     exp = 0;
     if (Globals->REQUIRED_EXPERIENCE) {
         token = temp->gettoken();
-        exp = token->value();
+        exp = static_cast<unsigned int>(token->value());
         delete token;
     }
-    
+
     delete temp;
 }
 
-void Skill::Writeout(Aoutfile *f)
+void Skill::Writeout(Aoutfile *f) const
 {
     AString temp;
 
-    if (type != -1) {
+    if (type.isValid()) {
         if (Globals->REQUIRED_EXPERIENCE) {
             temp = AString(SkillDefs[type].abbr) + " " + days + " " + exp;
         } else {
@@ -276,7 +294,7 @@ void Skill::Writeout(Aoutfile *f)
     f->PutStr(temp);
 }
 
-Skill Skill::Split(size_t total, int leave)
+Skill Skill::Split(size_t total, size_t leave)
 {
     Skill temp;
     temp.type = type;
@@ -289,75 +307,72 @@ Skill Skill::Split(size_t total, int leave)
 
 size_t SkillList::GetDays(const Skills& skill)
 {
-    forlist(this) {
-        Skill *s = (Skill *) elem;
-        if (s->type == skill) {
-            return s->days;
+    for(const auto& s: skills_) {
+        if (s.type == skill) {
+            return s.days;
         }
     }
     return 0;
 }
 
-void SkillList::SetDays(int skill, size_t days)
+void SkillList::SetDays(const Skills& skill, size_t days)
 {
-    forlist(this) {
-        Skill *s = (Skill *) elem;
-        if (s->type == skill) {
-            if ((days == 0) && (s->exp <= 0)) {
-                Remove(s);
-                delete s;
+    for(auto it = skills_.begin(); it != skills_.end(); ++it) {
+        auto& s = *it;
+        if (s.type == skill) {
+            if ((days == 0) && (s.exp <= 0)) {
+                skills_.erase(it);
                 return;
             } else {
-                s->days = days;
+                s.days = days;
                 return;
             }
         }
     }
     if (days == 0) return;
-    Skill *s = new Skill;
-    s->type = skill;
-    s->days = days;
-    s->exp = 0;
-    Add(s);
+    auto& s = skills_.emplace_back();
+    s.type = skill;
+    s.days = days;
+    s.exp = 0;
 }
 
-int SkillList::GetExp(int skill)
+size_t SkillList::GetExp(const Skills& skill)
 {
-    forlist(this) {
-        Skill *s = (Skill *) elem;
-        if (s->type == skill) {
-            return s->exp;
+    for(const auto& s: skills_) {
+        if (s.type == skill) {
+            return s.exp;
         }
     }
     return 0;
 }
 
-void SkillList::SetExp(int skill, int exp)
+void SkillList::SetExp(const Skills& skill, size_t exp)
 {
-    forlist(this) {
-        Skill *s = (Skill *) elem;
-        if (s->type == skill) {
-            s->exp = exp;
+    for(auto& s: skills_) {
+        if (s.type == skill) {
+            s.exp = exp;
             return;
         }
     }
-    if (exp == 0) return;
-    Skill *s = new Skill;
-    s->type = skill;
-    s->days = 0;
-    s->exp = exp;
-    Add(s);
+    if (exp == 0)
+    {
+        return;
+    }
+    auto& s = skills_.emplace_back();
+    s.type = skill;
+    s.days = 0;
+    s.exp = exp;
 }
 
-SkillList SkillList::Split(size_t total, int leave)
+SkillList SkillList::Split(size_t total, size_t leave)
 {
     SkillList ret;
     auto it = skills_.begin();
     while(it != skills_.end()) {
-        const auto& s = *it;
-        Skill n = s->Split(total, leave);
+        auto& s = *it;
+        Skill n = s.Split(total, leave);
         ret.push_back(n);
-        if ((s->days == 0) && (s->exp == 0))
+        if ((s.days == 0) && (s.exp == 0))
         {
             it = skills_.erase(it);
         }
@@ -372,8 +387,8 @@ SkillList SkillList::Split(size_t total, int leave)
 void SkillList::Combine(const SkillList& b)
 {
     for(const auto& s: b) {
-        SetDays(s->type, GetDays(s->type) + s->days);
-        SetExp(s->type, GetExp(s->type) + s->exp);
+        SetDays(s.type, GetDays(s.type) + s.days);
+        SetExp(s.type, GetExp(s.type) + s.exp);
     }
 }
 
@@ -382,15 +397,17 @@ void SkillList::Combine(const SkillList& b)
  */
 size_t SkillList::GetStudyRate(const Skills& skill, size_t nummen)
 {
-    int days = 0;
-    int exp = 0;
-    if (nummen < 1) return 0;
-    forlist(this) {
-        Skill *s = (Skill *) elem;
-        if (s->type == skill) {
-            days = s->days / nummen;
+    size_t days = 0;
+    size_t exp = 0;
+    if (nummen < 1)
+    {
+        return 0;
+    }
+    for(auto& s: skills_) {
+        if (s.type == skill) {
+            days = s.days / nummen;
             if (Globals->REQUIRED_EXPERIENCE)
-                exp = s->exp / nummen;
+                exp = s.exp / nummen;
         }
     }
     
@@ -409,29 +426,28 @@ size_t SkillList::GetStudyRate(const Skills& skill, size_t nummen)
     return rate;
 }
 
-AString SkillList::Report(int nummen)
+AString SkillList::Report(size_t nummen)
 {
     AString temp;
-    if (!Num()) {
+    if (skills_.empty()) {
         temp += "none";
         return temp;
     }
     int i = 0;
     int displayed = 0;
-    forlist (this) {
-        Skill *s = (Skill *) elem;
-        if (s->days == 0) continue;
+    for(const auto& s: skills_) {
+        if (s.days == 0) continue;
         displayed++;
         if (i) {
             temp += ", ";
         } else {
             i=1;
         }
-        temp += SkillStrs(s->type);
-        temp += AString(" ") + GetLevelByDays(s->days/nummen) +
-            AString(" (") + AString(s->days/nummen);
+        temp += SkillStrs(s.type);
+        temp += AString(" ") + GetLevelByDays(s.days / nummen) +
+            AString(" (") + AString(s.days/nummen);
         if (Globals->REQUIRED_EXPERIENCE) {
-            temp += AString("+") + AString(GetStudyRate(s->type, nummen));
+            temp += AString("+") + AString(GetStudyRate(s.type, nummen));
         }
         temp += AString(")");
     }
@@ -441,17 +457,24 @@ AString SkillList::Report(int nummen)
 
 void SkillList::Readin(Ainfile *f)
 {
-    int n = f->GetInt();
-    for (int i=0; i<n; i++) {
-        Skill *s = new Skill;
-        s->Readin(f);
-        if ((s->days == 0) && (s->exp==0)) delete s;
-        else Add(s);
+    const size_t n = f->GetInt<size_t>();
+    for (size_t i = 0; i < n; ++i) {
+        Skill s;
+        s.Readin(f);
+        if ((s.days == 0) && (s.exp==0))
+        {
+            continue;
+        }
+
+        skills_.push_back(s);
     }
 }
 
 void SkillList::Writeout(Aoutfile *f)
 {
-    f->PutInt(Num());
-    forlist(this) ((Skill *) elem)->Writeout(f);
+    f->PutInt(skills_.size());
+    for(const auto& s: skills_)
+    {
+        s.Writeout(f);
+    }
 }

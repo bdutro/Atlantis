@@ -128,10 +128,10 @@ class ShowType {
 extern GameDataArray<ShowType> ShowDefs;
 
 unsigned int SkillCost(const Skills&);
-int SkillMax(char const *,int); /* skill, race */
+int SkillMax(char const *, const Items&); /* skill, race */
 size_t GetLevelByDays(size_t);
-size_t GetDaysByLevel(int);
-size_t StudyRateAdjustment(int, int); /* days, exp */
+size_t GetDaysByLevel(size_t);
+size_t StudyRateAdjustment(size_t, size_t); /* days, exp */
 
 class ShowSkill {
     public:
@@ -149,13 +149,13 @@ class ShowSkill {
 class Skill {
     public:
         void Readin(Ainfile *);
-        void Writeout(Aoutfile *);
+        void Writeout(Aoutfile *) const;
 
-        Skill Split(size_t, int); /* total num, num leaving */
+        Skill Split(size_t, size_t); /* total num, num leaving */
 
         Skills type;
-        unsigned int days;
-        unsigned int exp;
+        size_t days;
+        size_t exp;
 };
 
 class SkillList {
@@ -168,13 +168,13 @@ class SkillList {
         using const_iterator = list_type::const_iterator;
 
         size_t GetDays(const Skills&); /* Skill */
-        int GetExp(const Skills&); /* Skill */
-        void SetDays(const Skills&,size_t); /* Skill, days */
-        void SetExp(const Skills&,int); /* Skill, exp */
+        size_t GetExp(const Skills&); /* Skill */
+        void SetDays(const Skills&, size_t); /* Skill, days */
+        void SetExp(const Skills&, size_t); /* Skill, exp */
         void Combine(const SkillList&);
         size_t GetStudyRate(const Skills&, size_t); /* Skill, num of men */
-        SkillList Split(size_t, int); /* total men, num to split */
-        AString Report(int); /* Number of men */
+        SkillList Split(size_t, size_t); /* total men, num to split */
+        AString Report(size_t); /* Number of men */
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
 
@@ -211,6 +211,16 @@ class SkillList {
         bool empty() const
         {
             return skills_.empty();
+        }
+
+        void push_back(const Skill& rhs)
+        {
+            skills_.push_back(rhs);
+        }
+
+        void push_back(Skill&& rhs)
+        {
+            skills_.push_back(rhs);
         }
 };
 

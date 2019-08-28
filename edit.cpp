@@ -1123,7 +1123,7 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
     do {
         bool exit = false;
         Awrite(AString("Unit skills: ") +
-                pUnit->skills.Report(static_cast<int>(pUnit->GetMen())));
+                pUnit->skills.Report(pUnit->GetMen()));
         Awrite("  [skill] [days] to update a skill.");
         Awrite("  q) Stop editing the skills.");
         AString *pStr = AGetString();

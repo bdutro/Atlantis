@@ -1670,7 +1670,7 @@ void Game::DoBuy(const ARegion::Handle& r, const Market::Handle& m)
                             const auto& mt = FindRace(ItemDefs[o->item].abr);
                             int exp = mt.speciallevel - mt.defaultlevel;
                             if (exp > 0) {
-                                exp = exp * temp * static_cast<int>(GetDaysByLevel(1));
+                                const size_t exp2 = static_cast<size_t>(exp * temp) * GetDaysByLevel(1);
                                 for (const auto& sname: mt.skills)
                                 {
                                     const auto skill = LookupSkill(sname);
@@ -1679,8 +1679,8 @@ void Game::DoBuy(const ARegion::Handle& r, const Market::Handle& m)
                                         ++it;
                                         continue;
                                     }
-                                    int curxp = u->skills.GetExp(skill);
-                                    u->skills.SetExp(skill, exp+curxp);
+                                    const size_t curxp = u->skills.GetExp(skill);
+                                    u->skills.SetExp(skill, exp2 + curxp);
                                 } 
                             }    
                         }
@@ -2924,7 +2924,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
 
         if (s->nomove) t->nomove = 1;
 
-        const auto skills = s->skills.Split(s->GetMen(), amt);
+        const auto skills = s->skills.Split(s->GetMen(), static_cast<size_t>(amt));
         t->skills.Combine(skills);
     }
 
