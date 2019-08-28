@@ -138,12 +138,13 @@ class ShowSkill {
         using Handle = std::shared_ptr<ShowSkill>;
         using WeakHandle = std::shared_ptr<ShowSkill>;
 
-        ShowSkill(int,int);
+        ShowSkill(const Skills&, unsigned int);
 
-        AString * Report(const Faction&);
+        // BD TODO: Make sure that this never gets called with a nullptr
+        AString * Report(Faction&);
 
-        int skill;
-        int level;
+        Skills skill;
+        unsigned int level;
 };
 
 class Skill {

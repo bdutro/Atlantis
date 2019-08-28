@@ -383,7 +383,7 @@ void Game::ModifyItemProductionInput(const Items& it, int i, const Items& input,
     pinput.amt = amount;
 }
 
-void Game::ModifyItemMagicSkill(const Items& it, char *sk, int lev)
+void Game::ModifyItemMagicSkill(const Items& it, char *sk, size_t lev)
 {
     if (!it.isValid())
     {

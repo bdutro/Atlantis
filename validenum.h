@@ -26,8 +26,8 @@ class ValidEnum : public ValidValue<size_t>
 
             public:
                 using value_type = ValidEnum;
-                using pointer = ValidEnum*;
-                using reference = ValidEnum&;
+                using pointer = const ValidEnum*;
+                using reference = ValidEnum;
                 using iterator_category = std::bidirectional_iterator_tag;
                 using difference_type = ptrdiff_t;
 
@@ -82,7 +82,8 @@ class ValidEnum : public ValidValue<size_t>
                     return ValidEnum(it_);
                 }
         };
-
+        
+        using reverse_iterator = std::reverse_iterator<iterator>;
         using ValidValue<size_t>::operator=;
         using ValidValue<size_t>::operator size_t;
 
@@ -142,6 +143,16 @@ class ValidEnum : public ValidValue<size_t>
         static constexpr iterator end()
         {
             return size();
+        }
+
+        static constexpr reverse_iterator rbegin()
+        {
+            return reverse_iterator(end());
+        }
+
+        static constexpr reverse_iterator rend()
+        {
+            return reverse_iterator(begin());
         }
 
         Types asEnum() const

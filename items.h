@@ -115,7 +115,7 @@ class ItemType
         MaterialInputArray pInput;
 
         char const *mSkill; // magical production skill
-        int mLevel; // magical production skill level
+        size_t mLevel; // magical production skill level
         int mOut; // How many of the item are conjured
         MaterialInputArray mInput;
 

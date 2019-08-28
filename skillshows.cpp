@@ -40,10 +40,12 @@
 #define OBJECT_ENABLED(X) (!(ObjectDefs[(X)].flags & ObjectType::DISABLED))
 #define OBJECT_DISABLED(X) (ObjectDefs[(X)].flags & ObjectType::DISABLED)
 
-static void DescribeEscapeParameters(AString *desc, int item)
+static void DescribeEscapeParameters(AString *desc, const Items& item)
 {
-    if (item < 0 || item >= NITEMS || !ItemDefs[item].escape)
+    if (!item.isValid() || item >= *Items::end() || !ItemDefs[item].escape)
+    {
         return;
+    }
 
     if (ItemDefs[item].escape & ItemType::LOSS_CHANCE) {
     }
@@ -84,37 +86,35 @@ static void DescribeEscapeParameters(AString *desc, int item)
     return;
 }
 
-AString *ShowSkill::Report(Faction *f)
+AString *ShowSkill::Report(Faction& f)
 {
     if (SkillDefs[skill].flags & SkillType::DISABLED) return NULL;
 
     AString *str = new AString;
-    RangeType *range = NULL;
-    int max;
 
     // Here we pick apart the skill
-    switch (skill) {
-        case S_FARMING:
+    switch (skill.asEnum()) {
+        case Skills::Types::S_FARMING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of grain production.";
             break;
-        case S_RANCHING:
+        case Skills::Types::S_RANCHING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of livestock "
                 "production.";
             break;
-        case S_MINING:
+        case Skills::Types::S_MINING:
             if (level > 1) break;
-            if (ITEM_ENABLED(I_IRON) ||
-                ITEM_ENABLED(I_MITHRIL) ||
-                ITEM_ENABLED(I_ADMANTIUM) ||
-                ITEM_ENABLED(I_GEMS)) {
+            if (ITEM_ENABLED(Items::Types::I_IRON) ||
+                ITEM_ENABLED(Items::Types::I_MITHRIL) ||
+                ITEM_ENABLED(Items::Types::I_ADMANTIUM) ||
+                ITEM_ENABLED(Items::Types::I_GEMS)) {
                 *str += "This skill deals with all aspects of extracting raw ";
-                if (ITEM_ENABLED(I_IRON) ||
-                    ITEM_ENABLED(I_MITHRIL) ||
-                    ITEM_ENABLED(I_ADMANTIUM)) {
+                if (ITEM_ENABLED(Items::Types::I_IRON) ||
+                    ITEM_ENABLED(Items::Types::I_MITHRIL) ||
+                    ITEM_ENABLED(Items::Types::I_ADMANTIUM)) {
                     *str += "metals";
-                    if (ITEM_ENABLED(I_GEMS)) {
+                    if (ITEM_ENABLED(Items::Types::I_GEMS)) {
                         *str += " and gems";
                     }
                 } else {
@@ -127,13 +127,13 @@ AString *ShowSkill::Report(Faction *f)
                 *str += "The mining skill is overrated.";
             }
             break;
-        case S_LUMBERJACK:
+        case Skills::Types::S_LUMBERJACK:
             if (level > 1) break;
             *str += "This skill deals with all aspects of various wood "
                 "production. Wood is most often found in forests, but "
                 "may also be found elsewhere.";
             break;
-        case S_QUARTERMASTER:
+        case Skills::Types::S_QUARTERMASTER:
             if (level > 1) break;
             if (!(Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT))
                 break;
@@ -176,63 +176,63 @@ AString *ShowSkill::Report(Faction *f)
                 *str += " of the transport structure.";
             }
             break;
-        case S_QUARRYING:
+        case Skills::Types::S_QUARRYING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of various stone "
                 "production. Mountains are the main producers of stone, but "
                 "it may be found in other regions as well.";
             break;
-        case S_HUNTING:
+        case Skills::Types::S_HUNTING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of animal hide "
                 "production.";
             break;
-        case S_FISHING:
+        case Skills::Types::S_FISHING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of fish production.";
             break;
-        case S_HERBLORE:
+        case Skills::Types::S_HERBLORE:
             if (level > 1) break;
             *str += "This skill deals with all aspects of herb production.";
             break;
-        case S_HORSETRAINING:
+        case Skills::Types::S_HORSETRAINING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of horse production.";
             break;
-        case S_WEAPONSMITH:
+        case Skills::Types::S_WEAPONSMITH:
             if (level > 1) break;
             *str += "This skill deals with all aspects of weapon "
                 "construction and production.";
             break;
-        case S_ARMORER:
+        case Skills::Types::S_ARMORER:
             if (level > 1) break;
             *str += "This skill deals with all aspects of armor construction "
                 "and production.";
             break;
-        case S_CARPENTER:
+        case Skills::Types::S_CARPENTER:
             if (level > 1) break;
             *str += "This skill deals with all aspects of wood based item "
                 "production other than for use as weapons.";
             break;
-        case S_BUILDING:
+        case Skills::Types::S_BUILDING:
             if (level > 1) break;
             *str += "This skill deals with the construction of "
                 "fortifications, roads and other buildings, except for "
                 "most trade structures.";
             break;
-        case S_SHIPBUILDING:
+        case Skills::Types::S_SHIPBUILDING:
             if (level > 1) break;
             *str += "This skill deals with the constructions of all types "
                 "of ships.";
             break;
-        case S_ENTERTAINMENT:
+        case Skills::Types::S_ENTERTAINMENT:
             if (level > 1) break;
             *str += "A unit with this skill may use the ENTERTAIN order "
                 "to generate funds. The amount of silver gained will "
                 "be 20 per man, times the level of the entertainers. "
                 "This amount is limited by the region that the unit is in.";
             break;
-        case S_TACTICS:
+        case Skills::Types::S_TACTICS:
             if (level > 1) break;
             *str += "Tactics allows the unit, and all allies, to gain a "
                 "free round of attacks during battle. The army with the "
@@ -241,12 +241,12 @@ AString *ShowSkill::Report(Faction *f)
                 "awarded. Only one free round total will be awarded for any "
                 "reason.";
             break;
-        case S_COMBAT:
+        case Skills::Types::S_COMBAT:
             if (level > 1) break;
             *str += "This skill gives the unit a bonus in hand to hand "
                 "combat. Also, a unit with this skill may TAX or PILLAGE.";
             break;
-        case S_ENDURANCE:
+        case Skills::Types::S_ENDURANCE:
             if (level == 1) {
                 *str += "A unit with this skill has begun the process of building "
                     "on their combat experience to learn how to survive wounds "
@@ -262,7 +262,7 @@ AString *ShowSkill::Report(Faction *f)
                     "survive three hits in combat before falling.";
             }
             break;
-        case S_RIDING:
+        case Skills::Types::S_RIDING:
             if (level > 1) break;
             *str += "A unit with this skill, if possessing a mount, may "
                 "gain a bonus in combat, if the battle is in a location "
@@ -271,28 +271,28 @@ AString *ShowSkill::Report(Faction *f)
                 "gained can vary with the mount, the riders skill, and the "
                 "terrain.";
             break;
-        case S_CROSSBOW:
+        case Skills::Types::S_CROSSBOW:
             if (level > 1) break;
             *str += "A unit with this skill may use a crossbow or other bow "
                 "derived from one, either in battle, or to TAX or PILLAGE a "
                 "region.";
             break;
-        case S_LONGBOW:
+        case Skills::Types::S_LONGBOW:
             if (level > 1) break;
             *str += "A unit with this skill may use a longbow or other bow "
                 "derived from one, either in battle, or to TAX or PILLAGE a "
                 "region.";
             break;
-        case S_STEALTH:
+        case Skills::Types::S_STEALTH:
             if (level > 1) break;
             *str += "A unit with this skill is concealed from being seen";
-            if (SKILL_ENABLED(S_OBSERVATION)) {
+            if (SKILL_ENABLED(Skills::Types::S_OBSERVATION)) {
                 *str += ", except by units with an Observation skill greater "
                     "than or equal to the stealthy unit's Stealth level";
             }
             *str += ".";
             break;
-        case S_OBSERVATION:
+        case Skills::Types::S_OBSERVATION:
             if (level > 1) break;
             *str += "A unit with this skill can see stealthy units or "
                 "monsters whose stealth rating is less than or equal to "
@@ -301,17 +301,17 @@ AString *ShowSkill::Report(Faction *f)
                 "Observation level is higher than the other unit's Stealth "
                 "level.";
             break;
-        case S_HEALING:
+        case Skills::Types::S_HEALING:
             if (level > 1) break;
             *str += "A unit with this skill is able to heal units hurt in "
                 "battle.";
             break;
-        case S_SAILING:
+        case Skills::Types::S_SAILING:
             if (level > 1) break;
             *str += "A unit with this skill may use the SAIL order to sail "
                 "ships.";
             break;
-        case S_FORCE:
+        case Skills::Types::S_FORCE:
             if (level > 1) break;
             *str += "The Force skill is not directly useful to a mage, but "
                 "is rather one of the Foundation skills on which other "
@@ -322,7 +322,7 @@ AString *ShowSkill::Report(Faction *f)
                 "perform magical acts that do not require great amounts of "
                 "power.";
             break;
-        case S_PATTERN:
+        case Skills::Types::S_PATTERN:
             if (level > 1) break;
             *str += "The Pattern skill is not directly useful to a mage, but "
                 "is rather one of the Foundation skills on which other "
@@ -331,7 +331,7 @@ AString *ShowSkill::Report(Faction *f)
                 "important for complicated tasks such as healing and "
                 "controlling nature.";
             break;
-        case S_SPIRIT:
+        case Skills::Types::S_SPIRIT:
             if (level > 1) break;
             *str += "The Spirit skill is not directly useful to a mage, but "
                 "is rather one of the Foundation skills on which other "
@@ -339,22 +339,22 @@ AString *ShowSkill::Report(Faction *f)
                 "ability to control and affect magic and other powers beyond "
                 "the material world.";
             break;
-        case S_FIRE:
+        case Skills::Types::S_FIRE:
             if (level > 1) break;
             break;
-        case S_EARTHQUAKE:
+        case Skills::Types::S_EARTHQUAKE:
             if (level > 1) break;
             break;
-        case S_FORCE_SHIELD:
+        case Skills::Types::S_FORCE_SHIELD:
             if (level > 1) break;
             break;
-        case S_ENERGY_SHIELD:
+        case Skills::Types::S_ENERGY_SHIELD:
             if (level > 1) break;
             break;
-        case S_SPIRIT_SHIELD:
+        case Skills::Types::S_SPIRIT_SHIELD:
             if (level > 1) break;
             break;
-        case S_MAGICAL_HEALING:
+        case Skills::Types::S_MAGICAL_HEALING:
             if (level == 1) {
                 *str += "This skill enables the mage to magically heal units "
                     "after battle. No order is necessary to use this spell; "
@@ -378,7 +378,7 @@ AString *ShowSkill::Report(Faction *f)
                 *str += " percent success rate.";
             }
             break;
-        case S_GATE_LORE:
+        case Skills::Types::S_GATE_LORE:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "Gate Lore is the art of detecting and using magical "
@@ -428,10 +428,10 @@ AString *ShowSkill::Report(Faction *f)
                     "units through a Gate.";
             }
             break;
-        case S_PORTAL_LORE:
+        case Skills::Types::S_PORTAL_LORE:
             if (level > 1) break;
             /* XXX -- This should be cleaner somehow. */
-            if (ITEM_DISABLED(I_PORTAL)) break;
+            if (ITEM_DISABLED(Items::Types::I_PORTAL)) break;
             *str += "A mage with the Portal Lore skill may, with the aid of "
                 "another mage, make a temporary Gate between two regions, and "
                 "send units from one region to another. In order to do this, "
@@ -439,11 +439,12 @@ AString *ShowSkill::Report(Faction *f)
                 "Portals, and the caster must be trained in Portal Lore. The "
                 "caster may teleport units weighing up to 50 weight units "
                 "times his skill level, to the target mage's region. ";
-            range = FindRange(SkillDefs[skill].range);
-            if (range) {
+            try
+            {
+                const auto& range = FindRange(SkillDefs[skill].range);
                 *str += " The target region must be within ";
-                *str += range->rangeMult;
-                switch(range->rangeClass) {
+                *str += range.rangeMult;
+                switch(range.rangeClass) {
                     case RangeType::RNG_LEVEL:
                         *str += " times the caster's skill level ";
                         break;
@@ -459,26 +460,30 @@ AString *ShowSkill::Report(Faction *f)
                 }
                 *str += "regions of the caster. ";
             }
+            catch(const NoSuchItemException&)
+            {
+            }
             *str += "To use this skill, CAST Portal_Lore <target> UNITS "
                 "<unit> ..., where <target> is the unit number of the "
                 "target mage, and <unit> is a list of units to be "
                 "teleported (the casting mage may teleport himself, if "
                 "he so desires).";
             break;
-        case S_FARSIGHT:
+        case Skills::Types::S_FARSIGHT:
             if (level > 1) break;
             *str += "A mage with this skill may obtain region reports on "
                 "distant regions. The report will be as if the mage was in "
                 "the distant region himself.";
-            range = FindRange(SkillDefs[skill].range);
-            if (range) {
-                if (range->flags & RangeType::RNG_SURFACE_ONLY) {
+            try
+            {
+                const auto& range = FindRange(SkillDefs[skill].range);
+                if (range.flags & RangeType::RNG_SURFACE_ONLY) {
                     *str += " This skill only works on the surface of the "
                         "world.";
                 }
                 *str += " The target region must be within ";
-                *str += range->rangeMult;
-                switch(range->rangeClass) {
+                *str += range.rangeMult;
+                switch(range.rangeClass) {
                     case RangeType::RNG_LEVEL:
                         *str += " times the caster's skill level ";
                         break;
@@ -493,12 +498,12 @@ AString *ShowSkill::Report(Faction *f)
                         break;
                 }
                 *str += "regions of the caster. ";
-                if (range->flags & RangeType::RNG_CROSS_LEVELS) {
+                if (range.flags & RangeType::RNG_CROSS_LEVELS) {
                     *str += "Coordinates of locations not on the surface are "
                         "scaled to the surface coordinates for this "
                         "calculation. Attempting to view across different "
                         "levels increases the distance by ";
-                    *str += range->crossLevelPenalty;
+                    *str += range.crossLevelPenalty;
                     *str += " per level difference. ";
                     *str += "To use this skill, CAST Farsight REGION <x> <y> "
                         "<z> where <x>, <y>, and <z> are the coordinates of "
@@ -519,6 +524,9 @@ AString *ShowSkill::Report(Faction *f)
                         "region that you wish to view.";
                 }
             }
+            catch(const NoSuchItemException&)
+            {
+            }
             if (Globals->IMPROVED_FARSIGHT) {
                 *str += " Any other skills which the mage has which give "
                     "region information will be used when farsight is used.";
@@ -528,7 +536,7 @@ AString *ShowSkill::Report(Faction *f)
                     "his normal facilities while casting Farsight.";
             }
             break;
-        case S_MIND_READING:
+        case Skills::Types::S_MIND_READING:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with Mind Reading skill 1 may cast the spell "
@@ -547,21 +555,22 @@ AString *ShowSkill::Report(Faction *f)
                     "unit.";
             }
             break;
-        case S_TELEPORTATION:
+        case Skills::Types::S_TELEPORTATION:
             if (level > 1) break;
             /* XXX -- This should be cleaner somehow. */
             *str += "A mage with this skill may teleport himself across "
                 "great distances, even without the use of a gate. The mage "
                 "may teleport up to 15 weight units per skill level.";
-            range = FindRange(SkillDefs[skill].range);
-            if (range) {
-                if (range->flags & RangeType::RNG_SURFACE_ONLY) {
+            try
+            {
+                const auto& range = FindRange(SkillDefs[skill].range);
+                if (range.flags & RangeType::RNG_SURFACE_ONLY) {
                     *str += " This skill only works on the surface of the "
                         "world.";
                 }
                 *str += " The target region must be within ";
-                *str += range->rangeMult;
-                switch(range->rangeClass) {
+                *str += range.rangeMult;
+                switch(range.rangeClass) {
                     case RangeType::RNG_LEVEL:
                         *str += " times the caster's skill level ";
                         break;
@@ -576,12 +585,12 @@ AString *ShowSkill::Report(Faction *f)
                         break;
                 }
                 *str += "regions of the caster. ";
-                if (range->flags & RangeType::RNG_CROSS_LEVELS) {
+                if (range.flags & RangeType::RNG_CROSS_LEVELS) {
                     *str += "Coordinates of locations not on the surface are "
                         "scaled to the surface coordinates for this "
                         "calculation. Attempting to view across different "
                         "levels increases the distance by ";
-                    *str += range->crossLevelPenalty;
+                    *str += range.crossLevelPenalty;
                     *str += " per level difference. ";
                     *str += "To use this skill, CAST Teleportation REGION "
                         "<x> <y> <z> where <x>, <y>, and <z> are the "
@@ -603,8 +612,11 @@ AString *ShowSkill::Report(Faction *f)
                         "the region that you wish to teleport to.";
                 }
             }
+            catch(const NoSuchItemException&)
+            {
+            }
             break;
-        case S_WEATHER_LORE:
+        case Skills::Types::S_WEATHER_LORE:
             if (level > 1) break;
             /* XXX -- This should be templated */
             *str += "Weather Lore is the magic of the weather; a mage with "
@@ -613,15 +625,16 @@ AString *ShowSkill::Report(Faction *f)
                 "areas of magic. The weather may be predicted for 3 months "
                 "at level 1, 6 months at level 3 and a full year at level "
                 "5.";
-            range = FindRange(SkillDefs[skill].range);
-            if (range) {
-                if (range->flags & RangeType::RNG_SURFACE_ONLY) {
+            try
+            {
+                const auto& range = FindRange(SkillDefs[skill].range);
+                if (range.flags & RangeType::RNG_SURFACE_ONLY) {
                     *str += " This skill only works on the surface of the "
                         "world.";
                 }
                 *str += " The target region must be within ";
-                *str += range->rangeMult;
-                switch(range->rangeClass) {
+                *str += range.rangeMult;
+                switch(range.rangeClass) {
                     case RangeType::RNG_LEVEL:
                         *str += " times the caster's skill level ";
                         break;
@@ -636,12 +649,12 @@ AString *ShowSkill::Report(Faction *f)
                         break;
                 }
                 *str += "regions of the caster. ";
-                if (range->flags & RangeType::RNG_CROSS_LEVELS) {
+                if (range.flags & RangeType::RNG_CROSS_LEVELS) {
                     *str += "Coordinates of locations not on the surface are "
                         "scaled to the surface coordinates for this "
                         "calculation. Attempting to view across different "
                         "levels increases the distance by ";
-                    *str += range->crossLevelPenalty;
+                    *str += range.crossLevelPenalty;
                     *str += " per level difference. ";
                     *str += "To use this skill, CAST Weather_Lore REGION "
                         "<x> <y> <z> where <x>, <y>, and <z> are the "
@@ -663,10 +676,13 @@ AString *ShowSkill::Report(Faction *f)
                         "the region where you wish to predict the weather.";
                 }
             }
+            catch(const NoSuchItemException&)
+            {
+            }
             *str += " A mage with Weather Lore skill will perceive the use "
                 "of Weather Lore by any other mage in the same region.";
             break;
-        case S_SUMMON_WIND:
+        case Skills::Types::S_SUMMON_WIND:
             if (level == 1) {
                 *str += "A mage with knowledge of Summon Wind can summon "
                     "up the powers of the wind to aid him in sea or "
@@ -686,16 +702,16 @@ AString *ShowSkill::Report(Faction *f)
                 *str += "The effects of all such mages in a fleet are cumulative. ";    
             }
             break;
-        case S_SUMMON_STORM:
+        case Skills::Types::S_SUMMON_STORM:
             if (level > 1) break;
             break;
-        case S_SUMMON_TORNADO:
+        case Skills::Types::S_SUMMON_TORNADO:
             if (level > 1) break;
             break;
-        case S_CALL_LIGHTNING:
+        case Skills::Types::S_CALL_LIGHTNING:
             if (level > 1) break;
             break;
-        case S_CLEAR_SKIES:
+        case Skills::Types::S_CLEAR_SKIES:
             /* XXX -- this range stuff needs cleaning up */
             if (level > 1) break;
             if (SkillDefs[skill].flags & SkillType::CAST) {
@@ -706,15 +722,16 @@ AString *ShowSkill::Report(Faction *f)
                     "for a month (this improvement of the economy will "
                     "actually take effect during the turn after the spell "
                     "is cast).";
-                range = FindRange(SkillDefs[skill].range);
-                if (range) {
-                    if (range->flags & RangeType::RNG_SURFACE_ONLY) {
+                try
+                {
+                    const auto& range = FindRange(SkillDefs[skill].range);
+                    if (range.flags & RangeType::RNG_SURFACE_ONLY) {
                         *str += " This skill only works on the surface of "
                             "the world.";
                     }
                     *str += " The target region must be within ";
-                    *str += range->rangeMult;
-                    switch(range->rangeClass) {
+                    *str += range.rangeMult;
+                    switch(range.rangeClass) {
                         case RangeType::RNG_LEVEL:
                             *str += " times the caster's skill level ";
                             break;
@@ -729,12 +746,12 @@ AString *ShowSkill::Report(Faction *f)
                             break;
                     }
                     *str += "regions of the caster. ";
-                    if (range->flags & RangeType::RNG_CROSS_LEVELS) {
+                    if (range.flags & RangeType::RNG_CROSS_LEVELS) {
                         *str += "Coordinates of locations not on the surface "
                             "are scaled to the surface coordinates for this "
                             "calculation. Attempting to view across "
                             "different levels increases the distance by ";
-                        *str += range->crossLevelPenalty;
+                        *str += range.crossLevelPenalty;
                         *str += " per level difference. ";
                         *str += "To use this skill, CAST Clear_Skies REGION "
                             "<x> <y> <z> where <x>, <y>, and <z> are the "
@@ -756,13 +773,14 @@ AString *ShowSkill::Report(Faction *f)
                             "of the region where you wish to improve the "
                             "weather.";
                     }
-                } else {
+                }
+                catch(const NoSuchItemException&){
                     *str += " To use the spell in this fashion, CAST "
                         "Clear_Skies; no arguments are necessary.";
                 }
             }
             break;
-        case S_EARTH_LORE:
+        case Skills::Types::S_EARTH_LORE:
             if (level > 1) break;
             *str += "Earth Lore is the study of nature, plants, and animals. "
                 "A mage with knowledge of Earth Lore can use his knowledge "
@@ -774,14 +792,14 @@ AString *ShowSkill::Report(Faction *f)
                 "Lore will detect the use of Earth Lore by any other mage in "
                 "the same region.";
             break;
-        case S_WOLF_LORE:
+        case Skills::Types::S_WOLF_LORE:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_WOLF)) break;
+            if (ITEM_DISABLED(Items::Types::I_WOLF)) break;
             *str += "A mage with Wolf Lore skill may summon wolves, who will "
                 "fight for him in combat. A mage may summon a number of "
                 "wolves averaging ";
-            *str += ItemDefs[I_WOLF].mOut;
+            *str += ItemDefs[Items::Types::I_WOLF].mOut;
             *str += " percent times his skill level, and control a total number "
                 "of his skill level squared times 4 wolves; the wolves will "
                 "be placed in the mages inventory. Note, however, that wolves "
@@ -789,7 +807,7 @@ AString *ShowSkill::Report(Faction *f)
                 "summon wolves, the mage should issue the order CAST "
                 "Wolf_Lore.";
             break;
-        case S_BIRD_LORE:
+        case Skills::Types::S_BIRD_LORE:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with Bird Lore may control the birds of the "
@@ -801,13 +819,13 @@ AString *ShowSkill::Report(Faction *f)
                     "where <dir> is the direction the mage wishes the birds "
                     "to report on.";
             } else if (level == 3) {
-                if (ITEM_DISABLED(I_EAGLE)) break;
+                if (ITEM_DISABLED(Items::Types::I_EAGLE)) break;
                 *str += "A mage with Bird Lore 3 can summon eagles to join "
                     "him, who will aid him in combat, and provide for flying "
                     "transportation. A mage may summon ";
-                if (ItemDefs[I_EAGLE].mOut > 0) {
+                if (ItemDefs[Items::Types::I_EAGLE].mOut > 0) {
                     *str += "an average of ";
-                    *str += ItemDefs[I_SKELETON].mOut;
+                    *str += ItemDefs[Items::Types::I_SKELETON].mOut;
                     *str += " percent times his skill level minus 2 eagles";
                 }
                 else
@@ -818,16 +836,16 @@ AString *ShowSkill::Report(Faction *f)
                     "Bird_Lore EAGLE; the eagles will appear in his inventory.";
             }
             break;
-        case S_DRAGON_LORE:
+        case Skills::Types::S_DRAGON_LORE:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_DRAGON)) break;
+            if (ITEM_DISABLED(Items::Types::I_DRAGON)) break;
             *str += "A mage with Dragon Lore skill can summon dragons to "
                 "join him, to aid in battle, and provide flying "
                 "transportation. ";
-            if (ItemDefs[I_DRAGON].mOut > 0) {
+            if (ItemDefs[Items::Types::I_DRAGON].mOut > 0) {
                 *str += "A mage has a ";
-                *str += ItemDefs[I_DRAGON].mOut;
+                *str += ItemDefs[Items::Types::I_DRAGON].mOut;
                 *str += "% times his skill level chance to summon a dragon";
             }
             else
@@ -838,7 +856,7 @@ AString *ShowSkill::Report(Faction *f)
                 "time is equal to his skill level. To attempt to summon a "
                 "dragon, CAST Dragon_Lore.";
             break;
-        case S_NECROMANCY:
+        case Skills::Types::S_NECROMANCY:
             if (level > 1) break;
             *str += "Necromancy is the magic of death; a mage versed in "
                 "Necromancy may raise and control the dead, and turn the "
@@ -848,18 +866,18 @@ AString *ShowSkill::Report(Faction *f)
                 "A mage with knowledge of Necromancy will detect the use of "
                 "Necromancy by any other mage in the same region.";
             break;
-        case S_SUMMON_SKELETONS:
+        case Skills::Types::S_SUMMON_SKELETONS:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_SKELETON)) break;
+            if (ITEM_DISABLED(Items::Types::I_SKELETON)) break;
             *str += "A mage with the Summon Skeletons skill may summon "
                 "skeletons into his inventory, to aid him in battle. "
                 "Skeletons may be given to other units, as they follow "
                 "instructions mindlessly; however, they have a 10 percent "
                 "chance of decaying each turn. A mage can summon skeletons "
                 "at an average rate of ";
-            if (ItemDefs[I_SKELETON].mOut > 0) {
-                *str += ItemDefs[I_SKELETON].mOut;
+            if (ItemDefs[Items::Types::I_SKELETON].mOut > 0) {
+                *str += ItemDefs[Items::Types::I_SKELETON].mOut;
                 *str += " percent times his skill level.";
             }
             else
@@ -867,18 +885,18 @@ AString *ShowSkill::Report(Faction *f)
             *str += " To use the spell, use the order CAST Summon_Skeletons, "
                 "and the mage will summon as many skeletons as he is able.";
             break;
-        case S_RAISE_UNDEAD:
+        case Skills::Types::S_RAISE_UNDEAD:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_UNDEAD)) break;
+            if (ITEM_DISABLED(Items::Types::I_UNDEAD)) break;
             *str += "A mage with the Raise Undead skill may summon undead "
                 "into his inventory, to aid him in battle. Undead may be "
                 "given to other units, as they follow instructions "
                 "mindlessly; however, they have a 10 percent chance of "
                 "decaying each turn. A mage can summon undead at an average "
                 "rate of ";
-            if (ItemDefs[I_UNDEAD].mOut > 0) {
-                *str += ItemDefs[I_UNDEAD].mOut;
+            if (ItemDefs[Items::Types::I_UNDEAD].mOut > 0) {
+                *str += ItemDefs[Items::Types::I_UNDEAD].mOut;
                 *str += " percent times his skill level.";
             }
             else
@@ -886,17 +904,17 @@ AString *ShowSkill::Report(Faction *f)
             *str += " To use the spell, use the order CAST Raise_Undead and the "
                 "mage will summon as many undead as he is able.";
             break;
-        case S_SUMMON_LICH:
+        case Skills::Types::S_SUMMON_LICH:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_LICH)) break;
+            if (ITEM_DISABLED(Items::Types::I_LICH)) break;
             *str += "A mage with the Summon Lich skill may summon a lich "
                 "into his inventory, to aid him in battle. Liches may be "
                 "given to other units, as they follow instructions "
                 "mindlessly; however, they have a 10 percent chance of "
                 "decaying each turn. A mage has a ";
-            if (ItemDefs[I_LICH].mOut > 0) {
-                *str += ItemDefs[I_LICH].mOut;
+            if (ItemDefs[Items::Types::I_LICH].mOut > 0) {
+                *str += ItemDefs[Items::Types::I_LICH].mOut;
                 *str += " percent times his skill level";
             }
             else
@@ -904,16 +922,16 @@ AString *ShowSkill::Report(Faction *f)
             *str += " chance of summoning a lich; to summon a lich, use "
                 "the order CAST Summon_Lich.";
             break;
-        case S_CREATE_AURA_OF_FEAR:
+        case Skills::Types::S_CREATE_AURA_OF_FEAR:
             if (level > 1) break;
             break;
-        case S_SUMMON_BLACK_WIND:
+        case Skills::Types::S_SUMMON_BLACK_WIND:
             if (level > 1) break;
             break;
-        case S_BANISH_UNDEAD:
+        case Skills::Types::S_BANISH_UNDEAD:
             if (level > 1) break;
             break;
-        case S_DEMON_LORE:
+        case Skills::Types::S_DEMON_LORE:
             if (level > 1) break;
             *str += "Demon Lore is the art of summoning and controlling "
                 "demons. The Demon Lore skill does not give the mage any "
@@ -922,14 +940,14 @@ AString *ShowSkill::Report(Faction *f)
                 "detect the use of Demon Lore by any other mage in the same "
                 "region.";
             break;
-        case S_SUMMON_IMPS:
+        case Skills::Types::S_SUMMON_IMPS:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_IMP)) break;
+            if (ITEM_DISABLED(Items::Types::I_IMP)) break;
             *str += "A mage with the Summon Imps skill may summon imps into "
                 "his inventory, to aid him in combat. A mage may summon ";
-            if (ItemDefs[I_IMP].mOut > 0) {
-                *str += ItemDefs[I_IMP].mOut;
+            if (ItemDefs[Items::Types::I_IMP].mOut > 0) {
+                *str += ItemDefs[Items::Types::I_IMP].mOut;
                 *str += " percent times his skill level imps";
             }
             else
@@ -937,19 +955,19 @@ AString *ShowSkill::Report(Faction *f)
             *str +=    "; however, the imps have a chance of "
                 "breaking free of the mage's control at the end of each "
                 "turn. ";
-            DescribeEscapeParameters(str, I_IMP);
+            DescribeEscapeParameters(str, Items::Types::I_IMP);
             *str += "To use this spell, the mage should issue the order CAST "
                 "Summon_Imps, and the mage will summon as many imps as he "
                 "is able.";
             break;
-        case S_SUMMON_DEMON:
+        case Skills::Types::S_SUMMON_DEMON:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_DEMON)) break;
+            if (ITEM_DISABLED(Items::Types::I_DEMON)) break;
             *str += "A mage with the Summon Demon skill may summon demons "
                 "into his inventory, to aid him in combat. A mage may summon ";
-            if (ItemDefs[I_DEMON].mOut > 0) {
-                *str += ItemDefs[I_DEMON].mOut;
+            if (ItemDefs[Items::Types::I_DEMON].mOut > 0) {
+                *str += ItemDefs[Items::Types::I_DEMON].mOut;
                 *str += " percent times his skill level demons";
             }
             else
@@ -957,30 +975,30 @@ AString *ShowSkill::Report(Faction *f)
             *str += " each turn; however, the demons have a chance of "
                 "breaking free of the mage's control at the end of each "
                 "turn. ";
-            DescribeEscapeParameters(str, I_DEMON);
+            DescribeEscapeParameters(str, Items::Types::I_DEMON);
             *str += "To use this spell, the mage should issue the "
                 "order CAST Summon_Demon.";
             break;
-        case S_SUMMON_BALROG:
+        case Skills::Types::S_SUMMON_BALROG:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_BALROG)) break;
+            if (ITEM_DISABLED(Items::Types::I_BALROG)) break;
             *str += "A mage with the Summon Balrog skill may summon a balrog "
                 "into his inventory, to aid him in combat. A mage has a ";
-            *str += ItemDefs[I_BALROG].mOut;
+            *str += ItemDefs[Items::Types::I_BALROG].mOut;
             *str += " percent times his skill level chance of summoning a balrog, "
                 "but may only summon a balrog if one is not already under "
                 "his control. As with other demons, the balrog has a chance "
                 "of breaking free of the mage's control at the end of each "
                 "turn. ";
-            DescribeEscapeParameters(str, I_BALROG);
+            DescribeEscapeParameters(str, Items::Types::I_BALROG);
             *str += "To use this spell, "
                 "the mage should issue the order CAST Summon_Balrog.";
             break;
-        case S_BANISH_DEMONS:
+        case Skills::Types::S_BANISH_DEMONS:
             if (level > 1) break;
             break;
-        case S_ILLUSION:
+        case Skills::Types::S_ILLUSION:
             if (level > 1) break;
             *str += "Illusion is the magic of creating images of things that "
                 "do not actually exist. The Illusion skill does not have any "
@@ -989,7 +1007,7 @@ AString *ShowSkill::Report(Faction *f)
                 "skill will detect the use of Illusion by any other mage in "
                 "the same region.";
             break;
-        case S_PHANTASMAL_ENTERTAINMENT:
+        case Skills::Types::S_PHANTASMAL_ENTERTAINMENT:
             /* XXX -- This should be cleaner somehow */
             if (level > 1) break;
             *str += "A mage with the Phantasmal Entertainment skill may use "
@@ -999,14 +1017,14 @@ AString *ShowSkill::Report(Faction *f)
                 "skill equal to five times his Phantasmal Entertainment "
                 "level. To use this skill, use the ENTERTAIN order.";
             break;
-        case S_CREATE_PHANTASMAL_BEASTS:
+        case Skills::Types::S_CREATE_PHANTASMAL_BEASTS:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with Create Phantasmal Beasts may summon "
                     "illusionary beasts that appear in the mage's inventory. "
                     "These beasts will fight in combat, but do not attack, "
                     "and are killed whenever they are attacked.";
-                if (ITEM_ENABLED(I_IWOLF)) {
+                if (ITEM_ENABLED(Items::Types::I_IWOLF)) {
                     *str += " Create Phantasmal Beasts at level 1 allows the "
                         "mage to summon illusionary wolves; the number the "
                         "mage can summon, or have in his inventory at one "
@@ -1023,7 +1041,7 @@ AString *ShowSkill::Report(Faction *f)
                     "'i' to the normal string. (For example: to reference "
                     "an illusionary wolf, you would use 'iwolf').";
             } else if (level == 3) {
-                if (ITEM_DISABLED(I_IEAGLE)) break;
+                if (ITEM_DISABLED(Items::Types::I_IEAGLE)) break;
                 *str += "Create Phantasmal Beasts at level 3 allows the mage "
                     "to summon illusionary eagles into his inventory. To "
                     "summon illusionary eagles, the mage should CAST "
@@ -1033,7 +1051,7 @@ AString *ShowSkill::Report(Faction *f)
                     "mage may have in his inventory is equal to his skill "
                     "level, minus 2, squared.";
             } else if (level == 5) {
-                if (ITEM_DISABLED(I_IDRAGON)) break;
+                if (ITEM_DISABLED(Items::Types::I_IDRAGON)) break;
                 *str += "Create Phantasmal Beasts at level 5 allows the "
                     "mage to summon an illusionary dragon into his "
                     "inventory. To summon an illusionary dragon, the mage "
@@ -1042,14 +1060,14 @@ AString *ShowSkill::Report(Faction *f)
                     "at one time.";
             }
             break;
-        case S_CREATE_PHANTASMAL_UNDEAD:
+        case Skills::Types::S_CREATE_PHANTASMAL_UNDEAD:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with Create Phantasmal Undead may summon "
                     "illusionary undead that appear in the mage's inventory. "
                     "These undead will fight in combat, but do not attack, "
                     "and are killed whenever they are attacked.";
-                if (ITEM_ENABLED(I_ISKELETON)) {
+                if (ITEM_ENABLED(Items::Types::I_ISKELETON)) {
                     *str += " Create Phantasmal Undead at level 1 allows the "
                         "mage to summon illusionary skeletons; the number "
                         "the mage can summon, or have in his inventory at "
@@ -1066,7 +1084,7 @@ AString *ShowSkill::Report(Faction *f)
                     "'i' to the normal string. (Example: to reference an "
                     "illusionary skeleton, you would use 'iskeleton').";
             } else if (level == 3) {
-                if (ITEM_DISABLED(I_IUNDEAD)) break;
+                if (ITEM_DISABLED(Items::Types::I_IUNDEAD)) break;
                 *str += "Create Phantasmal Undead at level 3 allows the mage "
                     "to summon illusionary undead into his inventory. To "
                     "summon illusionary undead, the mage should CAST "
@@ -1076,7 +1094,7 @@ AString *ShowSkill::Report(Faction *f)
                     "mage may have in his inventory is equal to his skill "
                     "level, minus 2, squared.";
             } else if (level == 5) {
-                if (ITEM_DISABLED(I_ILICH)) break;
+                if (ITEM_DISABLED(Items::Types::I_ILICH)) break;
                 *str += "Create Phantasmal Undead at level 5 allows the mage "
                     "to summon an illusionary lich into his inventory. To "
                     "summon an illusionary lich, the mage should CAST "
@@ -1084,7 +1102,7 @@ AString *ShowSkill::Report(Faction *f)
                     "one illusionary lich in his inventory at one time.";
             }
             break;
-        case S_CREATE_PHANTASMAL_DEMONS:
+        case Skills::Types::S_CREATE_PHANTASMAL_DEMONS:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with Create Phantasmal Demons may summon "
@@ -1092,7 +1110,7 @@ AString *ShowSkill::Report(Faction *f)
                         "inventory. These demons will fight in combat, but "
                         "do not attack, and are killed whenever they are "
                         "attacked.";
-                if (ITEM_ENABLED(I_IIMP)) {
+                if (ITEM_ENABLED(Items::Types::I_IIMP)) {
                     *str += " Create Phantasmal Demons at level 1 allows the "
                         "mage to summon illusionary imps; the number the "
                         "mage can summon, or have in his inventory at one "
@@ -1109,7 +1127,7 @@ AString *ShowSkill::Report(Faction *f)
                     "'i' to the normal string. (Example: to reference an "
                     "illusionary imp, you would use 'iimp').";
             } else if (level == 3) {
-                if (ITEM_DISABLED(I_IDEMON)) break;
+                if (ITEM_DISABLED(Items::Types::I_IDEMON)) break;
                 *str += "Create Phantasmal Demons at level 3 allows the mage "
                     "to summon illusionary demons into his inventory. To "
                     "summon illusionary demons, the mage should CAST "
@@ -1119,7 +1137,7 @@ AString *ShowSkill::Report(Faction *f)
                     "mage may have in his inventory is equal to his skill "
                     "level, minus 2, squared.";
             } else if (level == 5) {
-                if (ITEM_DISABLED(I_IBALROG)) break;
+                if (ITEM_DISABLED(Items::Types::I_IBALROG)) break;
                 *str += "Create Phantasmal Demons at level 5 allows the mage "
                     "to summon an illusionary balrog into his inventory. To "
                     "summon an illusionary balrog, the mage should CAST "
@@ -1127,7 +1145,7 @@ AString *ShowSkill::Report(Faction *f)
                     "one illusionary balrog in his inventory at one time.";
             }
             break;
-        case S_INVISIBILITY:
+        case Skills::Types::S_INVISIBILITY:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
             *str += "The Invisibility skill allows a mage to render other "
@@ -1139,7 +1157,7 @@ AString *ShowSkill::Report(Faction *f)
                 "may render invisible a number of men or creatures equal to "
                 "his skill level squared.";
             break;
-        case S_TRUE_SEEING:
+        case Skills::Types::S_TRUE_SEEING:
             if (level > 1) break;
             *str += "A mage with the True Seeing spell can see illusions "
                 "for what they really are. Whether or not the mage can see "
@@ -1147,16 +1165,16 @@ AString *ShowSkill::Report(Faction *f)
                 "being higher that the Illusion skill of the mage casting "
                 "the illusion. This spell does not require any order to "
                 "use; it is used automatically.";
-            if (SKILL_ENABLED(S_OBSERVATION)) {
+            if (SKILL_ENABLED(Skills::Types::S_OBSERVATION)) {
                 *str += " In addition, a mage with the True Seeing skill "
                     "receives a bonus to his Observation skill equal to his "
                     "True Seeing skill divided by 2, rounded up.";
             }
             break;
-        case S_DISPEL_ILLUSIONS:
+        case Skills::Types::S_DISPEL_ILLUSIONS:
             if (level > 1) break;
             break;
-        case S_ARTIFACT_LORE:
+        case Skills::Types::S_ARTIFACT_LORE:
             if (level > 1) break;
             *str += "Artifact Lore is one of the most advanced forms of "
                 "magic; in general, creation of an artifact requires both "
@@ -1165,7 +1183,7 @@ AString *ShowSkill::Report(Faction *f)
                 "will detect the use of Artifact Lore by any other mage in "
                 "the region.";
             break;
-        case S_ENGRAVE_RUNES_OF_WARDING:
+        case Skills::Types::S_ENGRAVE_RUNES_OF_WARDING:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with the Engrave Runes of Warding may "
@@ -1177,88 +1195,88 @@ AString *ShowSkill::Report(Faction *f)
                     "spell, the mage should CAST Engrave_Runes_of_Warding, "
                     "and be within the building he wishes to engrave runes "
                     "upon. This spell costs 600 silver to cast.";
-                if (OBJECT_ENABLED(O_TOWER)) {
+                if (OBJECT_ENABLED(Objects::Types::O_TOWER)) {
                     *str += " At level 1, the mage may engrave runes of "
                         "warding upon a ";
-                    *str += ObjectDefs[O_TOWER].name;
+                    *str += ObjectDefs[Objects::Types::O_TOWER].name;
                     *str += ".";
                 }
             } else if (level == 2) {
-                if (OBJECT_ENABLED(O_FORT)) {
+                if (OBJECT_ENABLED(Objects::Types::O_FORT)) {
                     *str += "At this level, the mage may engrave runes of "
                         "warding upon a ";
-                    *str += ObjectDefs[O_FORT].name;
+                    *str += ObjectDefs[Objects::Types::O_FORT].name;
                     *str += ".";
                 }
             } else if (level == 3) {
-                if (ITEM_ENABLED(I_ROOTSTONE) && (
-                    OBJECT_ENABLED(O_MTOWER) ||
-                    OBJECT_ENABLED(O_MFORTRESS) ||
-                    OBJECT_ENABLED(O_MCASTLE) ||
-                    OBJECT_ENABLED(O_MCITADEL))) {
+                if (ITEM_ENABLED(Items::Types::I_ROOTSTONE) && (
+                    OBJECT_ENABLED(Objects::Types::O_MTOWER) ||
+                    OBJECT_ENABLED(Objects::Types::O_MFORTRESS) ||
+                    OBJECT_ENABLED(Objects::Types::O_MCASTLE) ||
+                    OBJECT_ENABLED(Objects::Types::O_MCITADEL))) {
                     *str += "At this level, the mage improves the level of the Shields "
                         "granted by these runes to level 5 for buildings that are "
                         "made from rootstone. ";
-                } else if (OBJECT_ENABLED(O_CASTLE)) {
+                } else if (OBJECT_ENABLED(Objects::Types::O_CASTLE)) {
                     *str += "At this level, the mage may engrave runes of "
                         "warding upon a ";
-                    *str += ObjectDefs[O_CASTLE].name;
+                    *str += ObjectDefs[Objects::Types::O_CASTLE].name;
                     *str += ".";
                     break;
                 }
-                if (OBJECT_DISABLED(O_CASTLE) && OBJECT_DISABLED(O_MTOWER))
+                if (OBJECT_DISABLED(Objects::Types::O_CASTLE) && OBJECT_DISABLED(Objects::Types::O_MTOWER))
                     break;
                 int comma = 0;
                 *str += "The mage may now engrave runes of "
                     "warding upon ";
-                if (OBJECT_ENABLED(O_CASTLE)) {
+                if (OBJECT_ENABLED(Objects::Types::O_CASTLE)) {
                     *str += "a ";
-                    *str += ObjectDefs[O_CASTLE].name;
+                    *str += ObjectDefs[Objects::Types::O_CASTLE].name;
                     comma = 1;
                 }
-                if (OBJECT_ENABLED(O_MTOWER)) {
+                if (OBJECT_ENABLED(Objects::Types::O_MTOWER)) {
                     if (comma) *str += " or ";
                     *str += "a ";
-                    *str += ObjectDefs[O_MTOWER].name;
+                    *str += ObjectDefs[Objects::Types::O_MTOWER].name;
                 }
                 *str += ".";
             } else if (level == 4) {
                 int comma = 0;
-                if (OBJECT_DISABLED(O_CITADEL) && OBJECT_DISABLED(O_MFORTRESS))
+                if (OBJECT_DISABLED(Objects::Types::O_CITADEL) && OBJECT_DISABLED(Objects::Types::O_MFORTRESS))
                     break;
                 *str += "At this level, the mage may engrave runes of "
                     "warding upon ";
-                if (OBJECT_ENABLED(O_CITADEL)) {
+                if (OBJECT_ENABLED(Objects::Types::O_CITADEL)) {
                     *str += "a ";
-                    *str += ObjectDefs[O_CITADEL].name;
+                    *str += ObjectDefs[Objects::Types::O_CITADEL].name;
                     comma = 1;
                 }
-                if (OBJECT_ENABLED(O_MFORTRESS)) {
+                if (OBJECT_ENABLED(Objects::Types::O_MFORTRESS)) {
                     if (comma) *str += " or ";
                     *str += "a ";
-                    *str += ObjectDefs[O_MFORTRESS].name;
+                    *str += ObjectDefs[Objects::Types::O_MFORTRESS].name;
                 }
                 *str += ".";
             } else if (level == 5) {
                 int comma = 0;
-                if (OBJECT_DISABLED(O_MCASTLE) && OBJECT_DISABLED(O_MCITADEL))
+                if (OBJECT_DISABLED(Objects::Types::O_MCASTLE) && OBJECT_DISABLED(Objects::Types::O_MCITADEL))
                     break;
                 *str += "At this level, the mage may engrave runes of "
                     "warding upon ";
-                if (OBJECT_ENABLED(O_MCASTLE)) {
+                if (OBJECT_ENABLED(Objects::Types::O_MCASTLE)) {
                     *str += "a ";
-                    *str += ObjectDefs[O_MCASTLE].name;
+                    *str += ObjectDefs[Objects::Types::O_MCASTLE].name;
                     comma = 1;
                 }
-                if (OBJECT_ENABLED(O_MCITADEL)) {
+                if (OBJECT_ENABLED(Objects::Types::O_MCITADEL)) {
                     if (comma) *str += " or ";
                     *str += "a ";
-                    *str += ObjectDefs[O_MCITADEL].name;
+                    *str += ObjectDefs[Objects::Types::O_MCITADEL].name;
                 }
                 *str += ".";
             }
             break;
-        case S_CONSTRUCT_GATE:
+        case Skills::Types::S_CONSTRUCT_GATE:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
             *str += "A mage with the Construct Gate skill may construct a "
@@ -1267,40 +1285,40 @@ AString *ShowSkill::Report(Faction *f)
                 "silver. To use this spell, the mage should issue the order "
                 "CAST Construct_Gate.";
             break;
-        case S_CONSTRUCT_PORTAL:
+        case Skills::Types::S_CONSTRUCT_PORTAL:
             /* XXX -- This should be cleaner somehow. */
             if (level > 1) break;
-            if (ITEM_DISABLED(I_PORTAL)) break;
+            if (ITEM_DISABLED(Items::Types::I_PORTAL)) break;
             *str += "A mage with the Construct Portal skill may "
                 "construct a Portal";
-            if (SKILL_ENABLED(S_PORTAL_LORE)) {
+            if (SKILL_ENABLED(Skills::Types::S_PORTAL_LORE)) {
                 *str += " for use with the Portal Lore skill";
             }
             *str += ".";
             break;
-        case S_TRANSMUTATION:
+        case Skills::Types::S_TRANSMUTATION:
             /* XXX -- This should be cleaner somehow. */
             if (level == 1) {
                 *str += "A mage with Transmutation may transform "
                     "basic resources into more esoteric ones. ";
-                if ((ITEM_ENABLED(I_STONE) && ITEM_ENABLED(I_ROOTSTONE)) ||
-                        (ITEM_ENABLED(I_IRON) && ITEM_ENABLED(I_MITHRIL))) {
+                if ((ITEM_ENABLED(Items::Types::I_STONE) && ITEM_ENABLED(Items::Types::I_ROOTSTONE)) ||
+                        (ITEM_ENABLED(Items::Types::I_IRON) && ITEM_ENABLED(Items::Types::I_MITHRIL))) {
                     *str += "At level 1 the mage may transmute ";
-                    if (ITEM_ENABLED(I_STONE) && ITEM_ENABLED(I_ROOTSTONE)) {
-                        *str += ItemString(I_STONE, 1);
+                    if (ITEM_ENABLED(Items::Types::I_STONE) && ITEM_ENABLED(Items::Types::I_ROOTSTONE)) {
+                        *str += ItemString(Items::Types::I_STONE, 1);
                         *str += " into ";
-                        *str += ItemString(I_ROOTSTONE, 1);
+                        *str += ItemString(Items::Types::I_ROOTSTONE, 1);
                     }
-                    if (ITEM_ENABLED(I_STONE) &&
-                            ITEM_ENABLED(I_ROOTSTONE) &&
-                            ITEM_ENABLED(I_IRON) &&
-                            ITEM_ENABLED(I_MITHRIL)) {
+                    if (ITEM_ENABLED(Items::Types::I_STONE) &&
+                            ITEM_ENABLED(Items::Types::I_ROOTSTONE) &&
+                            ITEM_ENABLED(Items::Types::I_IRON) &&
+                            ITEM_ENABLED(Items::Types::I_MITHRIL)) {
                         *str += " or ";
                     }
-                    if (ITEM_ENABLED(I_IRON) && ITEM_ENABLED(I_MITHRIL)) {
-                        *str += ItemString(I_IRON, 1);
+                    if (ITEM_ENABLED(Items::Types::I_IRON) && ITEM_ENABLED(Items::Types::I_MITHRIL)) {
+                        *str += ItemString(Items::Types::I_IRON, 1);
                         *str += " into ";
-                        *str += ItemString(I_MITHRIL, 1);
+                        *str += ItemString(Items::Types::I_MITHRIL, 1);
                     }
                     *str += ". ";
                 }
@@ -1312,52 +1330,52 @@ AString *ShowSkill::Report(Faction *f)
                     "wish to create fewer than this, you may "
                     "CAST Transmutation [number] <material> instead.";
             } else if (level == 2) {
-                if (ITEM_ENABLED(I_WOOD) && ITEM_ENABLED(I_IRONWOOD)) {
+                if (ITEM_ENABLED(Items::Types::I_WOOD) && ITEM_ENABLED(Items::Types::I_IRONWOOD)) {
                     *str += "At this level the mage may transmute ";
-                    *str += ItemString(I_WOOD, 1);
+                    *str += ItemString(Items::Types::I_WOOD, 1);
                     *str += " into ";
-                    *str += ItemString(I_IRONWOOD, 1);
+                    *str += ItemString(Items::Types::I_IRONWOOD, 1);
                     *str += ".";
                 }
             } else if (level == 3) {
-                if (ITEM_ENABLED(I_FUR) && ITEM_ENABLED(I_FLOATER)) {
+                if (ITEM_ENABLED(Items::Types::I_FUR) && ITEM_ENABLED(Items::Types::I_FLOATER)) {
                     *str += "At this level the mage may transmute ";
-                    *str += ItemString(I_FUR, 1);
+                    *str += ItemString(Items::Types::I_FUR, 1);
                     *str += " into ";
-                    *str += ItemString(I_FLOATER, 1);
+                    *str += ItemString(Items::Types::I_FLOATER, 1);
                     *str += ".";
                 }
             } else if (level == 4) {
-                if (ITEM_ENABLED(I_WOOD) && ITEM_ENABLED(I_YEW)) {
+                if (ITEM_ENABLED(Items::Types::I_WOOD) && ITEM_ENABLED(Items::Types::I_YEW)) {
                     *str += "At this level the mage may transmute ";
-                    *str += ItemString(I_WOOD, 1);
+                    *str += ItemString(Items::Types::I_WOOD, 1);
                     *str += " into ";
-                    *str += ItemString(I_YEW, 1);
+                    *str += ItemString(Items::Types::I_YEW, 1);
                     *str += ".";
                 }
             } else if (level == 5) {
-                if (ITEM_ENABLED(I_HORSE) && ITEM_ENABLED(I_WHORSE)) {
+                if (ITEM_ENABLED(Items::Types::I_HORSE) && ITEM_ENABLED(Items::Types::I_WHORSE)) {
                     *str += "At this level the mage may transmute ";
-                    *str += ItemString(I_HORSE, 1, ALWAYSPLURAL);
+                    *str += ItemString(Items::Types::I_HORSE, 1, ALWAYSPLURAL);
                     *str += " into ";
-                    *str += ItemString(I_WHORSE, 1, ALWAYSPLURAL);
+                    *str += ItemString(Items::Types::I_WHORSE, 1, ALWAYSPLURAL);
                     *str += ".";
                 }
             }
             break;
-        case S_BLASPHEMOUS_RITUAL:
+        case Skills::Types::S_BLASPHEMOUS_RITUAL:
             if (level > 1) break;
-            if (OBJECT_DISABLED(O_BKEEP)) break;
+            if (OBJECT_DISABLED(Objects::Types::O_BKEEP)) break;
             *str += "A mage with the Blasphemous Ritual skill may "
                 "perform a blasphemous ritual to sever the "
                 "world of ";
             *str += Globals->WORLD_NAME;
             *str += " from the Eternal City. ";
             *str += "This ritual requires ";
-            *str += ItemString(I_ROOTSTONE, 1);
+            *str += ItemString(Items::Types::I_ROOTSTONE, 1);
             *str += " and the sacrifice of a randomly selected "
                 "leader belonging to the mage's faction.";
-            if (ObjectDefs[O_BKEEP].cost > 1) {
+            if (ObjectDefs[Objects::Types::O_BKEEP].cost > 1) {
                 *str += " Many such sacrifices will be "
                     "necessary to complete the ritual; "
                     "the caster will attempt to perform "
@@ -1365,7 +1383,8 @@ AString *ShowSkill::Report(Faction *f)
                     "level in Blasphemous Ritual.";
             }
             break;
-        case S_MANIPULATE:
+        case Skills::Types::S_MANIPULATE:
+        {
             if (!Globals->APPRENTICES_EXIST) break;
             if (level == 1) {
                 *str += "A unit with this skill becomes an ";
@@ -1375,46 +1394,53 @@ AString *ShowSkill::Report(Faction *f)
                 *str += "s cannot cast spells directly, they can "
                     "use magic items normally only usable by mages.";
             }
-            max = 1;
-            if (ITEM_ENABLED(I_CORNUCOPIA))
+            unsigned int max = 1;
+            if (ITEM_ENABLED(Items::Types::I_CORNUCOPIA))
+            {
                 max = 2;
-            if (ITEM_ENABLED(I_GATE_CRYSTAL) ||
-                    ITEM_ENABLED(I_STAFFOFH) ||
-                    ITEM_ENABLED(I_SCRYINGORB))
+            }
+            if (ITEM_ENABLED(Items::Types::I_GATE_CRYSTAL) ||
+                    ITEM_ENABLED(Items::Types::I_STAFFOFH) ||
+                    ITEM_ENABLED(Items::Types::I_SCRYINGORB))
+            {
                 max = 3;
+            }
             if (level == max) {
                 *str += "Continued study of this skill gives no further advantages.";
             }
             break;
-        case S_WEAPONCRAFT:
+        }
+        case Skills::Types::S_WEAPONCRAFT:
             if (level > 1) break;
             *str += "The weaponcraft skill is an advanced version of the "
                 "weaponsmith skill.";
             break;
-        case S_ARMORCRAFT:
+        case Skills::Types::S_ARMORCRAFT:
             if (level > 1) break;
             *str += "The armorcraft skill is an advanced version of the "
                 "armorsmith skill.";
             break;
-        case S_CAMELTRAINING:
+        case Skills::Types::S_CAMELTRAINING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of camel production.";
             break;
-        case S_GEMCUTTING:
+        case Skills::Types::S_GEMCUTTING:
             if (level > 1) break;
             *str += "This skill enables a unit to fashion higher quality "
                 "gems from lower quality ones.";
             break;
-        case S_MONSTERTRAINING:
+        case Skills::Types::S_MONSTERTRAINING:
             if (level > 1) break;
             *str += "This skill deals with all aspects of training monster "
                 "mounts.";
             break;
-        case S_COOKING:
+        case Skills::Types::S_COOKING:
             if (level > 1) break;
             *str += "This skill deals with creating provisions from basic "
                     "foodstuffs.  A skilled cook can feed many more people "
                     "than a farmer alone.";
+            break;
+        default:
             break;
     }
 
@@ -1426,10 +1452,8 @@ AString *ShowSkill::Report(Faction *f)
     int comma = 0;
     int comma1 = 0;
     int count;
-    int last = -1;
-    int last1 = -1;
-    unsigned int c;
-    int i;
+    Items last;
+    Items last1;
     int build = 0;
 
     // If this is a combat spell, note it.
@@ -1448,39 +1472,46 @@ AString *ShowSkill::Report(Faction *f)
     // for the new ship items
     temp3 = "A unit with this skill may BUILD ";
 
-    SkillType *sk1, *sk2;
-    sk1 = &SkillDefs[skill];
-    for (i = NITEMS - 1; i >= 0; i--) {
+    const auto& sk1 = SkillDefs[skill];
+    for (auto it = Items::rbegin(); it != Items::rend(); ++it) {
+        const auto i = *it;
         if (ITEM_DISABLED(i)) continue;
-        sk2 = FindSkill(ItemDefs[i].pSkill);
+        const auto& sk2 = FindSkill(ItemDefs[i].pSkill);
         if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
             int canmake = 1;
             int resource = 1;
-            for (c = 0; c < sizeof(ItemDefs[i].pInput)/sizeof(Materials); c++) {
-                if (ItemDefs[i].pInput[c].item == -1) continue;
+            for (const auto& c: ItemDefs[i].pInput) {
+                if (!c.item.isValid())
+                {
+                    continue;
+                }
                 resource = 0;
-                if (ITEM_DISABLED(ItemDefs[i].pInput[c].item)) {
+                if (ITEM_DISABLED(c.item)) {
                     canmake = 0;
                 }
             }
-            if (canmake && last1 == -1) {
+            if (canmake && !last1.isValid()) {
                 last1 = i;
             }
-            if (resource && (ItemDefs[i].type & IT_ADVANCED) && last == -1) {
+            if (resource && (ItemDefs[i].type & IT_ADVANCED) && !last.isValid()) {
                 last = i;
             }
         }
 
     }
-    for (i = 0; i < NITEMS; i++) {
+    for (auto it = Items::begin(); it != Items::end(); ++it) {
+        const auto i = *it;
         if (ITEM_DISABLED(i)) continue;
         int illusion = (ItemDefs[i].type & IT_ILLUSION);
-        sk2 = FindSkill(ItemDefs[i].mSkill);
+        auto sk2 = FindSkill(ItemDefs[i].mSkill);
         if (sk1 == sk2 && ItemDefs[i].mLevel == level) {
             int canmagic = 1;
-            for (c = 0; c < sizeof(ItemDefs[i].mInput)/sizeof(Materials); c++) {
-                if (ItemDefs[i].mInput[c].item == -1) continue;
-                if (ITEM_DISABLED(ItemDefs[i].mInput[c].item)) {
+            for (const auto& c: ItemDefs[i].mInput) {
+                if (!c.item.isValid())
+                {
+                    continue;
+                }
+                if (ITEM_DISABLED(c.item)) {
                     canmagic = 0;
                 }
             }
@@ -1527,42 +1558,50 @@ AString *ShowSkill::Report(Faction *f)
                 temp2 += ItemDefs[i].abr;
                 temp2 += "] via magic";
                 count = 0;
-                for (c = 0; c < sizeof(ItemDefs[i].mInput)/sizeof(Materials); c++) {
-                    if (ItemDefs[i].mInput[c].item == -1) continue;    
+                for (const auto& c: ItemDefs[i].mInput) {
+                    if (!c.item.isValid())
+                    {
+                        continue;
+                    }
                     count++;
                 }
                 if (count > 0) {
                     temp2 += " at a cost of ";
                     temp4 = "";
                     count = 0;
-                    for (c = 0; c < sizeof(ItemDefs[i].mInput)/sizeof(Materials); c++) {
-                        if (ItemDefs[i].mInput[c].item == -1) continue;    
+                    for (const auto& c: ItemDefs[i].mInput) {
+                        if (!c.item.isValid())
+                        {
+                            continue;
+                        }
                         if (!(temp4 == "")) {
                             if (count > 0)
                                 temp2 += ", ";
                             temp2 += temp4;
                             count++;
                         }
-                        temp4 = ItemString(ItemDefs[i].mInput[c].item,
-                                ItemDefs[i].mInput[c].amt);
+                        temp4 = ItemString(c.item, c.amt);
                     }
                     if (count > 0)
                         temp2 += " and ";
                     temp2 += temp4;
                 }
             }
-            if (f) {
-                f->DiscoverItem(i, 1, 1);
-            }
+            //if (f) {
+            f.DiscoverItem(i, 1, 1);
+            //}
         }
         sk2 = FindSkill(ItemDefs[i].pSkill);
         if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
             int canmake = 1;
             int resource = 1;
-            for (c = 0; c < sizeof(ItemDefs[i].pInput)/sizeof(Materials); c++) {
-                if (ItemDefs[i].pInput[c].item == -1) continue;
+            for (const auto& c: ItemDefs[i].pInput) {
+                if (!c.item.isValid())
+                {
+                    continue;
+                }
                 resource = 0;
-                if (ITEM_DISABLED(ItemDefs[i].pInput[c].item)) {
+                if (ITEM_DISABLED(c.item)) {
                     canmake = 0;
                 }
             }
@@ -1597,18 +1636,19 @@ AString *ShowSkill::Report(Faction *f)
                         temp1 += "any of ";
                     temp4 = "";
                     count = 0;
-                    for (c = 0; c < sizeof(ItemDefs[i].pInput)/sizeof(Materials); c++) {
-                        if (ItemDefs[i].pInput[c].item == -1) continue;    
+                    for (const auto& c: ItemDefs[i].pInput) {
+                        if (!c.item.isValid())
+                        {
+                            continue;
+                        }
                         if (!(temp4 == "")) {
                             if (count > 0)
                                 temp1 += ", ";
                             temp1 += temp4;
                             count++;
                         }
-                        temp4 = ItemString(ItemDefs[i].pInput[c].item,
-                            ItemDefs[i].type & IT_SHIP ?
-                                ItemDefs[i].pMonths :
-                                ItemDefs[i].pInput[c].amt);
+                        temp4 = ItemString(c.item,
+                            ItemDefs[i].type & IT_SHIP ? ItemDefs[i].pMonths : c.amt);
                     }
                     if (count > 0)
                         temp1 += " and ";
@@ -1625,9 +1665,9 @@ AString *ShowSkill::Report(Faction *f)
                         temp1 += " man-months";
                     }
                 }
-                if (f) {
-                    f->DiscoverItem(i, 1, 1);
-                }
+                //if (f) {
+                f.DiscoverItem(i, 1, 1);
+                //}
             }
             if (resource && (ItemDefs[i].type & IT_ADVANCED)) {
                 if (comma) {
@@ -1655,15 +1695,15 @@ AString *ShowSkill::Report(Faction *f)
         if (!(*str == "")) *str += " ";
         *str += temp2 + ". To use this spell, the mage should CAST ";
         count = 0;
-        for (i = 0; sk1->name[i]; i++) {
-            if (sk1->name[i] == ' ') {
+        for (const char* it = sk1.name; *it; ++it) {
+            if (*it == ' ') {
                 *str += "_";
                 count = 0;
             } else {
                 if (count == 0) {
-                    *str += (char) toupper(sk1->name[i]);
+                    *str += static_cast<char>(toupper(*it));
                 } else {
-                    *str += sk1->name[i];
+                    *str += *it;
                 }
                 count++;
             }
@@ -1675,15 +1715,16 @@ AString *ShowSkill::Report(Faction *f)
     comma = 0;
     temp = "";
     temp2 = "";
-    for (i = 0; i < NOBJECTS; i++) {
+    for (auto it = Objects::begin(); it != Objects::end(); ++it) {
+        const auto i = *it;
         if (OBJECT_DISABLED(i)) continue;
-        if (ObjectDefs[i].item == -1) continue;
-        if (ObjectDefs[i].item != I_WOOD_OR_STONE &&
+        if (!ObjectDefs[i].item.isValid()) continue;
+        if (!ObjectDefs[i].item.isWoodOrStone() &&
                 (ItemDefs[ObjectDefs[i].item].flags & ItemType::DISABLED))
             continue;
-        if (ObjectDefs[i].item == I_WOOD_OR_STONE &&
-                (ItemDefs[I_WOOD].flags & ItemType::DISABLED) &&
-                (ItemDefs[I_STONE].flags & ItemType::DISABLED))
+        if (ObjectDefs[i].item.isWoodOrStone() &&
+                (ItemDefs[Items::Types::I_WOOD].flags & ItemType::DISABLED) &&
+                (ItemDefs[Items::Types::I_STONE].flags & ItemType::DISABLED))
             continue;
         AString skname = SkillDefs[skill].abbr;
         if (skname == ObjectDefs[i].skill && ObjectDefs[i].level == level) {
@@ -1714,25 +1755,25 @@ AString *ShowSkill::Report(Faction *f)
             temp2 += " from ";
             temp2 += ObjectDefs[i].cost;
             temp2 += " ";
-            if (ObjectDefs[i].item == I_WOOD_OR_STONE) {
-                if (ItemDefs[I_WOOD].flags & ItemType::DISABLED) {
-                    temp2 += ItemDefs[I_STONE].name;
+            if (ObjectDefs[i].item.isWoodOrStone()) {
+                if (ItemDefs[Items::Types::I_WOOD].flags & ItemType::DISABLED) {
+                    temp2 += ItemDefs[Items::Types::I_STONE].name;
                     temp2 += " [";
-                    temp2 += ItemDefs[I_STONE].abr;
+                    temp2 += ItemDefs[Items::Types::I_STONE].abr;
                     temp2 += "]";
-                } else if (ItemDefs[I_STONE].flags & ItemType::DISABLED) {
-                    temp2 += ItemDefs[I_WOOD].name;
+                } else if (ItemDefs[Items::Types::I_STONE].flags & ItemType::DISABLED) {
+                    temp2 += ItemDefs[Items::Types::I_WOOD].name;
                     temp2 += " [";
-                    temp2 += ItemDefs[I_WOOD].abr;
+                    temp2 += ItemDefs[Items::Types::I_WOOD].abr;
                     temp2 += "]";
                 } else {
-                    temp2 += ItemDefs[I_WOOD].name;
+                    temp2 += ItemDefs[Items::Types::I_WOOD].name;
                     temp2 += " [";
-                    temp2 += ItemDefs[I_WOOD].abr;
+                    temp2 += ItemDefs[Items::Types::I_WOOD].abr;
                     temp2 += "] or ";
-                    temp2 += ItemDefs[I_STONE].name;
+                    temp2 += ItemDefs[Items::Types::I_STONE].name;
                     temp2 += " [";
-                    temp2 += ItemDefs[I_STONE].abr;
+                    temp2 += ItemDefs[Items::Types::I_STONE].abr;
                     temp2 += "]";
                 }
             } else {
@@ -1741,9 +1782,9 @@ AString *ShowSkill::Report(Faction *f)
                     temp2 += ItemDefs[ObjectDefs[i].item].abr;
                     temp2 += "]";
             }
-            if (f) {
-                f->objectshows.Add(ObjectDescription(i));
-            }
+            //if (f) {
+            f.objectshows.Add(ObjectDescription(i));
+            //}
         }
     }
     if (!(temp2 == "")) {
@@ -1757,34 +1798,41 @@ AString *ShowSkill::Report(Faction *f)
     }
 
     // Required skills
-    SkillType *lastpS = NULL;
-    last = -1;
+    const SkillType* lastpS = nullptr;
+    const SkillDepend* lastC = nullptr;
     if (level == 1) {
         comma = 0;
-        int found = 0;
+        bool found = false;
         temp = "This skill requires ";
-        for (c=0; c<sizeof(SkillDefs[skill].depends)/sizeof(SkillDepend); c++) {
-            SkillType *pS = FindSkill(SkillDefs[skill].depends[c].skill);
-            if (!pS || (pS->flags & SkillType::DISABLED)) continue;
-            found = 1;
-            if (lastpS == NULL) {
-                lastpS = pS;
-                last = c;
-                continue;
+        for (const auto& c: SkillDefs[skill].depends) {
+            try
+            {
+                const auto& pS = FindSkill(c.skill);
+                if (pS.flags & SkillType::DISABLED)
+                {
+                    continue;
+                }
+                found = true;
+                if (!lastpS) {
+                    lastpS = &pS;
+                    lastC = &c;
+                    continue;
+                }
+                if (comma) temp += ", ";
+                temp += SkillStrs(*lastpS) + " " + lastC->level;
+                lastpS = &pS;
+                lastC = &c;
+                comma++;
             }
-            if (comma) temp += ", ";
-            temp += SkillStrs(lastpS) + " " +
-                SkillDefs[skill].depends[last].level;
-            lastpS = pS;
-            last = c;
-            comma++;
+            catch(const NoSuchItemException&)
+            {
+            }
         }
         if (comma) {
             temp += " and ";
         }
         if (found) {
-            temp += SkillStrs(lastpS) + " " +
-                SkillDefs[skill].depends[last].level;
+            temp += SkillStrs(*lastpS) + " " + lastC->level;
         }
 
         if (found) {

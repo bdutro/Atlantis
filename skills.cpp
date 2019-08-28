@@ -245,7 +245,7 @@ size_t StudyRateAdjustment(size_t days, size_t exp)
     return rate;
 }
 
-ShowSkill::ShowSkill(int s, int l)
+ShowSkill::ShowSkill(const Skills& s, unsigned int l)
 {
     skill = s;
     level = l;

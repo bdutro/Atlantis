@@ -280,9 +280,9 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         if (Globals->GM_REPORT || (pGame->month == 0 && pGame->year == 1)) {
             // Put all skills, items and objects in the GM report
             shows.clear();
-            for (size_t i = 0; i < Skills::size(); i++) {
-                for (int j = 1; j < 6; j++) {
-                    shows.emplace_back(std::make_shared<ShowSkill>(i, j));
+            for (auto i = Skills::begin(); i != Skills::end(); ++i) {
+                for (unsigned int j = 1; j < 6; j++) {
+                    shows.emplace_back(std::make_shared<ShowSkill>(*i, j));
                 }
             }
             if (!shows.empty()) {

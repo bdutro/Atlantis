@@ -213,7 +213,7 @@ private:
     void ModifyItemProductionSkill(const Items& it, char *sk, size_t lev);
     void ModifyItemProductionOutput(const Items& it, int months, int count);
     void ModifyItemProductionInput(const Items& it, int i, const Items& input, int amount);
-    void ModifyItemMagicSkill(const Items& it, char *sk, int lev);
+    void ModifyItemMagicSkill(const Items& it, char *sk, size_t lev);
     void ModifyItemMagicOutput(const Items& it, int count);
     void ModifyItemMagicInput(const Items& it, int i, const Items& input, int amount);
     void ModifyItemEscape(const Items& it, int escape, char const *skill, int val);
