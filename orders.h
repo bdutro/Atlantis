@@ -278,8 +278,8 @@ class CastOrder : public Order {
 
         CastOrder();
 
-        int spell;
-        int level;
+        Skills spell;
+        unsigned int level;
 };
 
 class CastMindOrder : public CastOrder {
@@ -297,7 +297,7 @@ class CastRegionOrder : public CastOrder {
 
         CastRegionOrder() = default;
 
-        int xloc, yloc, zloc;
+        unsigned int xloc, yloc, zloc;
 };
 
 class TeleportOrder : public CastRegionOrder {
@@ -316,7 +316,7 @@ class CastIntOrder : public CastOrder {
 
         CastIntOrder() = default;
 
-        int target;
+        Directions target;
 };
 
 class CastUnitsOrder : public CastOrder {
@@ -334,7 +334,7 @@ class CastTransmuteOrder : public CastOrder {
 
         CastTransmuteOrder() = default;
 
-        int item;
+        Items item;
         int number;
 };
 

@@ -339,7 +339,7 @@ class RangeType {
         };
         int rangeClass;
 
-        int rangeMult;
+        unsigned int rangeMult;
 
         int crossLevelPenalty;    // How much extra distance to cross levels?
 };

@@ -31,58 +31,58 @@
 //
 // Spell parsing - generic
 //
-void ProcessGenericSpell(Unit *, int, OrdersCheck *pCheck);
-void ProcessRegionSpell(Unit *, AString *, int, OrdersCheck *pCheck);
+void ProcessGenericSpell(const Unit::Handle&, const Skills&, const OrdersCheck::Handle&pCheck);
+void ProcessRegionSpell(const Unit::Handle&, AString *, const Skills&, const OrdersCheck::Handle&pCheck);
 
 //
 // Spell parsing - specific
 //
-void ProcessCastGateLore(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessCastPortalLore(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessPhanBeasts(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessPhanUndead(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessPhanDemons(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessInvisibility(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessBirdLore(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessMindReading(Unit *,AString *, OrdersCheck *pCheck );
-void ProcessLacandonTeleport(Unit *, AString *, OrdersCheck *pCheck);
-void ProcessTransmutation(Unit *, AString *, OrdersCheck *pCheck);
+void ProcessCastGateLore(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessCastPortalLore(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessPhanBeasts(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessPhanUndead(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessPhanDemons(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessInvisibility(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessBirdLore(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessMindReading(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
+void ProcessLacandonTeleport(const Unit::Handle&, AString *, const OrdersCheck::Handle&pCheck);
+void ProcessTransmutation(const Unit::Handle&, AString *, const OrdersCheck::Handle&pCheck);
 
 //
 // Spell helpers
 //
-int GetRegionInRange(ARegion *r, ARegion *tar, Unit *u, int spell);
+bool GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar, const Unit::Handle& u, const Skills& spell);
 
 //
 // Spell running
 //
-int RunDetectGates(ARegion *,Object *,Unit *);
-int RunFarsight(ARegion *,Unit *);
-int RunGateJump(ARegion *,Object *,Unit *);
-int RunTeleport(ARegion *,Object *,Unit *);
-int RunLacandonTeleport(ARegion *, Object *, Unit *);
-int RunPortalLore(ARegion *,Object *,Unit *);
-int RunEarthLore(ARegion *,Unit *);
-int RunWeatherLore(ARegion *, Unit *);
-int RunClearSkies(ARegion *,Unit *);
-int RunPhanBeasts(ARegion *,Unit *);
-int RunPhanUndead(ARegion *,Unit *);
-int RunPhanDemons(ARegion *,Unit *);
-int RunInvisibility(ARegion *,Unit *);
-int RunWolfLore(ARegion *,Unit *);
-int RunBirdLore(ARegion *,Unit *);
-int RunDragonLore(ARegion *,Unit *);
-int RunSummonSkeletons(ARegion *,Unit *);
-int RunRaiseUndead(ARegion *,Unit *);
-int RunSummonLich(ARegion *,Unit *);
-int RunSummonImps(ARegion *,Unit *);
-int RunSummonDemon(ARegion *,Unit *);
-int RunSummonBalrog(ARegion *,Unit *);
-int RunCreateArtifact(ARegion *,Unit *,int,int);
-int RunEngraveRunes(ARegion *,Object *,Unit *);
-int RunConstructGate(ARegion *,Unit *,int);
-int RunEnchant(ARegion *,Unit *, int, int);
-int RunMindReading(ARegion *,Unit *);
-int RunTransmutation(ARegion *,Unit *);
-int RunBlasphemousRitual(ARegion *,Unit *);
+int RunDetectGates(const ARegion::Handle&,const Object::Handle&,const Unit::Handle&);
+int RunFarsight(const ARegion::Handle&,const Unit::Handle&);
+int RunGateJump(const ARegion::Handle&,const Object::Handle&,const Unit::Handle&);
+int RunTeleport(const ARegion::Handle&,const Object::Handle&,const Unit::Handle&);
+int RunLacandonTeleport(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
+int RunPortalLore(const ARegion::Handle&,const Object::Handle&,const Unit::Handle&);
+int RunEarthLore(const ARegion::Handle&,const Unit::Handle&);
+int RunWeatherLore(const ARegion::Handle&, const Unit::Handle&);
+int RunClearSkies(const ARegion::Handle&,const Unit::Handle&);
+int RunPhanBeasts(const ARegion::Handle&,const Unit::Handle&);
+int RunPhanUndead(const ARegion::Handle&,const Unit::Handle&);
+int RunPhanDemons(const ARegion::Handle&,const Unit::Handle&);
+int RunInvisibility(const ARegion::Handle&,const Unit::Handle&);
+int RunWolfLore(const ARegion::Handle&,const Unit::Handle&);
+int RunBirdLore(const ARegion::Handle&,const Unit::Handle&);
+int RunDragonLore(const ARegion::Handle&,const Unit::Handle&);
+int RunSummonSkeletons(const ARegion::Handle&,const Unit::Handle&);
+int RunRaiseUndead(const ARegion::Handle&,const Unit::Handle&);
+int RunSummonLich(const ARegion::Handle&,const Unit::Handle&);
+int RunSummonImps(const ARegion::Handle&,const Unit::Handle&);
+int RunSummonDemon(const ARegion::Handle&,const Unit::Handle&);
+bool RunSummonBalrog(const ARegion::Handle&,const Unit::Handle&);
+int RunCreateArtifact(const ARegion::Handle&, const Unit::Handle&, const Skills&, const Items&);
+bool RunEngraveRunes(const ARegion::Handle&,const Object::Handle&,const Unit::Handle&);
+bool RunConstructGate(const ARegion::Handle&, const Unit::Handle&, const Skills&);
+bool RunEnchant(const ARegion::Handle&,const Unit::Handle&, const Skills&, const Items&);
+bool RunMindReading(const ARegion::Handle&,const Unit::Handle&);
+int RunTransmutation(const ARegion::Handle&,const Unit::Handle&);
+int RunBlasphemousRitual(const ARegion::Handle&,const Unit::Handle&);
 #endif

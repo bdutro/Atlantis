@@ -1516,7 +1516,7 @@ void Game::ModifyRangeMultiplier(char const *range, int mult)
     try
     {
         auto& rp = FindRange_(range);
-        rp.rangeMult = mult;
+        rp.rangeMult = static_cast<unsigned int>(mult);
     }
     catch(const NoSuchItemException&)
     {
