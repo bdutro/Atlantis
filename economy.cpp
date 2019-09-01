@@ -104,7 +104,7 @@ void ARegion::SetupPop()
     int mw = typer.wages;
     
     // fix economy when MAINTENANCE_COST has been adjusted
-    mw += Globals->MAINTENANCE_COST - 10;
+    mw += static_cast<int>(Globals->MAINTENANCE_COST) - 10;
     if (mw < 0) mw = 0;
 
     if (pop == 0) {
@@ -195,7 +195,7 @@ void ARegion::SetupPop()
     maxwages = Wages();
 
     /* taxable region wealth */
-    wealth = static_cast<int>(static_cast<float>(Population() * (Wages() - (10 * Globals->MAINTENANCE_COST)) / 50));
+    wealth = static_cast<int>(static_cast<float>(Population() * (Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST)) / 50));
     if (wealth < 0) wealth = 0;
 
     // wage-relevant population (/10 wages /5 popfactor)
@@ -205,7 +205,7 @@ void ARegion::SetupPop()
         float wpfactor = 120 / (61 - static_cast<float>(pp) / 50);
         pp += static_cast<int>(static_cast<float>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1)));
     }
-    int wagelimit = static_cast<int>(static_cast<float>(pp * (Wages() - 10 * Globals->MAINTENANCE_COST)) /50);
+    int wagelimit = static_cast<int>(static_cast<float>(pp * (Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST))) /50);
     if (wagelimit < 0) wagelimit = 0;
     Production::Handle w = std::make_shared<Production>();
     w->itemtype = Items::Types::I_SILVER;
@@ -221,7 +221,7 @@ void ARegion::SetupPop()
         int epf = (ep / 10 + 300) / 6;
         ep = ep * epf / 100;
     }
-    int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 1)) / 50);
+    int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST)) + 1)) / 50);
     if (maxent < 0) maxent = 0;
     Production::Handle e = std::make_shared<Production>();
     e->itemtype = Items::Types::I_SILVER;
@@ -234,7 +234,7 @@ void ARegion::SetupPop()
     // note: wage factor 10, population factor 5 - included as "/ 50"
     /* More wealth in safe Starting Cities */
     if ((Globals->SAFE_START_CITIES) && (IsStartingCity())) {
-        int wbonus = (Population() / 5) * Globals->MAINTENANCE_COST;
+        int wbonus = (Population() / 5) * static_cast<int>(Globals->MAINTENANCE_COST);
         wealth += wbonus;
         w->amount += wbonus / Globals->WORK_FRACTION;
         w->baseamount += wbonus / Globals->WORK_FRACTION;
@@ -268,7 +268,7 @@ void ARegion::SetIncome()
     maxwages = Wages();
     
     /* taxable region wealth */
-    wealth = static_cast<int>(static_cast<float>(Population() * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
+    wealth = static_cast<int>(static_cast<float>(Population() * (Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST))) / 50);
     if (wealth < 0) wealth = 0;
     
     /* Wages */
@@ -279,7 +279,7 @@ void ARegion::SetIncome()
         float wpfactor = (120 / (61 - static_cast<float>(pp) / 50));
         pp += static_cast<int>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1));
     }
-    int maxwages = static_cast<int>(static_cast<float>(pp * (Wages() - 10 * Globals->MAINTENANCE_COST)) / 50);
+    int maxwages = static_cast<int>(static_cast<float>(pp * (Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST))) / 50);
     if (maxwages < 0) maxwages = 0;
     Production::WeakHandle w_weak = products.GetProd(Items::Types::I_SILVER,-1);
     Production::Handle w;
@@ -306,7 +306,7 @@ void ARegion::SetIncome()
         int epf = (ep / 10 + 300) / 6;
         ep = ep * epf / 100;
     }
-    int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - 10 * Globals->MAINTENANCE_COST) + 10)) / 50);
+    int maxent = static_cast<int>(static_cast<float>(ep * ((Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST)) + 10)) / 50);
     if (maxent < 0) maxent = 0;
     Production::Handle e;
     Production::WeakHandle e_w = products.GetProd(Items::Types::I_SILVER,
@@ -331,7 +331,7 @@ void ARegion::SetIncome()
     // note: wage factor 10, population factor 5 - included as "/ 50"
     /* More wealth in safe Starting Cities */
     if ((Globals->SAFE_START_CITIES) && (IsStartingCity())) {
-        int wbonus = (Population() / 5) * Globals->MAINTENANCE_COST;
+        int wbonus = (Population() / 5) * static_cast<int>(Globals->MAINTENANCE_COST);
         wealth += wbonus;
         w->amount += wbonus / Globals->WORK_FRACTION;
         w->baseamount += wbonus / Globals->WORK_FRACTION;
@@ -940,7 +940,7 @@ void ARegion::SetupEditRegion()
     int mw = typer.wages;
     
     // fix economy when MAINTENANCE_COST has been adjusted
-    mw += Globals->MAINTENANCE_COST - 10;
+    mw += static_cast<int>(Globals->MAINTENANCE_COST) - 10;
     if (mw < 0) mw = 0;
 
     if (pop == 0) {
@@ -1089,7 +1089,7 @@ int ARegion::BaseDev()
         }
     }
     
-    basedev = (Globals->MAINTENANCE_COST + basedev) / 2;
+    basedev = (static_cast<int>(Globals->MAINTENANCE_COST) + basedev) / 2;
     return basedev;
 }
 
@@ -1260,7 +1260,10 @@ void ARegion::Pillage()
     int popdensity = Globals->CITY_POP / 2000;
     AdjustPop(- damage * getrandom(popdensity) - getrandom(5 * popdensity));
     /* Stabilise at minimal development levels */
-    while (Wages() < Globals->MAINTENANCE_COST / 20) development += getrandom(5);
+    while (Wages() < static_cast<int>(Globals->MAINTENANCE_COST / 20))
+    {
+        development += getrandom(5);
+    }
 }
 
 

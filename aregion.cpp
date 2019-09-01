@@ -617,7 +617,7 @@ bool ARegion::HasRoad()
 }
 
 // AS
-bool ARegion::HasExitRoad(const Directions& realDirection)
+bool ARegion::HasExitRoad(const Directions& realDirection) const
 {
     for(const auto& o: objects)
     {
@@ -643,7 +643,7 @@ int ARegion::CountConnectingRoads()
 }
 
 // AS
-bool ARegion::HasConnectingRoad(const Directions& realDirection)
+bool ARegion::HasConnectingRoad(const Directions& realDirection) const
 {
     Directions opposite = GetRealDirComp(realDirection);
 
@@ -656,10 +656,11 @@ bool ARegion::HasConnectingRoad(const Directions& realDirection)
 }
 
 // AS
-Objects ARegion::GetRoadDirection(const Directions& realDirection)
+Objects ARegion::GetRoadDirection(const Directions& realDirection) const
 {
     Objects roadDirection;
-    switch (realDirection.asEnum()) {
+    switch (realDirection.asEnum())
+    {
         case Directions::Types::D_NORTH:
             roadDirection = Objects::Types::O_ROADN;
             break;
@@ -685,22 +686,23 @@ Objects ARegion::GetRoadDirection(const Directions& realDirection)
 }
 
 // AS
-Directions ARegion::GetRealDirComp(const Directions& realDirection)
+Directions ARegion::GetRealDirComp(const Directions& realDirection) const
 {
     Directions complementDirection;
-    if (!neighbors[realDirection].expired()) {
+    if (!neighbors[realDirection].expired())
+    {
         const ARegion::Handle n = neighbors[realDirection].lock();
-        const ARegion::Handle this_shared = shared_from_this();
         for (auto i = Directions::begin(); i != Directions::end(); ++i)
         {
-            if (n->neighbors[*i].lock() == this_shared)
+            if (n->neighbors[*i].lock().get() == this)
             {
                 return *i;
             }
         }
     }
 
-    switch (realDirection.asEnum()) {
+    switch (realDirection.asEnum())
+    {
         case Directions::Types::D_NORTH:
             complementDirection = Directions::Types::D_SOUTH;
             break;
@@ -1847,26 +1849,42 @@ unsigned int ARegion::IsCoastalOrLakeside()
     return seacount;
 }
 
-unsigned int ARegion::MoveCost(int movetype, const ARegion::Handle& fromRegion, const Directions& dir, AString *road)
+unsigned int ARegion::MoveCost(int movetype, const ARegion& fromRegion, const Directions& dir, AString *road) const
 {
     int cost = 1;
-    if (Globals->WEATHER_EXISTS) {
+    if (Globals->WEATHER_EXISTS)
+    {
         cost = 2;
-        if (weather == Weather::Types::W_BLIZZARD) return 10;
-        if (weather == Weather::Types::W_NORMAL || clearskies) cost = 1;
-    }
-    if (movetype == M_SWIM) {
-        cost = (TerrainDefs[type].movepoints * cost);
-        // Roads don't help swimming, even if there are any in the ocean
-    } else if (movetype == M_WALK || movetype == M_RIDE) {
-        cost = (TerrainDefs[type].movepoints * cost);
-        if (fromRegion->HasExitRoad(dir) && fromRegion->HasConnectingRoad(dir)) {
-            cost -= cost/2;
-            if (road)
-                *road = "on a road ";
+        if (weather == Weather::Types::W_BLIZZARD)
+        {
+            return 10;
+        }
+        if (weather == Weather::Types::W_NORMAL || clearskies)
+        {
+            cost = 1;
         }
     }
-    if (cost < 1) cost = 1;
+    if (movetype == M_SWIM)
+    {
+        cost = (TerrainDefs[type].movepoints * cost);
+        // Roads don't help swimming, even if there are any in the ocean
+    }
+    else if (movetype == M_WALK || movetype == M_RIDE)
+    {
+        cost = (TerrainDefs[type].movepoints * cost);
+        if (fromRegion.HasExitRoad(dir) && fromRegion.HasConnectingRoad(dir))
+        {
+            cost -= cost/2;
+            if (road)
+            {
+                *road = "on a road ";
+            }
+        }
+    }
+    if (cost < 1)
+    {
+        cost = 1;
+    }
     return static_cast<unsigned int>(cost);
 }
 

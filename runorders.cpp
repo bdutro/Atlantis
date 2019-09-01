@@ -259,9 +259,12 @@ void Game::RunStealOrders()
 WeakPtrList<Faction> Game::CanSeeSteal(const ARegion::Handle& r, const Unit::Handle& u)
 {
     WeakPtrList<Faction> retval;
-    for(const auto& f: factions) {
-        if (r->Present(*f)) {
-            if (f->CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) {
+    for(const auto& f: factions)
+    {
+        if (r->Present(*f))
+        {
+            if (f->CanSee(*r, u, Globals->SKILL_PRACTICE_AMOUNT > 0))
+            {
                 retval.push_back(f);
             }
         }
@@ -641,10 +644,16 @@ int Game::FortTaxBonus(const Object::Handle& o, const Unit::Handle& u)
         if (unit->num == u->num) {
             if (unit->taxing == TAX_TAX) {
                 int fortbonus = static_cast<int>(men);
-                int maxtax = unit->Taxers(1);
-                if (fortbonus > protect) fortbonus = protect;
-                if (fortbonus > maxtax) fortbonus = maxtax;
-                fortbonus *= Globals->TAX_BONUS_FORT;
+                const size_t maxtax = unit->Taxers(1);
+                if (fortbonus > protect)
+                {
+                    fortbonus = protect;
+                }
+                if (fortbonus > static_cast<int>(maxtax))
+                {
+                    fortbonus = static_cast<int>(maxtax);
+                }
+                fortbonus *= static_cast<int>(Globals->TAX_BONUS_FORT);
                 return fortbonus;
             }
         }
@@ -676,7 +685,7 @@ int Game::CountTaxes(const ARegion::Handle& reg)
                     u->Error("TAX: A unit is on guard.");
                     u->taxing = TAX_NONE;
                 } else {
-                    int men = u->Taxers(0);
+                    const size_t men = u->Taxers(0);
                     int u_men = static_cast<int>(u->GetMen());
                     int fortbonus = u_men;
                     if (fortbonus > protect)
@@ -694,7 +703,7 @@ int Game::CountTaxes(const ARegion::Handle& reg)
                                     "regions.");
                             u->taxing = TAX_NONE;
                         } else {
-                            t += men + fortbonus * Globals->TAX_BONUS_FORT;
+                            t += static_cast<int>(men) + fortbonus * static_cast<int>(Globals->TAX_BONUS_FORT);
                         }
                     } else {
                         u->Error("TAX: Unit cannot tax.");
@@ -716,7 +725,7 @@ void Game::RunTaxRegion(const ARegion::Handle& reg)
     for(const auto& o: reg->objects) {
         for(const auto& u: o->units) {
             if (u->taxing == TAX_TAX) {
-                int t = u->Taxers(0);
+                int t = static_cast<int>(u->Taxers(0));
                 t += FortTaxBonus(o, u);
                 double fAmt = static_cast<double>(t) *
                     static_cast<double>(reg->wealth) / static_cast<double>(desired);
@@ -749,7 +758,7 @@ int Game::CountPillagers(const ARegion::Handle& reg)
                     u->Error("PILLAGE: A unit is on guard.");
                     u->taxing = TAX_NONE;
                 } else {
-                    int men = u->Taxers(1);
+                    int men = static_cast<int>(u->Taxers(1));
                     if (men) {
                         if (!TaxCheck(reg, u->faction.lock())) {
                             u->Error("PILLAGE: Faction can't tax that many "
@@ -783,14 +792,23 @@ void Game::ClearPillagers(const ARegion::Handle& reg)
 
 void Game::RunPillageRegion(const ARegion::Handle& reg)
 {
-    if (TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN) return;
-    if (reg->wealth < 1) return;
-    if (reg->Wages() <= 10*Globals->MAINTENANCE_COST) return;
+    if (TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN)
+    {
+        return;
+    }
+    if (reg->wealth < 1)
+    {
+        return;
+    }
+    if (reg->Wages() <= static_cast<int>(10 * Globals->MAINTENANCE_COST))
+    {
+        return;
+    }
 
     /* First, count up pillagers */
     int pillagers = CountPillagers(reg);
 
-    if (pillagers * 2 * Globals->TAX_BASE_INCOME < reg->wealth) {
+    if (pillagers * 2 * static_cast<int>(Globals->TAX_BASE_INCOME) < reg->wealth) {
         ClearPillagers(reg);
         return;
     }
@@ -801,7 +819,7 @@ void Game::RunPillageRegion(const ARegion::Handle& reg)
         for(const auto& u: o->units) {
             if (u->taxing == TAX_PILLAGE) {
                 u->taxing = TAX_NONE;
-                int num = u->Taxers(1);
+                int num = static_cast<int>(u->Taxers(1));
                 int temp = (amt * num)/pillagers;
                 amt -= temp;
                 pillagers -= num;
@@ -1960,7 +1978,7 @@ void Game::AssessMaintenance()
                         u->Event("You have completed a pilgrimage!");
                     }
                 }
-                u->needed = u->MaintCost();
+                u->needed = static_cast<int>(u->MaintCost());
                 u->hunger = static_cast<int>(u->GetMen() * Globals->UPKEEP_MINIMUM_FOOD);
                 if (Globals->UPKEEP_MAXIMUM_FOOD < 0)
                 {

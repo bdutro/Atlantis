@@ -153,8 +153,8 @@ public:
 
     unsigned int STUDENTS_PER_TEACHER;
 
-    int MAINTENANCE_COST;
-    int LEADER_COST;
+    unsigned int MAINTENANCE_COST;
+    unsigned int LEADER_COST;
 
     // If we use skill level multiplier then no units, all units, leaders,
     // or just mages pay X per level of skill they have per man.   The
@@ -163,7 +163,7 @@ public:
     // values in the given enumeration.
     // The costs listed above are used for any units NOT covered by the
     // multiplier use
-    int MAINTENANCE_MULTIPLIER;
+    unsigned int MAINTENANCE_MULTIPLIER;
 
     enum {
         MULT_NONE,
@@ -194,13 +194,13 @@ public:
 
     // base tax income for ANY eligible taxer
     // AND for pillaging
-    int TAX_BASE_INCOME;
+    unsigned int TAX_BASE_INCOME;
     // bonus for useable weapons
-    int TAX_BONUS_WEAPON;
+    unsigned int TAX_BONUS_WEAPON;
     // bonus for armor (only in conjunction with a weapon)
-    int TAX_BONUS_ARMOR;
+    unsigned int TAX_BONUS_ARMOR;
     // bonus for manning a fortification
-    int TAX_BONUS_FORT;
+    unsigned int TAX_BONUS_FORT;
     
     // Options to control who is able to tax
     enum {

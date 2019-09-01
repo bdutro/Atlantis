@@ -846,7 +846,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     temp = "plain (172,110) in Turia, 500 peasants";
     if (Globals->RACES_EXIST)
         temp += AString(" (") + ItemDefs[manidx].names + ")";
-    int money = (500 * (15 - Globals->MAINTENANCE_COST));
+    const int money = (500 * (15 - static_cast<int>(Globals->MAINTENANCE_COST)));
     temp += AString(", $") + money + ".";
     f.WrapStr(temp);
     f.WrapStr("------------------------------------------------------");

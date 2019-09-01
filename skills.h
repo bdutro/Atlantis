@@ -223,6 +223,31 @@ class SkillList {
         {
             skills_.push_back(rhs);
         }
+
+        Skill& front()
+        {
+            return skills_.front();
+        }
+
+        const Skill& front() const
+        {
+            return skills_.front();
+        }
+
+        const_iterator erase(const_iterator it)
+        {
+            return skills_.erase(it);
+        }
+
+        iterator erase(iterator it)
+        {
+            return skills_.erase(it);
+        }
+
+        size_t size() const
+        {
+            return skills_.size();
+        }
 };
 
 class HealType {

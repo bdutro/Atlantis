@@ -157,9 +157,9 @@ class Unit : std::enable_shared_from_this<Unit>
         void ConsumeSharedMoney(size_t);
         bool IsAlive();
 
-        int MaintCost();
+        size_t MaintCost();
         void Short(int, int);
-        int SkillLevels();
+        size_t SkillLevels();
         void SkillStarvation();
         Skill *GetSkillObject(int);
 
@@ -176,18 +176,18 @@ class Unit : std::enable_shared_from_this<Unit>
 
         size_t GetSkill(const Skills&);
         void SetSkill(const Skills&, size_t);
-        int GetSkillMax(const Skills&);
+        unsigned int GetSkillMax(const Skills&);
         size_t GetAvailSkill(const Skills&);
         size_t GetRealSkill(const Skills&);
         void ForgetSkill(const Skills&);
         bool CheckDepend(size_t, const SkillDepend &s);
         bool CanStudy(const Skills&);
-        int Study(const Skills&, int); /* Returns 1 if it succeeds */
-        int Practice(const Skills&);
+        bool Study(const Skills&, int); /* Returns 1 if it succeeds */
+        unsigned int Practice(const Skills&);
         void AdjustSkills();
 
         /* Return 1 if can see, 2 if can see faction */
-        bool CanSee(const ARegion&, const Unit::Handle&, int practice = 0);
+        unsigned int CanSee(const ARegion&, const Unit::Handle&, int practice = 0);
         bool CanCatch(const ARegion&, const Unit::Handle&);
         int AmtsPreventCrime(const Unit::Handle&);
         int GetAttitude(const ARegion&, const Unit::Handle&); /* Get this unit's attitude toward
@@ -205,20 +205,20 @@ class Unit : std::enable_shared_from_this<Unit>
         bool CanFly();
         bool CanSwim();
         bool CanReallySwim();
-        int MoveType(const std::shared_ptr<ARegion>& r = nullptr);
+        int MoveType(std::shared_ptr<ARegion> r = nullptr);
         unsigned int CalcMovePoints(const std::shared_ptr<ARegion>& r = nullptr);
         bool CanMoveTo(const ARegion&, const ARegion&);
         int GetFlag(int);
         void SetFlag(int,int);
         void CopyFlags(const Unit::Handle&);
-        Items GetBattleItem(AString &itm);
-        Items GetArmor(AString &itm, int ass);
-        Items GetMount(AString &itm, int canFly, int canRide, unsigned int &bonus);
-        Items GetWeapon(AString &itm, const Items& riding, unsigned int ridingBonus,
+        Items GetBattleItem(const AString &itm);
+        Items GetArmor(const AString& itm, bool ass);
+        Items GetMount(const AString& itm, bool canFly, bool canRide, unsigned int &bonus);
+        Items GetWeapon(const AString& itm, const Items& riding, unsigned int ridingBonus,
                 unsigned int &attackBonus, unsigned int &defenseBonus, int &attacks);
-        int CanUseWeapon(WeaponType *pWep, int riding);
-        int CanUseWeapon(WeaponType *pWep);
-        int Taxers(int);
+        int CanUseWeapon(const WeaponType& pWep, const Items& riding);
+        int CanUseWeapon(const WeaponType& pWep);
+        size_t Taxers(unsigned int);
 
         void MoveUnit(const std::weak_ptr<Object>& newobj);
         void Detach();
@@ -256,7 +256,7 @@ class Unit : std::enable_shared_from_this<Unit>
         int stomach_space;
         size_t losses;
         size_t free;
-        int practiced; // Has this unit practiced a skill this turn
+        bool practiced; // Has this unit practiced a skill this turn
         unsigned int moved;
         ValidValue<size_t> phase;
         int savedmovement;

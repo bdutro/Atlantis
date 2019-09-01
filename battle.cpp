@@ -541,15 +541,19 @@ bool Game::CanAttack(const ARegion::Handle& r, const WeakPtrList<Faction>& afacs
 {
     bool see = false;
     bool ride = false;
-    for(const auto& f: afacs) {
-        if (f.lock()->CanSee(r, u) == 2) {
+    for(const auto& f_w: afacs)
+    {
+        const auto f = f_w.lock();
+        if (f->CanSee(*r, u) == 2)
+        {
             if (ride)
             {
                 return true;
             }
             see = true;
         }
-        if (f.lock()->CanCatch(r, u)) {
+        if (f->CanCatch(*r, u))
+        {
             if (see)
             {
                 return true;

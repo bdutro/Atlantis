@@ -1356,7 +1356,7 @@ void Game::RunIdleOrders(const ARegion::Handle& r)
 void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
 {
     const auto o = std::dynamic_pointer_cast<StudyOrder>(u->monthorders);
-    int reset_man, skmax, taughtdays, days;
+    int reset_man, taughtdays, days;
     AString str;
 
     reset_man = -1;
@@ -1381,22 +1381,14 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
     }
 
     if (o->level.isValid()) {
-        skmax = u->GetSkillMax(sk);
-        const int o_level = static_cast<int>(o->level);
-        if (skmax < o_level) {
-            if(skmax >= 0)
-            {
-                o->level = static_cast<unsigned int>(skmax);
-            }
-            else
-            {
-                o->level.invalidate();
-            }
+        unsigned int skmax = u->GetSkillMax(sk);
+        if (skmax < o->level) {
+            o->level = skmax;
             if (u->GetRealSkill(sk) >= o->level) {
                 str = "STUDY: Cannot study ";
                 str += SkillDefs[sk].name;
                 str += " beyond level ";
-                str += o_level;
+                str += o->level;
                 str += ".";
                 u->Error(str);
                 return;
@@ -1404,7 +1396,7 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
                 str = "STUDY: set study goal for ";
                 str += SkillDefs[sk].name;
                 str += " to the maximum achievable level (";
-                str += o_level;
+                str += o->level;
                 str += ").";
                 u->Error(str);
             }
@@ -1841,7 +1833,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     road = "";
     int startmove = 0;
     int movetype = unit->MoveType(region);
-    unsigned int cost = newreg->MoveCost(movetype, region, x->dir, &road);
+    unsigned int cost = newreg->MoveCost(movetype, *region, x->dir, &road);
     if (x->dir == Directions::MOVE_PAUSE)
         cost = 1;
     if (region->type == Regions::Types::R_NEXUS) {

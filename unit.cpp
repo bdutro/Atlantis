@@ -63,7 +63,7 @@ Unit::Unit()
     presentTaxing = 0;
     format = 0;
     free = 0;
-    practiced = 0;
+    practiced = false;
     moved = 0;
     phase.invalidate();
     savedmovement = 0;
@@ -89,7 +89,7 @@ Unit::Unit(size_t seq, const Faction::Handle& f, int a)
     presentTaxing = 0;
     format = 0;
     free = 0;
-    practiced = 0;
+    practiced = false;
     moved = 0;
     phase.invalidate();
     savedmovement = 0;
@@ -1365,31 +1365,28 @@ bool Unit::CanStudy(const Skills& sk)
     return true;
 }
 
-int Unit::Study(const Skills& sk, int days)
+bool Unit::Study(const Skills& sk, int days)
 {
-    Skill *s;
-
     if (Globals->SKILL_LIMIT_NONLEADERS && !IsLeader()) {
         if (SkillDefs[sk].flags & SkillType::MAGIC) {
-            forlist(&skills) {
-                s = (Skill *) elem;
-                if (!(SkillDefs[s->type].flags & SkillType::MAGIC)) {
+            for(const auto& s: skills) {
+                if (!(SkillDefs[s.type].flags & SkillType::MAGIC)) {
                     Error("STUDY: Non-leader mages cannot possess non-magical skills.");
-                    return 0;
+                    return false;
                 }
             }
-        } else if (skills.Num()) {
-            s = (Skill *) skills.First();
-            if ((s->type != sk) && (s->days > 0)) {
+        } else if (!skills.empty()) {
+            const auto& s = skills.front();
+            if ((s.type != sk) && (s.days > 0)) {
                 Error("STUDY: Can know only 1 skill.");
-                return 0;
+                return false;
             }
         }
     }
-    int max = GetSkillMax(sk);
+    const unsigned int max = GetSkillMax(sk);
     if (GetRealSkill(sk) >= max) {
         Error("STUDY: Maximum level for skill reached.");
-        return 0;
+        return false;
     }
 
     if (!CanStudy(sk)) {
@@ -1397,49 +1394,68 @@ int Unit::Study(const Skills& sk, int days)
             Error("STUDY: Doesn't have the pre-requisite skills to study that.");
         else
             Error("STUDY: Can't study that.");
-        return 0;
+        return false;
     }
 
-    skills.SetDays(sk, skills.GetDays(sk) + days);
+    skills.SetDays(sk, skills.GetDays(sk) + static_cast<size_t>(days));
     AdjustSkills();
 
     /* Check to see if we need to show a skill report */
-    int lvl = GetRealSkill(sk);
-    int shown = faction->skills.GetDays(sk);
+    const size_t lvl = GetRealSkill(sk);
+
+    const auto faction_s = faction.lock();
+    size_t shown = faction_s->skills.GetDays(sk);
     while (lvl > shown) {
         shown++;
-        faction->skills.SetDays(sk, shown);
-        faction->shows.Add(new ShowSkill(sk, shown));
+        faction_s->skills.SetDays(sk, shown);
+        faction_s->shows.emplace_back(std::make_shared<ShowSkill>(sk, shown));
     }
-    return 1;
+    return true;
 }
 
-int Unit::GetSkillMax(const Skills& sk)
+unsigned int Unit::GetSkillMax(const Skills& sk)
 {
-    int max = 0;
+    unsigned int max = 0;
 
-    if (SkillDefs[sk].flags & SkillType::DISABLED) return 0;
+    if (SkillDefs[sk].flags & SkillType::DISABLED)
+    {
+        return 0;
+    }
 
-    forlist (&items) {
-        Item *i = (Item *)elem;
-        if (ItemDefs[i->type].flags & ItemType::DISABLED) continue;
-        if (!(ItemDefs[i->type].type & IT_MAN)) continue;
-        int m = SkillMax(SkillDefs[sk].abbr, i->type);
-        if ((max == 0 && m > max) || (m < max)) max = m;
+    for(const auto& i: items) {
+        if (ItemDefs[i->type].flags & ItemType::DISABLED)
+        {
+            continue;
+        }
+        if (!(ItemDefs[i->type].type & IT_MAN))
+        {
+            continue;
+        }
+        unsigned int m = SkillMax(SkillDefs[sk].abbr, i->type);
+        if ((max == 0 && m > max) || (m < max))
+        {
+            max = m;
+        }
     }
     return max;
 }
 
-int Unit::Practice(const Skills& sk)
+unsigned int Unit::Practice(const Skills& sk)
 {
-    int bonus, men, curlev, reqsk, reqlev, days;
-    unsigned int i;
+    unsigned int bonus = Globals->SKILL_PRACTICE_AMOUNT;
+    if (bonus == 0)
+    {
+        bonus = Globals->REQUIRED_EXPERIENCE / 8;
+    }
+    if (practiced || (bonus < 1))
+    {
+        return 1;
+    }
+    const size_t days = skills.GetDays(sk);
+    const size_t men = GetMen();
 
-    bonus = Globals->SKILL_PRACTICE_AMOUNT;
-    if (bonus == 0) bonus = Globals->REQUIRED_EXPERIENCE / 8;
-    if (practiced || (bonus < 1)) return 1;
-    days = skills.GetDays(sk);
-    men = GetMen();
+    Skills reqsk;
+    size_t reqlev = 0;
 
     if (GetAvailSkill(sk) > GetRealSkill(sk)) {
         // This is a skill granted by an item, so try to practice
@@ -1448,32 +1464,40 @@ int Unit::Practice(const Skills& sk)
 
         reqlev = 0;
 
-        forlist (&items) {
-            Item *it = (Item *)elem;
-            if (ItemDefs[it->type].flags & ItemType::DISABLED) continue;
+        for(const auto& it: items) {
+            if (ItemDefs[it->type].flags & ItemType::DISABLED)
+            {
+                continue;
+            }
             if (ItemDefs[it->type].type & IT_MAGEONLY
                     && type != U_MAGE
                     && type != U_APPRENTICE
                     && type != U_GUARDMAGE)
+            {
                 continue;
+            }
             if ((SkillDefs[sk].flags & SkillType::MAGIC)
                     && type != U_MAGE
                     && type != U_APPRENTICE
                     && type != U_GUARDMAGE)
+            {
                 continue;
+            }
             if (it->num < GetMen())
+            {
                 continue;
+            }
             str = ItemDefs[it->type].grantSkill;
-            if (ItemDefs[it->type].grantSkill && LookupSkill(&str) == sk) {
-                for (unsigned j = 0; j < sizeof(ItemDefs[0].fromSkills)
-                                     / sizeof(ItemDefs[0].fromSkills[0]); j++) {
-                    if (ItemDefs[it->type].fromSkills[j]) {
-                        int fromSkill;
-
-                        str = ItemDefs[it->type].fromSkills[j];
-
-                        fromSkill = LookupSkill(&str);
-                        if (fromSkill != -1 && GetRealSkill(fromSkill) > reqlev) {
+            if (ItemDefs[it->type].grantSkill && LookupSkill(str) == sk)
+            {
+                for (const auto& fs: ItemDefs[it->type].fromSkills)
+                {
+                    if (fs)
+                    {
+                        str = fs;
+                        Skills fromSkill = LookupSkill(str);
+                        if (fromSkill.isValid() && GetRealSkill(fromSkill) > reqlev)
+                        {
                             reqsk = fromSkill;
                             reqlev = GetRealSkill(fromSkill);
                         }
@@ -1490,52 +1514,75 @@ int Unit::Practice(const Skills& sk)
         }
     }
 
-    if (men < 1 || ((days < 1) && (!Globals->REQUIRED_EXPERIENCE))) return 0;
+    if (men < 1 || ((days < 1) && (!Globals->REQUIRED_EXPERIENCE)))
+    {
+        return 0;
+    }
 
-    int max = GetSkillMax(sk);
-    curlev = GetRealSkill(sk);
-    if (curlev >= max) return 0;
+    const size_t max = GetSkillMax(sk);
+    const size_t curlev = GetRealSkill(sk);
+    if (curlev >= max)
+    {
+        return 0;
+    }
 
-    for (i = 0; i < sizeof(SkillDefs[sk].depends)/sizeof(SkillDepend); i++) {
-        AString skname = SkillDefs[sk].depends[i].skill;
-        reqsk = LookupSkill(&skname);
-        if (reqsk == -1) break;
-        if (SkillDefs[reqsk].flags & SkillType::DISABLED) continue;
-        if (SkillDefs[reqsk].flags & SkillType::NOEXP) continue;
+    for (const auto& d: SkillDefs[sk].depends)
+    {
+        AString skname = d.skill;
+        reqsk = LookupSkill(skname);
+        if (!reqsk.isValid())
+        {
+            break;
+        }
+        if (SkillDefs[reqsk].flags & SkillType::DISABLED)
+        {
+            continue;
+        }
+        if (SkillDefs[reqsk].flags & SkillType::NOEXP)
+        {
+            continue;
+        }
         reqlev = GetRealSkill(reqsk);
-        if (reqlev <= curlev) {
+        if (reqlev <= curlev)
+        {
             if (Practice(reqsk))
+            {
                 return 1;
+            }
             // We don't meet the reqs, and can't practice that
             // req, but we still need to check the other reqs.
             bonus = 0;
         }
     }
 
-    if (bonus) {
-        if (!Globals->REQUIRED_EXPERIENCE) {
-            Study(sk, men * bonus);
-        } else {
-            Skill *s;
+    if (bonus)
+    {
+        if (!Globals->REQUIRED_EXPERIENCE)
+        {
+            Study(sk, static_cast<int>(men * bonus));
+        }
+        else
+        {
             // check if it's a nonleader and this is not it's
             // only skill
-            if (Globals->SKILL_LIMIT_NONLEADERS && !IsLeader()) {
-                forlist(&skills) {
-                    s = (Skill *) elem;
-                    if ((s->days > 0) && (s->type != sk)) {
+            if (Globals->SKILL_LIMIT_NONLEADERS && !IsLeader())
+            {
+                for(const auto& s: skills) {
+                    if ((s.days > 0) && (s.type != sk))
+                    {
                         return 0;
                     }
                 }
             }
             // don't raise exp above the maximum days for
             // that unit
-            int max = men * GetDaysByLevel(GetSkillMax(sk));
-            int exp = skills.GetExp(sk);
+            const size_t max = men * GetDaysByLevel(GetSkillMax(sk));
+            size_t exp = skills.GetExp(sk);
             exp += men * bonus;
             if (exp > max) exp = max;
             skills.SetExp(sk, exp);
         }
-        practiced = 1;
+        practiced = true;
     }
 
     return bonus;
@@ -1543,92 +1590,128 @@ int Unit::Practice(const Skills& sk)
 
 bool Unit::IsLeader()
 {
-    if (GetLeaders()) return true;
+    if (GetLeaders())
+    {
+        return true;
+    }
     return false;
 }
 
 bool Unit::IsNormal()
 {
-    if (GetMen() && !IsLeader()) return true;
+    if (GetMen() && !IsLeader())
+    {
+        return true;
+    }
     return false;
 }
 
 void Unit::AdjustSkills()
 {
-    if (!IsLeader() && Globals->SKILL_LIMIT_NONLEADERS) {
+    if (!IsLeader() && Globals->SKILL_LIMIT_NONLEADERS)
+    {
         //
         // Not a leader: can only know 1 skill
         //
-        if (skills.Num() > 1) {
+        if (skills.size() > 1)
+        {
             //
             // Find highest skill, eliminate others
             //
-            unsigned int max = 0;
-            Skill *maxskill = 0;
-            forlist(&skills) {
-                Skill *s = (Skill *) elem;
-                if (s->days > max) {
-                    max = s->days;
-                    maxskill = s;
+            size_t max = 0;
+            SkillList::iterator maxskill = skills.end();
+            for(auto it = skills.begin(); it != skills.end(); ++it)
+            {
+                if (it->days > max)
+                {
+                    max = it->days;
+                    maxskill = it;
                 }
             }
-            forlist_reuse(&skills) {
-                Skill *s = (Skill *) elem;
-                if (s != maxskill) {
+
+            auto it = skills.begin();
+            while(it != skills.end())
+            {
+                if (it != maxskill)
+                {
                     // Allow multiple skills if they're all
                     // magical ones
                     if ((SkillDefs[maxskill->type].flags & SkillType::MAGIC) &&
-                            (SkillDefs[s->type].flags & SkillType::MAGIC) )
+                            (SkillDefs[it->type].flags & SkillType::MAGIC) )
+                    {
+                        ++it;
                         continue;
-                    if ((Globals->REQUIRED_EXPERIENCE) && (s->exp > 0)) continue;
-                    skills.Remove(s);
-                    delete s;
+                    }
+                    if ((Globals->REQUIRED_EXPERIENCE) && (it->exp > 0))
+                    {
+                        ++it;
+                        continue;
+                    }
+                    it = skills.erase(it);
+                    continue;
                 }
+                ++it;
             }
         }
     }
 
     // Everyone: limit all skills to their maximum level
-    forlist(&skills) {
-        Skill *theskill = (Skill *) elem;
-        int max = GetSkillMax(theskill->type);
-        if (GetRealSkill(theskill->type) >= max) {
-            theskill->days = GetDaysByLevel(max) * GetMen();
+    for(auto& theskill: skills)
+    {
+        const unsigned int max = GetSkillMax(theskill.type);
+        if (GetRealSkill(theskill.type) >= max)
+        {
+            theskill.days = GetDaysByLevel(max) * GetMen();
         }
     }
 }
 
-int Unit::MaintCost()
+size_t Unit::MaintCost()
 {
-    int retval = 0;
-    int i;
-    if (type == U_WMON || type == U_GUARD || type == U_GUARDMAGE) return 0;
+    size_t retval = 0;
+    if (type == U_WMON || type == U_GUARD || type == U_GUARDMAGE)
+    {
+        return 0;
+    }
 
-    int leaders = GetLeaders();
-    if (leaders < 0) leaders = 0;
-    int nonleaders = GetMen() - leaders;
-    if (nonleaders < 0) nonleaders = 0;
+    const size_t leaders = GetLeaders();
+    const ssize_t nonleaders_s = static_cast<ssize_t>(GetMen() - leaders);
+    const size_t nonleaders = nonleaders_s < 0 ? 0 : static_cast<size_t>(nonleaders_s);
 
     // Handle leaders
     // Leaders are counted at maintenance_multiplier * skills in all except
     // the case where it's not being used (mages, leaders, all)
-    if (Globals->MULTIPLIER_USE != GameDefs::MULT_NONE) {
+
+    size_t i;
+    if (Globals->MULTIPLIER_USE != GameDefs::MULT_NONE)
+    {
         i = leaders * SkillLevels() * Globals->MAINTENANCE_MULTIPLIER;
         if (i < (leaders * Globals->LEADER_COST))
+        {
             i = leaders * Globals->LEADER_COST;
-    } else
+        }
+    }
+    else
+    {
         i = leaders * Globals->LEADER_COST;
+    }
     retval += i;
 
     // Handle non-leaders
     // Non leaders are counted at maintenance_multiplier * skills only if
     // all characters pay that way.
-    if (Globals->MULTIPLIER_USE == GameDefs::MULT_ALL) {
+    if (Globals->MULTIPLIER_USE == GameDefs::MULT_ALL)
+    {
         i = nonleaders * SkillLevels() * Globals->MAINTENANCE_MULTIPLIER;
         if (i < (nonleaders * Globals->MAINTENANCE_COST))
+        {
             i = nonleaders * Globals->MAINTENANCE_COST;
-    } else
+        }
+    }
+    else
+    {
         i = nonleaders * Globals->MAINTENANCE_COST;
+    }
     retval += i;
 
     return retval;
@@ -1636,85 +1719,125 @@ int Unit::MaintCost()
 
 void Unit::Short(int needed, int hunger)
 {
-    int i, n = 0, levels;
-
-    if (faction->IsNPC())
+    if (faction.lock()->IsNPC())
+    {
         return; // Don't starve monsters and the city guard!
+    }
 
-    if (needed < 1 && hunger < 1) return;
+    if (needed < 1 && hunger < 1)
+    {
+        return;
+    }
 
-    switch(Globals->SKILL_STARVATION) {
+    switch(Globals->SKILL_STARVATION)
+    {
         case GameDefs::STARVE_MAGES:
-            if (type == U_MAGE) SkillStarvation();
+            if (type == U_MAGE)
+            {
+                SkillStarvation();
+            }
             return;
         case GameDefs::STARVE_LEADERS:
-            if (GetLeaders()) SkillStarvation();
+            if (GetLeaders())
+            {
+                SkillStarvation();
+            }
             return;
         case GameDefs::STARVE_ALL:
             SkillStarvation();
             return;
     }
 
-    for (i = 0; i<= NITEMS; i++) {
-        if (!(ItemDefs[ i ].type & IT_MAN)) {
+    unsigned int n = 0;
+    for (auto i = Items::begin(); i != Items::end(); ++i) {
+        if (!(ItemDefs[*i].type & IT_MAN))
+        {
             // Only men need sustenance.
             continue;
         }
 
-        if (ItemDefs[i].type & IT_LEADER) {
+        if (ItemDefs[*i].type & IT_LEADER)
+        {
             // Don't starve leaders just yet.
             continue;
         }
 
-        while (GetMen(i)) {
-            if (getrandom(100) < Globals->STARVE_PERCENT) {
-                SetMen(i, GetMen(i) - 1);
+        while (GetMen(*i))
+        {
+            if (getrandom(100) < Globals->STARVE_PERCENT)
+            {
+                SetMen(*i, GetMen(*i) - 1);
                 n++;
             }
-            if (Globals->MULTIPLIER_USE == GameDefs::MULT_ALL) {
-                levels = SkillLevels();
-                i = levels * Globals->MAINTENANCE_MULTIPLIER;
-                if (i < Globals->MAINTENANCE_COST)
-                    i = Globals->MAINTENANCE_COST;
-                needed -= i;
-            } else
-                needed -= Globals->MAINTENANCE_COST;
-            hunger -= Globals->UPKEEP_MINIMUM_FOOD;
-            if (needed < 1 && hunger < 1) {
-                if (n) Error(AString(n) + " starve to death.");
+            if (Globals->MULTIPLIER_USE == GameDefs::MULT_ALL)
+            {
+                size_t levels = SkillLevels();
+                size_t cost = levels * Globals->MAINTENANCE_MULTIPLIER;
+                if (cost < Globals->MAINTENANCE_COST)
+                {
+                    cost = Globals->MAINTENANCE_COST;
+                }
+                needed -= static_cast<int>(cost);
+            }
+            else
+            {
+                needed -= static_cast<int>(Globals->MAINTENANCE_COST);
+            }
+            hunger -= static_cast<int>(Globals->UPKEEP_MINIMUM_FOOD);
+            if (needed < 1 && hunger < 1)
+            {
+                if (n)
+                {
+                    Error(AString(n) + " starve to death.");
+                }
                 return;
             }
         }
     }
 
     // Now starve leaders
-    for (int i = 0; i<= NITEMS; i++) {
-        if (!(ItemDefs[ i ].type & IT_MAN)) {
+    for (auto i = Items::begin(); i != Items::end(); ++i)
+    {
+        if (!(ItemDefs[*i].type & IT_MAN))
+        {
             // Only men need sustenance.
             continue;
         }
 
-        if (!(ItemDefs[i].type & IT_LEADER)) {
+        if (!(ItemDefs[*i].type & IT_LEADER))
+        {
             // now we're doing leaders
             continue;
         }
 
-        while (GetMen(i)) {
-            if (getrandom(100) < Globals->STARVE_PERCENT) {
-                SetMen(i, GetMen(i) - 1);
+        while (GetMen(*i))
+        {
+            if (getrandom(100) < Globals->STARVE_PERCENT)
+            {
+                SetMen(*i, GetMen(*i) - 1);
                 n++;
             }
-            if (Globals->MULTIPLIER_USE != GameDefs::MULT_NONE) {
-                levels = SkillLevels();
-                i = levels * Globals->MAINTENANCE_MULTIPLIER;
-                if (i < Globals->LEADER_COST)
-                    i = Globals->LEADER_COST;
-                needed -= i;
-            } else
-                needed -= Globals->LEADER_COST;
-            hunger -= Globals->UPKEEP_MINIMUM_FOOD;
-            if (needed < 1 && hunger < 1) {
-                if (n) Error(AString(n) + " starve to death.");
+            if (Globals->MULTIPLIER_USE != GameDefs::MULT_NONE)
+            {
+                size_t levels = SkillLevels();
+                size_t cost = levels * Globals->MAINTENANCE_MULTIPLIER;
+                if (cost < Globals->LEADER_COST)
+                {
+                    cost = Globals->LEADER_COST;
+                }
+                needed -= static_cast<int>(cost);
+            }
+            else
+            {
+                needed -= static_cast<int>(Globals->LEADER_COST);
+            }
+            hunger -= static_cast<int>(Globals->UPKEEP_MINIMUM_FOOD);
+            if (needed < 1 && hunger < 1)
+            {
+                if (n)
+                {
+                    Error(AString(n) + " starve to death.");
+                }
                 return;
             }
         }
@@ -1728,11 +1851,14 @@ size_t Unit::Weight()
 
 size_t Unit::FlyingCapacity()
 {
-    int cap = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
+    size_t cap = 0;
+    for(const auto& i: items)
+    {
         // except ship items
-        if (ItemDefs[i->type].type & IT_SHIP) continue;
+        if (ItemDefs[i->type].type & IT_SHIP)
+        {
+            continue;
+        }
         cap += ItemDefs[i->type].fly * i->num;
     }
 
@@ -1741,9 +1867,9 @@ size_t Unit::FlyingCapacity()
 
 size_t Unit::RidingCapacity()
 {
-    int cap = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
+    size_t cap = 0;
+    for(const auto& i: items)
+    {
         cap += ItemDefs[i->type].ride * i->num;
     }
 
@@ -1752,11 +1878,14 @@ size_t Unit::RidingCapacity()
 
 size_t Unit::SwimmingCapacity()
 {
-    int cap = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
+    size_t cap = 0;
+    for(const auto& i: items)
+    {
         // except ship items
-        if (ItemDefs[i->type].type & IT_SHIP) continue;
+        if (ItemDefs[i->type].type & IT_SHIP)
+        {
+            continue;
+        }
         cap += ItemDefs[i->type].swim * i->num;
     }
 
@@ -1765,16 +1894,17 @@ size_t Unit::SwimmingCapacity()
 
 size_t Unit::WalkingCapacity()
 {
-    int cap = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
+    size_t cap = 0;
+    for(const auto& i: items)
+    {
         cap += ItemDefs[i->type].walk * i->num;
-        if (ItemDefs[i->type].hitchItem != -1) {
-            int hitch = ItemDefs[i->type].hitchItem;
-            if (!(ItemDefs[hitch].flags & ItemType::DISABLED)) {
-                int hitches = items.GetNum(hitch);
-                int hitched = i->num;
-                if (hitched > hitches) hitched = hitches;
+        if (ItemDefs[i->type].hitchItem.isValid())
+        {
+            const auto& hitch = ItemDefs[i->type].hitchItem;
+            if (!(ItemDefs[hitch].flags & ItemType::DISABLED))
+            {
+                const size_t hitches = items.GetNum(hitch);
+                const size_t hitched = std::min(i->num, hitches);
                 cap += hitched * ItemDefs[i->type].hitchwalk;
             }
         }
@@ -1785,128 +1915,175 @@ size_t Unit::WalkingCapacity()
 
 bool Unit::CanFly(size_t weight)
 {
-    if (FlyingCapacity() >= weight) return true;
+    if (FlyingCapacity() >= weight)
+    {
+        return true;
+    }
     return false;
 }
 
 bool Unit::CanReallySwim()
 {
-    if (IsAlive() && (SwimmingCapacity() >= items.Weight())) return true;
+    if (IsAlive() && (SwimmingCapacity() >= items.Weight()))
+    {
+        return true;
+    }
     return false;
 }
 
 bool Unit::CanSwim()
 {
-    if (this->CanReallySwim())
+    if (CanReallySwim())
+    {
         return true;
-    if ((Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE) && this->CanFly())
+    }
+    if ((Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE) && CanFly())
+    {
         return true;
+    }
     return false;
 }
 
 bool Unit::CanFly()
 {
-    int weight = items.Weight();
-    return CanFly(weight);
+    return CanFly(items.Weight());
 }
 
 bool Unit::CanRide(size_t weight)
 {
-    if (RidingCapacity() >= weight) return true;
+    if (RidingCapacity() >= weight)
+    {
+        return true;
+    }
     return false;
 }
 
 bool Unit::CanWalk(size_t weight)
 {
-    if (WalkingCapacity() >= weight) return true;
+    if (WalkingCapacity() >= weight)
+    {
+        return true;
+    }
     return false;
 }
 
-int Unit::MoveType(ARegion *r)
+int Unit::MoveType(ARegion::Handle r)
 {
-    int weight;
-
     if (!r)
-        r = object->region;
-    weight = items.Weight();
+    {
+        r = object.lock()->region.lock();
+    }
+
+    size_t weight = items.Weight();
     if (!weight)
+    {
         return M_NONE;
+    }
     if (CanFly(weight))
+    {
         return M_FLY;
-    if (TerrainDefs[r->type].similar_type != R_OCEAN) {
+    }
+    if (TerrainDefs[r->type].similar_type != Regions::Types::R_OCEAN)
+    {
         if (CanRide(weight))
+        {
             return M_RIDE;
+        }
         if (CanWalk(weight))
+        {
             return M_WALK;
-    } else {
+        }
+    }
+    else
+    {
         /* Check if we should be able to 'swim' */
         /* This should become it's own M_TYPE sometime */
         if (CanSwim())
+        {
             return M_SWIM;
+        }
     }
-    if (r->type == R_NEXUS)
+    if (r->type == Regions::Types::R_NEXUS)
+    {
         return M_WALK;
+    }
     return M_NONE;
 }
 
-static int ContributesToMovement(int movetype, int item)
+static unsigned int ContributesToMovement(int movetype, const Items& item)
 {
-    switch(movetype) {
+    switch(movetype)
+    {
         case M_WALK:
             if (ItemDefs[item].walk > 0)
+            {
                 return ItemDefs[item].walk;
+            }
             break;
         case M_RIDE:
             if (ItemDefs[item].ride > 0)
+            {
                 return ItemDefs[item].ride;
+            }
             break;
         case M_FLY:
             if (ItemDefs[item].fly > 0)
+            {
                 return ItemDefs[item].fly;
+            }
             break;
         case M_SWIM:
             // incomplete ship items do have a "swimming"
             // capacity given, but don't help us to swim
             if (ItemDefs[item].type & IT_SHIP)
+            {
                 return 0;
+            }
             if (ItemDefs[item].swim > 0)
+            {
                 return ItemDefs[item].swim;
+            }
             break;
     }
     
     return 0;
 }
 
-unsigned int Unit::CalcMovePoints(ARegion *r)
+unsigned int Unit::CalcMovePoints(const ARegion::Handle& r)
 {
-    int movetype, speed, weight, cap, hitches;
-    Item *i;
-
-    movetype = MoveType(r);
-    speed = 0;
+    int movetype = MoveType(r);
     if (movetype == M_NONE)
+    {
         return 0;
+    }
 
-    forlist(&items) {
-        i = (Item *) elem;
-        if (ContributesToMovement(movetype, i->type)) {
+    unsigned int speed = 0;
+    for(const auto& i: items) {
+        if (ContributesToMovement(movetype, i->type))
+        {
             if (ItemDefs[i->type].speed > speed)
+            {
                 speed = ItemDefs[i->type].speed;
+            }
         }
     }
-    weight = items.Weight();
-    while (weight > 0 && speed > 0) {
-        forlist(&items) {
-            i = (Item *) elem;
-            cap = ContributesToMovement(movetype, i->type);
-            if (ItemDefs[i->type].speed == speed) {
+
+    ssize_t weight = static_cast<ssize_t>(items.Weight());
+    while (weight > 0 && speed > 0)
+    {
+        for(const auto& i: items)
+        {
+            const unsigned int cap = ContributesToMovement(movetype, i->type);
+            if (ItemDefs[i->type].speed == speed)
+            {
                 if (cap > 0)
-                    weight -= cap * i->num;
-                else if (ItemDefs[i->type].hitchItem != -1) {
-                    hitches = items.GetNum(ItemDefs[i->type].hitchItem);
-                    if (i->num < hitches)
-                        hitches = i->num;
-                    weight -= hitches * ItemDefs[i->type].hitchwalk;
+                {
+                    weight -= static_cast<ssize_t>(cap * i->num);
+                }
+                else if (ItemDefs[i->type].hitchItem.isValid())
+                {
+                    const size_t hitches = std::min(i->num, items.GetNum(ItemDefs[i->type].hitchItem));
+                    weight -= static_cast<ssize_t>(hitches * ItemDefs[i->type].hitchwalk);
                 }
             }
         }
@@ -1919,85 +2096,127 @@ unsigned int Unit::CalcMovePoints(ARegion *r)
     }
 
     if (weight > 0)
+    {
         return 0; // not that this should be possible!
+    }
 
-    if (movetype == M_FLY) {
+    if (movetype == M_FLY)
+    {
         if (GetAttribute("wind") > 0)
+        {
             speed += Globals->FLEET_WIND_BOOST;
+        }
     }
 
     if (speed > Globals->MAX_SPEED)
+    {
         speed = Globals->MAX_SPEED;
+    }
 
     return speed;
 }
 
-bool Unit::CanMoveTo(ARegion *r1, ARegion *r2)
+bool Unit::CanMoveTo(const ARegion& r1, const ARegion& r2)
 {
-    if (r1 == r2) return true;
+    if (&r1 == &r2)
+    {
+        return true;
+    }
 
-    int exit = 1;
-    int i;
-    int dir;
+    bool exit = true;
 
-    for (i=0; i<NDIRS; i++) {
-        if (r1->neighbors[i] == r2) {
-            exit = 0;
-            dir = i;
+    Directions dir;
+    for (auto i = Directions::begin(); i != Directions::end(); ++i)
+    {
+        if (r1.neighbors[*i].lock().get() == &r2)
+        {
+            exit = false;
+            dir = *i;
             break;
         }
     }
-    if (exit) return false;
-    exit = 1;
-    for (i=0; i<NDIRS; i++) {
-        if (r2->neighbors[i] == r1) {
-            exit = 0;
+    if (exit)
+    {
+        return false;
+    }
+
+    exit = true;
+    for (auto i = Directions::begin(); i != Directions::end(); ++i)
+    {
+        if (r2.neighbors[*i].lock().get() == &r1)
+        {
+            exit = false;
             break;
         }
     }
-    if (exit) return false;
+    if (exit)
+    {
+        return false;
+    }
 
     int mt = MoveType();
-    if (((TerrainDefs[r1->type].similar_type == R_OCEAN) ||
-                (TerrainDefs[r2->type].similar_type == R_OCEAN)) &&
+    if (((TerrainDefs[r1.type].similar_type == Regions::Types::R_OCEAN) ||
+                (TerrainDefs[r2.type].similar_type == Regions::Types::R_OCEAN)) &&
             (!CanSwim() || GetFlag(FLAG_NOCROSS_WATER)))
+    {
         return false;
-    int mp = CalcMovePoints() - moved;
-    if (mp < (r2->MoveCost(mt, r1, dir, 0))) return false;
+    }
+    int mp = static_cast<int>(CalcMovePoints() - moved);
+    if (mp < static_cast<int>(r2.MoveCost(mt, r1, dir, 0)))
+    {
+        return false;
+    }
     return true;
 }
 
-bool Unit::CanCatch(ARegion *r, Unit *u)
+bool Unit::CanCatch(const ARegion& r, const Unit::Handle& u)
 {
-    return faction->CanCatch(r, u);
+    return faction.lock()->CanCatch(r, u);
 }
 
-bool Unit::CanSee(ARegion *r, Unit *u, int practice)
+unsigned int Unit::CanSee(const ARegion& r, const Unit::Handle& u, int practice)
 {
-    return faction->CanSee(r, u, practice);
+    return faction.lock()->CanSee(r, u, practice);
 }
 
-int Unit::AmtsPreventCrime(Unit *u)
+int Unit::AmtsPreventCrime(const Unit::Handle& u)
 {
-    if (!u) return 0;
+    if (!u)
+    {
+        return 0;
+    }
 
-    int amulets = items.GetNum(I_AMULETOFTS);
-    if ((u->items.GetNum(I_RINGOFI) < 1) || (amulets < 1)) return 0;
-    int men = GetMen();
-    if (men <= amulets) return 1;
-    if (!Globals->PROPORTIONAL_AMTS_USAGE) return 0;
-    if (getrandom(men) < amulets) return 1;
+    const size_t amulets = items.GetNum(Items::Types::I_AMULETOFTS);
+    if ((u->items.GetNum(Items::Types::I_RINGOFI) < 1) || (amulets < 1))
+    {
+        return 0;
+    }
+    const size_t men = GetMen();
+    if (men <= amulets)
+    {
+        return 1;
+    }
+    if (!Globals->PROPORTIONAL_AMTS_USAGE)
+    {
+        return 0;
+    }
+    if (getrandom(men) < amulets)
+    {
+        return 1;
+    }
     return 0;
 }
 
 int Unit::GetAttitude(const ARegion& r, const Unit::Handle& u)
 {
-    if (faction == u->faction)
+    const auto faction_s = faction.lock();
+    const auto ufac = u->faction.lock();
+    if (faction_s == ufac)
     {
         return A_ALLY;
     }
-    int att = faction->GetAttitude(u->faction->num);
-    if (att >= A_FRIENDLY && att >= faction->defaultattitude)
+    int att = faction_s->GetAttitude(ufac->num);
+    if (att >= A_FRIENDLY && att >= faction_s->defaultattitude)
     {
         return att;
     }
@@ -2008,33 +2227,54 @@ int Unit::GetAttitude(const ARegion& r, const Unit::Handle& u)
     }
     else
     {
-        return faction->defaultattitude;
+        return faction_s->defaultattitude;
     }
 }
 
 int Unit::Hostile()
 {
-    if (type != U_WMON) return 0;
+    if (type != U_WMON)
+    {
+        return 0;
+    }
     int retval = 0;
-    forlist(&items) {
-        Item *i = (Item *) elem;
-        if (ItemDefs[i->type].type & IT_MONSTER) {
-            MonType *mp = FindMonster(ItemDefs[i->type].abr,
-                    (ItemDefs[i->type].type & IT_ILLUSION));
-            int hos = mp->hostile;
-            if (hos > retval) retval = hos;
+    for(const auto& i: items)
+    {
+        if (ItemDefs[i->type].type & IT_MONSTER)
+        {
+            const auto& mp = FindMonster(ItemDefs[i->type].abr, (ItemDefs[i->type].type & IT_ILLUSION));
+            int hos = mp.hostile;
+            if (hos > retval)
+            {
+                retval = hos;
+            }
         }
     }
     return retval;
 }
 
-bool Unit::Forbids(ARegion *r, const Unit::Handle& u)
+bool Unit::Forbids(const ARegion& r, const Unit::Handle& u)
 {
-    if (guard != GUARD_GUARD) return false;
-    if (!IsAlive()) return false;
-    if (!CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0)) return false;
-    if (!CanCatch(r, u)) return false;
-    if (GetAttitude(r, u) < A_NEUTRAL) return true;
+    if (guard != GUARD_GUARD)
+    {
+        return false;
+    }
+    if (!IsAlive())
+    {
+        return false;
+    }
+    if (!CanSee(r, u, Globals->SKILL_PRACTICE_AMOUNT > 0))
+    {
+        return false;
+    }
+    if (!CanCatch(r, u))
+    {
+        return false;
+    }
+    if (GetAttitude(r, u) < A_NEUTRAL)
+    {
+        return true;
+    }
     return false;
 }
 
@@ -2042,81 +2282,116 @@ bool Unit::Forbids(ARegion *r, const Unit::Handle& u)
    taxes this unit is eligible for (numtaxers == 0) or the
    number of taxing men (numtaxers > 0).
 */
-int Unit::Taxers(int numtaxers)
+size_t Unit::Taxers(unsigned int numtaxers)
 {
-    int totalMen = GetMen();
-    int illusions = 0;
-    int creatures = 0;
-    int taxers = 0;
-    int basetax = 0;
-    int weapontax = 0;
-    int armortax = 0;
+    const size_t totalMen = GetMen();
+    size_t illusions = 0;
+    size_t creatures = 0;
+    size_t taxers = 0;
+    size_t basetax = 0;
+    size_t weapontax = 0;
+    size_t armortax = 0;
     
     // check out items
-    int numMelee= 0;
-    int numUsableMelee = 0;
-    int numBows = 0;
-    int numUsableBows = 0;
-    int numMounted= 0;
-    int numUsableMounted = 0;
-    int numMounts = 0;
-    int numUsableMounts = 0;
-    int numBattle = 0;
-    int numUsableBattle = 0;
-    int numArmor = 0;
+    size_t numMelee= 0;
+    size_t numUsableMelee = 0;
+    size_t numBows = 0;
+    size_t numUsableBows = 0;
+    size_t numMounted= 0;
+    size_t numUsableMounted = 0;
+    size_t numMounts = 0;
+    size_t numUsableMounts = 0;
+    size_t numBattle = 0;
+    size_t numUsableBattle = 0;
+    size_t numArmor = 0;
 
-    forlist (&items) {
-        Item *pItem = (Item *) elem;
-        if (ItemDefs[pItem->type].type & IT_MAN) continue;
-        BattleItemType *pBat = nullptr;
-
-        if ((ItemDefs[pItem->type].type & IT_BATTLE) &&
-        ((pBat = FindBattleItem(ItemDefs[pItem->type].abr)) != nullptr) &&
-        (pBat->flags & BattleItemType::SPECIAL)) {
-        // Only consider offensive items
-            if ((Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_BATTLE_ITEM) &&
-            (!(pBat->flags & BattleItemType::MAGEONLY) ||
-             type == U_MAGE || type == U_APPRENTICE)) {
-                numUsableBattle += pItem->num;
-                numBattle += pItem->num;
-                continue; // Don't count this as a weapon as well!
-            }
-            if (Globals->WHO_CAN_TAX & GameDefs::TAX_BATTLE_ITEM) {
-                numBattle += pItem->num;
-                continue; // Don't count this as a weapon as well!
-            }
+    for(const auto& pItem: items)
+    {
+        if (ItemDefs[pItem->type].type & IT_MAN)
+        {
+            continue;
         }
 
-        if (ItemDefs[pItem->type].type & IT_WEAPON) {
-            WeaponType *pWep = FindWeapon(ItemDefs[pItem->type].abr);
-            int num = pItem->num;
-            int basesk = 0;
-            AString skname = pWep->baseSkill;
-            int sk = LookupSkill(&skname);
-            if (sk != -1) basesk = GetSkill(sk);
-            if (basesk == 0) {
-                skname = pWep->orSkill;
-                sk = LookupSkill(&skname);
-                if (sk != -1) basesk = GetSkill(sk);
+        if ((ItemDefs[pItem->type].type & IT_BATTLE))
+        {
+            try
+            {
+                const auto& pBat = FindBattleItem(ItemDefs[pItem->type].abr);
+                if(pBat.flags & BattleItemType::SPECIAL)
+                {
+                    // Only consider offensive items
+                    if ((Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_BATTLE_ITEM) &&
+                    (!(pBat.flags & BattleItemType::MAGEONLY) ||
+                     type == U_MAGE || type == U_APPRENTICE))
+                    {
+                        numUsableBattle += pItem->num;
+                        numBattle += pItem->num;
+                        continue; // Don't count this as a weapon as well!
+                    }
+                    if (Globals->WHO_CAN_TAX & GameDefs::TAX_BATTLE_ITEM)
+                    {
+                        numBattle += pItem->num;
+                        continue; // Don't count this as a weapon as well!
+                    }
+                }
             }
-            if (!(pWep->flags & WeaponType::NEEDSKILL)) {
-                if (basesk) {
+            catch(const NoSuchItemException&)
+            {
+            }
+
+        }
+        if (ItemDefs[pItem->type].type & IT_WEAPON)
+        {
+            const auto& pWep = FindWeapon(ItemDefs[pItem->type].abr);
+            size_t num = pItem->num;
+            size_t basesk = 0;
+            AString skname = pWep.baseSkill;
+            Skills sk = LookupSkill(skname);
+            if (sk.isValid())
+            {
+                basesk = GetSkill(sk);
+            }
+
+            if (basesk == 0)
+            {
+                skname = pWep.orSkill;
+                sk = LookupSkill(skname);
+                if (sk.isValid())
+                {
+                    basesk = GetSkill(sk);
+                }
+            }
+
+            if (!(pWep.flags & WeaponType::NEEDSKILL))
+            {
+                if (basesk)
+                {
                     numUsableMelee += num;
                 }
                 numMelee += num;
-            } else if (pWep->flags & WeaponType::NOFOOT) {
-                if (basesk) {
+            }
+            else if (pWep.flags & WeaponType::NOFOOT)
+            {
+                if (basesk)
+                {
                     numUsableMounted += num;
                 }
                 numMounted += num;
-            } else {
-                if (pWep->flags & WeaponType::RANGED) {
-                    if (basesk) {
+            }
+            else
+            {
+                if (pWep.flags & WeaponType::RANGED)
+                {
+                    if (basesk)
+                    {
                         numUsableBows += num;
                     }
                     numBows += num;
-                } else {
-                    if (basesk) {
+                }
+                else
+                {
+                    if (basesk)
+                    {
                         numUsableMelee += num;
                     }
                     numMelee += num;
@@ -2124,23 +2399,35 @@ int Unit::Taxers(int numtaxers)
             }
         }
 
-        if (ItemDefs[pItem->type].type & IT_MOUNT) {
-            MountType *pm = FindMount(ItemDefs[pItem->type].abr);
-            if (pm->skill) {
-                AString skname = pm->skill;
-                int sk = LookupSkill(&skname);
-                if (pm->minBonus <= GetSkill(sk))
+        if (ItemDefs[pItem->type].type & IT_MOUNT)
+        {
+            const auto& pm = FindMount(ItemDefs[pItem->type].abr);
+            if (pm.skill)
+            {
+                const AString& skname = pm.skill;
+                Skills sk = LookupSkill(skname);
+                if (pm.minBonus <= static_cast<int>(GetSkill(sk)))
+                {
                     numUsableMounts += pItem->num;
-            } else
+                }
+            }
+            else
+            {
                 numUsableMounts += pItem->num;
+            }
             numMounts += pItem->num;
         }
 
-        if (ItemDefs[pItem->type].type & IT_MONSTER) {
+        if (ItemDefs[pItem->type].type & IT_MONSTER)
+        {
             if (ItemDefs[pItem->type].type & IT_ILLUSION)
+            {
                 illusions += pItem->num;
+            }
             else
+            {
                 creatures += pItem->num;
+            }
         }
         
         if (ItemDefs[pItem->type].type & IT_ARMOR) {
@@ -2152,48 +2439,63 @@ int Unit::Taxers(int numtaxers)
     // Ok, now process the counts!
     if ((Globals->WHO_CAN_TAX & GameDefs::TAX_ANYONE) ||
         ((Globals->WHO_CAN_TAX & GameDefs::TAX_COMBAT_SKILL) &&
-         GetSkill(S_COMBAT)) ||
+         GetSkill(Skills::Types::S_COMBAT)) ||
         ((Globals->WHO_CAN_TAX & GameDefs::TAX_BOW_SKILL) &&
-         (GetSkill(S_CROSSBOW) || GetSkill(S_LONGBOW))) ||
+         (GetSkill(Skills::Types::S_CROSSBOW) || GetSkill(Skills::Types::S_LONGBOW))) ||
         ((Globals->WHO_CAN_TAX & GameDefs::TAX_RIDING_SKILL) &&
-         GetSkill(S_RIDING)) ||
+         GetSkill(Skills::Types::S_RIDING)) ||
         ((Globals->WHO_CAN_TAX & GameDefs::TAX_STEALTH_SKILL) &&
-         GetSkill(S_STEALTH))) {
+         GetSkill(Skills::Types::S_STEALTH)))
+    {
         basetax = totalMen;
         taxers = totalMen;
         
         // Weapon tax bonus
         if ((Globals->WHO_CAN_TAX & GameDefs::TAX_ANYONE) ||
         ((Globals->WHO_CAN_TAX & GameDefs::TAX_COMBAT_SKILL) &&
-         GetSkill(S_COMBAT)) ||
+         GetSkill(Skills::Types::S_COMBAT)) ||
         ((Globals->WHO_CAN_TAX & GameDefs::TAX_STEALTH_SKILL) &&
-         GetSkill(S_STEALTH))) {
-             if (numUsableMounted > numUsableMounts) {
+         GetSkill(Skills::Types::S_STEALTH)))
+        {
+             if (numUsableMounted > numUsableMounts)
+             {
                  weapontax = numUsableMounts;
-             } else {
+             }
+             else
+             {
                  weapontax = numUsableMounted;
              }
              weapontax += numMelee;
          }
          
         if (((Globals->WHO_CAN_TAX & GameDefs::TAX_BOW_SKILL) &&
-         (GetSkill(S_CROSSBOW) || GetSkill(S_LONGBOW)))) {
+         (GetSkill(Skills::Types::S_CROSSBOW) || GetSkill(Skills::Types::S_LONGBOW))))
+        {
              weapontax += numUsableBows;
-         }
+        }
         if ((Globals->WHO_CAN_TAX & GameDefs::TAX_RIDING_SKILL) &&
-         GetSkill(S_RIDING)) {
-             if (weapontax < numUsableMounts) weapontax = numUsableMounts;
-         }
+         GetSkill(Skills::Types::S_RIDING))
+        {
+             if (weapontax < numUsableMounts)
+             {
+                 weapontax = numUsableMounts;
+             }
+        }
         
-    } else {
-
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_WEAPON) {
-            if (numUsableMounted > numUsableMounts) {
+    }
+    else
+    {
+        if (Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_WEAPON)
+        {
+            if (numUsableMounted > numUsableMounts)
+            {
                 weapontax = numUsableMounts;
                 taxers = numUsableMounts;
                 numMounts -= numUsableMounts;
                 numUsableMounts = 0;
-            } else {
+            }
+            else
+            {
                 weapontax = numUsableMounted;
                 taxers = numUsableMounted;
                 numMounts -= numUsableMounted;
@@ -2201,18 +2503,26 @@ int Unit::Taxers(int numtaxers)
             }
             weapontax += numMelee + numUsableBows;
             taxers += numMelee + numUsableBows;
-        } else if (Globals->WHO_CAN_TAX & GameDefs::TAX_ANY_WEAPON) {
+        }
+        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_ANY_WEAPON)
+        {
             weapontax = numMelee + numBows + numMounted;
             taxers = numMelee + numBows + numMounted;
-        } else {
+        }
+        else
+        {
             if (Globals->WHO_CAN_TAX &
-                    GameDefs::TAX_MELEE_WEAPON_AND_MATCHING_SKILL) {
-                if (numUsableMounted > numUsableMounts) {
+                    GameDefs::TAX_MELEE_WEAPON_AND_MATCHING_SKILL)
+            {
+                if (numUsableMounted > numUsableMounts)
+                {
                     weapontax += numUsableMounts;
                     taxers += numUsableMounts;
                     numMounts -= numUsableMounts;
                     numUsableMounts = 0;
-                } else {
+                }
+                else
+                {
                     weapontax += numUsableMounted;
                     taxers += numUsableMounted;
                     numMounts -= numUsableMounted;
@@ -2222,26 +2532,31 @@ int Unit::Taxers(int numtaxers)
                 taxers += numUsableMelee;
             }
             if (Globals->WHO_CAN_TAX &
-                    GameDefs::TAX_BOW_SKILL_AND_MATCHING_WEAPON) {
+                    GameDefs::TAX_BOW_SKILL_AND_MATCHING_WEAPON)
+            {
                 weapontax += numUsableBows;
                 taxers += numUsableBows;
             }
         }
 
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_HORSE) {
+        if (Globals->WHO_CAN_TAX & GameDefs::TAX_HORSE)
+        {
             weapontax += numMounts;
             taxers += numMounts;
         }
-        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_HORSE_AND_RIDING_SKILL) {
+        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_HORSE_AND_RIDING_SKILL)
+        {
             weapontax += numMounts;
             taxers += numUsableMounts;
         }
 
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_BATTLE_ITEM) {
+        if (Globals->WHO_CAN_TAX & GameDefs::TAX_BATTLE_ITEM)
+        {
             weapontax += numBattle;
             taxers += numBattle;
         }
-        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_BATTLE_ITEM) {
+        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_BATTLE_ITEM)
+        {
             weapontax += numUsableBattle;
             taxers += numUsableBattle;
         }
@@ -2249,47 +2564,59 @@ int Unit::Taxers(int numtaxers)
     }
 
     // Ok, all the items categories done - check for mages taxing
-    if (type == U_MAGE) {
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_ANY_MAGE) {
+    if (type == U_MAGE)
+    {
+        if (Globals->WHO_CAN_TAX & GameDefs::TAX_ANY_MAGE)
+        {
             basetax = totalMen;
             taxers = totalMen;
         }
-        else {
-            if (Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_COMBAT_SPELL) {
+        else
+        {
+            if (Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_COMBAT_SPELL)
+            {
                 if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_DAMAGE) &&
-                        SkillDefs[combat].flags & SkillType::DAMAGE) {
+                        SkillDefs[combat].flags & SkillType::DAMAGE)
+                {
                     basetax = totalMen;
                     taxers = totalMen;
                 }
 
                 if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_FEAR) &&
-                        SkillDefs[combat].flags & SkillType::FEAR) {
+                        SkillDefs[combat].flags & SkillType::FEAR)
+                {
                     basetax = totalMen;
                     taxers = totalMen;
                 }
 
                 if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_OTHER) &&
-                        SkillDefs[combat].flags & SkillType::MAGEOTHER) {
+                        SkillDefs[combat].flags & SkillType::MAGEOTHER)
+                {
                     basetax = totalMen;
                     taxers = totalMen;
                 }
-            } else {
-                forlist(&skills) {
-                    Skill *s = (Skill *)elem;
+            }
+            else
+            {
+                for(const auto& s: skills)
+                {
                     if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_DAMAGE) &&
-                            SkillDefs[s->type].flags & SkillType::DAMAGE) {
+                            SkillDefs[s.type].flags & SkillType::DAMAGE)
+                    {
                         basetax = totalMen;
                         taxers = totalMen;
                         break;
                     }
                     if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_FEAR) &&
-                            SkillDefs[s->type].flags & SkillType::FEAR) {
+                            SkillDefs[s.type].flags & SkillType::FEAR)
+                    {
                         basetax = totalMen;
                         taxers = totalMen;
                         break;
                     }
                     if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_OTHER) &&
-                            SkillDefs[s->type].flags & SkillType::MAGEOTHER) {
+                            SkillDefs[s.type].flags & SkillType::MAGEOTHER)
+                    {
                         basetax = totalMen;
                         taxers = totalMen;
                         break;
@@ -2302,30 +2629,48 @@ int Unit::Taxers(int numtaxers)
     armortax = numArmor;
     
     // Check for overabundance
-    if (weapontax > totalMen) weapontax = totalMen;
-    if (armortax > weapontax) armortax = weapontax;
+    if (weapontax > totalMen)
+    {
+        weapontax = totalMen;
+    }
+    if (armortax > weapontax)
+    {
+        armortax = weapontax;
+    }
     
     // Adjust basetax in case of weapon taxation
-    if (basetax < weapontax) basetax = weapontax;
+    if (basetax < weapontax)
+    {
+        basetax = weapontax;
+    }
 
     // Now check for an overabundance of tax enabling objects
-    if (taxers > totalMen) taxers = totalMen;
+    if (taxers > totalMen)
+    {
+        taxers = totalMen;
+    }
 
     // And finally for creatures
-    if (Globals->WHO_CAN_TAX & GameDefs::TAX_CREATURES) {
+    if (Globals->WHO_CAN_TAX & GameDefs::TAX_CREATURES)
+    {
         basetax += creatures;
         taxers += creatures;
     }
-    if (Globals->WHO_CAN_TAX & GameDefs::TAX_ILLUSIONS) {
+    if (Globals->WHO_CAN_TAX & GameDefs::TAX_ILLUSIONS)
+    {
         basetax += illusions;
         taxers += illusions;
     }
-    if (numtaxers) return(taxers);
+    if (numtaxers)
+    {
+        return taxers;
+    }
 
-    int taxes = Globals->TAX_BASE_INCOME * basetax
+    size_t taxes = Globals->TAX_BASE_INCOME * basetax
         + Globals->TAX_BONUS_WEAPON * weapontax
         + Globals->TAX_BONUS_ARMOR * armortax;
-    return(taxes);
+
+    return taxes;
 }
 
 int Unit::GetFlag(int x)
@@ -2341,92 +2686,151 @@ void Unit::SetFlag(int x, int val)
         if (flags & x) flags -= x;
 }
 
-void Unit::CopyFlags(Unit *x)
+void Unit::CopyFlags(const Unit::Handle& x)
 {
     flags = x->flags;
     guard = GUARD_NONE;
-    if (Taxers(1)) {
+    if (Taxers(1))
+    {
         if (x->guard != GUARD_SET && x->guard != GUARD_ADVANCE)
+        {
             guard = x->guard;
-    } else {
+        }
+    }
+    else
+    {
         if (x->guard == GUARD_AVOID)
+        {
             guard = GUARD_AVOID;
+        }
         SetFlag(FLAG_AUTOTAX, 0);
     }
     reveal = x->reveal;
 }
 
-Items Unit::GetBattleItem(AString &itm)
+Items Unit::GetBattleItem(const AString &itm)
 {
-    int item = LookupItem(&itm);
-    if (item == -1) return -1;
+    const Items item = LookupItem(itm);
+    if (!item.isValid())
+    {
+        return Items();
+    }
 
-    int num = items.GetNum(item);
-    if (num < 1) return -1;
+    size_t num = items.GetNum(item);
+    if (num < 1)
+    {
+        return Items();
+    }
 
-    if (!(ItemDefs[item].type & IT_BATTLE)) return -1;
+    if (!(ItemDefs[item].type & IT_BATTLE))
+    {
+        return Items();
+    }
     // Exclude weapons.  They will be handled later.
-    if (ItemDefs[item].type & IT_WEAPON) return -1;
+    if (ItemDefs[item].type & IT_WEAPON)
+    {
+        return Items();
+    }
     items.SetNum(item, num - 1);
     return item;
 }
 
-int Unit::GetArmor(AString &itm, int ass)
+Items Unit::GetArmor(const AString &itm, bool ass)
 {
-    int item = LookupItem(&itm);
-    ArmorType *pa = FindArmor(itm.Str());
+    Items item = LookupItem(itm);
 
-    if (pa == nullptr) return -1;
-    if (ass && !(pa->flags & ArmorType::USEINASSASSINATE)) return -1;
+    try
+    {
+        const ArmorType& pa = FindArmor(itm.Str());
 
-    int num = items.GetNum(item);
-    if (num < 1) return -1;
+        if (ass && !(pa.flags & ArmorType::USEINASSASSINATE))
+        {
+            return Items();
+        }
 
-    if (!(ItemDefs[item].type & IT_ARMOR)) return -1;
-    items.SetNum(item, num - 1);
-    return item;
+        const size_t num = items.GetNum(item);
+        if (num < 1)
+        {
+            return Items();
+        }
+
+        if (!(ItemDefs[item].type & IT_ARMOR))
+        {
+            return Items();
+        }
+        items.SetNum(item, num - 1);
+        return item;
+    }
+    catch(const NoSuchItemException&)
+    {
+        return Items();
+    }
 }
 
-Items Unit::GetMount(AString &itm, int canFly, int canRide, unsigned int &bonus)
+Items Unit::GetMount(const AString& itm, bool canFly, bool canRide, unsigned int &bonus)
 {
     bonus = 0;
 
     // This region doesn't allow riding or flying, so no mounts, bail
-    if (!canFly && !canRide) return -1;
-
-    int item = LookupItem(&itm);
-    MountType *pMnt = FindMount(itm.Str());
-
-    int num = items.GetNum(item);
-    if (num < 1) return -1;
-
-    if (canFly) {
-        // If the mount cannot fly, and the region doesn't allow
-        // riding mounts, bail
-        if (!ItemDefs[item].fly && !canRide) return -1;
-    } else {
-        // This region allows riding mounts, so if the mount
-        // can not carry at a riding level, bail
-        if (!ItemDefs[item].ride) return -1;
+    if (!canFly && !canRide)
+    {
+        return Items();
     }
 
-    if (pMnt->skill) {
-        AString skname = pMnt->skill;
-        int sk = LookupSkill(&skname);
-        bonus = GetSkill(sk);
-        if (bonus < pMnt->minBonus) {
+    Items item = LookupItem(itm);
+
+    const MountType& pMnt = FindMount(itm.Str());
+
+    const size_t num = items.GetNum(item);
+    if (num < 1)
+    {
+        return Items();
+    }
+
+    if (canFly)
+    {
+        // If the mount cannot fly, and the region doesn't allow
+        // riding mounts, bail
+        if (!ItemDefs[item].fly && !canRide)
+        {
+            return Items();
+        }
+    }
+    else
+    {
+        // This region allows riding mounts, so if the mount
+        // can not carry at a riding level, bail
+        if (!ItemDefs[item].ride)
+        {
+            return Items();
+        }
+    }
+
+    if (pMnt.skill)
+    {
+        const AString& skname = pMnt.skill;
+        Skills sk = LookupSkill(skname);
+        bonus = static_cast<unsigned int>(GetSkill(sk));
+        if (static_cast<int>(bonus) < pMnt.minBonus)
+        {
             // Unit isn't skilled enough for this mount
             bonus = 0;
-            return -1;
+            return Items();
         }
         // Limit to max mount bonus;
-        if (bonus > pMnt->maxBonus) bonus = pMnt->maxBonus;
+        if (static_cast<int>(bonus) > pMnt.maxBonus)
+        {
+            bonus = static_cast<unsigned int>(pMnt.maxBonus);
+        }
         // If the mount can fly and the terrain doesn't allow
         // flying mounts, limit the bonus to the maximum hampered
         // bonus allowed by the mount
-        if (ItemDefs[item].fly && !canFly) {
-            if (bonus > pMnt->maxHamperedBonus)
-                bonus = pMnt->maxHamperedBonus;
+        if (ItemDefs[item].fly && !canFly)
+        {
+            if (static_cast<int>(bonus) > pMnt.maxHamperedBonus)
+            {
+                bonus = static_cast<unsigned int>(pMnt.maxHamperedBonus);
+            }
         }
 
         // Practice the mount's skill
@@ -2438,78 +2842,141 @@ Items Unit::GetMount(AString &itm, int canFly, int canRide, unsigned int &bonus)
     return item;
 }
 
-Items Unit::GetWeapon(AString &itm, const Items& riding, unsigned int ridingBonus,
-        int &attackBonus, int &defenseBonus, int &attacks)
+Items Unit::GetWeapon(const AString& itm, const Items& riding, unsigned int ridingBonus,
+        unsigned int &attackBonus, unsigned int &defenseBonus, int &attacks)
 {
-    int item = LookupItem(&itm);
-    WeaponType *pWep = FindWeapon(itm.Str());
+    Items item = LookupItem(itm);
 
-    if (pWep == nullptr) return -1;
+    try
+    {
+        const auto& pWep = FindWeapon(itm.Str());
 
-    int num = items.GetNum(item);
-    if (num < 1) return -1;
+        const size_t num = items.GetNum(item);
+        if (num < 1)
+        {
+            return Items();
+        }
 
-    if (!(ItemDefs[item].type & IT_WEAPON)) return -1;
+        if (!(ItemDefs[item].type & IT_WEAPON))
+        {
+            return Items();
+        }
 
-    attackBonus = 0;
-    defenseBonus = 0;
-    attacks = 1;
+        attackBonus = 0;
+        defenseBonus = 0;
+        attacks = 1;
 
-    // Found a weapon, check flags and skills
-    int baseSkillLevel = CanUseWeapon(pWep, riding);
-    // returns -1 if weapon cannot be used, else the usable skill level
-    if (baseSkillLevel == -1) return -1;
+        // Found a weapon, check flags and skills
+        int baseSkillLevel = CanUseWeapon(pWep, riding);
+        // returns -1 if weapon cannot be used, else the usable skill level
+        if (baseSkillLevel == -1)
+        {
+            return Items();
+        }
 
-    // Attack and defense skill
-    attackBonus = baseSkillLevel + pWep->attackBonus;
-    if (pWep->flags & WeaponType::NOATTACKERSKILL)
-        defenseBonus = pWep->defenseBonus;
-    else
-        defenseBonus = baseSkillLevel + pWep->defenseBonus;
-    // Riding bonus
-    if (pWep->flags & WeaponType::RIDINGBONUS) attackBonus += ridingBonus;
-    if (pWep->flags & (WeaponType::RIDINGBONUSDEFENSE|WeaponType::RIDINGBONUS))
-        defenseBonus += ridingBonus;
-    // Number of attacks
-    attacks = pWep->numAttacks;
-    // Note: NUM_ATTACKS_SKILL must be > NUM_ATTACKS_HALF_SKILL
-    if (attacks >= WeaponType::NUM_ATTACKS_SKILL)
-        attacks += baseSkillLevel - WeaponType::NUM_ATTACKS_SKILL;
-    else if (attacks >= WeaponType::NUM_ATTACKS_HALF_SKILL)
-        attacks += (baseSkillLevel +1)/2 - WeaponType::NUM_ATTACKS_HALF_SKILL;
-    // Sanity check
-    if (attacks == 0) attacks = 1;
+        // Attack and defense skill
+        attackBonus = static_cast<unsigned int>(baseSkillLevel + pWep.attackBonus);
+        if (pWep.flags & WeaponType::NOATTACKERSKILL)
+        {
+            defenseBonus = static_cast<unsigned int>(pWep.defenseBonus);
+        }
+        else
+        {
+            defenseBonus = static_cast<unsigned int>(baseSkillLevel + pWep.defenseBonus);
+        }
+        // Riding bonus
+        if (pWep.flags & WeaponType::RIDINGBONUS)
+        {
+            attackBonus += ridingBonus;
+        }
+        if (pWep.flags & (WeaponType::RIDINGBONUSDEFENSE|WeaponType::RIDINGBONUS))
+        {
+            defenseBonus += ridingBonus;
+        }
+        // Number of attacks
+        attacks = pWep.numAttacks;
+        // Note: NUM_ATTACKS_SKILL must be > NUM_ATTACKS_HALF_SKILL
+        if (attacks >= WeaponType::NUM_ATTACKS_SKILL)
+        {
+            attacks += baseSkillLevel - WeaponType::NUM_ATTACKS_SKILL;
+        }
+        else if (attacks >= WeaponType::NUM_ATTACKS_HALF_SKILL)
+        {
+            attacks += (baseSkillLevel +1)/2 - WeaponType::NUM_ATTACKS_HALF_SKILL;
+        }
+        // Sanity check
+        if (attacks == 0)
+        {
+            attacks = 1;
+        }
 
-    // get the weapon
-    items.SetNum(item, num-1);
-    return item;
+        // get the weapon
+        items.SetNum(item, num-1);
+        return item;
+    }
+    catch(const NoSuchItemException&)
+    {
+        return Items();
+    }
 }
 
 void Unit::Detach()
 {
-    if (!object.expired()) object.lock()->units.Remove(shared_from_this());
+    if (!object.expired())
+    {
+        auto& ulist = object.lock()->units;
+        for(auto it = ulist.begin(); it != ulist.end(); ++it)
+        {
+            const auto& u = *it;
+            if(u.get() == this)
+            {
+                ulist.erase(it);
+                break;
+            }
+        }
+    }
     object.reset();
 }
 
 void Unit::MoveUnit(const std::weak_ptr<Object>& toobj)
 {
-    if (!object.expired()) object.lock()->units.Remove(shared_from_this());
+    if (!object.expired())
+    {
+        auto& ulist = object.lock()->units;
+        for(auto it = ulist.begin(); it != ulist.end(); ++it)
+        {
+            const auto& u = *it;
+            if(u.get() == this)
+            {
+                ulist.erase(it);
+                break;
+            }
+        }
+    }
     object = toobj;
     if (!object.expired()) {
-        object.lock()->units.Add(shared_from_this());
+        object.lock()->units.push_back(shared_from_this());
     }
 }
 
 void Unit::DiscardUnfinishedShips() {
-    int discard = 0;
+    bool discard = false;
     // remove all unfinished ship-type items
-    for (int i=0; i<NITEMS; i++) {
-        if (ItemDefs[i].type & IT_SHIP) {
-            if (items.GetNum(i) > 0) discard = 1;
-            items.SetNum(i,0);
+    for (auto i = Items::begin(); i != Items::end(); ++i)
+    {
+        if (ItemDefs[*i].type & IT_SHIP)
+        {
+            if (items.GetNum(*i) > 0)
+            {
+                discard = true;
+            }
+            items.SetNum(*i, 0);
         }
     }
-    if (discard > 0) Event("discards all unfinished ships.");    
+    if (discard)
+    {
+        Event("discards all unfinished ships.");    
+    }
 }
 
 void Unit::Event(const AString & s)
@@ -2650,12 +3117,12 @@ int Unit::GetProductionBonus(int item)
     return bonus * ItemDefs[item].mult_val;
 }
 
-int Unit::SkillLevels()
+size_t Unit::SkillLevels()
 {
-    int levels = 0;
-    forlist(&skills) {
-        Skill *s = (Skill *)elem;
-        levels += GetLevelByDays(s->days/GetMen());
+    size_t levels = 0;
+    for(const auto& s: skills)
+    {
+        levels += GetLevelByDays(s.days/GetMen());
     }
     return levels;
 }
@@ -2755,41 +3222,63 @@ void Unit::SkillStarvation()
     return;
 }
 
-int Unit::CanUseWeapon(WeaponType *pWep, int riding)
+int Unit::CanUseWeapon(const WeaponType& pWep, const Items& riding)
 {
-    if (riding == -1) {
-        if (pWep->flags & WeaponType::NOFOOT) return -1;
+    if (!riding.isValid())
+    {
+        if (pWep->flags & WeaponType::NOFOOT)
+        {
+            return -1;
+        }
     }
-    else if (pWep->flags & WeaponType::NOMOUNT) return -1;
+    else if (pWep->flags & WeaponType::NOMOUNT)
+    {
+        return -1;
+    }
     return CanUseWeapon(pWep);
 }
 
-int Unit::CanUseWeapon(WeaponType *pWep)
+int Unit::CanUseWeapon(const WeaponType& pWep)
 {
     int baseSkillLevel = 0;
     int tempSkillLevel = 0;
 
-    int bsk, orsk;
-    AString skname;
-    if (pWep->baseSkill != nullptr) {
-        skname = pWep->baseSkill;
+    Skills bsk, orsk;
+
+    if (pWep->baseSkill != nullptr)
+    {
+        const auto& skname = pWep->baseSkill;
         bsk = LookupSkill(&skname);
-        if (bsk != -1) baseSkillLevel = GetSkill(bsk);
+        if (bsk.isValid())
+        {
+            baseSkillLevel = GetSkill(bsk);
+        }
     }
 
-    if (pWep->orSkill != nullptr) {
-        skname = pWep->orSkill;
+    if (pWep->orSkill != nullptr)
+    {
+        const auto& skname = pWep->orSkill;
         orsk = LookupSkill(&skname);
-        if (orsk != -1) tempSkillLevel = GetSkill(orsk);
+        if (orsk.isValid())
+        {
+            tempSkillLevel = GetSkill(orsk);
+        }
     }
 
-    if (tempSkillLevel > baseSkillLevel) {
+    if (tempSkillLevel > baseSkillLevel)
+    {
         baseSkillLevel = tempSkillLevel;
         Practice(orsk);
-    } else
+    }
+    else
+    {
         Practice(bsk);
+    }
 
-    if (pWep->flags & WeaponType::NEEDSKILL && !baseSkillLevel) return -1;
+    if (pWep->flags & WeaponType::NEEDSKILL && !baseSkillLevel)
+    {
+        return -1;
+    }
 
     return baseSkillLevel;
 }

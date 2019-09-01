@@ -28,6 +28,7 @@
 #include <memory>
 #include <iostream>
 #include "alist.h"
+#include "validvalue.h"
 
 class AString : public AListElem {
     friend std::ostream & operator <<(std::ostream &os, const AString &);
@@ -43,6 +44,13 @@ public:
     AString(size_t);
     AString(char);
     AString(const AString &);
+
+    template<typename T>
+    AString(const ValidValue<T> & rhs) :
+        AString(static_cast<T>(rhs))
+    {
+    }
+
     AString(const std::string& s) :
         AString(s.c_str())
     {
@@ -62,6 +70,7 @@ public:
     AString & operator=(const AString &);
     AString & operator=(const char *);
 
+    const char *Str() const;
     char *Str();
     size_t Len();
 

@@ -140,9 +140,9 @@ public:
     int GetAttitude(size_t) const;
     void RemoveAttitude(size_t);
     
-    bool CanCatch(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&);
+    bool CanCatch(const ARegion&, const std::shared_ptr<Unit>&);
     /* Return 1 if can see, 2 if can see faction */
-    int CanSee(const std::shared_ptr<ARegion>&, const std::shared_ptr<Unit>&, int practice = 0);
+    unsigned int CanSee(const ARegion&, const std::shared_ptr<Unit>&, int practice = 0);
     
     void DefaultOrders();
     void TimesReward();

@@ -224,7 +224,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         std::weak_ptr<Object> GetDummy();
         void CheckFleets();
 
-        unsigned int MoveCost(int, const ARegion::Handle&, const Directions&, AString *road);
+        unsigned int MoveCost(int, const ARegion&, const Directions&, AString *road) const;
         std::weak_ptr<Unit> Forbidden(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         std::weak_ptr<Unit> ForbiddenByAlly(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         bool CanTax(const std::shared_ptr<Unit>&);
@@ -250,11 +250,11 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         // AS
         bool HasRoad();
-        bool HasExitRoad(const Directions& realDirection);
+        bool HasExitRoad(const Directions& realDirection) const;
         int CountConnectingRoads();
-        bool HasConnectingRoad(const Directions& realDirection);
-        Objects GetRoadDirection(const Directions& realDirection);
-        Directions GetRealDirComp(const Directions& realDirection);
+        bool HasConnectingRoad(const Directions& realDirection) const;
+        Objects GetRoadDirection(const Directions& realDirection) const;
+        Directions GetRealDirComp(const Directions& realDirection) const;
         void DoDecayCheck(const ARegionList& pRegs);
         void DoDecayClicks(const std::shared_ptr<Object>& o, const ARegionList& pRegs);
         void RunDecayEvent(const std::shared_ptr<Object>& o, const ARegionList& pRegs);

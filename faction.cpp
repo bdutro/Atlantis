@@ -675,16 +675,16 @@ void Faction::SetAttitude(size_t num, int att)
     }
 }
 
-bool Faction::CanCatch(const ARegion::Handle& r, const Unit::Handle& t)
+bool Faction::CanCatch(const ARegion& r, const Unit::Handle& t)
 {
-    if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN)
+    if (TerrainDefs[r.type].similar_type == Regions::Types::R_OCEAN)
     {
         return true;
     }
 
     size_t def = t->GetDefenseRiding();
 
-    for(const auto& o: r->objects)
+    for(const auto& o: r.objects)
     {
         for(const auto& u: o->units)
         {
@@ -701,47 +701,83 @@ bool Faction::CanCatch(const ARegion::Handle& r, const Unit::Handle& t)
     return false;
 }
 
-int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practice)
+unsigned int Faction::CanSee(const ARegion& r, const Unit::Handle& u, int practice)
 {
     bool detfac = false;
-    if (u->faction.lock().get() == this) return 2;
-    if (u->reveal == REVEAL_FACTION) return 2;
-    int retval = 0;
-    if (u->reveal == REVEAL_UNIT) retval = 1;
-    if (u->guard == GUARD_GUARD) retval = 1;
-    for(const auto& obj: r->objects) {
+    if (u->faction.lock().get() == this)
+    {
+        return 2;
+    }
+    if (u->reveal == REVEAL_FACTION)
+    {
+        return 2;
+    }
+
+    unsigned int retval = 0;
+    if (u->reveal == REVEAL_UNIT)
+    {
+        retval = 1;
+    }
+    if (u->guard == GUARD_GUARD)
+    {
+        retval = 1;
+    }
+    for(const auto& obj: r.objects)
+    {
         int dummy = 0;
-        if (obj->type == Objects::Types::O_DUMMY) dummy = 1;
-        for(const auto& temp: obj->units) {
-            if (u == temp && dummy == 0) retval = 1;
+        if (obj->type == Objects::Types::O_DUMMY)
+        {
+            dummy = 1;
+        }
+        for(const auto& temp: obj->units)
+        {
+            if (u == temp && dummy == 0)
+            {
+                retval = 1;
+            }
 
             // penalty of 2 to stealth if assassinating and 1 if stealing
             // TODO: not sure about the reasoning behind the IMPROVED_AMTS part
             int stealpenalty = 0;
-            if (Globals->HARDER_ASSASSINATION && u->stealorders){
-                if (u->stealorders->type == Orders::Types::O_STEAL) {
+            if (Globals->HARDER_ASSASSINATION && u->stealorders)
+            {
+                if (u->stealorders->type == Orders::Types::O_STEAL)
+                {
                     stealpenalty = 1;
-                } else if (u->stealorders->type == Orders::Types::O_ASSASSINATE) {
-                    if (Globals->IMPROVED_AMTS){
+                }
+                else if (u->stealorders->type == Orders::Types::O_ASSASSINATE)
+                {
+                    if (Globals->IMPROVED_AMTS)
+                    {
                         stealpenalty = 1;
-                    } else {
+                    }
+                    else
+                    {
                         stealpenalty = 2;
                     }
                 }
             }
 
-            if (temp->faction.lock().get() == this) {
+            if (temp->faction.lock().get() == this)
+            {
                 if (static_cast<int>(temp->GetAttribute("observation")) >
-                        static_cast<int>(u->GetAttribute("stealth")) - stealpenalty) {
-                    if (practice) {
+                        static_cast<int>(u->GetAttribute("stealth")) - stealpenalty)
+                {
+                    if (practice)
+                    {
                         temp->PracticeAttribute("observation");
                         retval = 2;
                     }
                     else
+                    {
                         return 2;
-                } else {
+                    }
+                }
+                else
+                {
                     if (static_cast<int>(temp->GetAttribute("observation")) ==
-                            static_cast<int>(u->GetAttribute("stealth")) - stealpenalty) {
+                            static_cast<int>(u->GetAttribute("stealth")) - stealpenalty)
+                    {
                         if (practice)
                         {
                             temp->PracticeAttribute("observation");
@@ -752,11 +788,17 @@ int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practic
                         }
                     }
                 }
-                if (temp->GetSkill(Skills::Types::S_MIND_READING) > 2) detfac = true;
+                if (temp->GetSkill(Skills::Types::S_MIND_READING) > 2)
+                {
+                    detfac = true;
+                }
             }
         }
     }
-    if (retval == 1 && detfac) return 2;
+    if (retval == 1 && detfac)
+    {
+        return 2;
+    }
     return retval;
 }
 
