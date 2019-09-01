@@ -75,8 +75,8 @@ class Soldier {
         Objects building;
 
         /* Healing information */
-        unsigned int healing;
-        unsigned int healtype;
+        size_t healing;
+        size_t healtype;
         Items healitem;
         int canbehealed;
         int regen;
@@ -93,8 +93,8 @@ class Soldier {
         int dskill[NUM_ATTACK_TYPES];
         int protection[NUM_ATTACK_TYPES];
         Items armor;
-        int hits;
-        int maxhits;
+        unsigned int hits;
+        unsigned int maxhits;
         int damage;
 
         BITFIELD battleItems;
@@ -148,15 +148,15 @@ class Army
         std::weak_ptr<Unit> leader;
         ShieldList shields;
         int round;
-        int tac;
+        unsigned int tac;
         size_t canfront;
         size_t canbehind;
         size_t notfront;
         size_t notbehind;
         size_t count;
 
-        int hitsalive; // current number of "living hits"
-        int hitstotal; // Number of hits at start of battle.
+        unsigned int hitsalive; // current number of "living hits"
+        unsigned int hitstotal; // Number of hits at start of battle.
 
     private:
         size_t BuildArmy_(const PtrList<Location>& locs, int regtype, int ass);

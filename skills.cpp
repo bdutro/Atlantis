@@ -135,7 +135,7 @@ unsigned int SkillCost(const Skills& skill)
     return SkillDefs[skill].cost;
 }
 
-int SkillMax(char const *skill, const Items& race)
+unsigned int SkillMax(char const *skill, const Items& race)
 {
     try
     {

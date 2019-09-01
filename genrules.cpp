@@ -1309,7 +1309,7 @@ int Game::GenRules(const AString &rules, const AString &css,
                 f.PutStr(cap);
             }
             else {
-                temp = (cap + item_def.hitchwalk);
+                temp = (cap + static_cast<int>(item_def.hitchwalk));
                 temp += " (with ";
                 temp += ItemDefs[item_def.hitchItem].name;
                 temp += ")";
@@ -2403,7 +2403,7 @@ int Game::GenRules(const AString &rules, const AString &css,
             if (!item_def.hitchItem.isValid())
                 temp += cap;
             else {
-                temp += (cap + item_def.hitchwalk);
+                temp += (cap + static_cast<int>(item_def.hitchwalk));
                 temp += " with ";
                 temp += ItemDefs[item_def.hitchItem].name;
             }

@@ -421,7 +421,7 @@ void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit:
         return;
     }
 
-    unsigned int amt = 1;
+    size_t amt = 1;
     if (so->item == Items::Types::I_SILVER) {
         amt = tar->GetMoney();
         if (amt < 400) {
@@ -1602,7 +1602,7 @@ int Game::GetBuyAmount(const ARegion::Handle& r, const Market::Handle& m)
                         }
                     }
                     if (o->num == -1) {
-                        o->num = u->GetSharedMoney()/m->price;
+                        o->num = static_cast<int>(u->GetSharedMoney()) / m->price;
                         if (m->amount != -1 && o->num > m->amount) {
                             o->num = m->amount;
                         }
@@ -1611,8 +1611,8 @@ int Game::GetBuyAmount(const ARegion::Handle& r, const Market::Handle& m)
                         o->num = m->amount;
                         u->Error("BUY: Unit attempted to buy more than were for sale.");
                     }
-                    if (o->num * m->price > u->GetSharedMoney()) {
-                        o->num = u->GetSharedMoney() / m->price;
+                    if (o->num * m->price > static_cast<int>(u->GetSharedMoney())) {
+                        o->num = static_cast<int>(u->GetSharedMoney()) / m->price;
                         u->Error("BUY: Unit attempted to buy more than it "
                                 "could afford.");
                     }
@@ -1668,7 +1668,7 @@ void Game::DoBuy(const ARegion::Handle& r, const Market::Handle& m)
                         /* Setup specialized skill experience */
                         if (Globals->REQUIRED_EXPERIENCE) {
                             const auto& mt = FindRace(ItemDefs[o->item].abr);
-                            int exp = mt.speciallevel - mt.defaultlevel;
+                            int exp = static_cast<int>(mt.speciallevel - mt.defaultlevel);
                             if (exp > 0) {
                                 const size_t exp2 = static_cast<size_t>(exp * temp) * GetDaysByLevel(1);
                                 for (const auto& sname: mt.skills)
@@ -3257,7 +3257,7 @@ void Game::RunTransportOrders()
                     }
 
                     // if not, give it back
-                    if (static_cast<int>(cost) > u->GetSharedMoney()) {
+                    if (cost > u->GetSharedMoney()) {
                         u->Error(ordertype + ": Cannot afford shipping cost.");
                         u->items.SetNum(t->item, u->items.GetNum(t->item) + static_cast<size_t>(amt));
                         continue;

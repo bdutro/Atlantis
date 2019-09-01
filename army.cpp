@@ -54,7 +54,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
     attacks = 1;
     attacktype = ATTACK_COMBAT;
 
-    special = NULL;
+    special = nullptr;
     slevel = 0;
 
     askill = 0;
@@ -181,7 +181,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
     int terrainflags = TerrainDefs[regtype].flags;
     int canFly = (terrainflags & TerrainType::FLYINGMOUNTS);
     int canRide = (terrainflags & TerrainType::RIDINGMOUNTS);
-    int ridingBonus = 0;
+    unsigned int ridingBonus = 0;
     if (canFly || canRide) {
         //
         // Mounts of some type _are_ allowed in this region
@@ -193,7 +193,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
             // Defer adding the combat bonus until we know if the weapon
             // allows it.  The defense bonus for riding can be added now
             // however.
-            dskill[ATTACK_RIDING] += ridingBonus;
+            dskill[ATTACK_RIDING] += static_cast<int>(ridingBonus);
             riding = item;
             break;
         }
@@ -202,8 +202,8 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
     //
     // Find the correct weapon for this soldier.
     //
-    int attackBonus = 0;
-    int defenseBonus = 0;
+    unsigned int attackBonus = 0;
+    unsigned int defenseBonus = 0;
     int numAttacks = 1;
     for (unsigned int i = 0; i < MAX_READY; i++) {
         // Check the preferred weapon first.
@@ -244,7 +244,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
         // Weapons (like Runeswords) which are both weapons and battle
         // items will be skipped in the battle items setup and handled
         // here.
-        if ((ItemDefs[weapon].type & IT_BATTLE) && special == NULL) {
+        if ((ItemDefs[weapon].type & IT_BATTLE) && special == nullptr) {
             const auto& pBat = FindBattleItem(ItemDefs[weapon].abr);
             special = pBat.special;
             slevel = pBat.skillLevel;
@@ -255,8 +255,8 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
 
     // Set the attack and defense skills
     // These will include the riding bonus if they should be included.
-    askill += attackBonus;
-    dskill[ATTACK_COMBAT] += defenseBonus;
+    askill += static_cast<int>(attackBonus);
+    dskill[ATTACK_COMBAT] += static_cast<int>(defenseBonus);
     attacks = numAttacks;
 }
 
@@ -310,7 +310,7 @@ void Soldier::SetupCombatItems()
                  (Globals->USE_PREPARE_COMMAND == GameDefs::PREPARE_NORMAL)) ||
                 (item == unit_sp->readyItem) ||
                 (pBat.flags & BattleItemType::SHIELD)) {
-            if ((pBat.flags & BattleItemType::SPECIAL) && special != NULL) {
+            if ((pBat.flags & BattleItemType::SPECIAL) && special != nullptr) {
                 // This unit already has a special attack so give the item
                 // back to the unit as they aren't going to use it.
                 unit_sp->items.SetNum(item, unit_sp->items.GetNum(item)+1);
@@ -377,14 +377,14 @@ void Soldier::SetupCombatItems()
 
 int Soldier::HasEffect(char const *eff)
 {
-    if (eff == NULL) return 0;
+    if (eff == nullptr) return 0;
 
     return effects[eff];
 }
 
 void Soldier::SetEffect(char const *eff)
 {
-    if (eff == NULL) return;
+    if (eff == nullptr) return;
 
     try
     {
@@ -399,7 +399,7 @@ void Soldier::SetEffect(char const *eff)
             }
         }
 
-        if (e.cancelEffect != NULL) ClearEffect(e.cancelEffect);
+        if (e.cancelEffect != nullptr) ClearEffect(e.cancelEffect);
 
         if (!(e.flags & EffectType::EFF_NOSET)) effects[eff] = 1;
     }
@@ -410,7 +410,7 @@ void Soldier::SetEffect(char const *eff)
 
 void Soldier::ClearEffect(char const *eff)
 {
-    if (eff == NULL) return;
+    if (eff == nullptr) return;
 
     try
     {
@@ -587,7 +587,6 @@ size_t Army::BuildArmy_(const PtrList<Location>& locs, int regtype, int ass)
 
 Army::Army(const Unit::Handle& ldr, const PtrList<Location>& locs, int regtype, int ass)
 {
-    int tacspell = 0;
     Unit::Handle tactician = ldr;
 
     leader = ldr;
@@ -604,7 +603,7 @@ Army::Army(const Unit::Handle& ldr, const PtrList<Location>& locs, int regtype, 
             const auto u = l->unit.lock();
             count += u->GetSoldiers();
             u->losses = 0;
-            int temp = u->GetAttribute("tactics");
+            unsigned int temp = u->GetAttribute("tactics");
             if (temp > tac) {
                 tac = temp;
                 tactician = u;
@@ -624,8 +623,6 @@ Army::Army(const Unit::Handle& ldr, const PtrList<Location>& locs, int regtype, 
     }
     soldiers.resize(count);
     canfront = BuildArmy_(locs, regtype, ass);
-
-    tac = tac + tacspell;
 
     canbehind = count;
     notfront = count;
@@ -739,7 +736,7 @@ void Army::Regenerate(Battle& b)
     for (size_t i = 0; i < count; i++) {
         const auto& s = soldiers[i];
         if (i < notbehind) {
-            int diff = s->maxhits - s->hits;
+            int diff = static_cast<int>(s->maxhits - s->hits);
             if (diff > 0) {
                 AString aName = s->name;
 
@@ -754,8 +751,11 @@ void Army::Regenerate(Battle& b)
                 }
                 if (s->regen) {
                     int regen = s->regen;
-                    if (regen > diff) regen = diff;
-                    s->hits += regen;
+                    if (regen > diff)
+                    {
+                        regen = diff;
+                    }
+                    s->hits += static_cast<unsigned int>(regen);
                     b.AddLine(aName + " regenerates " + regen +
                             " hits bringing it to " + s->hits + "/" +
                             s->maxhits + ".");
@@ -1154,11 +1154,14 @@ bool Hits(T a, T d)
 {
     T tohit = 1,tomiss = 1;
     if (a > d) {
-        tohit = 1 << (a-d);
+        tohit = static_cast<T>(1U << (a-d));
     } else if (d > a) {
-        tomiss = 1 << (d-a);
+        tomiss = static_cast<T>(1U << (d-a));
     }
-    if (getrandom(tohit+tomiss) < tohit) return true;
+    if (getrandom(tohit+tomiss) < tohit)
+    {
+        return true;
+    }
     return false;
 }
 
@@ -1225,11 +1228,11 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         const auto hi = shields.GetHighShield(shieldType);
         if (hi != shields.end()) {
             /* Check if we get through shield */
-            if (!Hits(attackLevel, hi->shieldskill)) {
+            if (!Hits(static_cast<size_t>(attackLevel), hi->shieldskill)) {
                 return -1;
             }
 
-            if (effect != NULL && !combat) {
+            if (effect != nullptr && !combat) {
                 /* We got through shield... if killing spell, destroy shield */
                 shields.erase(hi);
             }
@@ -1256,14 +1259,17 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         int tlev = 0;
         if (attackType != NUM_ATTACK_TYPES)
             tlev = tar->dskill[ attackType ];
-        if (special != NULL) {
+        if (special != nullptr) {
             const auto& sp = FindSpecial(special);
             if ((sp.effectflags & SpecialType::FX_NOBUILDING) && tar->building)
                 tlev -= 2;
         }
 
         /* 4.1 Check whether defense is allowed against this weapon */
-        if ((flags & WeaponType::NODEFENSE) && (tlev > 0)) tlev = 0;
+        if ((flags & WeaponType::NODEFENSE) && (tlev > 0))
+        {
+            tlev = 0;
+        }
 
         if (!(flags & WeaponType::RANGED)) {
             /* 4.2 Check relative weapon length */
@@ -1278,7 +1284,10 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         }
 
         /* 4.3 Add bonuses versus mounted */
-        if (tar->riding.isValid()) attackLevel += mountBonus;
+        if (tar->riding.isValid())
+        {
+            attackLevel += static_cast<int>(mountBonus);
+        }
 
         /* 5. Attack soldier */
         if (attackType != NUM_ATTACK_TYPES) {
@@ -1298,7 +1307,7 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
         }
 
         /* 6. If attack got through, apply effect, or kill */
-        if (effect == NULL) {
+        if (effect == nullptr) {
             /* 7. Last chance... Check armor */
             if (tar->ArmorProtect(weaponClass)) {
                 continue;

@@ -143,7 +143,7 @@ void Game::ModifySkillDependancy(const Skills& sk, int i, char const *dep, int l
     {
         FindSkill(dep);
         skill_def.depends[i_u].skill = dep;
-        skill_def.depends[i_u].level = lev;
+        skill_def.depends[i_u].level = static_cast<unsigned int>(lev);
     }
     catch(const NoSuchItemException&)
     {
@@ -318,7 +318,7 @@ void Game::ModifyItemHitch(const Items& it, const Items& item, int capacity)
 
     auto& item_def = ItemDefs[it];
     item_def.hitchItem = item;
-    item_def.hitchwalk = capacity;
+    item_def.hitchwalk = static_cast<unsigned int>(capacity);
 }
 
 void Game::ModifyItemProductionSkill(const Items& it, char *sk, size_t lev)
@@ -462,10 +462,16 @@ void Game::ModifyRaceSkillLevels(char const *r, int spec, int def)
     try
     {
         auto& mt = FindRace_(r);
-        if (spec < 0) spec = 0;
-        if (def < 0) def = 0;
-        mt.speciallevel = spec;
-        mt.defaultlevel = def;
+        if (spec < 0)
+        {
+            spec = 0;
+        }
+        if (def < 0)
+        {
+            def = 0;
+        }
+        mt.speciallevel = static_cast<unsigned int>(spec);
+        mt.defaultlevel = static_cast<unsigned int>(def);
     }
     catch(const NoSuchItemException&)
     {
@@ -549,7 +555,7 @@ void Game::ModifyMonsterAttacksAndHits(char const *mon, int num, int hits, int r
     {
         auto& pM = FindMonster_(mon, 0);
         pM.numAttacks = num;
-        pM.hits = hits;
+        pM.hits = static_cast<unsigned int>(hits);
         pM.regen = regen;
     }
     catch(const NoSuchItemException&)

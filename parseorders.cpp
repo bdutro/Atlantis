@@ -2994,7 +2994,7 @@ void Game::ProcessAdvanceOrder(const Unit::Handle& u, AString *o, const OrdersCh
     }
 
     const auto m = std::dynamic_pointer_cast<MoveOrder>(u->monthorders);
-    m->advancing = 1;
+    m->advancing = true;
 
     for (;;) {
         AString *t = o->gettoken();
@@ -3029,7 +3029,7 @@ void Game::ProcessMoveOrder(const Unit::Handle& u, AString *o, const OrdersCheck
         u->monthorders = std::make_shared<MoveOrder>();
     }
     const auto m = std::dynamic_pointer_cast<MoveOrder>(u->monthorders);
-    m->advancing = 0;
+    m->advancing = false;
 
     for (;;) {
         AString *t = o->gettoken();

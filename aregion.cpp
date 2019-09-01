@@ -1546,11 +1546,11 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
             }
         }
 
-        int obs = GetObservation(fac, false);
+        unsigned int obs = GetObservation(fac, false);
         size_t truesight = GetTrueSight(fac, false);
         bool detfac = false;
 
-        int passobs = GetObservation(fac, true);
+        unsigned int passobs = GetObservation(fac, true);
         size_t passtrue = GetTrueSight(fac, true);
         bool passdetfac = detfac;
 
@@ -1762,15 +1762,18 @@ size_t ARegion::GetTrueSight(const Faction& f, bool usepassers)
     return truesight;
 }
 
-int ARegion::GetObservation(const Faction& f, bool usepassers)
+unsigned int ARegion::GetObservation(const Faction& f, bool usepassers)
 {
-    int obs = 0;
+    unsigned int obs = 0;
 
     if (Globals->IMPROVED_FARSIGHT) {
         for(const auto& farsight: farsees) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
-                int o = farsight->observation;
-                if (o > obs) obs = o;
+                unsigned int o = farsight->observation;
+                if (o > obs)
+                {
+                    obs = o;
+                }
             }
         }
     }
@@ -1780,8 +1783,11 @@ int ARegion::GetObservation(const Faction& f, bool usepassers)
             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
-                int o = farsight->observation;
-                if (o > obs) obs = o;
+                unsigned int o = farsight->observation;
+                if (o > obs)
+                {
+                    obs = o;
+                }
             }
         }
     }
@@ -1789,8 +1795,11 @@ int ARegion::GetObservation(const Faction& f, bool usepassers)
     for(const auto& obj: objects) {
         for(const auto& u: obj->units) {
             if (u->faction.lock().get() == &f) {
-                int temp = u->GetAttribute("observation");
-                if (temp>obs) obs = temp;
+                unsigned int temp = u->GetAttribute("observation");
+                if (temp > obs)
+                {
+                    obs = temp;
+                }
             }
         }
     }
@@ -2593,7 +2602,7 @@ ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle sta
     return ARegion::WeakHandle();
 }
 
-unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const ARegion::Handle& two, int penalty, unsigned int maxdist)
+unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const ARegion::Handle& two, int penalty, size_t maxdist)
 {
     if (one->zloc == ARegionArray::LEVEL_NEXUS || two->zloc == ARegionArray::LEVEL_NEXUS)
     {

@@ -106,12 +106,15 @@ enum {
 
 class Unit : std::enable_shared_from_this<Unit>
 {
+    private:
+        void WriteReport_(Areport *, unsigned int, size_t, bool, int, bool);
+
     public:
         using Handle = std::shared_ptr<Unit>;
         using WeakHandle = std::weak_ptr<Unit>;
 
         Unit();
-        Unit(int, const std::shared_ptr<Faction>&, int = 0);
+        Unit(size_t, const std::shared_ptr<Faction>&, int = 0);
         ~Unit();
 
         void SetMonFlags();
@@ -122,12 +125,13 @@ class Unit : std::enable_shared_from_this<Unit>
 
         AString SpoilsReport(void);
         bool CanGetSpoil(const Item::Handle& i);
-        void WriteReport(Areport *,int,size_t,bool, bool, int, bool);
-        AString GetName(int);
+        void WriteReport(Areport *, size_t, bool, int, bool);
+        void WriteReport(Areport *, unsigned int, size_t, bool, bool, int, bool);
+        AString GetName(unsigned int);
         AString MageReport();
         AString ReadyItem();
         AString StudyableSkills();
-        AString * BattleReport(int);
+        AString * BattleReport(unsigned int);
         AString TemplateReport();
 
         void ClearOrders();
@@ -145,11 +149,11 @@ class Unit : std::enable_shared_from_this<Unit>
         size_t GetSoldiers();
         size_t GetMen(const Items&);
         void SetMen(const Items&, size_t);
-        unsigned int GetMoney();
+        size_t GetMoney();
         void SetMoney(size_t);
         size_t GetSharedNum(const Items&);
         void ConsumeShared(const Items&, size_t);
-        int GetSharedMoney();
+        size_t GetSharedMoney();
         void ConsumeSharedMoney(size_t);
         bool IsAlive();
 
@@ -159,24 +163,24 @@ class Unit : std::enable_shared_from_this<Unit>
         void SkillStarvation();
         Skill *GetSkillObject(int);
 
-        int GetAttackRiding();
-        int GetDefenseRiding();
+        size_t GetAttackRiding();
+        size_t GetDefenseRiding();
 
         //
         // These are rule-set specific, in extra.cpp.
         //
         // LLS
-        int GetAttribute(char const *ident);
+        unsigned int GetAttribute(char const *ident);
         int PracticeAttribute(char const *ident);
         int GetProductionBonus(const Items&);
 
-        unsigned int GetSkill(const Skills&);
-        void SetSkill(const Skills&, int);
+        size_t GetSkill(const Skills&);
+        void SetSkill(const Skills&, size_t);
         int GetSkillMax(const Skills&);
-        unsigned int GetAvailSkill(const Skills&);
-        unsigned int GetRealSkill(const Skills&);
+        size_t GetAvailSkill(const Skills&);
+        size_t GetRealSkill(const Skills&);
         void ForgetSkill(const Skills&);
-        bool CheckDepend(int,SkillDepend &s);
+        bool CheckDepend(size_t, const SkillDepend &s);
         bool CanStudy(const Skills&);
         int Study(const Skills&, int); /* Returns 1 if it succeeds */
         int Practice(const Skills&);
@@ -209,9 +213,9 @@ class Unit : std::enable_shared_from_this<Unit>
         void CopyFlags(const Unit::Handle&);
         Items GetBattleItem(AString &itm);
         Items GetArmor(AString &itm, int ass);
-        Items GetMount(AString &itm, int canFly, int canRide, int &bonus);
-        Items GetWeapon(AString &itm, const Items& riding, int ridingBonus,
-                int &attackBonus, int &defenseBonus, int &attacks);
+        Items GetMount(AString &itm, int canFly, int canRide, unsigned int &bonus);
+        Items GetWeapon(AString &itm, const Items& riding, unsigned int ridingBonus,
+                unsigned int &attackBonus, unsigned int &defenseBonus, int &attacks);
         int CanUseWeapon(WeaponType *pWep, int riding);
         int CanUseWeapon(WeaponType *pWep);
         int Taxers(int);
@@ -244,8 +248,8 @@ class Unit : std::enable_shared_from_this<Unit>
         ItemList items;
         Skills combat;
         Items readyItem;
-        Items readyWeapon[MAX_READY];
-        Items readyArmor[MAX_READY];
+        std::array<Items, MAX_READY> readyWeapon;
+        std::array<Items, MAX_READY> readyArmor;
         PtrList<AString> oldorders;
         int needed; /* For assessing maintenance */
         int hunger;

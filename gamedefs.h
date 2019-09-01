@@ -358,11 +358,11 @@ public:
     // this is the level of their fire skill)
     //
     //
-    int START_CITY_MAGES;
+    unsigned int START_CITY_MAGES;
 
     // Do the starting city guards also have tactician skill (0 for
     // no tactician, otherwise this is their level of tactician)
-    int START_CITY_TACTICS;
+    unsigned int START_CITY_TACTICS;
 
     //
     // Are we allowing apprentices?

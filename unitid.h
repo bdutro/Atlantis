@@ -9,8 +9,8 @@ class UnitId {
     public:
         using Handle = std::shared_ptr<UnitId>;
 
-        UnitId();
-        ~UnitId();
+        UnitId() = default;
+        ~UnitId() = default;
         AString Print() const;
 
         ValidValue<size_t> unitnum; /* if 0, it is a new unit */

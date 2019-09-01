@@ -290,25 +290,34 @@ void Game::MakeLMon(const Object::Handle& pObj)
     u->MoveUnit(pObj);
 }
 
-Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype, size_t num, int level, int weaponlevel, int armor, int behind)
+Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype, size_t num, size_t level, int weaponlevel, int armor, int behind)
 {
     const auto u = GetNewUnit(fac);
     const auto& men = FindRace(ItemDefs[mantype].abr);
 
     // Check skills:
-    int scomb = men.defaultlevel;
-    int sxbow = men.defaultlevel;
-    int slbow = men.defaultlevel;
+    unsigned int scomb = men.defaultlevel;
+    unsigned int sxbow = men.defaultlevel;
+    unsigned int slbow = men.defaultlevel;
     for (const auto& sk: men.skills) {
-                if (sk == nullptr) continue;
-                if (FindSkill(sk) == FindSkill("COMB"))
-                    scomb = men.speciallevel;
-                if (FindSkill(sk) == FindSkill("XBOW"))
-                    sxbow = men.speciallevel;
-                if (FindSkill(sk) == FindSkill("LBOW"))
-                    slbow = men.speciallevel;
+        if (sk == nullptr)
+        {
+            continue;
+        }
+        if (FindSkill(sk) == FindSkill("COMB"))
+        {
+            scomb = men.speciallevel;
+        }
+        if (FindSkill(sk) == FindSkill("XBOW"))
+        {
+            sxbow = men.speciallevel;
+        }
+        if (FindSkill(sk) == FindSkill("LBOW"))
+        {
+            slbow = men.speciallevel;
+        }
     }
-    int combat = scomb;
+    unsigned int combat = scomb;
     AString s("COMB");
     auto sk = LookupSkill(s);
     if (behind) {
@@ -322,7 +331,10 @@ Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype,
             combat = sxbow;
         }
     }
-    if (combat < level) weaponlevel += level - combat;
+    if (combat < level)
+    {
+        weaponlevel += static_cast<int>(level - combat);
+    }
     ValidValue<size_t> weapon;
     Items witem;
     std::vector<int> fitting(WeaponDefs.size(), 0);
@@ -337,32 +349,55 @@ Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype,
             
             // Sort out the more exotic weapons!
             int producelevel = static_cast<int>(ItemDefs[LookupItem(it)].pLevel);
-            if (ItemDefs[LookupItem(it)].pSkill != FindSkill("WEAP").abbr) continue;
+            if (ItemDefs[LookupItem(it)].pSkill != FindSkill("WEAP").abbr)
+            {
+                continue;
+            }
 
             const AString s1(WeaponDefs[i].baseSkill);
             const AString s2(WeaponDefs[i].orSkill);            
-            if ((WeaponDefs[i].flags & WeaponType::RANGED)
-                && (!behind)) continue;
+            if ((WeaponDefs[i].flags & WeaponType::RANGED) && (!behind))
+            {
+                continue;
+            }
             int attack = WeaponDefs[i].attackBonus;
             if (attack < (producelevel-1)) attack = producelevel-1;
             if ((LookupSkill(s1) == sk)
-                || (LookupSkill(s2) == sk)) {
-                if ((behind) && (attack + combat <= weaponlevel)) {
-                    fitting[i] = 1;
-                    if (WeaponDefs[i].attackBonus == weaponlevel) fitting[i] = 5;
+                || (LookupSkill(s2) == sk))
+            {
+                if ((behind) && (attack + static_cast<int>(combat) <= weaponlevel))
+                {
+                    if (WeaponDefs[i].attackBonus == weaponlevel)
+                    {
+                        fitting[i] = 5;
+                    }
+                    else
+                    {
+                        fitting[i] = 1;
+                    }
                     n += fitting[i];
-                } else if ((!behind) && (attack == weaponlevel)) {
+                }
+                else if ((!behind) && (attack == weaponlevel))
+                {
                     fitting[i] = 1;
                     //if (WeaponDefs[i].attackBonus == weaponlevel) fitting[i] = 5;
                     n += fitting[i];
-                } else continue;
-            } else {
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            else
+            {
                 // make Javelins possible
                 const AString cs("COMB");
-                if ((behind) && (scomb > combat)) {
+                if ((behind) && (scomb > combat))
+                {
                     if ((WeaponDefs[i].flags & WeaponType::RANGED)
                         && ((LookupSkill(s1) == LookupSkill(cs))
-                            || (LookupSkill(s2) == LookupSkill(cs)))) {
+                            || (LookupSkill(s2) == LookupSkill(cs))))
+                    {
                             fitting[i] = 1;
                             n++;
                     }
@@ -406,7 +441,7 @@ Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype,
     const AString ws2(WeaponDefs[weapon].orSkill);
     if ((LookupSkill(ws1) != sk) && (LookupSkill(ws2) != sk))
         sk = LookupSkill(ws1);
-    int maxskill = men.defaultlevel;
+    unsigned int maxskill = men.defaultlevel;
     bool special = false;
     for (const auto& s: men.skills) {
         if (FindSkill(s) == FindSkill(SkillDefs[sk].abbr)) {

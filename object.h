@@ -96,7 +96,7 @@ class Object : public std::enable_shared_from_this<Object>
 
         void Readin(Ainfile *f, const PtrList<Faction>&, ATL_VER v);
         void Writeout(Aoutfile *f);
-        void Report(Areport *, const Faction&, int, size_t, bool, int, size_t, bool, bool);
+        void Report(Areport *, const Faction&, unsigned int, size_t, bool, unsigned int, size_t, bool, bool);
 
         void SetName(AString *);
         void SetDescribe(AString *);

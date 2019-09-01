@@ -168,7 +168,7 @@ private:
     void CreateWMons();
     void CreateLMons();
     void CreateVMons();
-    Unit::Handle MakeManUnit(const Faction::Handle&, const Items&, size_t, int, int, int, int);
+    Unit::Handle MakeManUnit(const Faction::Handle&, const Items&, size_t, size_t, int, int, int);
 
     //
     // Game-specific creation functions (see world.cpp).

@@ -638,8 +638,7 @@ AString *ItemDescription(const Items& item, int full)
         }
         if (ItemDefs[item].hitchItem.isValid() &&
                 !(ItemDefs[ItemDefs[item].hitchItem].flags & ItemType::DISABLED)) {
-            int cap = static_cast<int>(ItemDefs[item].walk - ItemDefs[item].weight) +
-                ItemDefs[item].hitchwalk;
+            int cap = static_cast<int>(ItemDefs[item].walk - ItemDefs[item].weight + ItemDefs[item].hitchwalk);
             if (cap) {
                 *temp += AString(", walking capacity ") + cap +
                     " when hitched to a " +
@@ -750,7 +749,7 @@ AString *ItemDescription(const Items& item, int full)
                 ShowSpecial(mp.special, mp.specialLevel, 1, 0);
         }
         if (full) {
-            int hits = mp.hits;
+            unsigned int hits = mp.hits;
             int atts = mp.numAttacks;
             int regen = mp.regen;
             if (!hits) hits = 1;
@@ -1316,7 +1315,7 @@ Item::~Item()
 {
 }
 
-AString Item::Report(int seeillusions)
+AString Item::Report(bool seeillusions)
 {
     AString ret = "";
     // special handling of the unfinished ship items
@@ -1464,13 +1463,16 @@ void ItemList::UncheckAll()
     }
 }
 
-AString ItemList::Report(int obs,int seeillusions,int nofirstcomma)
+AString ItemList::Report(unsigned int obs, bool seeillusions, bool nofirstcomma)
 {
     UncheckAll();
     AString temp;
     for (int s = 0; s < 7; s++) {
         temp += ReportByType(s, obs, seeillusions, nofirstcomma);
-        if (temp.Len()) nofirstcomma = 0;
+        if (temp.Len())
+        {
+            nofirstcomma = false;
+        }
     }
     return temp;
 }
@@ -1495,8 +1497,7 @@ AString ItemList::BattleReport()
     return temp;
 }
 
-AString ItemList::ReportByType(int type, int obs, int seeillusions,
-        int nofirstcomma)
+AString ItemList::ReportByType(int type, unsigned int obs, bool seeillusions, bool nofirstcomma)
 {
     AString temp;
     for(const auto &i : *this) {
@@ -1551,12 +1552,18 @@ AString ItemList::ReportByType(int type, int obs, int seeillusions,
         }
         if (report) {
             if (obs == 2) {
-                if (nofirstcomma) nofirstcomma = 0;
+                if (nofirstcomma)
+                {
+                    nofirstcomma = false;
+                }
                 else temp += ", ";
                 temp += i->Report(seeillusions);
             } else {
                 if (ItemDefs[i->type].weight) {
-                    if (nofirstcomma) nofirstcomma = 0;
+                    if (nofirstcomma)
+                    {
+                        nofirstcomma = false;
+                    }
                     else temp += ", ";
                     temp += i->Report(seeillusions);
                 }

@@ -99,7 +99,7 @@ class MoveOrder : public Order {
 
         MoveOrder();
 
-        int advancing;
+        bool advancing;
         PtrList<MoveDir> dirs;
 };
 
@@ -279,7 +279,7 @@ class CastOrder : public Order {
         CastOrder();
 
         Skills spell;
-        unsigned int level;
+        size_t level;
 };
 
 class CastMindOrder : public CastOrder {

@@ -149,8 +149,7 @@ void Battle::DoAttack(int round, const Soldier::Handle& a, const Army::Handle& a
             }
         }
 
-        def->DoAnAttack(NULL, 1, attackType, a->askill, flags, attackClass,
-                NULL, mountBonus, a);
+        def->DoAnAttack(NULL, 1, attackType, a->askill, flags, attackClass, NULL, mountBonus, a);
         if (!def->NumAlive()) break;
     }
 
@@ -376,12 +375,15 @@ void Battle::WriteSides(const ARegion::Handle& r,
     }
     AddLine("");
 
-    int dobs = 0;
-    int aobs = 0;
+    unsigned int dobs = 0;
+    unsigned int aobs = 0;
     {
         for(const auto& l: defs) {
-            int a = l->unit.lock()->GetAttribute("observation");
-            if (a > dobs) dobs = a;
+            unsigned int a = l->unit.lock()->GetAttribute("observation");
+            if (a > dobs)
+            {
+                dobs = a;
+            }
         }
     }
 
@@ -389,8 +391,11 @@ void Battle::WriteSides(const ARegion::Handle& r,
     {
         for(const auto& l: atts) {
             const auto& u = l->unit.lock();
-            int a = u->GetAttribute("observation");
-            if (a > aobs) aobs = a;
+            unsigned int a = u->GetAttribute("observation");
+            if (a > aobs)
+            {
+                aobs = a;
+            }
             AString * temp = u->BattleReport(dobs);
             AddLine(*temp);
             delete temp;

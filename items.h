@@ -131,7 +131,7 @@ class ItemType
         unsigned int speed;
 
         Items hitchItem;
-        int hitchwalk;
+        unsigned int hitchwalk;
         // LLS
         Items mult_item;
         int mult_val;
@@ -167,8 +167,8 @@ class ManType
     public:
         char const *abbr;
         Regions terrain;
-        int speciallevel;
-        int defaultlevel;
+        unsigned int speciallevel;
+        unsigned int defaultlevel;
         std::array<char const *, 6> skills;
 
         bool CanProduce(const Items&) const;
@@ -184,7 +184,7 @@ class MonType
         std::array<int, NUM_ATTACK_TYPES> defense;
 
         int numAttacks;
-        int hits;
+        unsigned int hits;
         int regen;
 
         int tactics;
@@ -376,7 +376,7 @@ class Item
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
         
-        AString Report(int);
+        AString Report(bool);
 
         Items type;
         size_t num;
@@ -396,9 +396,9 @@ class ItemList
         void Readin(Ainfile *);
         void Writeout(Aoutfile *);
 
-        AString Report(int, int, int);
+        AString Report(unsigned int, bool, bool);
         AString BattleReport();
-        AString ReportByType(int, int, int, int);
+        AString ReportByType(int, unsigned int, bool, bool);
 
         size_t Weight();
         size_t GetNum(const Items&) const;
@@ -417,6 +417,8 @@ class ItemList
         const_iterator cend() const { return items_.cend(); }
         size_t size() const { return items_.size(); }
         bool empty() const { return items_.empty(); }
+        iterator erase(iterator it) { return items_.erase(it); }
+        const_iterator erase(const_iterator it) { return items_.erase(it); }
 
     private:
         list_type items_;

@@ -66,7 +66,7 @@ class SkillList;
 struct SkillDepend
 {
     char const *skill;
-    int level;
+    unsigned int level;
 };
 
 class SkillType
@@ -128,7 +128,7 @@ class ShowType {
 extern GameDataArray<ShowType> ShowDefs;
 
 unsigned int SkillCost(const Skills&);
-int SkillMax(char const *, const Items&); /* skill, race */
+unsigned int SkillMax(char const *, const Items&); /* skill, race */
 size_t GetLevelByDays(size_t);
 size_t GetDaysByLevel(size_t);
 size_t StudyRateAdjustment(size_t, size_t); /* days, exp */

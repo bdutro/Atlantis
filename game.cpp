@@ -1772,19 +1772,19 @@ void Game::CreateNPCFactions()
 
 void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needmage)
 {
-    int skilllevel;
+    size_t skilllevel;
     int AC = 0;
     int IV = 0;
     size_t num;
     if (pReg->type == Regions::Types::R_NEXUS || pReg->IsStartingCity()) {
-        skilllevel = static_cast<int>(TownTypeEnum::TOWN_CITY) + 1;
+        skilllevel = static_cast<size_t>(TownTypeEnum::TOWN_CITY) + 1;
         if (Globals->SAFE_START_CITIES || (pReg->type == Regions::Types::R_NEXUS))
             IV = 1;
         AC = 1;
         num = Globals->AMT_START_CITY_GUARDS;
     } else {
-        skilllevel = static_cast<int>(pReg->town->TownType()) + 1;
-        num = Globals->CITY_GUARD * static_cast<size_t>(skilllevel);
+        skilllevel = static_cast<size_t>(pReg->town->TownType()) + 1;
+        num = Globals->CITY_GUARD * skilllevel;
     }
     num = num * percent / 100;
     const auto pFac = GetFaction(factions, guardfaction);
@@ -1837,11 +1837,16 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
     
     if (AC) {
         if (Globals->START_CITY_GUARDS_PLATE) {
-            if (Globals->LEADERS_EXIST) u->items.SetNum(Items::Types::I_PLATEARMOR, num);
+            if (Globals->LEADERS_EXIST)
+            {
+                u->items.SetNum(Items::Types::I_PLATEARMOR, num);
+            }
         }
         u->SetSkill(Skills::Types::S_OBSERVATION,10);
         if (Globals->START_CITY_TACTICS)
+        {
             u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
+        }
     } else {
         u->SetSkill(Skills::Types::S_OBSERVATION, skilllevel);
     }
@@ -1864,13 +1869,15 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         u->SetName(s);
         u->type = U_GUARDMAGE;
         u->reveal = REVEAL_FACTION;
-        u->SetMen(Items::Types::I_LEADERS,1);
-        if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,1);
+        u->SetMen(Items::Types::I_LEADERS, 1);
+        if (IV) u->items.SetNum(Items::Types::I_AMULETOFI, 1);
         u->SetMoney(Globals->GUARD_MONEY);
-        u->SetSkill(Skills::Types::S_FORCE,Globals->START_CITY_MAGES);
-        u->SetSkill(Skills::Types::S_FIRE,Globals->START_CITY_MAGES);
+        u->SetSkill(Skills::Types::S_FORCE, Globals->START_CITY_MAGES);
+        u->SetSkill(Skills::Types::S_FIRE, Globals->START_CITY_MAGES);
         if (Globals->START_CITY_TACTICS)
+        {
             u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
+        }
         u->combat = Skills::Types::S_FIRE;
         u->SetFlag(FLAG_BEHIND, 1);
         u->SetFlag(FLAG_HOLDING, 1);
@@ -1975,7 +1982,7 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     } else {
         size_t money = men * (Globals->GUARD_MONEY * men / maxmen);
         u->SetMoney(money);
-        u->SetSkill(skill, static_cast<int>(sl));
+        u->SetSkill(skill, sl);
         if (AC) {
             u->SetSkill(Skills::Types::S_OBSERVATION,10);
             if (Globals->START_CITY_TACTICS)
@@ -1983,7 +1990,7 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
             if (Globals->START_CITY_GUARDS_PLATE)
                 u->items.SetNum(armor,men);
         } else {
-            u->SetSkill(Skills::Types::S_OBSERVATION, static_cast<int>(towntype) + 1);
+            u->SetSkill(Skills::Types::S_OBSERVATION, static_cast<size_t>(towntype) + 1);
         }
         if (weapon.isValid()) {
             u->items.SetNum(weapon,men);

@@ -306,8 +306,8 @@ Unit::WeakHandle Object::GetOwner()
     return units.front();
 }
 
-void Object::Report(Areport *f, const Faction& fac, int obs, size_t truesight,
-        bool detfac, int passobs, size_t passtrue, bool passdetfac, bool present)
+void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t truesight,
+        bool detfac, unsigned int passobs, size_t passtrue, bool passdetfac, bool present)
 {
     const auto& ob = ObjectDefs[type];
 
@@ -393,7 +393,7 @@ void Object::Report(Areport *f, const Faction& fac, int obs, size_t truesight,
         const auto u_fac = u->faction.lock();
         int attitude = fac.GetAttitude(u_fac->num);
         if (u_fac.get() == &fac) {
-            u->WriteReport(f, -1, 1, 1, 1, attitude, fac.showunitattitudes);
+            u->WriteReport(f, 1, true, attitude, fac.showunitattitudes);
         } else {
             if (present) {
                 u->WriteReport(f, obs, truesight, detfac, type != Objects::Types::O_DUMMY, attitude, fac.showunitattitudes);
@@ -700,9 +700,9 @@ unsigned int Object::GetFleetSpeed(int report)
     
     // count wind mages
     for(const auto& unit: units) {
-        int wb = unit->GetAttribute("wind");
+        unsigned int wb = unit->GetAttribute("wind");
         if (wb > 0) {
-            windbonus += static_cast<size_t>(wb) * 12 * Globals->FLEET_WIND_BOOST;
+            windbonus += wb * 12 * Globals->FLEET_WIND_BOOST;
         }
     }
     // speed gain through wind:

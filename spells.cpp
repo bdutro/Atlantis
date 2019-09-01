@@ -893,7 +893,7 @@ void Game::RunACastOrder(const ARegion::Handle& r, const Object::Handle& o, cons
 
 bool Game::GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar, const Unit::Handle& u,  const Skills& spell)
 {
-    const unsigned int level = u->GetSkill(spell);
+    const size_t level = u->GetSkill(spell);
     if (!level) {
         u->Error("CAST: You don't know that spell.");
         return false;
@@ -932,7 +932,7 @@ bool Game::GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar
             return false;
         }
 
-        unsigned int maxdist;
+        size_t maxdist;
         switch(range.rangeClass) {
             default:
             case RangeType::RNG_ABSOLUTE:
@@ -967,7 +967,7 @@ bool Game::GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar
 bool Game::RunMindReading(const ARegion::Handle& r, const Unit::Handle& u)
 {
     const CastMindOrder::Handle order = std::dynamic_pointer_cast<CastMindOrder>(u->castorders);
-    const unsigned int level = u->GetSkill(Skills::Types::S_MIND_READING);
+    const size_t level = u->GetSkill(Skills::Types::S_MIND_READING);
 
     const Unit::WeakHandle tar_w = r->GetUnitId(order->id, u->faction.lock()->num);
     if (tar_w.expired()) {
@@ -993,8 +993,8 @@ bool Game::RunMindReading(const ARegion::Handle& r, const Unit::Handle& u)
 
 bool Game::RunEnchant(const ARegion::Handle&, const Unit::Handle& u, const Skills& skill, const Items& item)
 {
-    const unsigned int level = u->GetSkill(skill);
-    const unsigned int max = static_cast<unsigned int>(ItemDefs[item].mOut) * level / 100;
+    const size_t level = u->GetSkill(skill);
+    const size_t max = static_cast<size_t>(ItemDefs[item].mOut) * level / 100;
     size_t num = max;
 
     // Figure out how many we can make based on available resources
@@ -1050,8 +1050,8 @@ bool Game::RunConstructGate(const ARegion::Handle& r, const Unit::Handle& u, con
 
     u->ConsumeSharedMoney(1000);
 
-    const unsigned int level = u->GetSkill(spell);
-    const unsigned int chance = level * 20;
+    const size_t level = u->GetSkill(spell);
+    const size_t chance = level * 20;
     if (getrandom(100U) >= chance) {
         u->Event("Attempts to construct a gate, but fails.");
         return false;
@@ -1112,7 +1112,7 @@ bool Game::RunEngraveRunes(const ARegion::Handle&, const Object::Handle& o, cons
         return false;
     }
 
-    const unsigned int level = u->GetSkill(Skills::Types::S_ENGRAVE_RUNES_OF_WARDING);
+    const size_t level = u->GetSkill(Skills::Types::S_ENGRAVE_RUNES_OF_WARDING);
 
     switch (level) {
         case 5:
@@ -1172,7 +1172,7 @@ bool Game::RunSummonBalrog(const ARegion::Handle& r, const Unit::Handle& u)
         return false;
     }
 
-    const unsigned int level = u->GetSkill(Skills::Types::S_SUMMON_BALROG);
+    const size_t level = u->GetSkill(Skills::Types::S_SUMMON_BALROG);
 
     int num = (static_cast<int>(level) * ItemDefs[Items::Types::I_BALROG].mOut + getrandom(100)) / 100;
     const int num_balrog = static_cast<int>(u->items.GetNum(Items::Types::I_BALROG));
@@ -1193,7 +1193,7 @@ bool Game::RunSummonDemon(const ARegion::Handle& r, const Unit::Handle& u)
         return false;
     }
 
-    const unsigned int level = u->GetSkill(Skills::Types::S_SUMMON_DEMON);
+    const size_t level = u->GetSkill(Skills::Types::S_SUMMON_DEMON);
     int num = (static_cast<int>(level) * ItemDefs[Items::Types::I_DEMON].mOut + getrandom(100)) / 100;
     num = RandomiseSummonAmount(num);
     if (num < 1)
@@ -1212,7 +1212,7 @@ bool Game::RunSummonImps(const ARegion::Handle& r, const Unit::Handle& u)
         return false;
     }
 
-    const unsigned int level = u->GetSkill(Skills::Types::S_SUMMON_IMPS);
+    const size_t level = u->GetSkill(Skills::Types::S_SUMMON_IMPS);
     int num = (static_cast<int>(level) * ItemDefs[Items::Types::I_IMP].mOut + getrandom(100)) / 100;
     num = RandomiseSummonAmount(num);
 
@@ -1223,7 +1223,7 @@ bool Game::RunSummonImps(const ARegion::Handle& r, const Unit::Handle& u)
 
 bool Game::RunCreateArtifact(const ARegion::Handle& r, const Unit::Handle& u, const Skills& skill, const Items& item)
 {
-    const unsigned int level = u->GetSkill(skill);
+    const size_t level = u->GetSkill(skill);
     if (level < ItemDefs[item].mLevel) {
         u->Error("CAST: Skill level isn't that high.");
         return false;
@@ -1472,7 +1472,7 @@ bool Game::RunWolfLore(const ARegion::Handle& r, const Unit::Handle& u)
 bool Game::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastUnitsOrder::Handle order = std::dynamic_pointer_cast<CastUnitsOrder>(u->castorders);
-    const unsigned int max = square(u->GetSkill(Skills::Types::S_INVISIBILITY));
+    const size_t max = square(u->GetSkill(Skills::Types::S_INVISIBILITY));
 
     size_t num = 0;
     const auto ufac_num = u->faction.lock()->num;
@@ -1630,7 +1630,7 @@ bool Game::RunPhanBeasts(const ARegion::Handle& r, const Unit::Handle& u)
 
 bool Game::RunEarthLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    const unsigned int level = u->GetSkill(Skills::Types::S_EARTH_LORE);
+    const size_t level = u->GetSkill(Skills::Types::S_EARTH_LORE);
 
     if (level > r->earthlore)
     {
@@ -1666,7 +1666,7 @@ bool Game::RunClearSkies(const ARegion::Handle& r, const Unit::Handle& u)
     }
 
     temp += ".";
-    const unsigned int level = u->GetSkill(Skills::Types::S_CLEAR_SKIES);
+    const size_t level = u->GetSkill(Skills::Types::S_CLEAR_SKIES);
     if (level > r->clearskies)
     {
         r->clearskies = level;
@@ -1685,7 +1685,7 @@ bool Game::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle& u)
         return false;
     }
 
-    const unsigned int level = u->GetSkill(Skills::Types::S_WEATHER_LORE);
+    const size_t level = u->GetSkill(Skills::Types::S_WEATHER_LORE);
     unsigned int months = 3;
     if (level >= 5)
     {
@@ -1746,7 +1746,7 @@ bool Game::RunFarsight(const ARegion::Handle& r, const Unit::Handle& u)
 
 bool Game::RunDetectGates(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    const unsigned int level = u->GetSkill(Skills::Types::S_GATE_LORE);
+    const size_t level = u->GetSkill(Skills::Types::S_GATE_LORE);
 
     if (level == 1) {
         u->Error("CAST: Casting Gate Lore at level 1 has no effect.");
@@ -1792,8 +1792,8 @@ bool Game::RunTeleport(const ARegion::Handle& r, const Object::Handle&, const Un
         return false;
     }
 
-    const unsigned int level = u->GetSkill(Skills::Types::S_TELEPORTATION);
-    const unsigned int maxweight = level * 15;
+    const size_t level = u->GetSkill(Skills::Types::S_TELEPORTATION);
+    const size_t maxweight = level * 15;
 
     if (u->Weight() > maxweight) {
         u->Error("CAST: Can't carry that much when teleporting.");
@@ -1969,7 +1969,7 @@ bool Game::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Un
 
 bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    const unsigned int level = u->GetSkill(Skills::Types::S_PORTAL_LORE);
+    const size_t level = u->GetSkill(Skills::Types::S_PORTAL_LORE);
     const auto& order = u->teleportorders;
 
     if (!level) {
@@ -1982,7 +1982,7 @@ bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const 
         return false;
     }
 
-    unsigned int maxweight = 50 * level;
+    size_t maxweight = 50 * level;
     const auto ufac_num = u->faction.lock()->num;
 
     r->DeduplicateUnitList(order->units, ufac_num);
@@ -2056,7 +2056,7 @@ bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const 
 bool Game::RunTransmutation(const ARegion::Handle&, const Unit::Handle& u)
 {
     CastTransmuteOrder::Handle order = std::dynamic_pointer_cast<CastTransmuteOrder>(u->castorders);
-    const unsigned int level = u->GetSkill(Skills::Types::S_TRANSMUTATION);
+    const size_t level = u->GetSkill(Skills::Types::S_TRANSMUTATION);
     if (!level) {
         u->Error("CAST: Unit doesn't have that skill.");
         return false;
@@ -2121,7 +2121,7 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
     const ARegion::Handle&start;
     AString message;*/
 
-    const unsigned int level = mage->GetSkill(Skills::Types::S_BLASPHEMOUS_RITUAL);
+    const size_t level = mage->GetSkill(Skills::Types::S_BLASPHEMOUS_RITUAL);
     if (level < 1) {
         mage->Error("CAST: Unit doesn't have that skill.");
         return false;

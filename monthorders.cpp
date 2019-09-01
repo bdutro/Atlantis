@@ -1416,7 +1416,7 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
     }
 
     const unsigned int cost = SkillCost(sk) * static_cast<unsigned int>(u->GetMen());
-    if (static_cast<int>(cost) > u->GetSharedMoney()) {
+    if (cost > u->GetSharedMoney()) {
         u->Error("STUDY: Not enough funds.");
         return;
     }
@@ -1932,7 +1932,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     const auto forbid_w = newreg->Forbidden(unit);
     if (!forbid_w.expired() && !startmove && unit->guard != GUARD_ADVANCE) {
         const auto forbid = forbid_w.lock();
-        int obs = unit->GetAttribute("observation");
+        unsigned int obs = unit->GetAttribute("observation");
         unit->Event(AString("Is forbidden entry to ") +
                     newreg->ShortPrint(regions) + " by " +
                     forbid->GetName(obs) + ".");

@@ -136,8 +136,8 @@ class Farsight
 
         std::weak_ptr<Faction> faction;
         std::weak_ptr<Unit> unit;
-        unsigned int level;
-        int observation;
+        size_t level;
+        unsigned int observation;
         ExitArray exits_used;
 };
 
@@ -217,7 +217,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void SetLoc(unsigned int, unsigned int, unsigned int);
         bool Present(const Faction&);
         WeakPtrList<Faction> PresentFactions();
-        int GetObservation(const Faction&, bool);
+        unsigned int GetObservation(const Faction&, bool);
         size_t GetTrueSight(const Faction&, bool);
 
         std::weak_ptr<Object> GetObject(int);
@@ -336,8 +336,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int improvement;
         
         /* Potential bonuses to economy */
-        unsigned int clearskies;
-        unsigned int earthlore;
+        size_t clearskies;
+        size_t earthlore;
 
         class NeighborArray : public std::array<ARegion::WeakHandle, Directions::size()>
         {
@@ -506,7 +506,7 @@ class ARegionList
         ARegion::WeakHandle GetStartingCity(const ARegion& AC, size_t num, unsigned int level, unsigned int maxX, unsigned int maxY);
 
         ARegion::WeakHandle FindGate(int);
-        unsigned int GetPlanarDistance(const ARegion::Handle&, const ARegion::Handle&, int penalty, unsigned int maxdist = std::numeric_limits<unsigned int>::max());
+        unsigned int GetPlanarDistance(const ARegion::Handle&, const ARegion::Handle&, int penalty, size_t maxdist = std::numeric_limits<size_t>::max());
         Weather GetWeather(const ARegion& pReg, size_t month) const;
 
         const ARegionArray::Handle& GetRegionArray(size_t level);

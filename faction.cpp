@@ -677,17 +677,28 @@ void Faction::SetAttitude(size_t num, int att)
 
 bool Faction::CanCatch(const ARegion::Handle& r, const Unit::Handle& t)
 {
-    if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN) return 1;
+    if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN)
+    {
+        return true;
+    }
 
-    int def = t->GetDefenseRiding();
+    size_t def = t->GetDefenseRiding();
 
-    for(const auto& o: r->objects) {
-        for(const auto& u: o->units) {
-            if (u == t && o->type != Objects::Types::O_DUMMY) return 1;
-            if (u->faction.lock().get() == this && u->GetAttackRiding() >= def) return 1;
+    for(const auto& o: r->objects)
+    {
+        for(const auto& u: o->units)
+        {
+            if (u == t && o->type != Objects::Types::O_DUMMY)
+            {
+                return true;
+            }
+            if (u->faction.lock().get() == this && u->GetAttackRiding() >= def)
+            {
+                return true;
+            }
         }
     }
-    return 0;
+    return false;
 }
 
 int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practice)
@@ -720,8 +731,8 @@ int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practic
             }
 
             if (temp->faction.lock().get() == this) {
-                if (temp->GetAttribute("observation") >
-                        u->GetAttribute("stealth") - stealpenalty) {
+                if (static_cast<int>(temp->GetAttribute("observation")) >
+                        static_cast<int>(u->GetAttribute("stealth")) - stealpenalty) {
                     if (practice) {
                         temp->PracticeAttribute("observation");
                         retval = 2;
@@ -729,10 +740,16 @@ int Faction::CanSee(const ARegion::Handle& r, const Unit::Handle& u, int practic
                     else
                         return 2;
                 } else {
-                    if (temp->GetAttribute("observation") ==
-                            u->GetAttribute("stealth") - stealpenalty) {
-                        if (practice) temp->PracticeAttribute("observation");
-                        if (retval < 1) retval = 1;
+                    if (static_cast<int>(temp->GetAttribute("observation")) ==
+                            static_cast<int>(u->GetAttribute("stealth")) - stealpenalty) {
+                        if (practice)
+                        {
+                            temp->PracticeAttribute("observation");
+                        }
+                        if (retval < 1)
+                        {
+                            retval = 1;
+                        }
                     }
                 }
                 if (temp->GetSkill(Skills::Types::S_MIND_READING) > 2) detfac = true;
