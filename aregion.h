@@ -200,7 +200,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         // DK
         void WriteTemplate(Areport *, const Faction&, const ARegionList& , const ValidValue<size_t>&);
         void WriteTemplateHeader(Areport *, const Faction&, const ARegionList& , const ValidValue<size_t>&);
-        void GetMapLine(char *, int, const ARegionList& );
+        void GetMapLine(char *, unsigned int, const ARegionList& );
 
         AString ShortPrint(const ARegionList& pRegs);
         AString Print(const ARegionList& pRegs);

@@ -1701,7 +1701,7 @@ bool Game::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle& u)
     temp += ". It will be ";
     for (unsigned int i = 0; i <= months; i++) {
         const size_t futuremonth = (month + i) % 12;
-        const size_t weather = regions.GetWeather(*tar, futuremonth);
+        const Weather weather = regions.GetWeather(*tar, futuremonth);
         temp += SeasonNames[weather];
         temp += " in ";
         temp += MonthNames[futuremonth];

@@ -57,7 +57,7 @@ static char const *TemplateMap[] = {
   "sw     \\____/     se"   // 13
 };
 
-static int dircrd[] = {
+static unsigned int dircrd[] = {
  // X    Y
    8-1,  7-1, // center
    8-1,  3-1, // N
@@ -297,8 +297,10 @@ static char const *ter_fill[] = {
 // NEW FUNCTION DK 2000.03.07,
 // converted WriteReport
 //
-void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
-        ARegionList *pRegs, const ValidValue<size_t>& month)
+void ARegion::WriteTemplateHeader(Areport *f,
+                                  const Faction& fac,
+                                  const ARegionList& pRegs,
+                                  const ValidValue<size_t>& month)
 {
 
     f->PutStr("");
@@ -311,10 +313,7 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
 
     char buffer[LINE_WIDTH+1];
     char *data = buffer + MAP_WIDTH;
-    int line = 0;
-
-    Production *prod;
-    int any;
+    unsigned int line = 0;
 
     // ----------------------------------------------------------------
     GetMapLine(buffer, line, pRegs);
@@ -336,13 +335,20 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
         {
             next_month = 0;
         }
-        int nxtweather = pRegs->GetWeather(this, next_month % 12);
-        if (nxtweather == W_WINTER)
+
+        Weather nxtweather = pRegs.GetWeather(*this, next_month % 12);
+        if (nxtweather == Weather::Types::W_WINTER)
+        {
             nextWeather = "winter";
-        if (nxtweather == W_MONSOON)
+        }
+        else if (nxtweather == Weather::Types::W_MONSOON)
+        {
             nextWeather = "monsoon";
-        if (nxtweather == W_NORMAL)
+        }
+        else if (nxtweather == Weather::Types::W_NORMAL)
+        {
             nextWeather = "clear";
+        }
         sprintf(data, "Next %s", nextWeather);
 
         TrimWrite(f, buffer);
@@ -356,8 +362,9 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
     line++;
 
     // ----------------------------------------------------------------
-    prod = products.GetProd(I_SILVER, S_ENTERTAINMENT);
-    if (prod) {
+    auto prod_w = products.GetProd(Items::Types::I_SILVER, Skills::Types::S_ENTERTAINMENT);
+    if (!prod_w.expired()) {
+        const auto prod = prod_w.lock();
         GetMapLine(buffer, line, pRegs);
         sprintf(data, "Ente %5i", prod->amount);
         TrimWrite(f, buffer);
@@ -365,8 +372,9 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
     }
 
     // ----------------------------------------------------------------
-    prod = products.GetProd(I_SILVER, -1);
-    if (prod) {
+    prod_w = products.GetProd(Items::Types::I_SILVER, -1);
+    if (!prod_w.expired()) {
+        const auto prod = prod_w.lock();
         GetMapLine(buffer, line, pRegs);
         sprintf(data, "Wage %5i.%1i (max %i)", (prod->productivity/10), (prod->productivity%10), prod->amount);
         TrimWrite(f, buffer);
@@ -374,134 +382,127 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
     }
 
     // ----------------------------------------------------------------
-    any = 0;
-    {
-        forlist(&markets) {
-            Market *m = (Market *) elem;
-            if (!m->amount) continue;
-            if (m->type == M_SELL) {
-
-                if (ItemDefs[m->item].type & IT_ADVANCED) {
-                    if (!HasItem(fac, m->item)) {
-                        continue;
-                    }
+    bool any = false;
+    for(const auto& m: markets) {
+        if (!m->amount)
+        {
+            continue;
+        }
+        if (m->type == M_SELL)
+        {
+            if (ItemDefs[m->item].type & IT_ADVANCED) {
+                if (!HasItem(fac, m->item)) {
+                    continue;
                 }
+            }
 
-                if (!any) {
-                    GetMapLine(buffer, line, pRegs);
-                    TrimWrite(f, buffer);
-                    line++;
-                }
-
+            if (!any) {
                 GetMapLine(buffer, line, pRegs);
-
-                if (m->amount == -1) {
-                    sprintf(data, "%s unlim %4s @ %3i",
-                        (any ? "    " : "Want"),
-                        ItemDefs[m->item].abr,
-                        m->price);
-                } else {
-                    sprintf(data, "%s %5i %4s @ %3i",
-                        (any ? "    " : "Want"),
-                        m->amount,
-                        ItemDefs[m->item].abr,
-                        m->price);
-                }
                 TrimWrite(f, buffer);
                 line++;
-
-                any = 1;
             }
+
+            GetMapLine(buffer, line, pRegs);
+
+            if (m->amount == -1) {
+                sprintf(data, "%s unlim %4s @ %3i",
+                    (any ? "    " : "Want"),
+                    ItemDefs[m->item].abr,
+                    m->price);
+            } else {
+                sprintf(data, "%s %5i %4s @ %3i",
+                    (any ? "    " : "Want"),
+                    m->amount,
+                    ItemDefs[m->item].abr,
+                    m->price);
+            }
+            TrimWrite(f, buffer);
+            line++;
+
+            any = true;
         }
     }
 
     // ----------------------------------------------------------------
-    any = 0;
-    {
-        forlist(&markets) {
-            Market *m = (Market *) elem;
-            if (!m->amount) continue;
-            if (m->type == M_BUY) {
-
-                if (!any) {
-                    GetMapLine(buffer, line, pRegs);
-                    TrimWrite(f, buffer);
-                    line++;
-                }
-
+    any = false;
+    for(const auto& m: markets) {
+        if (!m->amount)
+        {
+            continue;
+        }
+        if (m->type == M_BUY)
+        {
+            if (!any) {
                 GetMapLine(buffer, line, pRegs);
-
-                if (m->amount == -1) {
-                    sprintf(data, "%s unlim %4s @ %3i",
-                        (any ? "    " : "Sell"),
-                        ItemDefs[m->item].abr,
-                        m->price);
-                } else {
-                    sprintf(data, "%s %5i %4s @ %3i",
-                        (any ? "    " : "Sell"),
-                        m->amount,
-                        ItemDefs[m->item].abr,
-                        m->price);
-                }
-
                 TrimWrite(f, buffer);
                 line++;
-                any = 1;
             }
+
+            GetMapLine(buffer, line, pRegs);
+
+            if (m->amount == -1) {
+                sprintf(data, "%s unlim %4s @ %3i",
+                    (any ? "    " : "Sell"),
+                    ItemDefs[m->item].abr,
+                    m->price);
+            } else {
+                sprintf(data, "%s %5i %4s @ %3i",
+                    (any ? "    " : "Sell"),
+                    m->amount,
+                    ItemDefs[m->item].abr,
+                    m->price);
+            }
+
+            TrimWrite(f, buffer);
+            line++;
+            any = true;
         }
     }
 
     // ----------------------------------------------------------------
-    any = 0;
-    {
-         forlist((&products)) {
-             Production *p = ((Production *) elem);
-             if (ItemDefs[p->itemtype].type & IT_ADVANCED) {
-                 if (!CanMakeAdv(fac, p->itemtype)) {
-                     continue;
-                 }
-             } else {
-                 if (p->itemtype == I_SILVER) {
-                     continue;
-                 }
-             }
+    any = false;
+    for(const auto& p: products) {
+        if (ItemDefs[p->itemtype].type & IT_ADVANCED) {
+            if (!CanMakeAdv(fac, p->itemtype)) {
+                continue;
+            }
+        } else {
+            if (p->itemtype == Items::Types::I_SILVER) {
+                continue;
+            }
+        }
 
-             if (!any) {
-                 GetMapLine(buffer, line, pRegs);
-                 TrimWrite(f, buffer);
-                 line++;
-             }
+        if (!any) {
+            GetMapLine(buffer, line, pRegs);
+            TrimWrite(f, buffer);
+            line++;
+        }
 
-             GetMapLine(buffer, line, pRegs);
+        GetMapLine(buffer, line, pRegs);
 
-             if (p->amount == -1) {
-                 sprintf(data, "%s unlim %4s",
-                     (any ? "    " : "Prod"),
-                     ItemDefs[p->itemtype].abr);
-             } else {
-                 sprintf(data, "%s %5i %4s",
-                     (any ? "    " : "Prod"),
-                     p->amount,
-                     ItemDefs[p->itemtype].abr);
-             }
+        if (p->amount == -1) {
+            sprintf(data, "%s unlim %4s",
+                (any ? "    " : "Prod"),
+                ItemDefs[p->itemtype].abr);
+        } else {
+            sprintf(data, "%s %5i %4s",
+                (any ? "    " : "Prod"),
+                p->amount,
+                ItemDefs[p->itemtype].abr);
+        }
 
-             TrimWrite(f, buffer);
-             line++;
-             any = 1;
+        TrimWrite(f, buffer);
+        line++;
+        any = true;
 
-         }
     }
 
     // ----------------------------------------------------------------
 
     if (Globals->GATES_EXIST && gate) {
-        int sawgate = 0;
-        forlist(&objects) {
-            Object *o = (Object *) elem;
-            forlist(&o->units) {
-                Unit *u = (Unit *) elem;
-                if (!sawgate && u->faction == fac &&
-                    u->GetSkill(S_GATE_LORE)) {
+        for(const auto& o: objects) {
+            for(const auto& u: o->units) {
+                if (u->faction.lock().get() == &fac && u->GetSkill(Skills::Types::S_GATE_LORE)) {
                     GetMapLine(buffer, line, pRegs);
                     TrimWrite(f, buffer);
                     line++;
@@ -511,7 +512,7 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
                     TrimWrite(f, buffer);
                     line++;
 
-                    sawgate = 1;
+                    break;
                 }
             }
         }
@@ -529,7 +530,7 @@ void ARegion::WriteTemplateHeader(Areport *f, Faction *fac,
 // NEW FUNCTION DK 2000.03.07,
 // converted WriteExits
 //
-void ARegion::GetMapLine(char *buffer, int line, ARegionList *)
+void ARegion::GetMapLine(char *buffer, unsigned int line, const ARegionList&)
 {
 
     for (int m=0; m<MAP_WIDTH; m++) {
@@ -538,22 +539,23 @@ void ARegion::GetMapLine(char *buffer, int line, ARegionList *)
     buffer[MAP_WIDTH] = 0;
 
     if (line >= TEMPLATE_MAX_LINES)
+    {
         return;
+    }
 
     char *dest = buffer+TMPL_MAP_OFS;
     memcpy(dest, TemplateMap[line], TMPL_MAP_WIDTH);
 
-    ARegion *r = this;
-    int x, y, t, i = 0;
     char *name;
 
-    t = (r->type + 1) * 2;
-    name = (r->town ? r->town->name->Str() : NULL);
+    size_t t = (static_cast<size_t>(type) + 1) * 2;
+    name = (town ? town->name->Str() : NULL);
 
+    auto i = Directions::begin();
     for (;;) {
 
-        x = dircrd[i*2];
-        y = dircrd[i*2+1];
+        unsigned int x = dircrd[*i*2];
+        unsigned int y = dircrd[*i*2+1];
 
         if (y == line || y+1 == line) {
             if (y == line) {
@@ -570,10 +572,14 @@ void ARegion::GetMapLine(char *buffer, int line, ARegionList *)
             }
         }
 
-        if (i >= NDIRS) break;
+        if (i == Directions::end())
+        {
+            break;
+        }
 
-        ARegion *r = neighbors[i];
-        if (r) {
+        const auto& r_w = neighbors[*i];
+        if (!r_w.expired()) {
+            const auto r = r_w.lock();
             t = (r->type + 1) * 2;
             name = (r->town ? r->town->name->Str() : NULL);
         } else {
@@ -581,7 +587,7 @@ void ARegion::GetMapLine(char *buffer, int line, ARegionList *)
             name = NULL;
         }
 
-        i++;
+        ++i;
     }
 }
 
