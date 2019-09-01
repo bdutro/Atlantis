@@ -136,7 +136,7 @@ class Farsight
 
         std::weak_ptr<Faction> faction;
         std::weak_ptr<Unit> unit;
-        int level;
+        unsigned int level;
         int observation;
         ExitArray exits_used;
 };
@@ -336,8 +336,8 @@ class ARegion : std::enable_shared_from_this<ARegion>
         int improvement;
         
         /* Potential bonuses to economy */
-        int clearskies;
-        int earthlore;
+        unsigned int clearskies;
+        unsigned int earthlore;
 
         class NeighborArray : public std::array<ARegion::WeakHandle, Directions::size()>
         {

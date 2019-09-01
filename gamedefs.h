@@ -95,6 +95,11 @@ class Directions : public _DirectionsVE
             return static_cast<size_t>(*this) >= MOVE_ENTER;
         }
 
+        bool isMoveIn() const
+        {
+            return static_cast<size_t>(*this) == MOVE_IN;
+        }
+
         bool isMoveInOutOrEnter() const
         {
             return static_cast<size_t>(*this) >= MOVE_IN;

@@ -25,6 +25,12 @@
 #include "game.h"
 #include "gamedata.h"
 
+template<typename T>
+inline T square(T a)
+{
+    return a * a;
+}
+
 static int RandomiseSummonAmount(int num)
 {
     int retval, i;
@@ -216,7 +222,7 @@ void Game::ProcessBirdLore(const Unit::Handle& u, AString *o, const OrdersCheck:
         CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
         order->spell = Skills::Types::S_BIRD_LORE;
         order->level = 1;
-        order->target = dir;
+        order->target = static_cast<int>(dir);
         u->ClearCastOrders();
         u->castorders = order;
 
@@ -711,7 +717,7 @@ void Game::ProcessTransmutation(const Unit::Handle& u,  AString *o, const Orders
     return;
 }
 
-void Game::RunACastOrder(const ARegion::Handle& r, const Object::Handle& o,const Unit::Handle& u)
+void Game::RunACastOrder(const ARegion::Handle& r, const Object::Handle& o, const Unit::Handle& u)
 {
     int val = 0;
     if (u->type != U_MAGE && u->type != U_APPRENTICE) {
@@ -1180,174 +1186,202 @@ bool Game::RunSummonBalrog(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-int Game::RunSummonDemon(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunSummonDemon(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_SUMMON_DEMON);
-    int num = (level * ItemDefs[I_DEMON].mOut + getrandom(100)) / 100;
+    const unsigned int level = u->GetSkill(Skills::Types::S_SUMMON_DEMON);
+    int num = (static_cast<int>(level) * ItemDefs[Items::Types::I_DEMON].mOut + getrandom(100)) / 100;
     num = RandomiseSummonAmount(num);
     if (num < 1)
+    {
         num = 1;
-    u->items.SetNum(I_DEMON,u->items.GetNum(I_DEMON) + num);
-    u->Event(AString("Summons ") + ItemString(I_DEMON,num) + ".");
-    return 1;
+    }
+    u->items.SetNum(Items::Types::I_DEMON, u->items.GetNum(Items::Types::I_DEMON) + static_cast<size_t>(num));
+    u->Event(AString("Summons ") + ItemString(Items::Types::I_DEMON,num) + ".");
+    return true;
 }
 
-int Game::RunSummonImps(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunSummonImps(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_SUMMON_IMPS);
-    int num = (level * ItemDefs[I_IMP].mOut + getrandom(100)) / 100;
+    const unsigned int level = u->GetSkill(Skills::Types::S_SUMMON_IMPS);
+    int num = (static_cast<int>(level) * ItemDefs[Items::Types::I_IMP].mOut + getrandom(100)) / 100;
     num = RandomiseSummonAmount(num);
 
-    u->items.SetNum(I_IMP,u->items.GetNum(I_IMP) + num);
-    u->Event(AString("Summons ") + ItemString(I_IMP,num) + ".");
-    return 1;
+    u->items.SetNum(Items::Types::I_IMP,u->items.GetNum(Items::Types::I_IMP) + static_cast<size_t>(num));
+    u->Event(AString("Summons ") + ItemString(Items::Types::I_IMP,num) + ".");
+    return true;
 }
 
-int Game::RunCreateArtifact(const ARegion::Handle& r,const Unit::Handle& u, int skill,int item)
+bool Game::RunCreateArtifact(const ARegion::Handle& r, const Unit::Handle& u, const Skills& skill, const Items& item)
 {
-    int level = u->GetSkill(skill);
+    const unsigned int level = u->GetSkill(skill);
     if (level < ItemDefs[item].mLevel) {
         u->Error("CAST: Skill level isn't that high.");
-        return 0;
+        return false;
     }
-    unsigned int c;
-    for (c = 0; c < sizeof(ItemDefs[item].mInput)/sizeof(Materials); c++) {
-        if (ItemDefs[item].mInput[c].item == -1) continue;
-        int amt = u->GetSharedNum(ItemDefs[item].mInput[c].item);
-        int cost = ItemDefs[item].mInput[c].amt;
-        if (amt < cost) {
+    for (const auto& c: ItemDefs[item].mInput) {
+        if (!c.item.isValid())
+        {
+            continue;
+        }
+        const size_t amt = u->GetSharedNum(c.item);
+        if (static_cast<int>(amt) < c.amt) {
             u->Error(AString("Doesn't have sufficient ") +
-                    ItemDefs[ItemDefs[item].mInput[c].item].name +
+                    ItemDefs[c.item].name +
                     " to create that.");
-            return 0;
+            return false;
         }
     }
 
     // Deduct the costs
-    for (c = 0; c < sizeof(ItemDefs[item].mInput)/sizeof(Materials); c++) {
-        if (ItemDefs[item].mInput[c].item == -1) continue;
-        int cost = ItemDefs[item].mInput[c].amt;
-        u->ConsumeShared(ItemDefs[item].mInput[c].item, cost);
+    for (const auto& c: ItemDefs[item].mInput) {
+        if (!c.item.isValid())
+        {
+            continue;
+        }
+        u->ConsumeShared(c.item, static_cast<size_t>(c.amt));
     }
 
-    int num = (level * ItemDefs[item].mOut + getrandom(100))/100;
+    int num = (static_cast<int>(level) * ItemDefs[item].mOut + getrandom(100))/100;
 
     if (ItemDefs[item].type & IT_SHIP) {
         if (num > 0)
             CreateShip(r, u, item);
     } else {
-        u->items.SetNum(item,u->items.GetNum(item) + num);
+        u->items.SetNum(item,u->items.GetNum(item) + static_cast<size_t>(num));
     }
     u->Event(AString("Creates ") + ItemString(item,num) + ".");
-    if (num == 0) return 0;
-    return 1;
+    if (num == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
-int Game::RunSummonLich(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunSummonLich(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_SUMMON_LICH);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_SUMMON_LICH));
 
-    int chance = level * ItemDefs[I_LICH].mOut;
+    int chance = level * static_cast<int>(ItemDefs[Items::Types::I_LICH].mOut);
     if (chance < 1)
+    {
         chance = level * level * 2;
+    }
     int num = (chance + getrandom(100))/100;
 
-    u->items.SetNum(I_LICH,u->items.GetNum(I_LICH) + num);
-    u->Event(AString("Summons ") + ItemString(I_LICH,num) + ".");
-    if (num == 0) return 0;
-    return 1;
+    u->items.SetNum(Items::Types::I_LICH, u->items.GetNum(Items::Types::I_LICH) + static_cast<size_t>(num));
+    u->Event(AString("Summons ") + ItemString(Items::Types::I_LICH,num) + ".");
+    if (num == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
-int Game::RunRaiseUndead(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunRaiseUndead(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_RAISE_UNDEAD);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_RAISE_UNDEAD));
 
-    int chance = level * ItemDefs[I_UNDEAD].mOut;
+    int chance = level * static_cast<int>(ItemDefs[Items::Types::I_UNDEAD].mOut);
     if (chance < 1)
+    {
         chance = level * level * 10;
+    }
     int num = (chance + getrandom(100))/100;
     num = RandomiseSummonAmount(num);
 
-    u->items.SetNum(I_UNDEAD,u->items.GetNum(I_UNDEAD) + num);
-    u->Event(AString("Raises ") + ItemString(I_UNDEAD,num) + ".");
-    if (num == 0) return 0;
-    return 1;
+    u->items.SetNum(Items::Types::I_UNDEAD,u->items.GetNum(Items::Types::I_UNDEAD) + static_cast<size_t>(num));
+    u->Event(AString("Raises ") + ItemString(Items::Types::I_UNDEAD,num) + ".");
+    if (num == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
-int Game::RunSummonSkeletons(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunSummonSkeletons(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_SUMMON_SKELETONS);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_SUMMON_SKELETONS));
 
-    int chance = level * ItemDefs[I_SKELETON].mOut;
+    int chance = level * static_cast<int>(ItemDefs[Items::Types::I_SKELETON].mOut);
     if (chance < 1)
+    {
         chance = level * level * 40;
+    }
     int num = (chance + getrandom(100))/100;
     num = RandomiseSummonAmount(num);
 
-    u->items.SetNum(I_SKELETON,u->items.GetNum(I_SKELETON) + num);
-    u->Event(AString("Summons ") + ItemString(I_SKELETON,num) + ".");
-    if (num == 0) return 0;
-    return 1;
+    u->items.SetNum(Items::Types::I_SKELETON,u->items.GetNum(Items::Types::I_SKELETON) + static_cast<size_t>(num));
+    u->Event(AString("Summons ") + ItemString(Items::Types::I_SKELETON,num) + ".");
+    if (num == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
-int Game::RunDragonLore(const ARegion::Handle& r, const Unit::Handle&u)
+bool Game::RunDragonLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_DRAGON_LORE);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_DRAGON_LORE));
 
-    int num = u->items.GetNum(I_DRAGON);
-    if (num >= level) {
+    size_t num = u->items.GetNum(Items::Types::I_DRAGON);
+    if (num >= static_cast<size_t>(level)) {
         u->Error("Mage may not summon more dragons.");
-        return 0;
+        return false;
     }
 
-    int chance = level * ItemDefs[I_DRAGON].mOut;
+    int chance = level * ItemDefs[Items::Types::I_DRAGON].mOut;
     if (chance < 1)
+    {
         chance = level * level * 4;
+    }
     if (getrandom(100) < chance) {
-        u->items.SetNum(I_DRAGON,num + 1);
+        u->items.SetNum(Items::Types::I_DRAGON, num + 1);
         u->Event("Summons a dragon.");
         num = 1;
     } else {
         u->Event("Attempts to summon a dragon, but fails.");
         num = 0;
     }
-    if (num == 0) return 0;
-    return 1;
+    if (num == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
-int Game::RunBirdLore(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunBirdLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    CastIntOrder *order = (CastIntOrder *) u->castorders;
+    CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
     int type = regions.GetRegionArray(r->zloc)->levelType;
 
     if (type != ARegionArray::LEVEL_SURFACE) {
@@ -1355,65 +1389,70 @@ int Game::RunBirdLore(const ARegion::Handle& r,const Unit::Handle&u)
         error += Globals->WORLD_NAME;
         error += ".";
         u->Error(error.Str());
-        return 0;
+        return false;
     }
 
     if (order->level < 3) {
-        int dir = order->target;
-        const ARegion::Handle&tar = r->neighbors[dir];
-        if (!tar) {
+        const Directions dir = Directions(order->target);
+        const auto& tar_w = r->neighbors[dir];
+        if (tar_w.expired()) {
             u->Error("CAST: No such region.");
-            return 0;
+            return false;
         }
 
-        Farsight *f = new Farsight;
+        const auto tar = tar_w.lock();
+        auto& f = tar->farsees.emplace_back(std::make_shared<Farsight>());
         f->faction = u->faction;
         f->level = u->GetSkill(Skills::Types::S_BIRD_LORE);
-        tar->farsees.Add(f);
         u->Event(AString("Sends birds to spy on ") +
-                tar->Print( &regions ) + ".");
-        return 1;
+                tar->Print(regions) + ".");
+        return true;
     }
 
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_BIRD_LORE) - 2;
+    int level = static_cast<int>(u->GetSkill(Skills::Types::S_BIRD_LORE)) - 2;
     int max = level * level * 2;
-    int num = (level * ItemDefs[I_EAGLE].mOut + getrandom(100)) / 100;
+    int num = (level * ItemDefs[Items::Types::I_EAGLE].mOut + getrandom(100)) / 100;
     num = RandomiseSummonAmount(num);
     if (num < 1)
+    {
         num = 1;
-
-    if (u->items.GetNum(I_EAGLE) >= max) {
-        u->Error("CAST: Mage can't summon more eagles.");
-        return 0;
     }
 
-    if (u->items.GetNum(I_EAGLE) + num > max)
-        num = max - u->items.GetNum(I_EAGLE);
+    const int num_eagles = static_cast<int>(u->items.GetNum(Items::Types::I_EAGLE));
+    if (num_eagles >= max) {
+        u->Error("CAST: Mage can't summon more eagles.");
+        return false;
+    }
 
-    u->items.SetNum(I_EAGLE,u->items.GetNum(I_EAGLE) + num);
-    u->Event(AString("Summons ") + ItemString(I_EAGLE,num) + ".");
-    return 1;
+    if (num_eagles + num > max)
+    {
+        num = max - num_eagles;
+    }
+
+    u->items.SetNum(Items::Types::I_EAGLE, static_cast<size_t>(num_eagles + num));
+    u->Event(AString("Summons ") + ItemString(Items::Types::I_EAGLE,num) + ".");
+    return true;
 }
 
-int Game::RunWolfLore(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunWolfLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (TerrainDefs[r->type].similar_type != Regions::Types::R_MOUNTAIN &&
         TerrainDefs[r->type].similar_type != Regions::Types::R_FOREST) {
         u->Error("CAST: Can only summon wolves in mountain and "
                  "forest regions.");
-        return 0;
+        return false;
     }
 
-    int level = u->GetSkill(Skills::Types::S_WOLF_LORE);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_WOLF_LORE));
     int max = level * level * 4;
 
-    int curr = u->items.GetNum(I_WOLF);
-    int num = (level * ItemDefs[I_WOLF].mOut + getrandom(100)) / 100;
+    int curr = static_cast<int>(u->items.GetNum(Items::Types::I_WOLF));
+    int num = (level * ItemDefs[Items::Types::I_WOLF].mOut + getrandom(100)) / 100;
     num = RandomiseSummonAmount(num);
 
     if (num + curr > max)
@@ -1421,344 +1460,388 @@ int Game::RunWolfLore(const ARegion::Handle& r,const Unit::Handle&u)
     if (num < 0) num = 0;
 
     u->Event(AString("Casts Wolf Lore, summoning ") +
-            ItemString(I_WOLF,num) + ".");
-    u->items.SetNum(I_WOLF,num + curr);
-    if (num == 0) return 0;
-    return 1;
+            ItemString(Items::Types::I_WOLF,num) + ".");
+    u->items.SetNum(Items::Types::I_WOLF, static_cast<size_t>(num + curr));
+    if (num == 0)
+    {
+        return false;
+    }
+    return true;
 }
 
-int Game::RunInvisibility(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    CastUnitsOrder *order = (CastUnitsOrder *) u->castorders;
-    int max = u->GetSkill(Skills::Types::S_INVISIBILITY);
-    max = max * max;
+    CastUnitsOrder::Handle order = std::dynamic_pointer_cast<CastUnitsOrder>(u->castorders);
+    const unsigned int max = square(u->GetSkill(Skills::Types::S_INVISIBILITY));
 
-    int num = 0;
-    r->DeduplicateUnitList(&order->units, u->faction->num);
-    forlist (&(order->units)) {
-        const Unit::Handle&tar = r->GetUnitId((UnitId *) elem,u->faction->num);
-        if (!tar) continue;
-        if (tar->GetAttitude(r,u) < A_FRIENDLY) continue;
+    size_t num = 0;
+    const auto ufac_num = u->faction.lock()->num;
+    r->DeduplicateUnitList(order->units, ufac_num);
+    for(const auto& elem: order->units) {
+        const Unit::WeakHandle tar_w = r->GetUnitId(elem, ufac_num);
+        if (tar_w.expired())
+        {
+            continue;
+        }
+
+        const auto tar = tar_w.lock();
+        if (tar->GetAttitude(*r, u) < A_FRIENDLY)
+        {
+            continue;
+        }
         num += tar->GetSoldiers();
     }
 
     if (num > max) {
         u->Error("CAST: Can't render that many men or creatures invisible.");
-        return 0;
+        return false;
     }
 
     if (!num) {
         u->Error("CAST: No valid targets to turn invisible.");
-        return 0;
+        return false;
     }
-    forlist_reuse (&(order->units)) {
-        const Unit::Handle&tar = r->GetUnitId((UnitId *) elem,u->faction->num);
-        if (!tar) continue;
-        if (tar->GetAttitude(r,u) < A_FRIENDLY) continue;
+    for(const auto& elem: order->units) {
+        const Unit::WeakHandle tar_w = r->GetUnitId(elem, ufac_num);
+        if (tar_w.expired())
+        {
+            continue;
+        }
+
+        const auto tar = tar_w.lock();
+        if (tar->GetAttitude(*r, u) < A_FRIENDLY)
+        {
+            continue;
+        }
         tar->SetFlag(FLAG_INVIS,1);
         tar->Event(AString("Is rendered invisible by ") +
                 *(u->name) + ".");
     }
 
     u->Event("Casts invisibility.");
-    return 1;
+    return true;
 }
 
-int Game::RunPhanDemons(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunPhanDemons(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    CastIntOrder *order = (CastIntOrder *) u->castorders;
-    int level = u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_DEMONS);
-    int create,max;
+    CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_DEMONS));
 
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
+    Items create;
+    int max;
     if (order->level < 3) {
-        create = I_IIMP;
+        create = Items::Types::I_IMP;
         max = level * level * 4;
     } else {
         if (order->level < 5) {
-            create = I_IDEMON;
+            create = Items::Types::I_DEMON;
             max = (level - 2) * (level - 2);
         } else {
-            create = I_IBALROG;
+            create = Items::Types::I_BALROG;
             max = 1;
         }
     }
 
     if (order->target > max || order->target <= 0) {
         u->Error("CAST: Can't create that many Phantasmal Demons.");
-        return 0;
+        return false;
     }
 
-    u->items.SetNum(create,order->target);
+    u->items.SetNum(create, static_cast<size_t>(order->target));
     u->Event("Casts Create Phantasmal Demons.");
-    return 1;
+    return true;
 }
 
-int Game::RunPhanUndead(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunPhanUndead(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    CastIntOrder *order = (CastIntOrder *) u->castorders;
-    int level = u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_UNDEAD);
-    int create,max;
+    CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_UNDEAD));
 
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
+    Items create;
+    int max;
+
     if (order->level < 3) {
-        create = I_ISKELETON;
+        create = Items::Types::I_SKELETON;
         max = level * level * 4;
     } else {
         if (order->level < 5) {
-            create = I_IUNDEAD;
+            create = Items::Types::I_UNDEAD;
             max = (level - 2) * (level - 2);
         } else {
-            create = I_ILICH;
+            create = Items::Types::I_LICH;
             max = 1;
         }
     }
 
     if (order->target > max || order->target <= 0) {
         u->Error("CAST: Can't create that many Phantasmal Undead.");
-        return 0;
+        return false;
     }
 
-    u->items.SetNum(create,order->target);
+    u->items.SetNum(create, static_cast<size_t>(order->target));
     u->Event("Casts Create Phantasmal Undead.");
-    return 1;
+    return true;
 }
 
-int Game::RunPhanBeasts(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunPhanBeasts(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    CastIntOrder *order = (CastIntOrder *) u->castorders;
-    int level = u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_BEASTS);
-    int create,max;
+    CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
+    const int level = static_cast<int>(u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_BEASTS));
 
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
-        return 0;
+        return false;
     }
 
+    Items create;
+    int max;
     if (order->level < 3) {
-        create = I_IWOLF;
+        create = Items::Types::I_WOLF;
         max = level * level * 4;
     } else {
         if (order->level < 5) {
-            create = I_IEAGLE;
+            create = Items::Types::I_EAGLE;
             max = (level - 2) * (level - 2);
         } else {
-            create = I_IDRAGON;
+            create = Items::Types::I_DRAGON;
             max = 1;
         }
     }
 
     if (order->target > max || order->target <= 0) {
         u->Error("CAST: Can't create that many Phantasmal Beasts.");
-        return 0;
+        return false;
     }
 
-    u->items.SetNum(create,order->target);
+    u->items.SetNum(create, static_cast<size_t>(order->target));
     u->Event("Casts Create Phantasmal Beasts.");
-    return 1;
+    return true;
 }
 
-int Game::RunEarthLore(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunEarthLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    int level = u->GetSkill(Skills::Types::S_EARTH_LORE);
+    const unsigned int level = u->GetSkill(Skills::Types::S_EARTH_LORE);
 
-    if (level > r->earthlore) r->earthlore = level;
-    int amt = r->Wages() * level * 2 / 10;
-
-    u->items.SetNum(I_SILVER,u->items.GetNum(I_SILVER) + amt);
-    u->Event(AString("Casts Earth Lore, raising ") + amt + " silver.");
-    return 1;
-}
-
-int Game::RunClearSkies(const ARegion::Handle& r, const Unit::Handle&u)
-{
-    const ARegion::Handle&tar = r;
-    AString temp = "Casts Clear Skies";
-    int val;
-
-    CastRegionOrder *order = (CastRegionOrder *)u->castorders;
-
-    RangeType *range = FindRange(SkillDefs[Skills::Types::S_CLEAR_SKIES].range);
-    if (range != NULL) {
-        tar = regions.GetRegion(order->xloc, order->yloc, order->zloc);
-        val = GetRegionInRange(r, tar, u, Skills::Types::S_CLEAR_SKIES);
-        if (!val) return 0;
-        temp += " on ";
-        temp += tar->ShortPrint(&regions);
+    if (level > r->earthlore)
+    {
+        r->earthlore = level;
     }
-    temp += ".";
-    int level = u->GetSkill(Skills::Types::S_CLEAR_SKIES);
-    if (level > r->clearskies) r->clearskies = level;
-    u->Event(temp);
-    return 1;
+    const int amt = r->Wages() * static_cast<int>(level * 2) / 10;
+
+    u->items.SetNum(Items::Types::I_SILVER, u->items.GetNum(Items::Types::I_SILVER) + static_cast<size_t>(amt));
+    u->Event(AString("Casts Earth Lore, raising ") + amt + " silver.");
+    return true;
 }
 
-int Game::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle&u)
+bool Game::RunClearSkies(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    const ARegion::Handle&tar;
-    int val, i;
+    ARegion::Handle tar = r;
+    AString temp = "Casts Clear Skies";
 
-    CastRegionOrder *order = (CastRegionOrder *)u->castorders;
+    CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->castorders);
 
-    tar = regions.GetRegion(order->xloc, order->yloc, order->zloc);
-    val = GetRegionInRange(r, tar, u, Skills::Types::S_WEATHER_LORE);
-    if (!val) return 0;
+    try
+    {
+        FindRange(SkillDefs[Skills::Types::S_CLEAR_SKIES].range);
+        tar = regions.GetRegion(order->xloc, order->yloc, order->zloc).lock();
+        if (!GetRegionInRange(r, tar, u, Skills::Types::S_CLEAR_SKIES))
+        {
+            return false;
+        }
+        temp += " on ";
+        temp += tar->ShortPrint(regions);
+    }
+    catch(const NoSuchItemException&)
+    {
+    }
 
-    int level = u->GetSkill(Skills::Types::S_WEATHER_LORE);
-    int months = 3;
-    if (level >= 5) months = 12;
-    else if (level >= 3) months = 6;
+    temp += ".";
+    const unsigned int level = u->GetSkill(Skills::Types::S_CLEAR_SKIES);
+    if (level > r->clearskies)
+    {
+        r->clearskies = level;
+    }
+    u->Event(temp);
+    return true;
+}
+
+bool Game::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle& u)
+{
+    CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->castorders);
+
+    const auto tar = regions.GetRegion(order->xloc, order->yloc, order->zloc).lock();
+    if (!GetRegionInRange(r, tar, u, Skills::Types::S_WEATHER_LORE))
+    {
+        return false;
+    }
+
+    const unsigned int level = u->GetSkill(Skills::Types::S_WEATHER_LORE);
+    unsigned int months = 3;
+    if (level >= 5)
+    {
+        months = 12;
+    }
+    else if (level >= 3)
+    {
+        months = 6;
+    }
 
     AString temp = "Casts Weather Lore on ";
-    temp += tar->ShortPrint(&regions);
+    temp += tar->ShortPrint(regions);
     temp += ". It will be ";
-    int weather, futuremonth;
-    for (i = 0; i <= months; i++) {
-        futuremonth = (month + i)%12;
-        weather=regions.GetWeather(tar, futuremonth);
+    for (unsigned int i = 0; i <= months; i++) {
+        const size_t futuremonth = (month + i) % 12;
+        const size_t weather = regions.GetWeather(*tar, futuremonth);
         temp += SeasonNames[weather];
         temp += " in ";
         temp += MonthNames[futuremonth];
         if (i < (months-1))
+        {
             temp += ", ";
+        }
         else if (i == (months-1))
+        {
             temp += " and ";
+        }
         else
+        {
             temp += ".";
+        }
     }
     u->Event(temp);
-    return 1;
+    return true;
 }
 
-int Game::RunFarsight(const ARegion::Handle& r,const Unit::Handle&u)
+bool Game::RunFarsight(const ARegion::Handle& r, const Unit::Handle& u)
 {
-    const ARegion::Handle&tar;
-    int val;
+    CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->castorders);
 
-    CastRegionOrder *order = (CastRegionOrder *)u->castorders;
+    const auto tar = regions.GetRegion(order->xloc, order->yloc, order->zloc).lock();
+    if (!GetRegionInRange(r, tar, u, Skills::Types::S_FARSIGHT))
+    {
+        return false;
+    }
 
-    tar = regions.GetRegion(order->xloc, order->yloc, order->zloc);
-    val = GetRegionInRange(r, tar, u, Skills::Types::S_FARSIGHT);
-    if (!val) return 0;
-
-    Farsight *f = new Farsight;
+    auto&f = tar->farsees.emplace_back(std::make_shared<Farsight>());
     f->faction = u->faction;
     f->level = u->GetSkill(Skills::Types::S_FARSIGHT);
     f->unit = u;
     f->observation = u->GetAttribute("observation");
-    tar->farsees.Add(f);
     AString temp = "Casts Farsight on ";
-    temp += tar->ShortPrint(&regions);
+    temp += tar->ShortPrint(regions);
     temp += ".";
     u->Event(temp);
-    return 1;
+    return true;
 }
 
-int Game::RunDetectGates(const ARegion::Handle& r, Object *, const Unit::Handle&u)
+bool Game::RunDetectGates(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    int level = u->GetSkill(Skills::Types::S_GATE_LORE);
+    const unsigned int level = u->GetSkill(Skills::Types::S_GATE_LORE);
 
     if (level == 1) {
         u->Error("CAST: Casting Gate Lore at level 1 has no effect.");
-        return 0;
+        return false;
     }
 
     u->Event("Casts Gate Lore, detecting nearby Gates:");
-    int found = 0;
+    bool found = false;
     if ((r->gate) && (!r->gateopen)) {
         u->Event(AString("Identified local gate number ") + (r->gate) +
-        " in " + r->ShortPrint(&regions) + ".");
+        " in " + r->ShortPrint(regions) + ".");
     }
-    for (int i=0; i<NDIRS; i++) {
-        const ARegion::Handle&tar = r->neighbors[i];
-        if (tar) {
+    for (const auto& tar_w: r->neighbors) {
+        if (!tar_w.expired()) {
+            const auto tar = tar_w.lock();
             if (tar->gate) {
                 if (Globals->DETECT_GATE_NUMBERS) {
-                    u->Event(tar->Print(&regions) +
+                    u->Event(tar->Print(regions) +
                         " contains Gate " + tar->gate +
                         ".");
                 } else {
-                    u->Event(tar->Print(&regions) +
+                    u->Event(tar->Print(regions) +
                         " contains a Gate.");
                 }
-                found = 1;
+                found = true;
             }
         }
     }
     if (!found)
+    {
         u->Event("There are no nearby Gates.");
-    return 1;
+    }
+    return true;
 }
 
-int Game::RunTeleport(const ARegion::Handle& r, Object *, const Unit::Handle&u)
+bool Game::RunTeleport(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    const ARegion::Handle&tar;
-    int val;
+    CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->teleportorders);
 
-    CastRegionOrder *order = (CastRegionOrder *)u->teleportorders;
+    const auto tar = regions.GetRegion(order->xloc, order->yloc, order->zloc).lock();
+    if (!GetRegionInRange(r, tar, u, Skills::Types::S_TELEPORTATION))
+    {
+        return false;
+    }
 
-    tar = regions.GetRegion(order->xloc, order->yloc, order->zloc);
-    val = GetRegionInRange(r, tar, u, Skills::Types::S_TELEPORTATION);
-    if (!val) return 0;
-
-    int level = u->GetSkill(Skills::Types::S_TELEPORTATION);
-    int maxweight = level * 15;
+    const unsigned int level = u->GetSkill(Skills::Types::S_TELEPORTATION);
+    const unsigned int maxweight = level * 15;
 
     if (u->Weight() > maxweight) {
         u->Error("CAST: Can't carry that much when teleporting.");
-        return 0;
+        return false;
     }
 
     // Presume they had to open the portal to see if target is ocean
     if (TerrainDefs[tar->type].similar_type == Regions::Types::R_OCEAN) {
-        u->Error(AString("CAST: ") + tar->Print(&regions) +
+        u->Error(AString("CAST: ") + tar->Print(regions) +
             " is an ocean.");
-        return 1;
+        return true;
     }
     u->DiscardUnfinishedShips();
-    u->Event(AString("Teleports to ") + tar->Print(&regions) + ".");
+    u->Event(AString("Teleports to ") + tar->Print(regions) + ".");
     u->MoveUnit(tar->GetDummy());
-    return 1;
+    return true;
 }
 
-int Game::RunGateJump(const ARegion::Handle& r, Object *, const Unit::Handle&u)
+bool Game::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    int level = u->GetSkill(Skills::Types::S_GATE_LORE);
+    int level = static_cast<int>(u->GetSkill(Skills::Types::S_GATE_LORE));
     int nexgate = 0;
     if ( !level ) {
         u->Error( "CAST: Unit doesn't have that skill." );
-        return 0;
+        return false;
     }
 
-    TeleportOrder *order = u->teleportorders;
+    const auto& order = u->teleportorders;
 
     if ((order->gate > 0 && level < 3) ||
             (order->gate == -2 && level < 2)) {
         u->Error("CAST: Unit Doesn't know Gate Lore at that level.");
-        return 0;
+        return false;
     }
 
     nexgate = Globals->NEXUS_GATE_OUT &&
         (TerrainDefs[r->type].similar_type == Regions::Types::R_NEXUS);
     if (!r->gate && !nexgate) {
         u->Error("CAST: There is no gate in that region.");
-        return 0;
+        return false;
     }
 
     if (!r->gateopen) {
         u->Error("CAST: Gate not open at this time of year.");
-        return 0;
+        return false;
     }
 
-    int maxweight = 10;
+    unsigned int maxweight = 10;
     if (order->gate != -1) level -= 2;
     switch (level) {
         case 1:
@@ -1774,218 +1857,250 @@ int Game::RunGateJump(const ARegion::Handle& r, Object *, const Unit::Handle&u)
             break;
     }
 
-    int weight = u->Weight();
+    size_t weight = u->Weight();
+    const auto ufac_num = u->faction.lock()->num;
 
-    r->DeduplicateUnitList(&order->units, u->faction->num);
-    forlist (&(order->units)) {
-        const Unit::Handle&taru = r->GetUnitId((UnitId *) elem,u->faction->num);
-        if (taru && taru != u) weight += taru->Weight();
+    r->DeduplicateUnitList(order->units, ufac_num);
+    for(const auto& elem: order->units) {
+        const auto taru_w = r->GetUnitId(elem, ufac_num);
+        if(!taru_w.expired())
+        {
+            const auto taru = taru_w.lock();
+            if (taru != u)
+            {
+                weight += taru->Weight();
+            }
+        }
     }
 
     if (weight > maxweight) {
         u->Error( "CAST: Can't carry that much weight through a Gate.");
-        return 0;
+        return false;
     }
 
-    const ARegion::Handle&tar;
+    ARegion::Handle tar;
     if (order->gate < 0) {
-        int good = 0;
+        bool good = false;
 
         do {
-            tar = regions.FindGate(-1);
-            if (!tar)
+            const auto tar_w = regions.FindGate(-1);
+            if (tar_w.expired())
+            {
                 continue;
+            }
+
+            tar = tar_w.lock();
 
             if (tar->zloc == r->zloc)
-                good = 1;
-            if (order->gate == -2) {
-                good = 1;
+            {
+                good = true;
+            }
+            if (order->gate == -2)
+            {
+                good = true;
             }
             if (nexgate && tar->zloc == ARegionArray::LEVEL_SURFACE)
-                good = 1;
+            {
+                good = true;
+            }
             if (!tar->gateopen)
-                good = 0;
+            {
+                good = false;
+            }
         } while (!good);
 
         u->Event("Casts Random Gate Jump.");
     } else {
-        tar = regions.FindGate(order->gate);
-        if (!tar) {
+        const auto tar_w = regions.FindGate(order->gate);
+        if (tar_w.expired()) {
             u->Error("CAST: No such target gate.");
-            return 0;
+            return false;
         }
+
+        tar = tar_w.lock();
         if (!tar->gateopen) {
             u->Error("CAST: Target gate is not open at this time of year.");
-            return 0;
+            return false;
         }
 
         u->Event("Casts Gate Jump.");
     }
 
-    int comma = 0;
+    bool comma = false;
     AString unitlist; {
-        forlist(&(order->units)) {
-            Location *loc = r->GetLocation((UnitId *) elem,u->faction->num);
+        for(const auto& elem: order->units) {
+            const auto loc = r->GetLocation(elem, ufac_num);
             if (loc) {
                 /* Don't do the casting unit yet */
-                if (loc->unit == u) {
-                    delete loc;
+                const auto loc_unit = loc->unit.lock();
+                if (loc_unit == u) {
                     continue;
                 }
 
-                if (loc->unit->GetAttitude(r,u) < A_ALLY) {
+                if (loc_unit->GetAttitude(*r, u) < A_ALLY) {
                     u->Error("CAST: Unit is not allied.");
                 } else {
                     if (comma) {
-                        unitlist += AString(", ") + AString(loc->unit->num);
+                        unitlist += AString(", ") + AString(loc_unit->num);
                     } else {
-                        unitlist += AString(loc->unit->num);
-                        comma = 1;
+                        unitlist += AString(loc_unit->num);
+                        comma = true;
                     }
-                    loc->unit->DiscardUnfinishedShips();
-                    loc->unit->Event(AString("Is teleported through a ") +
-                            "Gate to " + tar->Print(&regions) + " by " +
+                    loc_unit->DiscardUnfinishedShips();
+                    loc_unit->Event(AString("Is teleported through a ") +
+                            "Gate to " + tar->Print(regions) + " by " +
                             *u->name + ".");
-                    loc->unit->MoveUnit( tar->GetDummy() );
-                    if (loc->unit != u) loc->unit->ClearCastOrders();
+                    loc_unit->MoveUnit( tar->GetDummy() );
+                    if (loc_unit != u) loc_unit->ClearCastOrders();
                 }
-                delete loc;
             } else {
                 u->Error("CAST: No such unit.");
             }
         }
     }
     u->DiscardUnfinishedShips();
-    u->Event(AString("Jumps through a Gate to ") +
-            tar->Print( &regions ) + ".");
+    u->Event(AString("Jumps through a Gate to ") + tar->Print(regions) + ".");
     if (comma) {
         u->Event(unitlist + " follow through the Gate.");
     }
     u->MoveUnit( tar->GetDummy() );
-    return 1;
+    return true;
 }
 
-int Game::RunPortalLore(const ARegion::Handle& r, Object *, const Unit::Handle&u)
+bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
-    int level = u->GetSkill(Skills::Types::S_PORTAL_LORE);
-    TeleportOrder *order = u->teleportorders;
+    const unsigned int level = u->GetSkill(Skills::Types::S_PORTAL_LORE);
+    const auto& order = u->teleportorders;
 
     if (!level) {
         u->Error("CAST: Doesn't know Portal Lore.");
-        return 0;
+        return false;
     }
 
-    if (!u->items.GetNum(I_PORTAL)) {
+    if (!u->items.GetNum(Items::Types::I_PORTAL)) {
         u->Error("CAST: Unit doesn't have a Portal.");
-        return 0;
+        return false;
     }
 
-    int maxweight = 50 * level;
-    r->DeduplicateUnitList(&order->units, u->faction->num);
-    int weight = 0;
-    forlist (&(order->units)) {
-        const Unit::Handle&taru = r->GetUnitId((UnitId *) elem,u->faction->num);
-        if (taru) weight += taru->Weight();
+    unsigned int maxweight = 50 * level;
+    const auto ufac_num = u->faction.lock()->num;
+
+    r->DeduplicateUnitList(order->units, ufac_num);
+    size_t weight = 0;
+    for(const auto& elem: order->units) {
+        const auto taru_w = r->GetUnitId(elem, ufac_num);
+        if (!taru_w.expired())
+        {
+            weight += taru_w.lock()->Weight();
+        }
     }
 
     if (weight > maxweight) {
         u->Error("CAST: That mage cannot teleport that much weight through a "
                 "Portal.");
-        return 0;
+        return false;
     }
 
-    Location *tar = regions.FindUnit(order->gate);
+    const auto tar = regions.FindUnit(static_cast<size_t>(order->gate));
     if (!tar) {
         u->Error("CAST: No such target mage.");
-        return 0;
+        return false;
     }
 
-    if (tar->unit->faction->GetAttitude(u->faction->num) < A_FRIENDLY) {
+    const auto tar_u = tar->unit.lock();
+    if (tar_u->faction.lock()->GetAttitude(ufac_num) < A_FRIENDLY) {
         u->Error("CAST: Target mage is not friendly.");
-        return 0;
+        return false;
     }
 
-    if (tar->unit->type != U_MAGE) {
+    if (tar_u->type != U_MAGE) {
         u->Error("CAST: Target is not a mage.");
-        return 0;
+        return false;
     }
 
-    if (!tar->unit->items.GetNum(I_PORTAL)) {
+    if (!tar_u->items.GetNum(Items::Types::I_PORTAL)) {
         u->Error("CAST: Target does not have a Portal.");
-        return 0;
+        return false;
     }
 
-    if (!GetRegionInRange(r, tar->region, u, Skills::Types::S_PORTAL_LORE)) return 0;
+    const auto tar_r = tar->region.lock();
+    if (!GetRegionInRange(r, tar_r, u, Skills::Types::S_PORTAL_LORE))
+    {
+        return false;
+    }
 
     u->Event("Casts Portal Jump.");
 
-    {
-        forlist(&(order->units)) {
-            Location *loc = r->GetLocation((UnitId *) elem,u->faction->num);
-            if (loc) {
-                if (loc->unit->GetAttitude(r,u) < A_ALLY) {
-                    u->Error("CAST: Unit is not allied.");
-                } else {
-                    loc->unit->DiscardUnfinishedShips();
-                    loc->unit->Event(AString("Is teleported to ") +
-                            tar->region->Print( &regions ) +
-                            " by " + *u->name + ".");
-                    loc->unit->MoveUnit( tar->obj );
-                    if (loc->unit != u) loc->unit->ClearCastOrders();
-                }
-                delete loc;
+    for(const auto& elem: order->units) {
+        const auto loc = r->GetLocation(elem, ufac_num);
+        if (loc) {
+            const auto loc_u = loc->unit.lock();
+            if (loc_u->GetAttitude(*r, u) < A_ALLY) {
+                u->Error("CAST: Unit is not allied.");
             } else {
-                u->Error("CAST: No such unit.");
+                loc_u->DiscardUnfinishedShips();
+                loc_u->Event(AString("Is teleported to ") +
+                        tar_r->Print(regions) +
+                        " by " + *u->name + ".");
+                loc_u->MoveUnit( tar->obj );
+                if (loc_u != u) loc_u->ClearCastOrders();
             }
+        } else {
+            u->Error("CAST: No such unit.");
         }
     }
 
-    delete tar;
-    return 1;
+    return true;
 }
 
-int Game::RunTransmutation(const ARegion::Handle&, const Unit::Handle&u)
+bool Game::RunTransmutation(const ARegion::Handle&, const Unit::Handle& u)
 {
-    CastTransmuteOrder *order;
-    int level, num, source;
-
-    order = (CastTransmuteOrder *) u->castorders;
-    level = u->GetSkill(Skills::Types::S_TRANSMUTATION);
+    CastTransmuteOrder::Handle order = std::dynamic_pointer_cast<CastTransmuteOrder>(u->castorders);
+    const unsigned int level = u->GetSkill(Skills::Types::S_TRANSMUTATION);
     if (!level) {
         u->Error("CAST: Unit doesn't have that skill.");
-        return 0;
+        return false;
     }
     if (level < order->level) {
         u->Error("CAST: Can't create that by transmutation.");
-        return 0;
+        return false;
+    }
+
+    Items source;
+    switch(order->item.asEnum()) {
+        case Items::Types::I_MITHRIL:
+            source = Items::Types::I_IRON;
+            break;
+        case Items::Types::I_ROOTSTONE:
+            source = Items::Types::I_STONE;
+            break;
+        case Items::Types::I_FLOATER:
+            source = Items::Types::I_FUR;
+            break;
+        case Items::Types::I_IRONWOOD:
+        case Items::Types::I_YEW:
+            source = Items::Types::I_WOOD;
+            break;
+        case Items::Types::I_WHORSE:
+            source = Items::Types::I_HORSE;
+            break;
+        default:
+            break;
     }
     
-    switch(order->item) {
-        case I_MITHRIL:
-            source = I_IRON;
-            break;
-        case I_ROOTSTONE:
-            source = I_STONE;
-            break;
-        case I_FLOATER:
-            source = I_FUR;
-            break;
-        case I_IRONWOOD:
-        case I_YEW:
-            source = I_WOOD;
-            break;
-        case I_WHORSE:
-            source = I_HORSE;
-            break;
-    }
-    
-    num = u->GetSharedNum(source);
+    size_t num = u->GetSharedNum(source);
     if (num > level)
+    {
         num = level;
-    if (order->number != -1 && num > order->number)
-        num = order->number;
-    if (num < order->number)
+    }
+    if (order->number != -1 && static_cast<int>(num) > order->number)
+    {
+        num = static_cast<size_t>(order->number);
+    }
+    if (static_cast<int>(num) < order->number)
+    {
         u->Error("CAST: Can't create that many.");
+    }
     u->ConsumeShared(source, num);
     u->items.SetNum(order->item, u->items.GetNum(order->item) + num);
     u->Event(AString("Transmutes ") +
@@ -1994,101 +2109,134 @@ int Game::RunTransmutation(const ARegion::Handle&, const Unit::Handle&u)
             ItemString(order->item, num) +
             ".");
     
-    return 1;
+    return true;
 }
 
-int Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle&mage)
+bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& mage)
 {
-    int level, num, sactype, sacrifices, i, sac, max;
+    /*int level, num, sactype, sacrifices, i, sac, max;
     Object *o, *tower;
     const Unit::Handle& u,  *victim;
     Item *item;
     const ARegion::Handle&start;
-    AString message;
+    AString message;*/
 
-    level = mage->GetSkill(Skills::Types::S_BLASPHEMOUS_RITUAL);
+    const unsigned int level = mage->GetSkill(Skills::Types::S_BLASPHEMOUS_RITUAL);
     if (level < 1) {
         mage->Error("CAST: Unit doesn't have that skill.");
-        return 0;
+        return false;
     }
     if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN) {
         mage->Error(AString("CAST: Can't build a ") +
-            ObjectDefs[O_BKEEP].name +
+            ObjectDefs[Objects::Types::O_BKEEP].name +
             " on water.");
-        return 0;
+        return false;
     }
-    num = mage->GetSharedNum(I_ROOTSTONE);
-    if (num > level)
-        num = level;
-    tower = 0;
-    sactype = IT_LEADER;
-    sacrifices = 0;
-    forlist(&r->objects) {
-        o = (Object *) elem;
-        if (o->type == O_BKEEP)
+
+    int num = static_cast<int>(mage->GetSharedNum(Items::Types::I_ROOTSTONE));
+    if (num > static_cast<int>(level))
+    {
+        num = static_cast<int>(level);
+    }
+
+    Object::Handle tower;
+    int sactype = IT_LEADER;
+    int sacrifices = 0;
+    Unit::Handle u;
+    const auto mage_fac_num = mage->faction.lock()->num;
+
+    for(const auto& o: r->objects)
+    {
+        if (o->type == Objects::Types::O_BKEEP)
+        {
             tower = o;
-        forlist(&o->units) {
-            u = (const Unit::Handle&) elem;
-            if (u->faction->num == mage->faction->num) {
-                forlist(&u->items) {
-                    item = (Item *) elem;
+        }
+        for(auto it = o->units.begin(); it != o->units.end(); ++it)
+        {
+            u = *it;
+            if (u->faction.lock()->num == mage_fac_num)
+            {
+                for(const auto& item: u->items)
+                {
                     if (ItemDefs[item->type].type & sactype)
-                        sacrifices += item->num;
+                    {
+                        sacrifices += static_cast<int>(item->num);
+                    }
                 }
             }
         }
     }
     if (num > sacrifices)
+    {
         num = sacrifices;
+    }
     if (num < 1) {
         mage->Error("CAST: Don't have the required materials.");
-        return 0;
+        return false;
     }
     if (!tower) {
+        int i;
         for (i = 1; i < 100; i++)
-            if (!r->GetObject(i))
+        {
+            if (r->GetObject(i).expired())
+            {
                 break;
-        if (i < 100) {
-            tower = new Object(r);
-            tower->type = O_BKEEP;
+            }
+        }
+        if (i < 100)
+        {
+            tower = r->objects.emplace_back(std::make_shared<Object>(r));
+            tower->type = Objects::Types::O_BKEEP;
             tower->incomplete = ObjectDefs[tower->type].cost;
             tower->num = i;
             tower->SetName(new AString("Building"));
-            r->objects.Add(tower);
             WriteTimesArticle("The earth shakes as a blasphemous word is uttered.");
-        } else {
+        }
+        else
+        {
             mage->Error("CAST: The region is full.");
-            return 0;
+            return false;
         }
     }
     if (num > tower->incomplete)
+    {
         num = tower->incomplete;
-    while (num-- > 0) {
-        victim = 0;
-        i = getrandom(sacrifices);
-        forlist(&r->objects) {
-            o = (Object *) elem;
-            forlist(&o->units) {
-                u = (const Unit::Handle&) elem;
-                if (u->faction->num == mage->faction->num) {
-                    forlist(&u->items) {
-                        item = (Item *) elem;
-                        if (ItemDefs[item->type].type & sactype) {
-                            if (!victim && i < item->num) {
+    }
+    while (num-- > 0)
+    {
+        Unit::Handle victim;
+        Items sac;
+        int i = getrandom(sacrifices);
+
+        for(const auto& o: r->objects)
+        {
+            for(auto it = o->units.begin(); it != o->units.end(); ++it)
+            {
+                u = *it;
+                if (u->faction.lock()->num == mage_fac_num)
+                {
+                    for(const auto& item: u->items)
+                    {
+                        if (ItemDefs[item->type].type & sactype)
+                        {
+                            if (!victim && i < static_cast<int>(item->num))
+                            {
                                 victim = u;
                                 sac = item->type;
                             }
-                            i -= item->num;
+                            i -= static_cast<int>(item->num);
                         }
                     }
                 }
             }
         }
-        mage->ConsumeShared(I_ROOTSTONE, 1);
+        mage->ConsumeShared(Items::Types::I_ROOTSTONE, 1);
         victim->SetMen(sac, victim->GetMen(sac) - 1);
         sacrifices--;
         tower->incomplete--;
-        max = ObjectDefs[tower->type].cost;
+        const int max = ObjectDefs[tower->type].cost;
+
+        AString message;
         if (tower->incomplete == max * 9 / 10) {
             // 10% complete
             message = "Vile rituals are being performed in the ";
@@ -2101,7 +2249,7 @@ int Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle&mage
         if (tower->incomplete == max * 2 / 3) {
             // 33% complete
             Directions dir;
-            start = regions.FindNearestStartingCity(r, dir);
+            const auto start = regions.FindNearestStartingCity(r, dir).lock();
             message = "A blasphemous construction is taking shape in ";
             if (start == r) {
                 message += *start->town->name;
@@ -2113,26 +2261,35 @@ int Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle&mage
             message += *r->name;
             if (start && start != r && dir.isValid()) {
                 message += ", ";
-                if (r->zloc != start->zloc && dir != MOVE_IN)
+                if (r->zloc != start->zloc && dir != Directions::MOVE_IN)
+                {
                     message += "through a shaft ";
-                switch (dir) {
-                    case D_NORTH:
-                    case D_NORTHWEST:
-                        message += "north of";
-                        break;
-                    case D_NORTHEAST:
-                        message += "east of";
-                        break;
-                    case D_SOUTH:
-                    case D_SOUTHEAST:
-                        message += "south of";
-                        break;
-                    case D_SOUTHWEST:
-                        message += "west of";
-                        break;
-                    case MOVE_IN:
-                        message += "through a shaft in";
-                        break;
+                }
+
+                if(dir.isRegularDirection())
+                {
+                    switch (dir.asEnum()) {
+                        case Directions::Types::D_NORTH:
+                        case Directions::Types::D_NORTHWEST:
+                            message += "north of";
+                            break;
+                        case Directions::Types::D_NORTHEAST:
+                            message += "east of";
+                            break;
+                        case Directions::Types::D_SOUTH:
+                        case Directions::Types::D_SOUTHEAST:
+                            message += "south of";
+                            break;
+                        case Directions::Types::D_SOUTHWEST:
+                            message += "west of";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else if(dir.isMoveIn())
+                {
+                    message += "through a shaft in";
                 }
                 message += " ";
                 message += *start->town->name;
@@ -2143,15 +2300,15 @@ int Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle&mage
         if (tower->incomplete == max / 3) {
             // 66% complete
             message = "The blasphemous tower in the ";
-            message += r->ShortPrint(&regions);
+            message += r->ShortPrint(regions);
             message += " is nearing completion!";
             WriteTimesArticle(message);
         }
         if (tower->incomplete == max / 10) {
             // 90% complete
-            message = *u->faction->name;
+            message = *u->faction.lock()->name;
             message += " have almost completed a blasphemous tower in the ";
-            message += r->ShortPrint(&regions);
+            message += r->ShortPrint(regions);
             message += ".  Their folly will doom everyone!";
             WriteTimesArticle(message);
         }
@@ -2164,37 +2321,32 @@ int Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle&mage
 
     // If the player chooses to go down the dark path,
     // then erase any progress they may have made down the light path
-    forlist_reuse(&regions) {
-        r = (const ARegion::Handle&) elem;
-        forlist(&r->objects) {
-            Object * o = (Object *) elem;
-            forlist(&o->units) {
-                const Unit::Handle& u = (const Unit::Handle&) elem;
-                if (u->faction->num == mage->faction->num) {
-                    u->items.SetNum(I_RELICOFGRACE, 0);
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            for(auto it = o->units.begin(); it != o->units.end(); ++it) {
+                u = *it;
+                if (u->faction.lock()->num == mage_fac_num) {
+                    u->items.SetNum(Items::Types::I_RELICOFGRACE, 0);
                 }
             }
         }
     }
 
-    return 1;
+    return true;
 }
 
 void Game::RunTeleportOrders()
 {
-    int val = 1;
-    forlist(&regions) {
-        const ARegion::Handle& r = (const ARegion::Handle&) elem;
-        forlist(&r->objects) {
-            Object * o = (Object *) elem;
-            int foundone = 1;
+    bool val = true;
+    for(const auto& r: regions) {
+        for(const auto& o: r->objects) {
+            bool foundone = true;
             while (foundone) {
-                foundone = 0;
-                forlist(&o->units) {
-                    const Unit::Handle& u = (const Unit::Handle&) elem;
+                foundone = false;
+                for(const auto& u: o->units) {
                     if (u->teleportorders) {
-                        foundone = 1;
-                        switch (u->teleportorders->spell) {
+                        foundone = true;
+                        switch (u->teleportorders->spell.asEnum()) {
                             case Skills::Types::S_GATE_LORE:
                                 val = RunGateJump(r,o,u);
                                 break;
@@ -2204,11 +2356,14 @@ void Game::RunTeleportOrders()
                             case Skills::Types::S_PORTAL_LORE:
                                 val = RunPortalLore(r,o,u);
                                 break;
+                            default:
+                                break;
                         }
                         if (val)
+                        {
                             u->Practice(u->teleportorders->spell);
-                        delete u->teleportorders;
-                        u->teleportorders = 0;
+                        }
+                        u->teleportorders.reset();
                         break;
                     }
                 }

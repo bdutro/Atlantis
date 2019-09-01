@@ -316,7 +316,7 @@ class CastIntOrder : public CastOrder {
 
         CastIntOrder() = default;
 
-        Directions target;
+        int target;
 };
 
 class CastUnitsOrder : public CastOrder {

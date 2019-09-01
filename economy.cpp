@@ -58,7 +58,7 @@ int ARegion::Wages()
     if (Population() == 0) return 0;
     int level = 1;
     int last = 0;
-    int dv = development + RoadDevelopment() + earthlore + clearskies;
+    int dv = development + RoadDevelopment() + static_cast<int>(earthlore + clearskies);
     // Note: earthlore and clearskies represent LEVEL of the spell
     // Adjust for TownType
     if (town) {
@@ -1068,7 +1068,7 @@ void ARegion::UpdateProducts()
         prod->amount = prod->baseamount + bonus;
 
         if (prod->itemtype == Items::Types::I_GRAIN || prod->itemtype == Items::Types::I_LIVESTOCK) {
-            prod->amount += ((earthlore + clearskies) * 40) / prod->baseamount;
+            prod->amount += static_cast<int>((earthlore + clearskies) * 40) / prod->baseamount;
         }
     }
 }
