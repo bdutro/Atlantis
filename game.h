@@ -36,7 +36,6 @@ class Game;
 #include "objecttype.h"
 #include "ordertype.h"
 #include "skilltype.h"
-#include "alist.h"
 #include "faction.h"
 #include "production.h"
 #include "object.h"

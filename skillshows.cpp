@@ -1782,9 +1782,7 @@ AString *ShowSkill::Report(Faction& f)
                     temp2 += ItemDefs[ObjectDefs[i].item].abr;
                     temp2 += "]";
             }
-            //if (f) {
-            f.objectshows.Add(ObjectDescription(i));
-            //}
+            f.objectshows.emplace_back(ObjectDescription(i));
         }
     }
     if (!(temp2 == "")) {

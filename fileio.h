@@ -39,8 +39,8 @@ class Ainfile {
         int OpenByName(const AString &);
         void Close();
 
-        AString *GetStr();
-        AString *GetStrNoSkip();
+        AString GetStr();
+        AString GetStrNoSkip();
 
         template<typename T>
         T GetInt()

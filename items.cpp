@@ -551,7 +551,7 @@ static AString WeapType(int flags, int wclass)
     return type;
 }
 
-AString *ItemDescription(const Items& item, int full)
+AString::Handle ItemDescription(const Items& item, int full)
 {
     int i;
     AString skname;
@@ -561,7 +561,7 @@ AString *ItemDescription(const Items& item, int full)
         return nullptr;
     }
 
-    AString *temp = new AString;
+    AString::Handle temp = std::make_shared<AString>();
     int illusion = (ItemDefs[item].type & IT_ILLUSION);
     
     *temp += AString(illusion?"illusory ":"")+ ItemDefs[item].name + " [" +

@@ -105,13 +105,8 @@ void Attitude::Readin(Ainfile *f, ATL_VER)
 Faction::Faction()
 {
     exists = true;
-    name = 0;
-    for (int i=0; i<NFACTYPES; i++) {
-        type[i] = 1;
-    }
+    type = {1};
     lastchange = -6;
-    address = 0;
-    password = 0;
     times = 0;
     showunitattitudes = 0;
     temformat = TEMPLATE_OFF;
@@ -126,14 +121,11 @@ Faction::Faction(size_t n)
 {
     exists = true;
     num = n;
-    for (int i=0; i<NFACTYPES; i++) {
-        type[i] = 1;
-    }
+    type = {1};
     lastchange = -6;
-    name = new AString;
-    *name = AString("Faction (") + AString(num) + AString(")");
-    address = new AString("NoAddress");
-    password = new AString("none");
+    name = AString("Faction (") + AString(num) + AString(")");
+    address = AString("NoAddress");
+    password = AString("none");
     times = 1;
     showunitattitudes = 0;
     temformat = TEMPLATE_LONG;
@@ -144,25 +136,21 @@ Faction::Faction(size_t n)
     startturn = 0;
 }
 
-Faction::~Faction()
-{
-    if (name) delete name;
-    if (address) delete address;
-    if (password) delete password;
-}
-
 void Faction::Writeout(Aoutfile *f)
 {
     f->PutInt(num);
 
-    for (int i=0; i<NFACTYPES; i++) f->PutInt(type[i]);
+    for (const auto& t: type)
+    {
+        f->PutInt(t);
+    }
 
     f->PutInt(lastchange);
     f->PutInt(lastorders);
     f->PutInt(unclaimed);
-    f->PutStr(*name);
-    f->PutStr(*address);
-    f->PutStr(*password);
+    f->PutStr(name);
+    f->PutStr(address);
+    f->PutStr(password);
     f->PutInt(times);
     f->PutBool(showunitattitudes);
     f->PutInt(temformat);
@@ -181,9 +169,9 @@ void Faction::Readin(Ainfile *f, ATL_VER v)
 {
     num = f->GetInt<size_t>();
 
-    for (int i = 0; i < NFACTYPES; ++i)
+    for (auto& t: type)
     {
-        type[i] = f->GetInt<int>();
+        t = f->GetInt<int>();
     }
 
     lastchange = f->GetInt<int>();
@@ -218,34 +206,33 @@ void Faction::Readin(Ainfile *f, ATL_VER v)
 void Faction::View()
 {
     AString temp;
-    temp = AString("Faction ") + num + AString(" : ") + *name;
+    temp = AString("Faction ") + num + AString(" : ") + name;
     Awrite(temp);
 }
 
-void Faction::SetName(AString* s)
+void Faction::SetName(const AString& s)
 {
-    if (s) {
-        AString* newname = s->getlegal();
-        delete s;
-        if (!newname) return;
-        delete name;
-        *newname += AString(" (") + num + ")";
+    if (s.Len()) {
+        AString newname = s.getlegal();
+        if (!newname.Len())
+        {
+            return;
+        }
+        newname += AString(" (") + num + ")";
         name = newname;
     }
 }
 
-void Faction::SetNameNoChange(AString *s)
+void Faction::SetNameNoChange(const AString& s)
 {
-    if (s) {
-        delete name;
-        name = new AString(*s);
+    if (s.Len()) {
+        name = s;
     }
 }
 
-void Faction::SetAddress(AString &strNewAddress)
+void Faction::SetAddress(const AString &strNewAddress)
 {
-    delete address;
-    address = new AString(strNewAddress);
+    address = strNewAddress;
 }
 
 AString Faction::FactionTypeStr()
@@ -259,7 +246,7 @@ AString Faction::FactionTypeStr()
         return(AString("Normal"));
     } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
         int comma = 0;
-        for (int i=0; i<NFACTYPES; i++) {
+        for (size_t i=0; i<NFACTYPES; i++) {
             if (type[i]) {
                 if (comma) {
                     temp += ", ";
@@ -299,37 +286,44 @@ void Faction::WriteReport(Areport *f, Game *pGame)
                 f->EndLine();
             }
 
-            itemshows.DeleteAll();
+            itemshows.clear();
             for (size_t i = 0; i < Items::size(); i++) {
-                AString *show = ItemDescription(static_cast<int>(i), 1);
-                if (show) {
-                    itemshows.Add(show);
+                AString::Handle show = ItemDescription(static_cast<int>(i), 1);
+                if (show)
+                {
+                    itemshows.push_back(show);
                 }
             }
-            if (itemshows.Num()) {
+            if (!itemshows.empty())
+            {
                 f->PutStr("Item reports:");
-                forlist(&itemshows) {
+                for(const auto& elem: itemshows)
+                {
                     f->PutStr("");
-                    f->PutStr(*dynamic_cast<AString *>(elem));
+                    f->PutStr(*elem);
                 }
-                itemshows.DeleteAll();
+                itemshows.clear();
                 f->EndLine();
             }
 
-            objectshows.DeleteAll();
-            for (size_t i = 0; i < Objects::size(); i++) {
-                AString *show = ObjectDescription(static_cast<int>(i));
-                if (show) {
-                    objectshows.Add(show);
+            objectshows.clear();
+            for (size_t i = 0; i < Objects::size(); i++)
+            {
+                AString::Handle show = ObjectDescription(static_cast<int>(i));
+                if (show)
+                {
+                    objectshows.push_back(show);
                 }
             }
-            if (objectshows.Num()) {
+            if (!objectshows.empty())
+            {
                 f->PutStr("Object reports:");
-                forlist(&objectshows) {
+                for(const auto& elem: objectshows)
+                {
                     f->PutStr("");
-                    f->PutStr(*dynamic_cast<AString *>(elem));
+                    f->PutStr(*elem);
                 }
-                objectshows.DeleteAll();
+                objectshows.clear();
                 f->EndLine();
             }
 
@@ -339,18 +333,20 @@ void Faction::WriteReport(Areport *f, Game *pGame)
                 reg->WriteReport(f, *this, pGame->month, pGame->regions);
             }
         }
-        errors.DeleteAll();
-        events.DeleteAll();
+        errors.clear();
+        events.clear();
         battles.clear();
         return;
     }
 
     f->PutStr("Atlantis Report For:");
     if ((Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_MAGE_COUNT) ||
-            (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_UNLIMITED)) {
-        f->PutStr(*name);
-    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
-        f->PutStr(*name + " (" + FactionTypeStr() + ")");
+            (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_UNLIMITED))
+    {
+        f->PutStr(name);
+    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES)
+    {
+        f->PutStr(name + " (" + FactionTypeStr() + ")");
     }
     f->PutStr(AString(MonthNames[ pGame->month ]) + ", Year " + pGame->year);
     f->EndLine();
@@ -366,7 +362,7 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         f->EndLine();
     }
 
-    if (!password || (*password == "none")) {
+    if (!password.Len() || (password == "none")) {
         f->PutStr("REMINDER: You have not set a password for your faction!");
         f->EndLine();
     }
@@ -447,33 +443,40 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     }
     f->PutStr("");
 
-    if (errors.Num()) {
+    if (!errors.empty())
+    {
         f->PutStr("Errors during turn:");
-        forlist((&errors)) {
-            f->PutStr(*dynamic_cast<AString *>(elem));
+        for(const auto& elem: errors)
+        {
+            f->PutStr(elem);
         }
-        errors.DeleteAll();
+        errors.clear();
         f->EndLine();
     }
 
-    if (!battles.empty()) {
+    if (!battles.empty())
+    {
         f->PutStr("Battles during turn:");
-        for(const auto& b: battles) {
+        for(const auto& b: battles)
+        {
             b.lock()->Report(f, *this);
         }
         battles.clear();
     }
 
-    if (events.Num()) {
+    if (!events.empty())
+    {
         f->PutStr("Events during turn:");
-        forlist((&events)) {
-            f->PutStr(*dynamic_cast<AString *>(elem));
+        for(const auto& elem: events)
+        {
+            f->PutStr(elem);
         }
-        events.DeleteAll();
+        events.clear();
         f->EndLine();
     }
 
-    if (!shows.empty()) {
+    if (!shows.empty())
+    {
         f->PutStr("Skill reports:");
         for(const auto& s: shows) {
             AString* string = s->Report(*this);
@@ -487,23 +490,27 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         f->EndLine();
     }
 
-    if (itemshows.Num()) {
+    if (!itemshows.empty())
+    {
         f->PutStr("Item reports:");
-        forlist(&itemshows) {
+        for(const auto& elem: itemshows)
+        {
             f->PutStr("");
-            f->PutStr(*dynamic_cast<AString *>(elem));
+            f->PutStr(*elem);
         }
-        itemshows.DeleteAll();
+        itemshows.clear();
         f->EndLine();
     }
 
-    if (objectshows.Num()) {
+    if (!objectshows.empty())
+    {
         f->PutStr("Object reports:");
-        forlist(&objectshows) {
+        for(const auto& elem: objectshows)
+        {
             f->PutStr("");
-            f->PutStr(*dynamic_cast<AString *>(elem));
+            f->PutStr(*elem);
         }
-        objectshows.DeleteAll();
+        objectshows.clear();
         f->EndLine();
     }
 
@@ -517,8 +524,8 @@ void Faction::WriteReport(Areport *f, Game *pGame)
         for(const auto& a: attitudes) {
             if (a->attitude == i) {
                 if (j) temp += ", ";
-                temp += *(GetFaction(pGame->factions,
-                            a->factionnum)->name);
+                temp += GetFaction(pGame->factions,
+                            a->factionnum)->name;
                 j = 1;
             }
         }
@@ -564,8 +571,8 @@ void Faction::WriteTemplate(Areport *f, Game *pGame)
 
         f->PutStr("");
         temp = AString("#atlantis ") + num;
-        if (!(*password == "none")) {
-            temp += AString(" \"") + *password + "\"";
+        if (password != "none") {
+            temp += AString(" \"") + password + "\"";
         }
         f->PutStr(temp);
         for(const auto& r: present_regions) {
@@ -582,9 +589,9 @@ void Faction::WriteTemplate(Areport *f, Game *pGame)
 void Faction::WriteFacInfo(Aoutfile *file)
 {
     file->PutStr(AString("Faction: ") + num);
-    file->PutStr(AString("Name: ") + *name);
-    file->PutStr(AString("Email: ") + *address);
-    file->PutStr(AString("Password: ") + *password);
+    file->PutStr(AString("Name: ") + name);
+    file->PutStr(AString("Email: ") + address);
+    file->PutStr(AString("Password: ") + password);
     file->PutStr(AString("LastOrders: ") + lastorders);
     file->PutStr(AString("FirstTurn: ") + startturn);
     file->PutStr(AString("SendTimes: ") + times);
@@ -592,20 +599,25 @@ void Faction::WriteFacInfo(Aoutfile *file)
     // LLS - write template info to players file
     file->PutStr(AString("Template: ") + TemplateStrs[temformat]);
 
-    forlist(&extraPlayers) {
-        AString *pStr = dynamic_cast<AString *>(elem);
-        file->PutStr(*pStr);
+    for(const auto& pStr: extraPlayers)
+    {
+        file->PutStr(pStr);
     }
 
-    extraPlayers.DeleteAll();
+    extraPlayers.clear();
 }
 
 void Faction::CheckExist(const ARegionList& regs)
 {
-    if (IsNPC()) return;
+    if (IsNPC())
+    {
+        return;
+    }
     exists = false;
-    for(const auto& reg: regs) {
-        if (reg->Present(*this)) {
+    for(const auto& reg: regs)
+    {
+        if (reg->Present(*this))
+        {
             exists = true;
             return;
         }
@@ -614,23 +626,29 @@ void Faction::CheckExist(const ARegionList& regs)
 
 void Faction::Error(const AString &s)
 {
-    if (IsNPC()) return;
-    if (errors.Num() > 1000) {
-        if (errors.Num() == 1001) {
-            errors.Add(new AString("Too many errors!"));
+    if (IsNPC())
+    {
+        return;
+    }
+    if (errors.size() > 1000)
+    {
+        if (errors.size() == 1001)
+        {
+            errors.emplace_back("Too many errors!");
         }
         return;
     }
 
-    AString *temp = new AString(s);
-    errors.Add(temp);
+    errors.emplace_back(s);
 }
 
 void Faction::Event(const AString &s)
 {
-    if (IsNPC()) return;
-    AString *temp = new AString(s);
-    events.Add(temp);
+    if (IsNPC())
+    {
+        return;
+    }
+    events.emplace_back(s);
 }
 
 void Faction::RemoveAttitude(size_t f)
@@ -819,7 +837,7 @@ void Faction::TimesReward()
 
 void Faction::SetNPC()
 {
-    for (int i=0; i<NFACTYPES; i++) type[i] = -1;
+    type = {-1};
 }
 
 bool Faction::IsNPC() const
@@ -877,7 +895,7 @@ void Faction::DiscoverItem(const Items& item, int force, int full)
         }
     }
     if (force) {
-        itemshows.Add(ItemDescription(static_cast<int>(item), full));
+        itemshows.emplace_back(ItemDescription(static_cast<int>(item), full));
         if (!full)
             return;
         // If we've found an item that grants a skill, give a

@@ -69,12 +69,17 @@ ssize_t ParseShipObject(AString *token)
     return -1;
 }
 
-Objects ParseObject(AString *token)
+Objects ParseObject(const AString& token)
 {
     // Check for ship-type items:
-    for (auto i = std::next(Objects::begin()); i != Objects::end(); ++i) {
-        if (*token == ObjectDefs[*i].name) {
-            if (ObjectDefs[*i].flags & ObjectType::DISABLED) return Objects();
+    for (auto i = std::next(Objects::begin()); i != Objects::end(); ++i)
+    {
+        if (token == ObjectDefs[*i].name)
+        {
+            if (ObjectDefs[*i].flags & ObjectType::DISABLED)
+            {
+                return Objects();
+            }
             return *i;
         }
     }
@@ -741,13 +746,15 @@ unsigned int Object::GetFleetSpeed(int report)
     return static_cast<unsigned int>(speed);
 }
 
-AString *ObjectDescription(const Objects& obj)
+AString::Handle ObjectDescription(const Objects& obj)
 {
     if (ObjectDefs[obj].flags & ObjectType::DISABLED)
-        return NULL;
+    {
+        return nullptr;
+    }
 
     ObjectType *o = &ObjectDefs[obj];
-    AString *temp = new AString;
+    AString::Handle temp = std::make_shared<AString>();
     *temp += AString(o->name) + ": ";
     if (ObjectDefs[obj].flags & ObjectType::GROUP) {
         *temp += "This is a group of ships.";

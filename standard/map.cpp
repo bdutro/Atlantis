@@ -89,7 +89,7 @@ void ARegionList::CreateAbyssLevel(unsigned int level, char const *name)
     const auto lair_sp = lair.lock();
     auto& o = lair_sp->objects.emplace_back(std::make_shared<Object>(lair));
     o->num = lair_sp->buildingseq++;
-    o->name = new AString(AString(ObjectDefs[Objects::Types::O_BKEEP].name)+" ["+o->num+"]");
+    o->name = AString(AString(ObjectDefs[Objects::Types::O_BKEEP].name) + " ["+o->num+"]");
     o->type = Objects::Types::O_BKEEP;
     o->incomplete = 0;
     o->inner = -1;
@@ -819,7 +819,7 @@ void ARegionList::SetupAnchors(const ARegionArray::Handle& ta)
                     reg->population = 1;
                     if (TerrainDefs[reg->type].similar_type != Regions::Types::R_OCEAN)
                     {
-                        reg->wages = static_cast<int>(AGetName(0, reg));
+                        reg->wages = static_cast<int>(AGetName(0, *reg));
                     }
                     break;
                 }
@@ -866,7 +866,7 @@ void ARegionList::GrowTerrain(const ARegionArray::Handle& pArr, bool growOcean)
                     if (getrandom(1000) < Globals->ODD_TERRAIN) {
                         reg->type = GetRegType(reg);
                         if (TerrainDefs[reg->type].similar_type != Regions::Types::R_OCEAN)
-                            reg->wages = static_cast<int>(AGetName(0, reg));
+                            reg->wages = static_cast<int>(AGetName(0, *reg));
                         break;
                     }
                     
@@ -950,7 +950,7 @@ void ARegionList::RandomTerrain(const ARegionArray::Handle& pArr)
                     reg->wages = adjname;
                 } else {
                     reg->type = GetRegType(reg);
-                    reg->wages = static_cast<int>(AGetName(0, reg));
+                    reg->wages = static_cast<int>(AGetName(0, *reg));
                 }
             }
         }
@@ -1276,7 +1276,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
     {
         auto& o = reg->objects.emplace_back(std::make_shared<Object>(reg));
         o->num = reg->buildingseq++;
-        o->name = new AString(AString("Shaft [") + o->num + "]");
+        o->name = AString(AString("Shaft [") + o->num + "]");
         o->type = Objects::Types::O_SHAFT;
         o->incomplete = 0;
         o->inner = static_cast<ssize_t>(temp->num);
@@ -1284,7 +1284,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
     {
         auto& o = temp->objects.emplace_back(std::make_shared<Object>(reg));
         o->num = temp->buildingseq++;
-        o->name = new AString(AString("Shaft [") + o->num + "]");
+        o->name = AString(AString("Shaft [") + o->num + "]");
         o->type = Objects::Types::O_SHAFT;
         o->incomplete = 0;
         o->inner = static_cast<ssize_t>(reg->num);
@@ -1366,7 +1366,7 @@ void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, un
                                 found = true;
                                 auto& o = AC->objects.emplace_back(std::make_shared<Object>(AC));
                                 o->num = AC->buildingseq++;
-                                o->name = new AString(AString("Gateway to ") +
+                                o->name = AString(AString("Gateway to ") +
                                     TerrainDefs[*type].name + " [" + o->num + "]");
                                 o->type = Objects::Types::O_GATEWAY;
                                 o->incomplete = 0;

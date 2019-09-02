@@ -77,19 +77,6 @@ AString TownString(TownTypeEnum i)
     }
 }
 
-TownInfo::TownInfo()
-{
-    name = 0;
-    pop = 0;
-    activity = 0;
-    hab = 0;
-}
-
-TownInfo::~TownInfo()
-{
-    if (name) delete name;
-}
-
 void TownInfo::Readin(Ainfile *f, ATL_VER &)
 {
     name = f->GetStr();
@@ -99,14 +86,14 @@ void TownInfo::Readin(Ainfile *f, ATL_VER &)
 
 void TownInfo::Writeout(Aoutfile *f)
 {
-    f->PutStr(*name);
+    f->PutStr(name);
     f->PutInt(pop);
     f->PutInt(hab);
 }
 
 ARegion::ARegion()
 {
-    name = new AString("Region");
+    name = AString("Region");
     xloc = 0;
     yloc = 0;
     buildingseq = 1;
@@ -125,12 +112,6 @@ ARegion::ARegion()
     visited = 0;
 }
 
-ARegion::~ARegion()
-{
-    if (name) delete name;
-    if (town) delete town;
-}
-
 void ARegion::ZeroNeighbors()
 {
     for(auto& n: neighbors) {
@@ -140,8 +121,7 @@ void ARegion::ZeroNeighbors()
 
 void ARegion::SetName(const std::string& c)
 {
-    if (name) delete name;
-    name = new AString(c);
+    name = AString(c);
 }
 
 
@@ -167,13 +147,6 @@ bool ARegion::IsNativeRace(const Items& item)
 
 unsigned int ARegion::GetNearestProd(const Items& item)
 {
-    //AList regs, regs2;
-    //AList *rptr = &regs;
-    //AList *r2ptr = &regs2;
-    //AList *temp;
-    //ARegionPtr *p = new ARegionPtr;
-    //p->ptr = this;
-    //regs.Add(p);
     WeakPtrList<ARegion> regs, regs2;
     regs.push_back(weak_from_this());
 
@@ -262,8 +235,7 @@ void ARegion::MakeLair(const Objects& t)
 {
     Object::Handle& o = AddObject();
     o->num = buildingseq++;
-    o->name = new AString(AString(ObjectDefs[t].name) +
-            " [" + o->num + "]");
+    o->name = AString(AString(ObjectDefs[t].name) + " [" + o->num + "]");
     o->type = t;
     o->incomplete = 0;
     o->inner = -1;
@@ -401,7 +373,7 @@ void ARegion::RunDecayEvent(const Object::Handle& o, const ARegionList& pRegs)
     WeakPtrList<Faction> pFactions = PresentFactions();
     for(const auto& fp: pFactions) {
         const auto f = fp.lock();
-        f->Event(GetDecayFlavor() + *o->name + " " +
+        f->Event(GetDecayFlavor() + o->name + " " +
                 ObjectDefs[o->type].name + " in " +
                 ShortPrint(pRegs));
     }
@@ -734,7 +706,7 @@ AString ARegion::ShortPrint(const ARegionList& pRegs)
     temp += AString(" (") + xloc + "," + yloc;
 
     const ARegionArray::Handle& pArr = pRegs.pRegionArrays[zloc];
-    if (pArr->strName) {
+    if (pArr->strName.Len()) {
         temp += ",";
         if (Globals->EASIER_UNDERWORLD &&
                 (Globals->UNDERWORLD_LEVELS+Globals->UNDERDEEP_LEVELS > 1)) {
@@ -755,7 +727,7 @@ AString ARegion::ShortPrint(const ARegionList& pRegs)
                 temp += "deep ";
             }
         }
-        temp += *pArr->strName;
+        temp += pArr->strName;
         if (Globals->EASIER_UNDERWORLD &&
                 (Globals->UNDERWORLD_LEVELS+Globals->UNDERDEEP_LEVELS > 1)) {
             temp += ">";
@@ -763,7 +735,7 @@ AString ARegion::ShortPrint(const ARegionList& pRegs)
     }
     temp += ")";
 
-    temp += AString(" in ") + *name;
+    temp += AString(" in ") + name;
     return temp;
 }
 
@@ -771,7 +743,7 @@ AString ARegion::Print(const ARegionList& pRegs)
 {
     AString temp = ShortPrint(pRegs);
     if (town) {
-        temp += AString(", contains ") + *(town->name) + " [" +
+        temp += AString(", contains ") + town->name + " [" +
             TownString(town->TownType()) + "]";
     }
     return temp;
@@ -1050,7 +1022,7 @@ WeakPtrList<Faction> ARegion::PresentFactions()
 
 void ARegion::Writeout(Aoutfile *f)
 {
-    f->PutStr(*name);
+    f->PutStr(name);
     f->PutInt(num);
     if (type.isValid())
     {
@@ -1111,10 +1083,10 @@ void ARegion::Writeout(Aoutfile *f)
     }
 }
 
-Regions LookupRegionType(AString *token)
+Regions LookupRegionType(const AString& token)
 {
     for (auto i = Regions::begin(); i != Regions::end(); ++i) {
-        if (*token == TerrainDefs[*i].type)
+        if (token == TerrainDefs[*i].type)
         {
             return *i;
         }
@@ -1124,21 +1096,19 @@ Regions LookupRegionType(AString *token)
 
 void ARegion::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
 {
-    AString *temp;
+    AString temp;
 
     name = f->GetStr();
 
     num = f->GetInt<size_t>();
     temp = f->GetStr();
     type = LookupRegionType(temp);
-    delete temp;
     buildingseq = f->GetInt<int>();
     gate = f->GetInt<int>();
     if (gate > 0) gatemonth = f->GetInt<size_t>();
 
     temp = f->GetStr();
-    race = LookupItem(*temp);
-    delete temp;
+    race = LookupItem(temp);
 
     population = f->GetInt<int>();
     basepopulation = f->GetInt<int>();
@@ -1156,7 +1126,7 @@ void ARegion::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
     development = f->GetInt<int>();
 
     if (f->GetInt<int>()) {
-        town = new TownInfo;
+        town = std::make_shared<TownInfo>();
         town->Readin(f, v);
         town->dev = TownDevelopment();
     } else {
@@ -1606,7 +1576,7 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
 {
     int header = 0;
     Orders order;
-    AString temp, *token;
+    AString temp;
 
     for(const auto& o: objects) {
         for(const auto &u: o->units) {
@@ -1633,12 +1603,15 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                 for(const auto& s: u->oldorders) {
                     temp = *s;
                     temp.getat();
-                    token = temp.gettoken();
-                    if (token) {
+                    const auto token = temp.gettoken();
+                    if (token.Len())
+                    {
                         order = Parse1Order(token);
-                        delete token;
-                    } else
+                    }
+                    else
+                    {
                         order = Orders::Types::NORDERS;
+                    }
                     switch (order.asEnum()) {
                         case Orders::Types::O_MOVE:
                         case Orders::Types::O_SAIL:
@@ -1681,12 +1654,15 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                         for(const auto& t: tOrder->turnOrders) {
                             temp = *t;
                             temp.getat();
-                            token = temp.gettoken();
-                            if (token) {
+                            const auto token = temp.gettoken();
+                            if (token.Len())
+                            {
                                 order = Parse1Order(token);
-                                delete token;
-                            } else
+                            }
+                            else
+                            {
                                 order = Orders::Types::NORDERS;
+                            }
                             if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
                                 f->DropTab();
                             f->PutStr(*t);
@@ -1707,12 +1683,15 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                         for(const auto& t: tOrder->turnOrders) {
                             temp = *t;
                             temp.getat();
-                            token = temp.gettoken();
-                            if (token) {
+                            const auto token = temp.gettoken();
+                            if (token.Len())
+                            {
                                 order = Parse1Order(token);
-                                delete token;
-                            } else
+                            }
+                            else
+                            {
                                 order = Orders::Types::NORDERS;
+                            }
                             if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
                                 f->DropTab();
                             f->PutStr(*t);
@@ -1958,8 +1937,7 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
     }
 
     for(const auto& fp: flist) {
-        fp->Event(AString(*(caster->name)) + " uses " + SkillStrs(sp) +
-                " in " + Print(pRegs) + ".");
+        fp->Event(caster->name + " uses " + SkillStrs(sp) + " in " + Print(pRegs) + ".");
     }
     return true;
 }
@@ -1979,8 +1957,7 @@ void ARegion::NotifyCity(const Unit::Handle& caster, AString& oldname, AString& 
     }
     {
         for(const auto& fp: flist) {
-            fp.lock()->Event(AString(*(caster->name)) + " renames " +
-                             oldname + " to " + newname + ".");
+            fp.lock()->Event(caster->name + " renames " + oldname + " to " + newname + ".");
         }
     }
 }
@@ -2101,8 +2078,8 @@ void ARegionList::WriteRegions(Aoutfile *f)
     for (const auto& pRegs: pRegionArrays) {
         f->PutInt(pRegs->x);
         f->PutInt(pRegs->y);
-        if (pRegs->strName) {
-            f->PutStr(*pRegs->strName);
+        if (pRegs->strName.Len()) {
+            f->PutStr(pRegs->strName);
         } else {
             f->PutStr("none");
         }
@@ -2138,12 +2115,14 @@ bool ARegionList::ReadRegions(Ainfile *f, const PtrList<Faction>& factions, ATL_
     for (unsigned int i = 0; i < numLevels; i++) {
         unsigned int curX = f->GetInt<unsigned int>();
         unsigned int curY = f->GetInt<unsigned int>();
-        AString *name = f->GetStr();
+        AString name = f->GetStr();
         ARegionArray::Handle pRegs = std::make_shared<ARegionArray>(curX, curY);
-        if (*name == "none") {
-            pRegs->strName = 0;
-            delete name;
-        } else {
+        if (name == "none")
+        {
+            pRegs->strName.clear();
+        }
+        else
+        {
             pRegs->strName = name;
         }
         pRegs->levelType = f->GetInt<int>();
@@ -2165,7 +2144,7 @@ bool ARegionList::ReadRegions(Ainfile *f, const PtrList<Faction>& factions, ATL_
 
     Awrite("Setting up the neighbors...");
     {
-        delete f->GetStr();
+        f->GetStr();
         for(const auto& reg: regions_) {
             for (auto& n: reg->neighbors) {
                 ssize_t j = f->GetInt<ssize_t>();
@@ -2759,11 +2738,6 @@ ARegionArray::ARegionArray(unsigned int xx, unsigned int yy)
     }
 }
 
-ARegionArray::~ARegionArray()
-{
-    if (strName) delete strName;
-}
-
 void ARegionArray::SetRegion(unsigned int xx, unsigned int yy, const ARegion::WeakHandle& r)
 {
     regions[xx / 2 + yy * x / 2] = r;
@@ -2788,10 +2762,9 @@ int ARegion::calculateWagesWithRatio(float ratio, int multiplier)
 void ARegionArray::SetName(char const *name)
 {
     if (name) {
-        strName = new AString(name);
+        strName = AString(name);
     } else {
-        delete strName;
-        strName = 0;
+        strName.clear();
     }
 }
 
@@ -2809,11 +2782,11 @@ ARegion::WeakHandle ARegionFlatArray::GetRegion(size_t x) {
     return regions[x];
 }
 
-Regions ParseTerrain(AString *token)
+Regions ParseTerrain(const AString& token)
 {
     for (auto i = Regions::begin(); i != Regions::end(); ++i)
     {
-        if (*token == TerrainDefs[*i].type)
+        if (token == TerrainDefs[*i].type)
         {
             return *i;
         }
@@ -2821,7 +2794,7 @@ Regions ParseTerrain(AString *token)
 
     for (auto i = Regions::begin(); i != Regions::end(); ++i)
     {
-        if (*token == TerrainDefs[*i].name)
+        if (token == TerrainDefs[*i].name)
         {
             return *i;
         }

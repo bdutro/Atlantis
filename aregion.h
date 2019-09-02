@@ -46,7 +46,6 @@ class ARegionArray;
 #include "gamedefs.h"
 #include "gameio.h"
 #include "faction.h"
-#include "alist.h"
 #include "unit.h"
 #include "fileio.h"
 #include "production.h"
@@ -153,20 +152,22 @@ enum class TownTypeEnum {
 class TownInfo
 {
     public:
-        TownInfo();
-        ~TownInfo();
+        using Handle = std::shared_ptr<TownInfo>;
+
+        TownInfo() = default;
+        ~TownInfo() = default;
 
         void Readin(Ainfile *, ATL_VER &);
         void Writeout(Aoutfile *);
         TownTypeEnum TownType();
 
-        AString *name;
-        int pop;
-        int activity;
+        AString name;
+        int pop = 0;
+        int activity = 0;
         // achieved settled habitat
-        int hab;
+        int hab = 0;
         // town's development
-        int dev;
+        int dev = 0;
 };
 
 class ARegion : std::enable_shared_from_this<ARegion>
@@ -180,7 +181,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
 
         ARegion();
         ARegion(int, int);
-        ~ARegion();
+        ~ARegion() = default;
         void Setup();
 
         void ZeroNeighbors();
@@ -301,7 +302,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void RemoveObject(const std::shared_ptr<Object>&);
 
 
-        AString *name;
+        AString name;
         size_t num;
         Regions type;
         int buildingseq;
@@ -310,7 +311,7 @@ class ARegion : std::enable_shared_from_this<ARegion>
         size_t gatemonth;
         bool gateopen;
 
-        TownInfo *town;
+        TownInfo::Handle town;
         Items race;
         int population;
         int basepopulation;
@@ -409,15 +410,15 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void SetupCityMarket();
         void AddTown();
         void AddTown(TownTypeEnum);
-        void AddTown(AString *);
-        void AddTown(TownTypeEnum, AString *);
+        void AddTown(const AString&);
+        void AddTown(TownTypeEnum, const AString&);
         std::shared_ptr<Object>& AddObject();
         void MakeLair(const Objects&);
         void LairCheck();
 
 };
 
-size_t AGetName(int town, const ARegion::Handle& r);
+size_t AGetName(int town, const ARegion& r);
 
 ARegion::WeakHandle GetRegion(const WeakPtrList<ARegion>&, size_t);
 
@@ -427,7 +428,7 @@ class ARegionArray
         using Handle = std::shared_ptr<ARegionArray>;
 
         ARegionArray(unsigned int, unsigned int);
-        ~ARegionArray();
+        ~ARegionArray() = default;
 
         void SetRegion(unsigned int, unsigned int, const ARegion::WeakHandle&);
         ARegion::WeakHandle GetRegion(unsigned int, unsigned int);
@@ -436,7 +437,7 @@ class ARegionArray
         unsigned int x;
         unsigned int y;
         std::vector<ARegion::WeakHandle> regions;
-        AString *strName;
+        AString strName;
 
         enum {
             LEVEL_NEXUS,
@@ -607,7 +608,7 @@ T absdiff(const T& a, const T& b)
     return (a > b) ? (a - b) : (b - a);
 }
 
-Regions LookupRegionType(AString *);
-Regions ParseTerrain(AString *);
+Regions LookupRegionType(const AString&);
+Regions ParseTerrain(const AString&);
 
 #endif

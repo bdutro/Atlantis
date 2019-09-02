@@ -93,11 +93,11 @@ const std::vector<std::string> OrderStrs = {
     "work",
 };
 
-Orders Parse1Order(AString *token)
+Orders Parse1Order(const AString& token)
 {
     for (auto i = Orders::begin(); i != Orders::end(); ++i)
     {
-        if (*token == OrderStrs[*i])
+        if (token == OrderStrs[*i])
         {
             return *i;
         }

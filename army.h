@@ -37,7 +37,6 @@ class Location;
 
 #include "ptrlist.h"
 #include "unit.h"
-#include "alist.h"
 #include "items.h"
 #include "object.h"
 #include "shields.h"

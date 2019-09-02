@@ -788,13 +788,13 @@ void ARegion::SetupProds()
 /* Create a town randomly */
 void ARegion::AddTown()
 {
-    AString *tname = new AString(AGetNameString(AGetName(1, shared_from_this())));
+    AString tname(AGetNameString(AGetName(1, *this)));
     const auto size = DetermineTownSize();
     AddTown(size, tname);
 }
 
 /* Create a town of any type with given name */
-void ARegion::AddTown(AString * tname)
+void ARegion::AddTown(const AString& tname)
 {
     const auto size = DetermineTownSize();
     AddTown(size, tname);    
@@ -803,16 +803,16 @@ void ARegion::AddTown(AString * tname)
 /* Create a town of given Town Type */
 void ARegion::AddTown(TownTypeEnum size)
 {
-    AString *tname = new AString(AGetNameString(AGetName(1, shared_from_this())));
+    AString tname(AGetNameString(AGetName(1, *this)));
     AddTown(size, tname);    
 }
 
 /* Create a town of specific type with name
  * All other town creation functions call this one
  * in the last instance. */
-void ARegion::AddTown(TownTypeEnum size, AString * name)
+void ARegion::AddTown(TownTypeEnum size, const AString& name)
 {
-    town = new TownInfo;
+    town = std::make_shared<TownInfo>();
     town->name = name;
     SetTownType(size);
     SetupCityMarket();
@@ -1027,9 +1027,8 @@ void ARegion::SetupEditRegion()
         if (spread > 100) spread = 100;
         unsigned int townprob = (TerrainDefs[type].economy * 4 * (100 - spread) + 100 * spread) / 100;
         if (adjacent > 0) townprob = townprob * (100 - Globals->TOWNS_NOT_ADJACENT) / 100;
-        AString *name = new AString("Newtown");
         if (getrandom(townch) < townprob) {
-            AddTown(name);
+            AddTown("Newtown");
         }
     }
 

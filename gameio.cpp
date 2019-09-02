@@ -34,7 +34,7 @@
 randctx isaac_ctx;
 
 #define ENDLINE '\n'
-char buf[256];
+static std::string buf;
 
 void cleartoendl();
 
@@ -99,21 +99,21 @@ void message(char * c)
 void morewait()
 {
     std::cout << std::endl;
-    std::cin.getline(buf, 256, '\n');
+    getline(std::cin, buf, '\n');
     std::cout << std::endl;
 }
 
 
-AString * getfilename(const AString & s)
+AString getfilename(const AString & s)
 {
     std::cout << s;
-    return( AGetString() );
+    return AGetString();
 }
 
-AString *AGetString()
+AString AGetString()
 {
-    std::cin.getline( buf, 256, '\n' );
-    return( new AString( buf ));
+    getline(std::cin, buf, '\n');
+    return AString(buf);
 }
 
 template<>

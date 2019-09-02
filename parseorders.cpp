@@ -924,7 +924,7 @@ void Game::ProcessReshowOrder(const Unit::Handle& u, AString *o, const OrdersChe
                 u->Error("SHOW: No such object.");
                 return;
             }
-            u_fac->objectshows.Add(ObjectDescription(obj2));
+            u_fac->objectshows.emplace_back(ObjectDescription(obj2));
         }
         if (obj >= -1)
             return;

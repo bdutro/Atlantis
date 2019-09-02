@@ -59,7 +59,6 @@ class ExchangeOrder;
 #include "unit.h"
 #include "gamedefs.h"
 #include "astring.h"
-#include "alist.h"
 #include "ordertype.h"
 #include "skilltype.h"
 
@@ -74,7 +73,7 @@ enum {
 
 extern const std::vector<std::string> OrderStrs;
 
-Orders Parse1Order(AString *);
+Orders Parse1Order(const AString&);
 
 class Order {
     public:

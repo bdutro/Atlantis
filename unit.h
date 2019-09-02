@@ -231,8 +231,8 @@ class Unit : std::enable_shared_from_this<Unit>
         std::weak_ptr<Faction> faction;
         std::weak_ptr<Faction> formfaction;
         std::weak_ptr<Object> object;
-        AString *name;
-        AString *describe;
+        AString name;
+        AString describe;
         size_t num;
         int type;
         int alias;

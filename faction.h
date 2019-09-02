@@ -45,7 +45,6 @@ class Game;
 #include "battle.h"
 #include "skills.h"
 #include "items.h"
-#include "alist.h"
 #include "astring.h"
 
 enum {
@@ -115,15 +114,15 @@ public:
 
     Faction();
     Faction(size_t);
-    ~Faction();
+    ~Faction() = default;
     
     void Readin( Ainfile *, ATL_VER version );
     void Writeout( Aoutfile * );
     void View();
     
-    void SetName(AString *);
-    void SetNameNoChange( AString *str );
-    void SetAddress( AString &strNewAddress );
+    void SetName(const AString&);
+    void SetNameNoChange(const AString& str);
+    void SetAddress(const AString &strNewAddress);
     
     void CheckExist(const ARegionList&);
     void Error(const AString &);
@@ -158,16 +157,16 @@ public:
     // The type is only used if Globals->FACTION_LIMIT_TYPE ==
     // FACLIM_FACTION_TYPES
     //
-    int type[NFACTYPES];
+    std::array<int, NFACTYPES> type;
 
     int lastchange;
     size_t lastorders;
     size_t unclaimed;
     int bankaccount;
     int interest; // not written to game.out
-    AString * name;
-    AString * address;
-    AString * password;
+    AString name;
+    AString address;
+    AString password;
     int times;
     bool showunitattitudes;
     int temformat;
@@ -193,13 +192,13 @@ public:
     //
     // Both are lists of AStrings
     //
-    AList extraPlayers;
-    AList errors;
-    AList events;
+    std::list<AString> extraPlayers;
+    std::list<AString> errors;
+    std::list<AString> events;
     WeakPtrList<Battle> battles;
     PtrList<ShowSkill> shows;
-    AList itemshows;
-    AList objectshows;
+    std::list<AString::Handle> itemshows;
+    std::list<AString::Handle> objectshows;
 
     // These are used for 'granting' units to a faction via the players.in
     // file

@@ -30,23 +30,10 @@
 #include "gamedata.h"
 #include "quests.h"
 
-Battle::Battle() noexcept
-{
-    asstext = nullptr;
-}
-
-Battle::~Battle()
-{
-    if (asstext)
-    {
-        delete asstext;
-    }
-}
-
 void Battle::FreeRound(const Army::Handle& att, const Army::Handle& def, int ass)
 {
     /* Write header */
-    AddLine(*(att->leader.lock()->name) + " gets a free round of attacks.");
+    AddLine(att->leader.lock()->name + " gets a free round of attacks.");
 
     /* Update both army's shields */
     att->shields.clear();
@@ -72,7 +59,7 @@ void Battle::FreeRound(const Army::Handle& att, const Army::Handle& def, int ass
     /* Write losses */
     def->Regenerate(*this);
     alv -= def->NumAlive();
-    AddLine(*(def->leader.lock()->name) + " loses " + alv + ".");
+    AddLine(def->leader.lock()->name + " loses " + alv + ".");
     AddLine("");
     att->Reset();
 }
@@ -201,9 +188,9 @@ void Battle::NormalRound(int round, const Army::Handle& a, const Army::Handle& b
     a->Regenerate(*this);
     b->Regenerate(*this);
     aialive -= aalive;
-    AddLine(*(a->leader.lock()->name) + " loses " + aialive + ".");
+    AddLine(a->leader.lock()->name + " loses " + aialive + ".");
     bialive -= balive;
-    AddLine(*(b->leader.lock()->name) + " loses " + bialive + ".");
+    AddLine(b->leader.lock()->name + " loses " + bialive + ".");
     AddLine("");
     a->Reset();
     b->Reset();
@@ -293,10 +280,10 @@ int Battle::Run(const ARegion::Handle& region,
         if (ass) assassination = ASS_FAIL;
 
         if (armies.first->NumAlive()) {
-            AddLine(*(armies.first->leader.lock()->name) + " is routed!");
+            AddLine(armies.first->leader.lock()->name + " is routed!");
             FreeRound(armies.second, armies.first);
         } else {
-            AddLine(*(armies.first->leader.lock()->name) + " is destroyed!");
+            AddLine(armies.first->leader.lock()->name + " is destroyed!");
         }
         AddLine("Total Casualties:");
         ItemList spoils;
@@ -319,16 +306,16 @@ int Battle::Run(const ARegion::Handle& region,
         const auto second_leader = armies.second->leader.lock();
         if (ass) {
             assassination = ASS_SUCC;
-            asstext = new AString(*(second_leader->name) +
+            asstext = second_leader->name +
                         " is assassinated in " +
                         region->ShortPrint( pRegs ) +
-                        "!");
+                        "!";
         }
         if (armies.second->NumAlive()) {
-            AddLine(*(second_leader->name) + " is routed!");
+            AddLine(second_leader->name + " is routed!");
             FreeRound(armies.first, armies.second);
         } else {
-            AddLine(*(second_leader->name) + " is destroyed!");
+            AddLine(second_leader->name + " is destroyed!");
         }
         AddLine("Total Casualties:");
         ItemList spoils;
@@ -367,10 +354,10 @@ void Battle::WriteSides(const ARegion::Handle& r,
                         const ARegionList& pRegs )
 {
     if (ass) {
-        AddLine(*att->name + " attempts to assassinate " + *tar->name
+        AddLine(att->name + " attempts to assassinate " + tar->name
                 + " in " + r->ShortPrint( pRegs ) + "!");
     } else {
-        AddLine(*att->name + " attacks " + *tar->name + " in " +
+        AddLine(att->name + " attacks " + tar->name + " in " +
                 r->ShortPrint( pRegs ) + "!");
     }
     AddLine("");
@@ -415,7 +402,7 @@ void Battle::WriteSides(const ARegion::Handle& r,
 
 void Battle::Report(Areport * f, const Faction& fac) {
     if (assassination == ASS_SUCC && &fac != attacker.lock().get()) {
-        f->PutStr(*asstext);
+        f->PutStr(asstext);
         f->PutStr("");
         return;
     }
@@ -795,7 +782,7 @@ size_t Game::KillDead(const Location::Handle& l, const Battle::Handle& b)
             if ((skel + undead) == 1)
                 tmp += "s";
             tmp += " from the grave to join ";
-            tmp += *l_unit->name;
+            tmp += l_unit->name;
             tmp += ".";
             l_unit->items.SetNum(Items::Types::I_SKELETON, l_unit->items.GetNum(Items::Types::I_SKELETON) + skel);
             l_unit->items.SetNum(Items::Types::I_UNDEAD, l_unit->items.GetNum(Items::Types::I_UNDEAD) + undead);

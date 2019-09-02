@@ -166,21 +166,19 @@ void skipwhite(std::ifstream *f)
     }
 }
 
-AString * Ainfile::GetStr()
+AString Ainfile::GetStr()
 {
     skipwhite(file);
     if (file->peek() == -1 || file->eof()) return 0;
     file->getline(buf,1023,F_ENDLINE);
-    AString * s = new AString(buf);
-    return s;
+    return AString(buf);
 }
 
-AString * Ainfile::GetStrNoSkip()
+AString Ainfile::GetStrNoSkip()
 {
     if (file->peek() == -1 || file->eof()) return 0;
     file->getline(buf,1023,F_ENDLINE);
-    AString * s = new AString(buf);
-    return s;
+    return AString(buf);
 }
 
 void Aoutfile::PutInt(size_t x)

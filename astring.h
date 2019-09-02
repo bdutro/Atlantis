@@ -27,23 +27,37 @@
 
 #include <memory>
 #include <iostream>
-#include "alist.h"
+#include <string>
+#include <sstream>
 #include "validvalue.h"
 
-class AString : public AListElem {
+class AString
+{
     friend std::ostream & operator <<(std::ostream &os, const AString &);
     friend std::istream & operator >>(std::istream &is, AString &);
 public:
     using Handle = std::shared_ptr<AString>;
 
-    AString();
-    AString(char *);
-    AString(const char * const);
-    AString(int);
-    AString(unsigned int);
-    AString(size_t);
-    AString(char);
-    AString(const AString &);
+    AString() = default;
+    AString(char * s) :
+        str_(s)
+    {
+    }
+
+    AString(const char * const s) :
+        str_(s)
+    {
+    }
+
+    template<typename T>
+    AString(T l, typename std::enable_if<std::is_integral<T>::value>::type* = 0)
+    {
+        std::stringstream ss;
+        ss << l;
+        str_ = ss.str();
+    }
+
+    AString(const AString &) = default;
 
     template<typename T>
     AString(const ValidValue<T> & rhs) :
@@ -55,7 +69,8 @@ public:
         AString(s.c_str())
     {
     }
-    ~AString();
+
+    ~AString() = default;
 
     bool operator==(const AString &) const;
     bool operator==(char *) const;
@@ -63,29 +78,89 @@ public:
     bool operator!=(const AString &) const;
     bool operator!=(char *) const;
     bool operator!=(const char *) const;
-    int CheckPrefix(const AString &);
+    bool CheckPrefix(const AString &);
     AString operator+(const AString &);
     AString & operator+=(const AString &);
 
-    AString & operator=(const AString &);
+    AString & operator=(const AString &) = default;
     AString & operator=(const char *);
 
-    const char *Str() const;
-    char *Str();
-    size_t Len();
+    const char* Str() const;
+    size_t Len() const;
 
-    AString *gettoken();
-    int getat();
-    AString *getlegal();
-    AString *Trunc(size_t, size_t back=30);
-    int value();
-    AString *StripWhite();
+    AString gettoken();
+    bool getat();
+    AString getlegal() const;
+    AString Trunc(size_t, size_t back=30);
+
+    template<typename T>
+    typename std::enable_if<!std::is_signed<T>::value, T>::type value()
+    {
+        T ret = 0;
+        T last_ret;
+
+        auto it = str_.begin();
+        while(it != str_.end() && *it >= '0' && *it <= '9')
+        {
+            last_ret = ret;
+            ret *= 10;
+            if (ret < last_ret)
+            {
+                return 0;
+            }
+            ret += static_cast<T>(*(it++) - '0');
+        }
+        return ret;
+
+    #if 0
+        int place = 0;
+        int ret = 0;
+        while ((str[place] >= '0') && (str[place] <= '9')) {
+            ret *= 10;
+            // Fix bug where int could be overflowed.
+            if (ret < 0) return 0;
+            ret += (str[place++] - '0');
+        }
+        return ret;
+    #endif
+    }
+
+    template<typename T>
+    typename std::enable_if<std::is_signed<T>::value, T>::type value()
+    {
+        T ret = 0;
+        auto it = str_.begin();
+        while(it != str_.end() && *it >= '0' && *it <= '9')
+        {
+            ret *= 10;
+            if (ret < 0)
+            {
+                return 0;
+            }
+            ret += *(it++) - '0';
+        }
+        return ret;
+
+    #if 0
+        int place = 0;
+        int ret = 0;
+        while ((str[place] >= '0') && (str[place] <= '9')) {
+            ret *= 10;
+            // Fix bug where int could be overflowed.
+            if (ret < 0) return 0;
+            ret += (str[place++] - '0');
+        }
+        return ret;
+    #endif
+    }
+
+    AString StripWhite();
+    void clear();
 
 private:
 
-    size_t len;
-    char *str;
-    bool isEqual(const char *) const;
+    std::string str_;
+    bool isEqual(const std::string&) const;
 };
 
 #endif

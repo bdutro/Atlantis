@@ -115,7 +115,7 @@ extern GameDataArray<SkillType> SkillDefs;
 const SkillType& FindSkill(char const *skname);
 bool FindSameSkills(char const* sk1, char const *sk2);
 Skills LookupSkill(const AString&);
-Skills ParseSkill(AString *);
+Skills ParseSkill(const AString&);
 AString SkillStrs(const Skills&);
 AString SkillStrs(const SkillType&);
 
@@ -140,7 +140,6 @@ class ShowSkill {
 
         ShowSkill(const Skills&, unsigned int);
 
-        // BD TODO: Make sure that this never gets called with a nullptr
         AString * Report(Faction&);
 
         Skills skill;

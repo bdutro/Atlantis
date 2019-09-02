@@ -2062,7 +2062,7 @@ void CountNames()
     Awrite(AString("Regions ") + nregions);
 }
 
-size_t AGetName(int town, const ARegion::Handle&)
+size_t AGetName(int town, const ARegion&)
 {
     size_t offset, number;
     if (town) {
@@ -2523,7 +2523,10 @@ void ARegion::MakeStartingCity()
 
     if (Globals->GATES_EXIST) gate = -1;
     
-    if (town) delete town;
+    if (town)
+    {
+        town.reset();
+    }
     
     AddTown(TownTypeEnum::TOWN_CITY);
 

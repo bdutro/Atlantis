@@ -114,9 +114,9 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
     if (ItemDefs[r].type & IT_MONSTER) {
         const auto& mp = FindMonster(ItemDefs[r].abr, ItemDefs[r].type & IT_ILLUSION);
         if (u->type == U_WMON)
-            name = AString(mp.name) + " in " + *(u->name);
+            name = AString(mp.name) + " in " + u->name;
         else
-            name = AString(mp.name) + " controlled by " + *(u->name);
+            name = AString(mp.name) + " controlled by " + u->name;
         askill = mp.attackLevel;
         dskill[ATTACK_COMBAT] += mp.defense[ATTACK_COMBAT];
         if (mp.defense[ATTACK_ENERGY] > dskill[ATTACK_ENERGY]) {
@@ -145,7 +145,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
         return;
     }
 
-    name = *(u->name);
+    name = u->name;
 
     SetupHealing();
 
@@ -643,7 +643,7 @@ void Army::Reset() {
 }
 
 void Army::WriteLosses(Battle& b) {
-    b.AddLine(*(leader.lock()->name) + " loses " + (count - NumAlive()) + ".");
+    b.AddLine(leader.lock()->name + " loses " + (count - NumAlive()) + ".");
 
     if (notbehind != count) {
         WeakPtrList<Unit> units;
@@ -859,7 +859,7 @@ void Army::DoHealLevel(Battle& b, size_t type, int useItems)
                     temp->canbehealed = 0;
             }
         }
-        b.AddLine(*(s->unit.lock()->name) + " heals " + n + ".");
+        b.AddLine(s->unit.lock()->name + " heals " + n + ".");
     }
 }
 

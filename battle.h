@@ -30,7 +30,6 @@ class Battle;
 #include <memory>
 #include <list>
 #include "astring.h"
-#include "alist.h"
 #include "fileio.h"
 #include "army.h"
 #include "items.h"
@@ -52,8 +51,8 @@ class Battle
 {
     public:
         using Handle = std::shared_ptr<Battle>;
-        Battle() noexcept;
-        ~Battle();
+        Battle() = default;
+        ~Battle() = default;
 
         void Report(Areport*, const Faction&);
         void AddLine(const AString &);
@@ -96,7 +95,7 @@ class Battle
 
         int assassination;
         std::weak_ptr<Faction> attacker; /* Only matters in the case of an assassination */
-        AString * asstext;
+        AString asstext;
         UniquePtrList<AString> text;
 };
 

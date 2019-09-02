@@ -30,7 +30,6 @@
 
 #include "ptrlist.h"
 #include "gamedefs.h"
-#include "alist.h"
 #include "fileio.h"
 #include "itemtype.h"
 #include "skilltype.h"

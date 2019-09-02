@@ -63,8 +63,8 @@ void message(char *);
 
 void morewait();
 
-AString * getfilename(const AString &);
-AString *AGetString();
+AString getfilename(const AString &);
+AString AGetString();
 
 #endif
 

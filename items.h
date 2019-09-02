@@ -38,7 +38,6 @@ class ItemType;
 #include "regiontype.h"
 #include "fileio.h"
 #include "gamedefs.h"
-#include "alist.h"
 #include "astring.h"
 
 enum {
@@ -340,10 +339,10 @@ class BattleItemType
 
 extern GameDataArray<BattleItemType> BattleItemDefs;
 
-extern Items ParseGiveableItem(AString *);
-extern Items ParseAllItems(AString *);
-extern Items ParseEnabledItem(AString *);
-extern Items ParseTransportableItem(AString *);
+extern Items ParseGiveableItem(const AString&);
+extern Items ParseAllItems(const AString&);
+extern Items ParseEnabledItem(const AString&);
+extern Items ParseTransportableItem(const AString&);
 extern Items LookupItem(const AString&);
 
 extern const BattleItemType& FindBattleItem(char const *abbr);
@@ -362,7 +361,7 @@ enum {
 extern AString ItemString(const Items& type, size_t num, int flags=0);
 extern AString ItemString(const Items& type, unsigned int num, int flags=0);
 extern AString ItemString(const Items& type, int num, int flags=0);
-extern AString *ItemDescription(const Items& item, int full);
+extern AString::Handle ItemDescription(const Items& item, int full);
 
 extern bool IsSoldier(const Items&);
 

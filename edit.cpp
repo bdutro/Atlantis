@@ -26,31 +26,30 @@ int Game::EditGame(bool &pSaveGame)
         Awrite("  x) Exit and save.");
         Awrite("> ");
 
-        AString *pStr = AGetString();
+        AString pStr = AGetString();
         Awrite("");
 
-        if (*pStr == "qq") {
+        if (pStr == "qq") {
             exit = true;
             Awrite("Quitting without saving.");
-        } else if (*pStr == "x") {
+        } else if (pStr == "x") {
             exit = true;
             pSaveGame = true;
             Awrite("Exit and save.");
-        } else if (*pStr == "1") {
+        } else if (pStr == "1") {
             ARegion::WeakHandle pReg = EditGameFindRegion();
             if (!pReg.expired())
             {
                 EditGameRegion(pReg.lock());
             }
-        } else if (*pStr == "2") {
+        } else if (pStr == "2") {
             EditGameFindUnit();
-        } else if (*pStr == "3") {
+        } else if (pStr == "3") {
             EditGameCreateUnit();
         } else {
             Awrite("Select from the menu.");
         }
 
-        delete pStr;
         if (exit) {
             break;
         }
@@ -62,37 +61,39 @@ int Game::EditGame(bool &pSaveGame)
 ARegion::WeakHandle Game::EditGameFindRegion()
 {
     ARegion::WeakHandle ret;
-    int x, y, z;
-    AString *pStr = 0, *pToken = 0;
+    unsigned int x, y, z;
     Awrite("Region coords (x y z):");
-    do {
-        pStr = AGetString();
+    do
+    {
+        AString pStr = AGetString();
 
-        pToken = pStr->gettoken();
-        if (!pToken) {
+        auto pToken = pStr.gettoken();
+        if (!pToken.Len())
+        {
             Awrite("No such region.");
             break;
         }
-        x = pToken->value();
-        SAFE_DELETE(pToken);
+        x = pToken.value<unsigned int>();
 
-        pToken = pStr->gettoken();
-        if (!pToken) {
+        pToken = pStr.gettoken();
+        if (!pToken.Len())
+        {
             Awrite("No such region.");
             break;
         }
-        y = pToken->value();
-        SAFE_DELETE(pToken);
+        y = pToken.value<unsigned int>();
 
-        pToken = pStr->gettoken();
-        if (pToken) {
-            z = pToken->value();
-            SAFE_DELETE(pToken);
-        } else {
+        pToken = pStr.gettoken();
+        if (pToken.Len())
+        {
+            z = pToken.value<unsigned int>();
+        }
+        else
+        {
             z = 0;
         }
 
-        ARegion::WeakHandle pReg = regions.GetRegion(static_cast<unsigned int>(x), static_cast<unsigned int>(y), static_cast<unsigned int>(z));
+        ARegion::WeakHandle pReg = regions.GetRegion(x, y, z);
         if (pReg.expired()) {
             Awrite("No such region.");
             break;
@@ -101,18 +102,14 @@ ARegion::WeakHandle Game::EditGameFindRegion()
         ret = pReg;
     } while(0);
 
-    if (pStr) delete pStr;
-
     return ret;
 }
 
 void Game::EditGameFindUnit()
 {
-    AString *pStr;
     Awrite("Which unit number?");
-    pStr = AGetString();
-    int num = pStr->value();
-    delete pStr;
+    AString pStr = AGetString();
+    int num = pStr.value<int>();
     Unit::WeakHandle pUnit = GetUnit(num);
     if (pUnit.expired()) {
         Awrite("No such unit!");
@@ -131,20 +128,19 @@ void Game::EditGameRegion(const ARegion::Handle& pReg)
         Awrite( " q) Return to previous menu." );
 
         bool exit = false;
-        AString *pStr = AGetString();
-        if ( *pStr == "1" ) {
+        AString pStr = AGetString();
+        if ( pStr == "1" ) {
             EditGameRegionObjects( pReg );
         }
-        else if ( *pStr == "2" ) {
+        else if ( pStr == "2" ) {
             EditGameRegionTerrain( pReg );
         }
-        else if ( *pStr == "q" ) {
+        else if ( pStr == "q" ) {
             exit = true;
         }
         else {
             Awrite( "Select from the menu." );
         }
-        if (pStr) delete pStr;
 
         if ( exit ) {
         break;
@@ -164,7 +160,7 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
         int i = 0;
         AString temp = AString("");
         for(const auto& obj: pReg->objects) {
-            temp = AString ((AString(i) + ". " + *obj->name + " : " + ObjectDefs[obj->type].name));
+            temp = AString ((AString(i) + ". " + obj->name + " : " + ObjectDefs[obj->type].name));
 //            if (Globals->HEXSIDE_TERRAIN && obj->hexside>-1) temp += AString( AString(" (side:") + DirectionAbrs[obj->hexside] + ").");
             Awrite(temp);
             i++;
@@ -179,23 +175,28 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
         Awrite( " q) Return to previous menu." );
 
         bool exit = false;
-        AString *pStr = AGetString();
-        if ( *pStr == "q" ) {
+        AString pStr = AGetString();
+        if ( pStr == "q" )
+        {
             exit = true;
-        } else {
-            AString *pToken = 0;
-            do {
-                pToken = pStr->gettoken();
-                if ( !pToken ) {
+        }
+        else
+        {
+            do
+            {
+                auto pToken = pStr.gettoken();
+                if (!pToken.Len())
+                {
                     Awrite( "Try again." );
                     break;
                 }
 
                 // add object
-                if (*pToken == "a") {
-                    SAFE_DELETE( pToken );
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                if (pToken == "a")
+                {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len())
+                    {
                         Awrite( "Try again." );
                         break;
                     }
@@ -205,7 +206,6 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                         Awrite( "No such object." );
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
                     /*
                     int dir=-1;
@@ -232,31 +232,33 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                     // o->hexside = dir;
                     if (o->IsFleet()) {
                         o->num = shipseq++;
-                        o->name = new AString(AString("Fleet") + " [" + o->num + "]");
+                        o->name = AString(AString("Fleet") + " [" + o->num + "]");
                     }
                     else {
                         o->num = pReg->buildingseq++;
-                        o->name = new AString(AString("Building") + " [" + o->num + "]");
+                        o->name = AString(AString("Building") + " [" + o->num + "]");
                     }
                 }
                 // delete object
-                else if (*pToken == "d") {
-                    SAFE_DELETE( pToken );
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "d")
+                {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len())
+                    {
                         Awrite( "Try again." );
                         break;
                     }
 
-                    int index = pToken->value();
-                    if ( (index < 0) || (static_cast<size_t>(index) >= pReg->objects.size()) ) { //modified minimum to <0 to allow deleting object 0. 030824 BS
+                    size_t index = pToken.value<size_t>();
+                    if(index >= pReg->objects.size())
+                    {
+                        //modified minimum to <0 to allow deleting object 0. 030824 BS
+                        // BD: not sure what this means ^. AString::value only returns non-negative values
                         Awrite( "Incorrect index." );
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
-                    auto it = std::next(pReg->objects.begin(), index);
+                    auto it = std::next(pReg->objects.begin(), static_cast<ssize_t>(index));
                     pReg->objects.erase(it);
                 }
     //hexside change
@@ -386,44 +388,41 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                 }
     */
     // rename object
-                else if (*pToken == "n") {
-                    SAFE_DELETE( pToken );
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "n")
+                {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
 
-                    int index = pToken->value();
-                    if ( (index < 1) || (static_cast<size_t>(index) >= pReg->objects.size()) ) {
+                    size_t index = pToken.value<size_t>();
+                    if (index >= pReg->objects.size())
+                    {
                         Awrite( "Incorrect index." );
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len())
+                    {
                         Awrite( "No name given." );
                         break;
                     }
 
-                    auto it = std::next(pReg->objects.begin(), index);
+                    auto it = std::next(pReg->objects.begin(), static_cast<ssize_t>(index));
 
-                    AString * newname = pToken->getlegal();
-                    SAFE_DELETE(pToken);
-                    if (newname) {
+                    AString newname = pToken.getlegal();
+                    if (newname.Len())
+                    {
                         const auto& tmp = *it;
-                        delete tmp->name;
-                        *newname += AString(" [") + tmp->num + "]";
+                        newname += AString(" [") + tmp->num + "]";
                         tmp->name = newname;
                     }
                 }
 
             } while( 0 );
-        if (pToken) delete pToken;
         }
-        if (pStr) delete pStr;
 
         if (exit) {
             break;
@@ -506,23 +505,21 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
         Awrite( " q) Return to previous menu." );
 
         bool exit = false;
-        AString *pStr = AGetString();
-        if ( *pStr == "q" ) {
+        AString pStr = AGetString();
+        if ( pStr == "q" ) {
             exit = true;
         } else {
-            AString *pToken = 0;
             do {
-                pToken = pStr->gettoken();
-                if ( !pToken ) {
+                auto pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     Awrite( "Try again." );
                     break;
                 }
 
                 // modify terrain
-                if (*pToken == "t") {
-                    SAFE_DELETE( pToken );
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                if (pToken == "t") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
@@ -532,21 +529,19 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                         Awrite( "No such terrain." );
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
                     pReg->type = terType;
                 }
-                else if (*pToken == "r") {
-                    SAFE_DELETE( pToken );
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "r") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
 
                     Items prace = ParseAllItems(pToken);
                     if (!(ItemDefs[prace].type & IT_MAN) || (ItemDefs[prace].flags & ItemType::DISABLED) ) {
-                        if (!(*pToken == "none" || *pToken == "None" || *pToken == "0")) {
+                        if (!(pToken == "none" || pToken == "None" || pToken == "0")) {
                             Awrite( "No such race." );
                             break;
                         } else {
@@ -555,10 +550,8 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     }
                     if (prace != 0) pReg->race = prace;
                     pReg->UpdateEditRegion();
-                    SAFE_DELETE( pToken );
                 }
-                else if (*pToken == "dg") {
-                    SAFE_DELETE( pToken );
+                else if (pToken == "dg") {
                     if (Globals->DISPERSE_GATE_NUMBERS) {
                         pReg->gate = 0;
                         regions.numberofgates--;
@@ -577,8 +570,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                         }
                     }
                 }
-                else if (*pToken == "ag") {
-                    SAFE_DELETE( pToken );
+                else if (pToken == "ag") {
                     if (pReg->gate > 0) break;
                     regions.numberofgates++;
                     if (Globals->DISPERSE_GATE_NUMBERS) {
@@ -621,15 +613,13 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     }
                     pReg->gatemonth = getrandom(12U);
                 }
-                else if (*pToken == "w") {
-                    SAFE_DELETE( pToken );
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "w") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
-                    int val = pToken->value();
-                    SAFE_DELETE( pToken );
+                    int val = pToken.value<int>();
                     if (val) {
                         int change = val - pReg->maxwages;
                         pReg->maxwages = val;
@@ -637,8 +627,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     }
                     pReg->UpdateEditRegion();
                 }
-                else if (*pToken == "p") {
-                    SAFE_DELETE(pToken);
+                else if (pToken == "p") {
                     auto it = pReg->products.begin();
                     while(it != pReg->products.end()) {
                         const auto& p = *it;
@@ -650,11 +639,11 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     }
                     pReg->SetupProds();
                 }
-                else if (*pToken == "g") {
-                    SAFE_DELETE(pToken);
-
-                    if (pReg->town) delete pReg->town;
-                    pReg->town = NULL;
+                else if (pToken == "g") {
+                    if (pReg->town)
+                    {
+                        pReg->town.reset();
+                    }
 
                     pReg->products.clear();
                     pReg->SetupProds();
@@ -664,60 +653,53 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     pReg->SetupEditRegion();
                     pReg->UpdateEditRegion();
                 }
-                else if (*pToken == "n") {
-                    SAFE_DELETE(pToken);
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "n") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
 
-                    *pReg->name = *pToken;
-                    SAFE_DELETE(pToken);
+                    pReg->name = pToken;
                 }
-                else if (*pToken == "tn") {
-                    SAFE_DELETE(pToken);
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "tn") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
 
-                    if (pReg->town) *pReg->town->name = *pToken;
-                    SAFE_DELETE(pToken);
+                    if (pReg->town) pReg->town->name = pToken;
                 }
-                else if (*pToken == "town") {
-                    SAFE_DELETE(pToken);
-
+                else if (pToken == "town") {
                     if (!pReg->race.isValid()) pReg->race = 9;
 
-                    AString *townname = new AString("name");
+                    AString townname("name");
                     if (pReg->town) {
-                        *townname = *pReg->town->name;
-                        delete pReg->town;
+                        townname = pReg->town->name;
+                        pReg->town.reset();
                         pReg->markets.DeleteAll();
                     }
                     pReg->AddTown(townname);
 
                     pReg->UpdateEditRegion(); // financial stuff! Does markets
                 }
-                else if (*pToken == "deltown") {
-                    SAFE_DELETE(pToken);
+                else if (pToken == "deltown") {
                     if (pReg->town) {
-                        delete pReg->town;
-                        pReg->town = NULL;
+                        pReg->town.reset();
                         pReg->markets.DeleteAll();
                         pReg->UpdateEditRegion();
                     }
                 }
-                else if (*pToken == "v") {
-                    if (pReg->town) EditGameRegionMarkets(pReg);
+                else if (pToken == "v") {
+                    if (pReg->town)
+                    {
+                        EditGameRegionMarkets(pReg);
+                    }
                 }
             }
             while( 0 );
-            if (pToken) delete pToken;
         }
-        if (pStr) delete pStr;
 
         if ( exit ) {
             break;
@@ -770,31 +752,26 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
         Awrite( " q) Return to previous menu." );
 
         bool exit = false;
-        AString *pStr = AGetString();
-        if ( *pStr == "q" ) {
+        AString pStr = AGetString();
+        if ( pStr == "q" ) {
             exit = true;
         } else {
-            AString *pToken = 0;
             do {
-                pToken = pStr->gettoken();
-                if ( !pToken ) {
+                auto pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     Awrite( "Try again." );
                     break;
                 }
 
                 // regenerate markets
-                if (*pToken == "g") {
-                    SAFE_DELETE(pToken);
-
+                if (pToken == "g") {
                     pReg->markets.DeleteAll();
                     pReg->SetupCityMarket();
                     pReg->UpdateEditRegion();
                 }
-                else if (*pToken == "p") {
-                    SAFE_DELETE(pToken);
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "p") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
@@ -803,15 +780,12 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite("No such item");
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
-                    pToken = pStr->gettoken();
-                    int minimum = pToken->value();
-                    SAFE_DELETE( pToken );
+                    pToken = pStr.gettoken();
+                    int minimum = pToken.value<int>();
 
-                    pToken = pStr->gettoken();
-                    int maximum = pToken->value();
-                    SAFE_DELETE( pToken );
+                    pToken = pStr.gettoken();
+                    int maximum = pToken.value<int>();
 
                     bool done = false;
 
@@ -849,11 +823,9 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
 
                 }
-                else if (*pToken == "a") {
-                    SAFE_DELETE(pToken);
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "a") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
@@ -862,15 +834,12 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite("No such item");
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
-                    pToken = pStr->gettoken();
-                    int minimum = pToken->value();
-                    SAFE_DELETE( pToken );
+                    pToken = pStr.gettoken();
+                    int minimum = pToken.value<int>();
 
-                    pToken = pStr->gettoken();
-                    int maximum = pToken->value();
-                    SAFE_DELETE( pToken );
+                    pToken = pStr.gettoken();
+                    int maximum = pToken.value<int>();
 
                     bool done = false;
 
@@ -908,11 +877,9 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
 
                 }
-                else if (*pToken == "c") {
-                    SAFE_DELETE(pToken);
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "c") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
@@ -921,15 +888,12 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite("No such item");
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
-                    pToken = pStr->gettoken();
-                    int price = pToken->value();
-                    SAFE_DELETE( pToken );
+                    pToken = pStr.gettoken();
+                    int price = pToken.value<int>();
 
-                    pToken = pStr->gettoken();
-                    int baseprice = pToken->value();
-                    SAFE_DELETE( pToken );
+                    pToken = pStr.gettoken();
+                    int baseprice = pToken.value<int>();
 
                     if (price<1 || baseprice<1) {
                         Awrite("Price must be more than zero");
@@ -937,7 +901,6 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
 
                     bool done = false;
-
 
                     for(const auto& m: pReg->markets) {
                         if (m->item == mitem) {
@@ -954,11 +917,9 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
 
                 }
-                else if (*pToken == "s") {
-                    SAFE_DELETE(pToken);
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "s") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
@@ -967,7 +928,6 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite("No such item");
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
                     bool done = false;
                     auto it = pReg->markets.begin();
@@ -987,11 +947,9 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
                     if (!done) Awrite("No such market");
                 }
-                else if (*pToken == "d") {
-                    SAFE_DELETE(pToken);
-
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "d") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
@@ -1000,7 +958,6 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         Awrite("No such item");
                         break;
                     }
-                    SAFE_DELETE( pToken );
 
                     bool done = false;
                     auto it = pReg->markets.begin();
@@ -1017,9 +974,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                 }
             }
             while( 0 );
-            if (pToken) delete pToken;
         }
-        if (pStr) delete pStr;
 
         if ( exit ) {
             break;
@@ -1032,7 +987,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
 void Game::EditGameUnit(const Unit::Handle& pUnit)
 {
     do {
-        Awrite(AString("Unit: ") + *(pUnit->name));
+        Awrite(AString("Unit: ") + pUnit->name);
         Awrite(AString("Faction: ") + pUnit->faction.lock()->num);
         Awrite(AString("  in ") +
                 pUnit->object.lock()->region.lock()->ShortPrint(regions));
@@ -1044,21 +999,20 @@ void Game::EditGameUnit(const Unit::Handle& pUnit)
         Awrite("  q) Stop editing this unit.");
 
         bool exit = false;
-        AString *pStr = AGetString();
-        if (*pStr == "1") {
+        AString pStr = AGetString();
+        if (pStr == "1") {
             EditGameUnitItems(pUnit);
-        } else if (*pStr == "2") {
+        } else if (pStr == "2") {
             EditGameUnitSkills(pUnit);
-        } else if (*pStr == "3") {
+        } else if (pStr == "3") {
             EditGameUnitMove(pUnit);
-        } else if (*pStr == "4") {
+        } else if (pStr == "4") {
             EditGameUnitDetails(pUnit);
-        } else if (*pStr == "q") {
+        } else if (pStr == "q") {
             exit = true;
         } else {
             Awrite("Select from the menu.");
         }
-        delete pStr;
 
         if (exit) {
             break;
@@ -1073,14 +1027,13 @@ void Game::EditGameUnitItems(const Unit::Handle& pUnit)
         Awrite(AString("Unit items: ") + pUnit->items.Report(2, 1, 1));
         Awrite("  [item] [number] to update an item.");
         Awrite("  q) Stop editing the items.");
-        AString *pStr = AGetString();
-        if (*pStr == "q") {
+        AString pStr = AGetString();
+        if (pStr == "q") {
             exit = true;
         } else {
-            AString *pToken = 0;
             do {
-                pToken = pStr->gettoken();
-                if (!pToken) {
+                AString pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     Awrite("Try again.");
                     break;
                 }
@@ -1094,23 +1047,20 @@ void Game::EditGameUnitItems(const Unit::Handle& pUnit)
                     Awrite("No such item.");
                     break;
                 }
-                SAFE_DELETE(pToken);
 
-                int num;
-                pToken = pStr->gettoken();
-                if (!pToken) {
+                size_t num;
+                pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     num = 0;
                 } else {
-                    num = pToken->value();
+                    num = pToken.value<size_t>();
                 }
 
-                pUnit->items.SetNum(itemNum, static_cast<size_t>(num));
+                pUnit->items.SetNum(itemNum, num);
                 /* Mark it as known about for 'shows' */
                 pUnit->faction.lock()->items.SetNum(itemNum, 1);
             } while(0);
-            if (pToken) delete pToken;
         }
-        if (pStr) delete pStr;
 
         if (exit) {
             break;
@@ -1126,14 +1076,13 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                 pUnit->skills.Report(pUnit->GetMen()));
         Awrite("  [skill] [days] to update a skill.");
         Awrite("  q) Stop editing the skills.");
-        AString *pStr = AGetString();
-        if (*pStr == "q") {
+        AString pStr = AGetString();
+        if (pStr == "q") {
             exit = true;
         } else {
-            AString *pToken = 0;
             do {
-                pToken = pStr->gettoken();
-                if (!pToken) {
+                AString pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     Awrite("Try again.");
                     break;
                 }
@@ -1147,14 +1096,13 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                     Awrite("No such skill.");
                     break;
                 }
-                SAFE_DELETE(pToken);
 
                 size_t days;
-                pToken = pStr->gettoken();
-                if (!pToken) {
+                pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     days = 0;
                 } else {
-                    days = static_cast<size_t>(pToken->value());
+                    days = pToken.value<size_t>();
                 }
 
                 if ((SkillDefs[skillNum].flags & SkillType::MAGIC) &&
@@ -1171,9 +1119,7 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                     pUnit->faction.lock()->skills.SetDays(skillNum, lvl);
                 }
             } while(0);
-            delete pToken;
         }
-        delete pStr;
 
         if (exit) {
             break;
@@ -1196,9 +1142,8 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
 {
     do {
         bool exit = false;
-        Awrite(AString("Unit: ") + *(pUnit->name));
-        Awrite(AString("Unit faction: ") +
-                *(pUnit->faction.lock()->name));
+        Awrite(AString("Unit: ") + pUnit->name);
+        Awrite(AString("Unit faction: ") + pUnit->faction.lock()->name);
         AString temp = " (";
         switch(pUnit->type) {
             case U_NORMAL:
@@ -1228,28 +1173,25 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
         Awrite("  [t] [num] to change the unit's type.");
         Awrite("  [q] Go back one screen.");
 
-        AString *pStr = AGetString();
-        if (*pStr == "q") {
+        AString pStr = AGetString();
+        if (pStr == "q") {
             exit = true;
         }
         else {
-            AString *pToken = 0;
             do {
-                pToken = pStr->gettoken();
-                if (!pToken) {
+                AString pToken = pStr.gettoken();
+                if (!pToken.Len()) {
                     Awrite("Try again.");
                     break;
                 }
                 // change faction
-                if (*pToken == "f") {
-                    SAFE_DELETE( pToken );
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                if (pToken == "f") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
-                    size_t fnum = static_cast<size_t>(pToken->value());
-                    SAFE_DELETE( pToken );
+                    size_t fnum = pToken.value<size_t>();
                     if (fnum<1) {
                         Awrite("Invalid Faction Number");
                         break;
@@ -1259,15 +1201,13 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
                     if (fac) pUnit->faction = fac;
                     else Awrite("Cannot Find Faction");
                 }
-                else if (*pToken == "t") {
-                    SAFE_DELETE( pToken );
-                    pToken = pStr->gettoken();
-                    if ( !pToken ) {
+                else if (pToken == "t") {
+                    pToken = pStr.gettoken();
+                    if (!pToken.Len()) {
                         Awrite( "Try again." );
                         break;
                     }
-                    int newtype = pToken->value();
-                    SAFE_DELETE( pToken );
+                    int newtype = pToken.value<int>();
                     if (newtype<0 || newtype>NUNITTYPES-1) {
                         Awrite("Invalid Type");
                         break;
@@ -1276,9 +1216,7 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
                 }
 
             } while(0);
-            delete pToken;
         }
-        delete pStr;
 
         if (exit) {
             break;

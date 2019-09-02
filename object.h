@@ -33,7 +33,6 @@ class Object;
 #include "ptrlist.h"
 #include "gamedataarray.h"
 #include "objecttype.h"
-#include "alist.h"
 #include "fileio.h"
 #include "gamedefs.h"
 #include "faction.h"
@@ -76,12 +75,12 @@ class ObjectType {
 
 extern GameDataArray<ObjectType> ObjectDefs;
 
-AString *ObjectDescription(const Objects& obj);
+AString::Handle ObjectDescription(const Objects& obj);
 
 Objects LookupObject(AString *token);
 
 ssize_t ParseShipObject(AString *);
-Objects ParseObject(AString *);
+Objects ParseObject(const AString&);
 
 bool ObjectIsShip(const Objects&);
 
@@ -133,7 +132,7 @@ class Object : public std::enable_shared_from_this<Object>
         unsigned int GetFleetSpeed(int);
         void RemoveUnit(const std::shared_ptr<Unit>&);
 
-        AString *name;
+        AString name;
         AString *describe;
         std::weak_ptr<ARegion> region;
         ssize_t inner;

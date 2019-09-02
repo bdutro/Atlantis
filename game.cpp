@@ -978,9 +978,7 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
             }
         }
     } else {
-        pTemp = new AString(*pToken + *pLine);
-        pFac->extraPlayers.Add(pTemp);
-        pTemp = 0;
+        pFac->extraPlayers.emplace_back(*pToken + *pLine);
     }
 
     if (pTemp) delete pTemp;
