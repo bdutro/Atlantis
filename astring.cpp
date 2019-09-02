@@ -88,7 +88,7 @@ bool AString::isEqual(const std::string& rhs) const
                       });
 }
 
-AString AString::operator+(const AString &s)
+AString AString::operator+(const AString &s) const
 {
     return str_ + s.str_;
 }
@@ -238,7 +238,7 @@ AString AString::gettoken()
 #endif
 }
 
-AString AString::StripWhite()
+AString AString::StripWhite() const
 {
     auto it = str_.begin();
     while(it != str_.end() && isspace(*it))

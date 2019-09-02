@@ -479,7 +479,7 @@ AString Unit::SpoilsReport() {
 void Unit::WriteReport(Areport *f,
                        size_t truesight,
                        bool detfac,
-                       int attitude,
+                       const Attitudes& attitude,
                        bool showattitudes)
 {
     WriteReport_(f, 2, truesight, detfac, attitude, showattitudes);
@@ -490,7 +490,7 @@ void Unit::WriteReport(Areport *f,
                        size_t truesight,
                        bool detfac,
                        bool autosee,
-                       int attitude,
+                       const Attitudes& attitude,
                        bool showattitudes)
 {
     unsigned int stealth = GetAttribute("stealth");
@@ -526,7 +526,7 @@ void Unit::WriteReport_(Areport *f,
                        unsigned int obs,
                        size_t truesight,
                        bool detfac,
-                       int attitude,
+                       const Attitudes& attitude,
                        bool showattitudes)
 {
     /* Setup True Sight */

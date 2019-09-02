@@ -351,12 +351,12 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
             for(const auto& f_w: facs) {
                 auto f = f_w.lock();
                 if (x->dir == Directions::MOVE_PAUSE) {
-                    f->Event(*fleet->name +
+                    f->Event(fleet->name +
                         AString(" performs maneuvers in ") +
                         reg->ShortPrint(regions) +
                         AString("."));
                 } else {
-                    f->Event(*fleet->name +
+                    f->Event(fleet->name +
                         AString(" sails from ") +
                         reg->ShortPrint(regions) +
                         AString(" to ") +
@@ -387,7 +387,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
             }
             reg = newreg;
             if (newreg->ForbiddenShip(fleet)) {
-                cap->faction.lock()->Event(*fleet->name +
+                cap->faction.lock()->Event(fleet->name +
                     AString(" is stopped by guards in ") +
                     newreg->ShortPrint(regions) + 
                     AString("."));
@@ -458,15 +458,15 @@ void Game::Do1TeachOrder(const ARegion::Handle& reg, const Unit::Handle& unit)
             continue;
         } else {
             const auto target = target_w.lock();
-            if (target->faction.lock()->GetAttitude(ufac->num) < A_FRIENDLY) {
-                unit->Error(AString("TEACH: ") + *(target->name) +
+            if (target->faction.lock()->GetAttitude(ufac->num).isNotFriendly()) {
+                unit->Error(AString("TEACH: ") + target->name +
                             " is not a member of a friendly faction.");
                 it = order->targets.erase(it);
                 continue;
             } else {
                 if (!target->monthorders ||
                     target->monthorders->type != Orders::Types::O_STUDY) {
-                    unit->Error(AString("TEACH: ") + *(target->name) +
+                    unit->Error(AString("TEACH: ") + target->name +
                                 " is not studying.");
                     it = order->targets.erase(it);
                     continue;
@@ -474,7 +474,7 @@ void Game::Do1TeachOrder(const ARegion::Handle& reg, const Unit::Handle& unit)
                     const auto& sk = std::dynamic_pointer_cast<StudyOrder>(target->monthorders)->skill;
                     if (unit->GetRealSkill(sk) <= target->GetRealSkill(sk)) {
                         unit->Error(AString("TEACH: ") +
-                                    *(target->name) + " is not studying "
+                                    target->name + " is not studying "
                                     "a skill you can teach.");
                         it = order->targets.erase(it);
                         continue;
@@ -516,7 +516,7 @@ void Game::Do1TeachOrder(const ARegion::Handle& reg, const Unit::Handle& unit)
             o->days = 30 * umen;
         }
         unit->Event(AString("Teaches ") + SkillDefs[o->skill].name +
-                    " to " + *u->name + ".");
+                    " to " + u->name + ".");
         // The TEACHER may learn something in this process!
         unit->Practice(o->skill);
     }
@@ -643,7 +643,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
     r->improvement += static_cast<int>(num);
 
     // AS
-    u->Event(job + *(buildobj->name));
+    u->Event(job + buildobj->name);
     if (questcomplete)
         u->Event("You have completed a quest!");
     u->Practice(sk);
@@ -745,7 +745,7 @@ void Game::RunBuildHelpers(const ARegion::Handle& r)
                             continue;
                         }
                         // Make sure that unit considers you friendly!
-                        if (target->faction.lock()->GetAttitude(ufac_num) < A_FRIENDLY) {
+                        if (target->faction.lock()->GetAttitude(ufac_num).isNotFriendly()) {
                             u->Error("BUILD: Unit you are helping rejects "
                                     "your help.");
                             u->monthorders.reset();
@@ -808,7 +808,7 @@ void Game::RunBuildHelpers(const ARegion::Handle& r)
                             } 
                             unsigned int percent = 100 * output / static_cast<unsigned int>(ItemDefs[ship].pMonths);
                             u->Event(AString("Helps ") +
-                                *(target->name) + " with construction of a " + 
+                                target->name + " with construction of a " + 
                                 ItemDefs[ship].name + " (" + percent + "%) in " +
                                 r->ShortPrint(regions) + ".");                            
                         }
@@ -860,7 +860,7 @@ void Game::CreateShip(const ARegion::Handle& r, const Unit::Handle& u, const Ite
         auto& fleet = obj->region.lock()->objects.emplace_back(std::make_shared<Object>(r));
         fleet->type = Objects::Types::O_FLEET;
         fleet->num = shipseq++;
-        fleet->name = new AString(AString("Ship [") + fleet->num + "]");
+        fleet->name = AString("Ship [") + fleet->num + "]";
         fleet->AddShip(ship);
         u->MoveUnit(fleet);
     } else {
@@ -1610,7 +1610,7 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
 
             if (!forbid.expired() && !(unit->canattack && unit->IsAlive())) {
                 unit->Error(AString("ENTER: Unable to attack ") +
-                        *(forbid.lock()->name));
+                        forbid.lock()->name);
                 continue;
             }
 
@@ -1621,7 +1621,7 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
                 int result = RunBattle(region, unit, forbid_p, 0, 0);
                 if (result == BATTLE_IMPOSSIBLE) {
                     unit->Error(AString("ENTER: Unable to attack ")+
-                            *(forbid_p->name));
+                            forbid_p->name);
                     done = true;
                     break;
                 }
@@ -1634,7 +1634,7 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
             if (done) continue;
 
             unit->MoveUnit(to);
-            unit->Event(AString("Enters ") + *(to->name) + ".");
+            unit->Event(AString("Enters ") + to->name + ".");
             obj = to;
         } else {
             if (i == Directions::MOVE_OUT) {
@@ -1912,8 +1912,8 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     if (unit->guard == GUARD_ADVANCE) {
         const auto ally = newreg->ForbiddenByAlly(unit);
         if (!ally.expired() && !startmove) {
-            unit->Event(AString("Can't ADVANCE: ") + *(newreg->name) +
-                        " is guarded by " + *(ally.lock()->name) + ", an ally.");
+            unit->Event(AString("Can't ADVANCE: ") + newreg->name +
+                        " is guarded by " + ally.lock()->name + ", an ally.");
             unit->monthorders.reset();
             return nullptr;
         }

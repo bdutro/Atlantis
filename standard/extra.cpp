@@ -89,7 +89,7 @@ int Game::SetupFaction( const Faction::Handle& pFac )
     if (Globals->LAIR_MONSTERS_EXIST || Globals->WANDERING_MONSTERS_EXIST) {
         // Try to auto-declare all player factions unfriendly
         // to Creatures, since all they do is attack you.
-        pFac->SetAttitude(monfaction, A_UNFRIENDLY);
+        pFac->SetAttitude(monfaction, Attitudes::Types::A_UNFRIENDLY);
     }
 
     return( 1 );

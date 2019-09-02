@@ -100,22 +100,22 @@ Items LookupItem(const AString& token)
     return Items();
 }
 
-Items ParseAllItems(AString *token)
+Items ParseAllItems(const AString& token)
 {
     Items r;
     for (auto i = Items::begin(); i != Items::end(); ++i) {
         const auto& item_def = ItemDefs[*i];
         if (item_def.type & IT_ILLUSION) {
-            if ((*token == (AString("i") + item_def.name)) ||
-                (*token == (AString("i") + item_def.names)) ||
-                (*token == (AString("i") + item_def.abr))) {
+            if ((token == (AString("i") + item_def.name)) ||
+                (token == (AString("i") + item_def.names)) ||
+                (token == (AString("i") + item_def.abr))) {
                 r = *i;
                 break;
             }
         } else {
-            if ((*token == item_def.name) ||
-                (*token == item_def.names) ||
-                (*token == item_def.abr)) {
+            if ((token == item_def.name) ||
+                (token == item_def.names) ||
+                (token == item_def.abr)) {
                 r = *i;
                 break;
             }
@@ -124,23 +124,23 @@ Items ParseAllItems(AString *token)
     return r;
 }
 
-Items ParseEnabledItem(AString *token)
+Items ParseEnabledItem(const AString& token)
 {
     Items r = -1;
     for (auto i = Items::begin(); i != Items::end(); ++i) {
         const auto& item_def = ItemDefs[*i];
         if (item_def.flags & ItemType::DISABLED) continue;
         if (item_def.type & IT_ILLUSION) {
-            if ((*token == (AString("i") + item_def.name)) ||
-                (*token == (AString("i") + item_def.names)) ||
-                (*token == (AString("i") + item_def.abr))) {
+            if ((token == (AString("i") + item_def.name)) ||
+                (token == (AString("i") + item_def.names)) ||
+                (token == (AString("i") + item_def.abr))) {
                 r = *i;
                 break;
             }
         } else {
-            if ((*token == item_def.name) ||
-                (*token == item_def.names) ||
-                (*token == item_def.abr)) {
+            if ((token == item_def.name) ||
+                (token == item_def.names) ||
+                (token == item_def.abr)) {
                 r = *i;
                 break;
             }
@@ -155,7 +155,7 @@ Items ParseEnabledItem(AString *token)
     return r;
 }
 
-Items ParseGiveableItem(AString *token)
+Items ParseGiveableItem(const AString& token)
 {
     Items r;
     for (auto i = Items::begin(); i != Items::end(); ++i) {
@@ -163,16 +163,16 @@ Items ParseGiveableItem(AString *token)
         if (item_def.flags & ItemType::DISABLED) continue;
         if (item_def.flags & ItemType::CANTGIVE) continue;
         if (item_def.type & IT_ILLUSION) {
-            if ((*token == (AString("i") + item_def.name)) ||
-                (*token == (AString("i") + item_def.names)) ||
-                (*token == (AString("i") + item_def.abr))) {
+            if ((token == (AString("i") + item_def.name)) ||
+                (token == (AString("i") + item_def.names)) ||
+                (token == (AString("i") + item_def.abr))) {
                 r = *i;
                 break;
             }
         } else {
-            if ((*token == item_def.name) ||
-                (*token == item_def.names) ||
-                (*token == item_def.abr)) {
+            if ((token == item_def.name) ||
+                (token == item_def.names) ||
+                (token == item_def.abr)) {
                 r = *i;
                 break;
             }
@@ -187,7 +187,7 @@ Items ParseGiveableItem(AString *token)
     return r;
 }
 
-Items ParseTransportableItem(AString *token)
+Items ParseTransportableItem(const AString& token)
 {
     Items r;
     for (auto i = Items::begin(); i != Items::end(); ++i) {
@@ -196,16 +196,16 @@ Items ParseTransportableItem(AString *token)
         if (item_def.flags & ItemType::NOTRANSPORT) continue;
         if (item_def.flags & ItemType::CANTGIVE) continue;
         if (item_def.type & IT_ILLUSION) {
-            if ((*token == (AString("i") + item_def.name)) ||
-                (*token == (AString("i") + item_def.names)) ||
-                (*token == (AString("i") + item_def.abr))) {
+            if ((token == (AString("i") + item_def.name)) ||
+                (token == (AString("i") + item_def.names)) ||
+                (token == (AString("i") + item_def.abr))) {
                 r = *i;
                 break;
             }
         } else {
-            if ((*token == item_def.name) ||
-                (*token == item_def.names) ||
-                (*token == item_def.abr)) {
+            if ((token == item_def.name) ||
+                (token == item_def.names) ||
+                (token == item_def.abr)) {
                 r = *i;
                 break;
             }
@@ -583,7 +583,7 @@ AString::Handle ItemDescription(const Items& item, int full)
         *temp += " per month";
         *temp += AString(". This ship requires a total of ") + ItemDefs[item].weight/50 + " levels of sailing skill to sail";
         AString abbr = ItemDefs[item].name;
-        const auto objectno = LookupObject(&abbr);
+        const auto objectno = LookupObject(abbr);
         if (objectno.isValid()) {
             if (ObjectDefs[objectno].protect > 0) {
                 *temp += ". This ship provides defense to the first ";
@@ -1350,14 +1350,11 @@ void Item::Writeout(Aoutfile *f)
 
 void Item::Readin(Ainfile *f)
 {
-    AString *temp = f->GetStr();
-    AString *token = temp->gettoken();
-    num = static_cast<size_t>(token->value());
-    delete token;
-    token = temp->gettoken();
-    type = LookupItem(*token);
-    delete token;
-    delete temp;
+    AString temp = f->GetStr();
+    AString token = temp.gettoken();
+    num = token.value<size_t>();
+    token = temp.gettoken();
+    type = LookupItem(token);
 }
 
 void ItemList::Writeout(Aoutfile *f)

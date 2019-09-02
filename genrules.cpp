@@ -434,10 +434,18 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.LinkRef("intro");
     f.ClassTagText("div", "rule", "");
     f.TagText("h2", "Introduction");
-    AString *in;
-    while((in = introf.GetStr()) != NULL) {
-        f.PutStr(*in);
-        delete in;
+
+    try
+    {
+        do
+        {
+            AString in = introf.GetStr();
+            f.PutStr(in);
+        }
+        while(true);
+    }
+    catch(const AFileException&)
+    {
     }
     f.LinkRef("playing");
     f.ClassTagText("div", "rule", "");
@@ -552,9 +560,9 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(0, "tr");
         int i;
         for (i = 0; i <= Globals->FACTION_POINTS; i++) {
-            fac.type[F_WAR]=i;
-            fac.type[F_TRADE]=i;
-            fac.type[F_MAGIC]=i;
+            fac.type[Factions::Types::F_WAR]=i;
+            fac.type[Factions::Types::F_TRADE]=i;
+            fac.type[Factions::Types::F_MAGIC]=i;
             f.Enclose(1, "tr");
             f.Enclose(1, "td align=\"center\" nowrap");
             f.PutStr(i);
@@ -583,9 +591,9 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(0, "center");
         f.PutStr("<P></P>");
         int m,w,t;
-        fac.type[F_WAR] = w = (Globals->FACTION_POINTS+1)/3;
-        fac.type[F_TRADE] = t = Globals->FACTION_POINTS/3;
-        fac.type[F_MAGIC] = m = (Globals->FACTION_POINTS+2)/3;
+        fac.type[Factions::Types::F_WAR] = w = (Globals->FACTION_POINTS+1)/3;
+        fac.type[Factions::Types::F_TRADE] = t = Globals->FACTION_POINTS/3;
+        fac.type[Factions::Types::F_MAGIC] = m = (Globals->FACTION_POINTS+2)/3;
         unsigned int nm = AllowedMages(fac);
         unsigned int na = AllowedApprentices(fac);
         unsigned int nq = AllowedQuarterMasters(fac);
@@ -614,9 +622,9 @@ int Game::GenRules(const AString &rules, const AString &css,
         temp += ".";
         f.Paragraph(temp);
 
-        fac.type[F_WAR] = w = Globals->FACTION_POINTS;
-        fac.type[F_MAGIC] = m = 0;
-        fac.type[F_TRADE] = t = 0;
+        fac.type[Factions::Types::F_WAR] = w = Globals->FACTION_POINTS;
+        fac.type[Factions::Types::F_MAGIC] = m = 0;
+        fac.type[Factions::Types::F_TRADE] = t = 0;
         nw = AllowedTaxes(fac);
         nq = AllowedQuarterMasters(fac);
         nt = AllowedTrades(fac);

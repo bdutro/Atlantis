@@ -298,19 +298,27 @@ int Game::OpenGame()
     //
     // Read in Globals
     //
-    AString *s1 = f.GetStr();
-    if (!s1) return(0);
-
-    AString *s2 = s1->gettoken();
-    delete s1;
-    if (!s2) return(0);
-
-    if (!(*s2 == "atlantis_game")) {
-        delete s2;
-        f.Close();
-        return(0);
+    AString s1;
+    try
+    {
+        s1 = f.GetStr();
     }
-    delete s2;
+    catch(const AFileException&)
+    {
+        return 0;
+    }
+
+    AString s2 = s1.gettoken();
+    if (!s2.Len())
+    {
+        return 0;
+    }
+
+    if (s2 != "atlantis_game")
+    {
+        f.Close();
+        return 0;
+    }
 
     ATL_VER eVersion = f.GetInt<ATL_VER>();
     Awrite(AString("Saved Game Engine Version: ") + ATL_VER_STRING(eVersion));
@@ -324,10 +332,18 @@ int Game::OpenGame()
         return(0);
     }
 
-    AString *gameName = f.GetStr();
-    if (!gameName) return(0);
+    AString gameName;
+    try
+    {
+        gameName = f.GetStr();
+    }
+    catch(const AFileException&)
+    {
+        return 0;
+    }
 
-    if (!(*gameName == Globals->RULESET_NAME)) {
+    if (gameName != Globals->RULESET_NAME)
+    {
         Awrite("Incompatible rule-set!");
         return(0);
     }
@@ -493,9 +509,6 @@ int Game::ReadPlayers()
     Aorders f;
     if (f.OpenByName("players.in") == -1) return(0);
 
-    AString *pLine = 0;
-    AString *pToken = 0;
-
     //
     // Default: failure.
     //
@@ -505,22 +518,29 @@ int Game::ReadPlayers()
         //
         // The first line of the file should match.
         //
-        pLine = f.GetLine();
-        if (!(*pLine == PLAYERS_FIRST_LINE)) break;
-        SAFE_DELETE(pLine);
+        AString pLine = f.GetLine();
+        if (pLine != PLAYERS_FIRST_LINE)
+        {
+            break;
+        }
 
         //
         // Get the file version number.
         //
         pLine = f.GetLine();
-        pToken = pLine->gettoken();
-        if (!pToken || !(*pToken == "Version:")) break;
-        SAFE_DELETE(pToken);
+        AString pToken = pLine.gettoken();
+        if (!pToken.Len() || pToken != "Version:")
+        {
+            break;
+        }
 
-        pToken = pLine->gettoken();
-        if (!pToken) break;
+        pToken = pLine.gettoken();
+        if (!pToken.Len())
+        {
+            break;
+        }
 
-        int nVer = pToken->value();
+        int nVer = pToken.value<int>();
         if (ATL_VER_MAJOR(nVer) != ATL_VER_MAJOR(CURRENT_ATL_VER) ||
                 ATL_VER_MINOR(nVer) != ATL_VER_MINOR(CURRENT_ATL_VER) ||
                 ATL_VER_PATCH(nVer) > ATL_VER_PATCH(CURRENT_ATL_VER)) {
@@ -528,47 +548,55 @@ int Game::ReadPlayers()
                     "version of Atlantis.");
             break;
         }
-        SAFE_DELETE(pToken);
-        SAFE_DELETE(pLine);
 
         //
         // Ignore the turn number line.
         //
         pLine = f.GetLine();
-        SAFE_DELETE(pLine);
 
         //
         // Next, the game status.
         //
         pLine = f.GetLine();
-        pToken = pLine->gettoken();
-        if (!pToken || !(*pToken == "GameStatus:")) break;
-        SAFE_DELETE(pToken);
+        pToken = pLine.gettoken();
+        if (!pToken.Len() || pToken != "GameStatus:")
+        {
+            break;
+        }
 
-        pToken = pLine->gettoken();
-        if (!pToken) break;
+        pToken = pLine.gettoken();
+        if (!pToken.Len())
+        {
+            break;
+        }
 
-        if (*pToken == "New")
+        if (pToken == "New")
+        {
             gameStatus = GAME_STATUS_NEW;
-        else if (*pToken == "Running")
+        }
+        else if (pToken == "Running")
+        {
             gameStatus = GAME_STATUS_RUNNING;
-        else if (*pToken == "Finished")
+        }
+        else if (pToken == "Finished")
+        {
             gameStatus = GAME_STATUS_FINISHED;
-        else {
+        }
+        else
+        {
             //
             // The status doesn't seem to be valid.
             //
             break;
         }
-        SAFE_DELETE(pToken);
 
         //
         // Now, we should have a list of factions.
         //
-        pLine = f.GetLine();
+
         Faction::Handle pFac = nullptr;
 
-        int lastWasNew = 0;
+        bool lastWasNew = false;
 
         //
         // OK, set our return code to success; we'll set it to fail below
@@ -576,109 +604,109 @@ int Game::ReadPlayers()
         //
         rc = 1;
 
-        while(pLine) {
-            pToken = pLine->gettoken();
-            if (!pToken) {
-                SAFE_DELETE(pLine);
-                pLine = f.GetLine();
-                continue;
-            }
-
-            if (*pToken == "Faction:") {
-                //
-                // Get the new faction
-                //
-                SAFE_DELETE(pToken);
-                pToken = pLine->gettoken();
-                if (!pToken) {
-                    rc = 0;
-                    break;
+        try
+        {
+            pLine = f.GetLine();
+            while(true) {
+                pToken = pLine.gettoken();
+                if (!pToken.Len()) {
+                    pLine = f.GetLine();
+                    continue;
                 }
 
-                if (*pToken == "new") {
-                    AString save = *pLine;
-                    int noleader = 0;
-                    int x, y, z;
-                    ARegion::WeakHandle pReg;
-
-                    /* Check for the noleader flag */
-                    SAFE_DELETE(pToken);
-                    pToken = pLine->gettoken();
-                    if (pToken && *pToken == "noleader") {
-                        noleader = 1;
-                        SAFE_DELETE(pToken);
-                        pToken = pLine->gettoken();
-                        /* Initialize pReg to something useful */
-                        pReg = regions.GetRegion(0, 0, 0);
-                    }
-                    if (pToken) {
-                        x = pToken->value();
-                        y = -1;
-                        z = -1;
-                        SAFE_DELETE(pToken);
-                        pToken = pLine->gettoken();
-                        if (pToken) {
-                            y = pToken->value();
-                            SAFE_DELETE(pToken);
-                            pToken = pLine->gettoken();
-                            if (pToken) {
-                                z = pToken->value();
-                                pReg = regions.GetRegion(static_cast<unsigned int>(x),
-                                                         static_cast<unsigned int>(y),
-                                                         static_cast<unsigned int>(z));
-                            }
-                        }
-                        if (pReg.expired())
-                            Awrite(AString("Bad faction line: ")+save);
-                    }
-
-                    pFac = AddFaction(noleader, pReg.lock());
-                    if (!pFac) {
-                        Awrite("Failed to add a new faction!");
+                if (pToken == "Faction:") {
+                    //
+                    // Get the new faction
+                    //
+                    pToken = pLine.gettoken();
+                    if (!pToken.Len()) {
                         rc = 0;
                         break;
                     }
 
-                    lastWasNew = 1;
-                } else {
-                    if (pFac && lastWasNew) {
-                        WriteNewFac(pFac);
-                    }
-                    size_t nFacNum = static_cast<size_t>(pToken->value());
-                    pFac = GetFaction(factions, nFacNum);
-                    if (pFac)
-                        pFac->startturn = TurnNumber();
-                    lastWasNew = 0;
-                }
-            } else if (pFac) {
-                if (!ReadPlayersLine(pToken, pLine, pFac, lastWasNew)) {
-                    rc = 0;
-                    break;
-                }
-            }
+                    if (pToken == "new") {
+                        AString save = pLine;
+                        bool noleader = false;
+                        int x, y, z;
+                        ARegion::WeakHandle pReg;
 
-            SAFE_DELETE(pToken);
-            SAFE_DELETE(pLine);
-            pLine = f.GetLine();
+                        /* Check for the noleader flag */
+                        pToken = pLine.gettoken();
+                        if (pToken.Len() && pToken == "noleader") {
+                            noleader = true;
+                            pToken = pLine.gettoken();
+                            /* Initialize pReg to something useful */
+                            pReg = regions.GetRegion(0, 0, 0);
+                        }
+                        if (pToken.Len()) {
+                            x = pToken.value<int>();
+                            y = -1;
+                            z = -1;
+                            pToken = pLine.gettoken();
+                            if (pToken.Len()) {
+                                y = pToken.value<int>();
+                                pToken = pLine.gettoken();
+                                if (pToken.Len()) {
+                                    z = pToken.value<int>();
+                                    pReg = regions.GetRegion(static_cast<unsigned int>(x),
+                                                             static_cast<unsigned int>(y),
+                                                             static_cast<unsigned int>(z));
+                                }
+                            }
+                            if (pReg.expired())
+                            {
+                                Awrite(AString("Bad faction line: ")+save);
+                            }
+                        }
+
+                        pFac = AddFaction(noleader, pReg.lock());
+                        if (!pFac) {
+                            Awrite("Failed to add a new faction!");
+                            rc = 0;
+                            break;
+                        }
+
+                        lastWasNew = true;
+                    } else {
+                        if (pFac && lastWasNew) {
+                            WriteNewFac(pFac);
+                        }
+                        size_t nFacNum = pToken.value<size_t>();
+                        pFac = GetFaction(factions, nFacNum);
+                        if (pFac)
+                            pFac->startturn = TurnNumber();
+                        lastWasNew = false;
+                    }
+                } else if (pFac) {
+                    if (!ReadPlayersLine(pToken, pLine, pFac, lastWasNew)) {
+                        rc = 0;
+                        break;
+                    }
+                }
+
+                pLine = f.GetLine();
+            }
         }
-        if (pFac && lastWasNew) {
+        catch(const AFileException&)
+        {
+        }
+        if (pFac && lastWasNew)
+        {
             WriteNewFac(pFac);
         }
     } while(0);
 
-    SAFE_DELETE(pLine);
-    SAFE_DELETE(pToken);
     f.Close();
 
     return(rc);
 }
 
-Unit::WeakHandle Game::ParseGMUnit(AString *tag, const Faction::Handle& pFac)
+Unit::WeakHandle Game::ParseGMUnit(const AString& tag, const Faction::Handle& pFac)
 {
-    char *str = tag->Str();
+    const char* str = tag.Str();
     if (*str == 'g' && *(str+1) == 'm') {
         AString p = AString(str+2);
-        int gma = p.value();
+        int gma = p.value<int>();
         for(const auto& reg: regions) {
             for(const auto& obj: reg->objects) {
                 for(const auto& u: obj->units) {
@@ -689,86 +717,80 @@ Unit::WeakHandle Game::ParseGMUnit(AString *tag, const Faction::Handle& pFac)
             }
         }
     } else {
-        int v = tag->value();
+        int v = tag.value<int>();
         if (static_cast<unsigned int>(v) >= maxppunits) return Unit::WeakHandle();
         return GetUnit(v);
     }
     return Unit::WeakHandle();
 }
 
-int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle& pFac,
-        int newPlayer)
+bool Game::ReadPlayersLine(const AString& pToken, AString& pLine, const Faction::Handle& pFac,
+        bool newPlayer)
 {
-    AString *pTemp = 0;
-
-    if (*pToken == "Name:") {
-        pTemp = pLine->StripWhite();
-        if (pTemp) {
+    if (pToken == "Name:") {
+        AString pTemp = pLine.StripWhite();
+        if (pTemp.Len()) {
             if (newPlayer) {
-                *pTemp += AString(" (") + (pFac->num) + ")";
+                pTemp += AString(" (") + (pFac->num) + ")";
             }
             pFac->SetNameNoChange(pTemp);
         }
-    } else if (*pToken == "RewardTimes") {
+    } else if (pToken == "RewardTimes") {
         pFac->TimesReward();
-    } else if (*pToken == "Email:") {
-        pTemp = pLine->gettoken();
-        if (pTemp) {
-            delete pFac->address;
+    } else if (pToken == "Email:") {
+        AString pTemp = pLine.gettoken();
+        if (pTemp.Len()) {
             pFac->address = pTemp;
-            pTemp = 0;
         }
-    } else if (*pToken == "Password:") {
-        pTemp = pLine->StripWhite();
-        delete pFac->password;
-        if (pTemp) {
+    } else if (pToken == "Password:") {
+        AString pTemp = pLine.StripWhite();
+        if (pTemp.Len()) {
             pFac->password = pTemp;
-            pTemp = 0;
         } else {
-            AString * pDefault = new AString("none");
-            pFac->password = pDefault;
+            pFac->password = AString("none");
         }
         
-    } else if (*pToken == "Template:") {
+    } else if (pToken == "Template:") {
         // LLS - looked like a good place to stick the Template test
-        pTemp = pLine->gettoken();
-        int nTemp = ParseTemplate(pTemp);
-        pFac->temformat = TEMPLATE_LONG;
-        if (nTemp != -1) pFac->temformat = nTemp;
-    } else if (*pToken == "Reward:") {
-        pTemp = pLine->gettoken();
-        int nAmt = pTemp->value();
+        AString pTemp = pLine.gettoken();
+        Templates nTemp = ParseTemplate(pTemp);
+        pFac->temformat = Templates::Types::TEMPLATE_LONG;
+        if (nTemp.isValid())
+        {
+            pFac->temformat = nTemp;
+        }
+    } else if (pToken == "Reward:") {
+        AString pTemp = pLine.gettoken();
+        size_t nAmt = pTemp.value<size_t>();
         pFac->Event(AString("Reward of ") + nAmt + " silver.");
-        pFac->unclaimed += static_cast<size_t>(nAmt);
-    } else if (*pToken == "SendTimes:") {
+        pFac->unclaimed += nAmt;
+    } else if (pToken == "SendTimes:") {
         // get the token, but otherwise ignore it
-        pTemp = pLine->gettoken();
-        pFac->times = pTemp->value();
-    } else if (*pToken == "LastOrders:") {
+        AString pTemp = pLine.gettoken();
+        pFac->times = pTemp.value<int>();
+    } else if (pToken == "LastOrders:") {
         // Read this line and correctly set the lastorders for this
         // faction if the game itself isn't maintaining them.
-        pTemp = pLine->gettoken();
+        AString pTemp = pLine.gettoken();
         if (Globals->LASTORDERS_MAINTAINED_BY_SCRIPTS)
-            pFac->lastorders = static_cast<size_t>(pTemp->value());
-    } else if (*pToken == "FirstTurn:") {
-        pTemp = pLine->gettoken();
-        pFac->startturn = static_cast<size_t>(pTemp->value());
-    } else if (*pToken == "Loc:") {
-        int x, y, z;
-        pTemp = pLine->gettoken();
-        if (pTemp) {
-            x = pTemp->value();
-            delete pTemp;
-            pTemp = pLine->gettoken();
-            if (pTemp) {
-                y = pTemp->value();
-                delete pTemp;
-                pTemp = pLine->gettoken();
-                if (pTemp) {
-                    z = pTemp->value();
-                    ARegion::WeakHandle pReg = regions.GetRegion(static_cast<unsigned int>(x),
-                                                                 static_cast<unsigned int>(y),
-                                                                 static_cast<unsigned int>(z));
+        {
+            pFac->lastorders = pTemp.value<size_t>();
+        }
+    } else if (pToken == "FirstTurn:") {
+        AString pTemp = pLine.gettoken();
+        pFac->startturn = pTemp.value<size_t>();
+    } else if (pToken == "Loc:") {
+        unsigned int x, y, z;
+        AString pTemp = pLine.gettoken();
+        if (pTemp.Len()) {
+            x = pTemp.value<unsigned int>();
+            pTemp = pLine.gettoken();
+            if (pTemp.Len()) {
+                y = pTemp.value<unsigned int>();
+                pTemp = pLine.gettoken();
+                if (pTemp.Len()) {
+                    z = pTemp.value<unsigned int>();
+                    ARegion::WeakHandle pReg = regions.GetRegion(x, y, z);
                     if (!pReg.expired()) {
                         pFac->pReg = pReg;
                     } else {
@@ -779,19 +801,19 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                 }
             }
         }
-    } else if (*pToken == "NewUnit:") {
+    } else if (pToken == "NewUnit:") {
         // Creates a new unit in the location specified by a Loc: line
         // with a gm_alias of whatever is after the NewUnit: tag.
         if (pFac->pReg.expired()) {
             Awrite(AString("NewUnit is not valid without a Loc: ") +
                     "for faction "+ pFac->num);
         } else {
-            pTemp = pLine->gettoken();
-            if (!pTemp) {
+            AString pTemp = pLine.gettoken();
+            if (!pTemp.Len()) {
                 Awrite(AString("NewUnit: must be followed by an alias ") +
                         "in faction "+pFac->num);
             } else {
-                int val = pTemp->value();
+                int val = pTemp.value<int>();
                 if (!val) {
                     Awrite(AString("NewUnit: must be followed by an alias ") +
                             "in faction "+pFac->num);
@@ -803,9 +825,9 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                 }
             }
         }
-    } else if (*pToken == "Item:") {
-        pTemp = pLine->gettoken();
-        if (!pTemp) {
+    } else if (pToken == "Item:") {
+        AString pTemp = pLine.gettoken();
+        if (!pTemp.Len()) {
             Awrite(AString("Item: needs to specify a unit in faction ") +
                     pFac->num);
         } else {
@@ -818,21 +840,19 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                     Awrite(AString("Item: unit ")+ u->num +
                             " doesn't belong to " + "faction " + pFac->num);
                 } else {
-                    delete pTemp;
-                    pTemp = pLine->gettoken();
-                    if (!pTemp) {
+                    pTemp = pLine.gettoken();
+                    if (!pTemp.Len()) {
                         Awrite(AString("Must specify a number of items to ") +
                                 "give for Item: in faction " + pFac->num);
                     } else {
-                        int v = pTemp->value();
+                        size_t v = pTemp.value<size_t>();
                         if (!v) {
                             Awrite(AString("Must specify a number of ") +
                                         "items to give for Item: in " +
                                         "faction " + pFac->num);
                         } else {
-                            delete pTemp;
-                            pTemp = pLine->gettoken();
-                            if (!pTemp) {
+                            pTemp = pLine.gettoken();
+                            if (!pTemp.Len()) {
                                 Awrite(AString("Must specify a valid item ") +
                                         "to give for Item: in faction " +
                                         pFac->num);
@@ -844,7 +864,7 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                                             "faction " + pFac->num);
                                 } else {
                                     size_t has = u->items.GetNum(it);
-                                    u->items.SetNum(it, has + static_cast<size_t>(v));
+                                    u->items.SetNum(it, has + v);
                                     if (!u->gm_alias) {
                                         u->Event(AString("Is given ") +
                                                 ItemString(it, v) +
@@ -858,9 +878,9 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                 }
             }
         }
-    } else if (*pToken == "Skill:") {
-        pTemp = pLine->gettoken();
-        if (!pTemp) {
+    } else if (pToken == "Skill:") {
+        AString pTemp = pLine.gettoken();
+        if (!pTemp.Len()) {
             Awrite(AString("Skill: needs to specify a unit in faction ") +
                     pFac->num);
         } else {
@@ -873,9 +893,8 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                     Awrite(AString("Skill: unit ")+ u->num +
                             " doesn't belong to " + "faction " + pFac->num);
                 } else {
-                    delete pTemp;
-                    pTemp = pLine->gettoken();
-                    if (!pTemp) {
+                    pTemp = pLine.gettoken();
+                    if (!pTemp.Len()) {
                         Awrite(AString("Must specify a valid skill for ") +
                                 "Skill: in faction " + pFac->num);
                     } else {
@@ -884,13 +903,12 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                             Awrite(AString("Must specify a valid skill for ")+
                                     "Skill: in faction " + pFac->num);
                         } else {
-                            delete pTemp;
-                            pTemp = pLine->gettoken();
-                            if (!pTemp) {
+                            pTemp = pLine.gettoken();
+                            if (!pTemp.Len()) {
                                 Awrite(AString("Must specify a days for ") +
                                         "Skill: in faction " + pFac->num);
                             } else {
-                                size_t days = static_cast<size_t>(pTemp->value()) * u->GetMen();
+                                size_t days = pTemp.value<size_t>() * u->GetMen();
                                 if (!days) {
                                     Awrite(AString("Must specify a days for ")+
                                             "Skill: in faction " + pFac->num);
@@ -930,15 +948,14 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                 }
             }
         }
-    } else if (*pToken == "Order:") {
-        pTemp = pLine->StripWhite();
-        if (*pTemp == "quit") {
+    } else if (pToken == "Order:") {
+        AString pTemp = pLine.StripWhite();
+        if (pTemp == "quit") {
             pFac->quit = QUIT_BY_GM;
         } else {
             // handle this as a unit order
-            delete pTemp;
-            pTemp = pLine->gettoken();
-            if (!pTemp) {
+            pTemp = pLine.gettoken();
+            if (!pTemp.Len()) {
                 Awrite(AString("Order: needs to specify a unit in faction ") +
                         pFac->num);
             } else {
@@ -952,11 +969,10 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
                                 " doesn't belong to " + "faction " +
                                 pFac->num);
                     } else {
-                        delete pTemp;
-                        AString saveorder = *pLine;
-                        int getatsign = pLine->getat();
-                        pTemp = pLine->gettoken();
-                        if (!pTemp) {
+                        AString saveorder = pLine;
+                        const bool getatsign = pLine.getat();
+                        pTemp = pLine.gettoken();
+                        if (!pTemp.Len()) {
                             Awrite(AString("Order: must provide unit order ")+
                                     "for faction "+pFac->num);
                         } else {
@@ -978,16 +994,15 @@ int Game::ReadPlayersLine(AString *pToken, AString *pLine, const Faction::Handle
             }
         }
     } else {
-        pFac->extraPlayers.emplace_back(*pToken + *pLine);
+        pFac->extraPlayers.emplace_back(pToken + pLine);
     }
 
-    if (pTemp) delete pTemp;
-    return(1);
+    return true;
 }
 
 void Game::WriteNewFac(const Faction::Handle& pFac)
 {
-    newfactions.emplace_back(AString("Adding ") + *(pFac->address) + ".");
+    newfactions.emplace_back(AString("Adding ") + pFac->address + ".");
 }
 
 int Game::DoOrdersCheck(const AString &strOrders, const AString &strCheck)
@@ -1204,7 +1219,7 @@ void Game::DeleteDeadFactions()
     }
 }
 
-Faction::Handle Game::AddFaction(int noleader, const ARegion::Handle& pStart)
+Faction::Handle Game::AddFaction(bool noleader, const ARegion::Handle& pStart)
 {
     //
     // set up faction
@@ -1483,32 +1498,38 @@ size_t Game::CountApprentices(const Faction::Handle& pFac)
 
 unsigned int Game::AllowedMages(const Faction& pFac)
 {
-    return getAllowedPoints(pFac.type[F_MAGIC], allowedMages);
+    return getAllowedPoints(pFac.type[Factions::Types::F_MAGIC],
+                            allowedMages);
 }
 
 unsigned int Game::AllowedQuarterMasters(const Faction& pFac)
 {
-    return getAllowedPoints(pFac.type[F_TRADE], allowedQuartermasters);
+    return getAllowedPoints(pFac.type[Factions::Types::F_TRADE],
+                            allowedQuartermasters);
 }
 
 unsigned int Game::AllowedTacticians(const Faction& pFac)
 {
-    return getAllowedPoints(pFac.type[F_WAR], allowedTacticians);
+    return getAllowedPoints(pFac.type[Factions::Types::F_WAR],
+                            allowedTacticians);
 }
 
 unsigned int Game::AllowedApprentices(const Faction& pFac)
 {
-    return getAllowedPoints(pFac.type[F_MAGIC], allowedApprentices);
+    return getAllowedPoints(pFac.type[Factions::Types::F_MAGIC],
+                            allowedApprentices);
 }
 
 int Game::AllowedTaxes(const Faction& pFac)
 {
-    return getAllowedPoints(pFac.type[F_WAR], allowedTaxes);
+    return getAllowedPoints(pFac.type[Factions::Types::F_WAR],
+                            allowedTaxes);
 }
 
 int Game::AllowedTrades(const Faction& pFac)
 {
-    return getAllowedPoints(pFac.type[F_TRADE], allowedTrades);
+    return getAllowedPoints(pFac.type[Factions::Types::F_TRADE],
+                            allowedTrades);
 }
 
 int Game::UpgradeMajorVersion(ATL_VER)
@@ -1745,12 +1766,10 @@ char Game::GetRChar(const ARegion::Handle& r)
 
 void Game::CreateNPCFactions()
 {
-    AString *temp;
     if (Globals->CITY_MONSTERS_EXIST) {
         auto& f = factions.emplace_back(std::make_shared<Faction>(factionseq++));
         guardfaction = f->num;
-        temp = new AString("The Guardsmen");
-        f->SetName(temp);
+        f->SetName("The Guardsmen");
         f->SetNPC();
         f->lastorders = 0;
     } else
@@ -1760,8 +1779,7 @@ void Game::CreateNPCFactions()
     if (Globals->LAIR_MONSTERS_EXIST || Globals->WANDERING_MONSTERS_EXIST) {
         auto& f = factions.emplace_back(std::make_shared<Faction>(factionseq++));
         monfaction = f->num;
-        temp = new AString("Creatures");
-        f->SetName(temp);
+        f->SetName("Creatures");
         f->SetNPC();
         f->lastorders = 0;
     } else

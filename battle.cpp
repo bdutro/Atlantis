@@ -445,7 +445,7 @@ void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, WeakPtrList
                 if (u->faction.lock() == t->faction.lock() ||
                     (AlliesIncluded == 1 && 
                      u->guard != GUARD_AVOID &&
-                     u->GetAttitude(*r, t) == A_ALLY) ) {
+                     u->GetAttitude(*r, t) == Attitudes::Types::A_ALLY) ) {
 
                     const auto ufac = u->faction.lock();
                     if (GetFaction2(facs, ufac->num).expired()) 
@@ -469,14 +469,14 @@ void Game::GetAFacs(const ARegion::Handle& r,
         for(const auto& u: obj->units) {
             if (u->canattack && u->IsAlive()) {
                 bool add = false;
-                if ((u->faction.lock() == att->faction.lock() || u->GetAttitude(*r,tar) == A_HOSTILE) &&
+                if ((u->faction.lock() == att->faction.lock() || u->GetAttitude(*r,tar) == Attitudes::Types::A_HOSTILE) &&
                     (u->guard != GUARD_AVOID || u == att))
                 {
                     add = true;
                 }
                 else
                 {
-                    if (u->guard == GUARD_ADVANCE && u->GetAttitude(*r,tar) != A_ALLY)
+                    if (u->guard == GUARD_ADVANCE && u->GetAttitude(*r,tar) != Attitudes::Types::A_ALLY)
                     {
                         add = true;
                     }
@@ -805,7 +805,7 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
 
     const auto attacker_faction = attacker->faction.lock();
     if (ass) {
-        if (attacker->GetAttitude(*r, target) == A_ALLY) {
+        if (attacker->GetAttitude(*r, target) == Attitudes::Types::A_ALLY) {
             attacker->Error("ASSASSINATE: Can't assassinate an ally.");
             return BATTLE_IMPOSSIBLE;
         }
@@ -817,7 +817,7 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
             attacker->Error("ATTACK: No battles allowed in safe regions.");
             return BATTLE_IMPOSSIBLE;
         }
-        if (attacker->GetAttitude(*r, target) == A_ALLY) {
+        if (attacker->GetAttitude(*r, target) == Attitudes::Types::A_ALLY) {
             attacker->Error("ATTACK: Can't attack an ally.");
             return BATTLE_IMPOSSIBLE;
         }

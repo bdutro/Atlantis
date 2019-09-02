@@ -87,9 +87,8 @@ Arules::~Arules()
 void Aoutfile::Open(const AString &s)
 {
     while(!(file->rdbuf()->is_open())) {
-        AString *name = getfilename(s);
-        file->open(name->Str(), std::ios::out|std::ios::ate);
-        delete name;
+        AString name = getfilename(s);
+        file->open(name.Str(), std::ios::out|std::ios::ate);
         // Handle a broke std::ios::ate implementation on some boxes
         file->seekp(0, std::ios::end);
         if (file->tellp() != 0) file->close();
@@ -113,9 +112,8 @@ int Aoutfile::OpenByName(const AString &s)
 void Ainfile::Open(const AString &s)
 {
     while (!(file->rdbuf()->is_open())) {
-        AString *name = getfilename(s);
-        file->open(name->Str(),std::ios::in);
-        delete name;
+        AString name = getfilename(s);
+        file->open(name.Str(),std::ios::in);
     }
 }
 
@@ -169,14 +167,20 @@ void skipwhite(std::ifstream *f)
 AString Ainfile::GetStr()
 {
     skipwhite(file);
-    if (file->peek() == -1 || file->eof()) return 0;
+    if (file->peek() == -1 || file->eof())
+    {
+        throw AFileException();
+    }
     file->getline(buf,1023,F_ENDLINE);
     return AString(buf);
 }
 
 AString Ainfile::GetStrNoSkip()
 {
-    if (file->peek() == -1 || file->eof()) return 0;
+    if (file->peek() == -1 || file->eof())
+    {
+        throw AFileException();
+    }
     file->getline(buf,1023,F_ENDLINE);
     return AString(buf);
 }
@@ -221,9 +225,8 @@ void Aoutfile::PutStr(const AString &s)
 void Aorders::Open(const AString &s)
 {
     while (!(file->rdbuf()->is_open())) {
-        AString *name = getfilename(s);
-        file->open(name->Str(),std::ios::in);
-        delete name;
+        AString name = getfilename(s);
+        file->open(name.Str(),std::ios::in);
     }
 }
 
@@ -235,22 +238,22 @@ int Aorders::OpenByName(const AString &s)
     return 0;
 }
 
-AString * Aorders::GetLine()
+AString Aorders::GetLine()
 {
     skipwhite(file);
-    if (file->eof()) return 0;
-    if (file->peek() == -1) return 0;
+    if (file->eof() || file->peek() == -1)
+    {
+        throw AFileException();
+    }
     file->getline(buf,1023,F_ENDLINE);
-    AString *s = new AString(buf);
-    return s;
+    return AString(buf);
 }
 
 void Areport::Open(const AString &s)
 {
     while(!(file->rdbuf()->is_open())) {
-        AString *name = getfilename(s);
-        file->open(name->Str(),std::ios::out|std::ios::ate);
-        delete name;
+        AString name = getfilename(s);
+        file->open(name.Str(),std::ios::out|std::ios::ate);
         // Handle a broke std::ios::ate implementation on some boxes
         file->seekp(0, std::ios::end);
         if (file->tellp() != 0) file->close();
@@ -291,16 +294,21 @@ void Areport::ClearTab()
 void Areport::PutStr(const AString &s,int comment)
 {
     AString temp;
-    for (int i=0; i<tabs; i++) temp += "  ";
+    for (int i=0; i<tabs; i++)
+    {
+        temp += "  ";
+    }
     temp += s;
-    AString *temp2 = temp.Trunc(70);
-    if (comment) *file << ";";
+    AString temp2 = temp.Trunc(70);
+    if (comment)
+    {
+        *file << ";";
+    }
     *file << temp << F_ENDLINE;
-    while (temp2) {
+    while (temp2.Len()) {
         temp = "  ";
         for (int i=0; i<tabs; i++) temp += "  ";
-        temp += *temp2;
-        delete temp2;
+        temp += temp2;
         temp2 = temp.Trunc(70);
         if (comment) *file << ";";
         *file << temp << F_ENDLINE;
@@ -320,9 +328,8 @@ void Areport::EndLine()
 void Arules::Open(const AString &s)
 {
     while(!(file->rdbuf()->is_open())) {
-        AString *name = getfilename(s);
-        file->open(name->Str(),std::ios::out|std::ios::ate);
-        delete name;
+        AString name = getfilename(s);
+        file->open(name.Str(),std::ios::out|std::ios::ate);
         // Handle a broke std::ios::ate implementation on some boxes
         file->seekp(0, std::ios::end);
         if (file->tellp() != 0) file->close();
@@ -380,15 +387,20 @@ void Arules::ClearWrapTab()
 void Arules::PutStr(const AString &s)
 {
     AString temp;
-    for (int i=0; i<tabs; i++) temp += "  ";
+    for (int i=0; i<tabs; i++)
+    {
+        temp += "  ";
+    }
     temp += s;
-    AString *temp2 = temp.Trunc(78, 70);
+    AString temp2 = temp.Trunc(78, 70);
     *file << temp << F_ENDLINE;
-    while (temp2) {
+    while (temp2.Len()) {
         temp = "";
-        for (int i=0; i<tabs; i++) temp += "  ";
-        temp += *temp2;
-        delete temp2;
+        for (int i=0; i<tabs; i++)
+        {
+            temp += "  ";
+        }
+        temp += temp2;
         temp2 = temp.Trunc(78, 70);
         *file << temp << F_ENDLINE;
     }
@@ -397,15 +409,20 @@ void Arules::PutStr(const AString &s)
 void Arules::WrapStr(const AString &s)
 {
     AString temp;
-    for (int i=0; i<wraptab; i++) temp += "  ";
+    for (int i=0; i<wraptab; i++)
+    {
+        temp += "  ";
+    }
     temp += s;
-    AString *temp2 = temp.Trunc(70);
+    AString temp2 = temp.Trunc(70);
     *file << temp << F_ENDLINE;
-    while (temp2) {
+    while (temp2.Len()) {
         temp = "  ";
-        for (int i=0; i<wraptab; i++) temp += "  ";
-        temp += *temp2;
-        delete temp2;
+        for (int i=0; i<wraptab; i++)
+        {
+            temp += "  ";
+        }
+        temp += temp2;
         temp2 = temp.Trunc(70);
         *file << temp << F_ENDLINE;
     }

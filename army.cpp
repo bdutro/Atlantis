@@ -82,7 +82,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
         for(const auto& ship: o->ships) {
             if (o->shipno == i) {
                 abbr = ItemDefs[ship->type].name;
-                objectno = LookupObject(&abbr);
+                objectno = LookupObject(abbr);
                 if (objectno.isValid() && ObjectDefs[objectno].protect > 0) {
                     o->capacity = static_cast<size_t>(ObjectDefs[objectno].protect) * ship->num;
                     o->type = objectno;

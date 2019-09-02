@@ -30,10 +30,10 @@
 #include "gamedata.h"
 #include "unit.h"
 
-Objects LookupObject(AString *token)
+Objects LookupObject(const AString& token)
 {
     for (auto i = Objects::begin(); i != Objects::end(); ++i) {
-        if (*token == ObjectDefs[*i].name)
+        if (token == ObjectDefs[*i].name)
         {
             return *i;
         }
@@ -46,13 +46,13 @@ Objects LookupObject(AString *token)
  * produced using the build order) if the ships
  * argument is given.
  */
-ssize_t ParseShipObject(AString *token)
+ssize_t ParseShipObject(const AString& token)
 {
     // Check for ship-type items:
     for (auto i = Items::begin(); i != Items::end(); ++i) {
         if (ItemDefs[*i].type & IT_SHIP) {
-            if ((*token == ItemDefs[*i].name) ||
-                (*token == ItemDefs[*i].abr)) {
+            if ((token == ItemDefs[*i].name) ||
+                (token == ItemDefs[*i].abr)) {
                     if (ItemDefs[*i].flags & ItemType::DISABLED) continue;
                     return -(static_cast<ssize_t>(*i)+1);
             }
@@ -97,9 +97,9 @@ Object::Object(const ARegion::WeakHandle& reg)
 {
     num = 0;
     type = Objects::Types::O_DUMMY;
-    name = new AString("Dummy");
+    name = AString("Dummy");
     incomplete = 0;
-    describe = 0;
+    describe.clear();
     capacity = 0;
     mages = 0;
     inner = -1;
@@ -113,8 +113,6 @@ Object::Object(const ARegion::WeakHandle& reg)
 
 Object::~Object()
 {
-    if (name) delete name;
-    if (describe) delete describe;
     region.reset();
 }
 
@@ -125,9 +123,9 @@ void Object::Writeout(Aoutfile *f)
     else if (type.isValid()) f->PutStr(ObjectDefs[type].name);
     else f->PutStr("NO_OBJECT");
     f->PutInt(incomplete);
-    f->PutStr(*name);
-    if (describe) {
-        f->PutStr(*describe);
+    f->PutStr(name);
+    if (describe.Len()) {
+        f->PutStr(describe);
     } else {
         f->PutStr("none");
     }
@@ -147,21 +145,17 @@ void Object::Writeout(Aoutfile *f)
 
 void Object::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
 {
-    AString *temp;
-
     num = f->GetInt<int>();
 
-    temp = f->GetStr();
+    AString temp = f->GetStr();
     type = LookupObject(temp);
 
     incomplete = f->GetInt<int>();
 
-    if (name) delete name;
     name = f->GetStr();
     describe = f->GetStr();
-    if (*describe == "none") {
-        delete describe;
-        describe = 0;
+    if (describe == "none") {
+        describe.clear();
     }
     inner = f->GetInt<ssize_t>();
     prevdir = f->GetInt<Directions>();
@@ -185,30 +179,30 @@ void Object::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
     ReadinFleet(f);
 }
 
-void Object::SetName(AString *s)
+void Object::SetName(const AString& s)
 {
-    if (s && (CanModify())) {
-        AString *newname = s->getlegal();
-        if (!newname) {
-            delete s;
+    if (s.Len() && CanModify()) {
+        AString newname = s.getlegal();
+        if (!newname.Len()) {
             return;
         }
-        delete s;
-        delete name;
-        *newname += AString(" [") + num + "]";
+        newname += AString(" [") + num + "]";
         name = newname;
     }
 }
 
-void Object::SetDescribe(AString *s)
+void Object::SetDescribe(const AString& s)
 {
     if (CanModify()) {
-        if (describe) delete describe;
-        if (s) {
-            AString *newname = s->getlegal();
-            delete s;
+        if (s.Len())
+        {
+            AString newname = s.getlegal();
             describe = newname;
-        } else describe = 0;
+        }
+        else
+        {
+            describe.clear();
+        }
     }
 }
 
@@ -296,7 +290,7 @@ Unit::WeakHandle Object::ForbiddenBy(const ARegion::Handle& reg, const Unit::Han
         return Unit::WeakHandle();
     }
 
-    if (owner.lock()->GetAttitude(*reg, u) < A_FRIENDLY) {
+    if (owner.lock()->GetAttitude(*reg, u).isNotFriendly()) {
         return owner;
     }
     return Unit::WeakHandle();
@@ -336,7 +330,7 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
 
     /* Fleet Report */
     if (IsFleet()) {
-        AString temp = AString("+ ") + *name + " : " + FleetDefinition();
+        AString temp = AString("+ ") + name + " : " + FleetDefinition();
         /* report ships:
         for (int item=0; item<NITEMS; item++) {
             int num = GetNumShips(item);
@@ -359,14 +353,14 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
             temp += AString(" Sailors: ") + FleetSailingSkill(1) + "/" + GetFleetSize() + ";";
             temp += AString(" MaxSpeed: ") + GetFleetSpeed(1);
         }
-        if (describe) {
-            temp += AString("; ") + *describe;
+        if (describe.Len()) {
+            temp += AString("; ") + describe;
         }
         temp += ".";
         f->PutStr(temp);
         f->AddTab();
     } else if (type != Objects::Types::O_DUMMY) {
-        AString temp = AString("+ ") + *name + " : " + ob.name;
+        AString temp = AString("+ ") + name + " : " + ob.name;
         if (incomplete > 0) {
             temp += AString(", needs ") + incomplete;
         } else if (Globals->DECAY &&
@@ -383,8 +377,8 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
         if (runes) {
             temp += ", engraved with Runes of Warding";
         }
-        if (describe) {
-            temp += AString("; ") + *describe;
+        if (describe.Len()) {
+            temp += AString("; ") + describe;
         }
         if (!(ob.flags & ObjectType::CANENTER)) {
             temp += ", closed to player units";
@@ -396,7 +390,7 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
 
     for(const auto& u: units) {
         const auto u_fac = u->faction.lock();
-        int attitude = fac.GetAttitude(u_fac->num);
+        Attitudes attitude = fac.GetAttitude(u_fac->num);
         if (u_fac.get() == &fac) {
             u->WriteReport(f, 1, true, attitude, fac.showunitattitudes);
         } else {
@@ -583,8 +577,6 @@ AString Object::FleetDefinition()
  */
 size_t Object::FleetCapacity()
 {
-    AString *oname;
-
     capacity = 0;
     // Calculate the maximum number of mages while we're at it
     mages = 0;
@@ -602,9 +594,8 @@ size_t Object::FleetCapacity()
             capacity += num * ItemDefs[item].swim;
             flying = 0;
         }
-        oname = new AString(ItemDefs[item].name);
+        AString oname = AString(ItemDefs[item].name);
         const auto ot = LookupObject(oname);
-        delete oname;
         if (ot.isValid() && !ot.isDummy()) {
             mages += num * ObjectDefs[ot].maxMages;
         }

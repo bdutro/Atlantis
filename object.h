@@ -77,9 +77,9 @@ extern GameDataArray<ObjectType> ObjectDefs;
 
 AString::Handle ObjectDescription(const Objects& obj);
 
-Objects LookupObject(AString *token);
+Objects LookupObject(const AString& token);
 
-ssize_t ParseShipObject(AString *);
+ssize_t ParseShipObject(const AString&);
 Objects ParseObject(const AString&);
 
 bool ObjectIsShip(const Objects&);
@@ -97,8 +97,8 @@ class Object : public std::enable_shared_from_this<Object>
         void Writeout(Aoutfile *f);
         void Report(Areport *, const Faction&, unsigned int, size_t, bool, unsigned int, size_t, bool, bool);
 
-        void SetName(AString *);
-        void SetDescribe(AString *);
+        void SetName(const AString&);
+        void SetDescribe(const AString&);
 
         std::weak_ptr<Unit> GetUnit(size_t);
         std::weak_ptr<Unit> GetUnitAlias(int, size_t); /* alias, faction number */
@@ -133,7 +133,7 @@ class Object : public std::enable_shared_from_this<Object>
         void RemoveUnit(const std::shared_ptr<Unit>&);
 
         AString name;
-        AString *describe;
+        AString describe;
         std::weak_ptr<ARegion> region;
         ssize_t inner;
         int num;

@@ -79,6 +79,7 @@ havilah-clean:
 
 clean:
 	rm -f $(OBJECTS)
+	rm -f $(DEPENDS)
 	if [ -d obj ]; then rmdir obj; fi
 	if [ -d $(GAME)/obj ]; then rmdir $(GAME)/obj; fi
 	rm -f $(GAME)/html/$(GAME).html

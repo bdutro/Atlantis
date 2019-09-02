@@ -79,7 +79,7 @@ public:
     bool operator!=(char *) const;
     bool operator!=(const char *) const;
     bool CheckPrefix(const AString &);
-    AString operator+(const AString &);
+    AString operator+(const AString &) const;
     AString & operator+=(const AString &);
 
     AString & operator=(const AString &) = default;
@@ -94,7 +94,7 @@ public:
     AString Trunc(size_t, size_t back=30);
 
     template<typename T>
-    typename std::enable_if<!std::is_signed<T>::value, T>::type value()
+    typename std::enable_if<!std::is_signed<T>::value, T>::type value() const
     {
         T ret = 0;
         T last_ret;
@@ -126,7 +126,7 @@ public:
     }
 
     template<typename T>
-    typename std::enable_if<std::is_signed<T>::value, T>::type value()
+    typename std::enable_if<std::is_signed<T>::value, T>::type value() const
     {
         T ret = 0;
         auto it = str_.begin();
@@ -154,7 +154,7 @@ public:
     #endif
     }
 
-    AString StripWhite();
+    AString StripWhite() const;
     void clear();
 
 private:

@@ -1583,7 +1583,7 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
             if (u->faction.lock().get() == &fac) {
                 if (!header) {
                     // DK
-                    if (fac.temformat == TEMPLATE_MAP) {
+                    if (fac.temformat == Templates::Types::TEMPLATE_MAP) {
                         WriteTemplateHeader(f, fac, pRegs, month);
                     } else {
                         f->PutStr("");
@@ -1595,8 +1595,8 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                 f->PutStr("");
                 f->PutStr(AString("unit ") + u->num);
                 // DK
-                if (fac.temformat == TEMPLATE_LONG ||
-                        fac.temformat == TEMPLATE_MAP) {
+                if (fac.temformat == Templates::Types::TEMPLATE_LONG ||
+                        fac.temformat == Templates::Types::TEMPLATE_MAP) {
                     f->PutStr(u->TemplateReport(), 1);
                 }
                 int gotMonthOrder = 0;
@@ -1881,7 +1881,7 @@ Unit::WeakHandle ARegion::ForbiddenByAlly(const Unit::Handle& u)
 {
     for(const auto& obj: objects) {
         for(const auto& u2: obj->units) {
-            if (u->faction.lock()->GetAttitude(u2->faction.lock()->num) == A_ALLY &&
+            if (u->faction.lock()->GetAttitude(u2->faction.lock()->num) == Attitudes::Types::A_ALLY &&
                 u2->Forbids(*this, u)) return u2;
         }
     }
@@ -1964,11 +1964,17 @@ void ARegion::NotifyCity(const Unit::Handle& caster, AString& oldname, AString& 
 
 bool ARegion::CanTax(const Unit::Handle& u)
 {
-    for(const auto& obj: objects) {
-        for(const auto& u2: obj->units) {
+    for(const auto& obj: objects)
+    {
+        for(const auto& u2: obj->units)
+        {
             if (u2->guard == GUARD_GUARD && u2->IsAlive())
-                if (u2->GetAttitude(*this, u) <= A_NEUTRAL)
+            {
+                if (u2->GetAttitude(*this, u).isNotFriendly())
+                {
                     return false;
+                }
+            }
         }
     }
     return true;

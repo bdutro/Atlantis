@@ -36,6 +36,7 @@ class Game;
 #include <memory>
 #include <list>
 #include <vector>
+#include <array>
 
 #include "itemtype.h"
 #include "gameio.h"
@@ -46,32 +47,29 @@ class Game;
 #include "skills.h"
 #include "items.h"
 #include "astring.h"
+#include "attitudetype.h"
+#include "enumarray.h"
 
-enum {
-    A_HOSTILE,
-    A_UNFRIENDLY,
-    A_NEUTRAL,
-    A_FRIENDLY,
-    A_ALLY,
-    NATTITUDES
-};
-
-enum {
+enum class _Factions : size_t {
     F_WAR,
     F_TRADE,
     F_MAGIC,
     NFACTYPES
 };
 
+using Factions = ValidEnum<_Factions, _Factions::NFACTYPES>;
+
 // DK
 // LLS - make templates cleaner for save/restore
-enum {
+enum class _Templates : size_t {
     TEMPLATE_OFF,
     TEMPLATE_SHORT,
     TEMPLATE_LONG,
     TEMPLATE_MAP,
     NTEMPLATES
 };
+
+using Templates = ValidEnum<_Templates, _Templates::NTEMPLATES>;
 
 enum {
     QUIT_NONE,
@@ -82,14 +80,14 @@ enum {
     QUIT_GAME_OVER,
 };
 
-extern char const ** AttitudeStrs;
-extern char const ** FactionStrs;
+extern const EnumArray<const char*, Attitudes::size()> AttitudeStrs;
+extern const EnumArray<const char*, Factions::size()> FactionStrs;
 
 // LLS - include strings for the template enum
-extern char const **TemplateStrs;
-int ParseTemplate(AString *);
+extern const EnumArray<const char*, Templates::size()> TemplateStrs;
+Templates ParseTemplate(const AString&);
 
-int ParseAttitude(AString *);
+Attitudes ParseAttitude(const AString&);
 
 int MagesByFacType(int);
 
@@ -103,7 +101,7 @@ public:
     void Readin( Ainfile *, ATL_VER version );
     
     size_t factionnum;
-    int attitude;
+    Attitudes attitude;
 };
 
 class Faction
@@ -134,9 +132,9 @@ public:
     void WriteTemplate(Areport *f, Game *pGame);
     void WriteFacInfo(Aoutfile *);
     
-    void SetAttitude(size_t,int); /* faction num, attitude */
+    void SetAttitude(size_t, const Attitudes&); /* faction num, attitude */
     /* if attitude == -1, clear it */
-    int GetAttitude(size_t) const;
+    Attitudes GetAttitude(size_t) const;
     void RemoveAttitude(size_t);
     
     bool CanCatch(const ARegion&, const std::shared_ptr<Unit>&);
@@ -157,7 +155,7 @@ public:
     // The type is only used if Globals->FACTION_LIMIT_TYPE ==
     // FACLIM_FACTION_TYPES
     //
-    std::array<int, NFACTYPES> type;
+    EnumArray<int, Factions::size()> type;
 
     int lastchange;
     size_t lastorders;
@@ -169,7 +167,7 @@ public:
     AString password;
     int times;
     bool showunitattitudes;
-    int temformat;
+    Templates temformat;
     bool exists;
     int quit;
     int numshows;
@@ -184,7 +182,7 @@ public:
     /* Used when writing reports */
     WeakPtrList<ARegion> present_regions;
     
-    int defaultattitude;
+    Attitudes defaultattitude;
     PtrList<Attitude> attitudes;
     SkillList skills;
     ItemList items;

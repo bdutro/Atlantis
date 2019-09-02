@@ -26,7 +26,7 @@
 #include "gamedata.h"
 #include "game.h"
 
-char const *as[] = {
+const EnumArray<const char *, Attitudes::size()> AttitudeStrs = {
     "Hostile",
     "Unfriendly",
     "Neutral",
@@ -34,38 +34,42 @@ char const *as[] = {
     "Ally"
 };
 
-char const **AttitudeStrs = as;
-
-char const *fs[] = {
+const EnumArray<const char *, Factions::size()> FactionStrs = {
     "War",
     "Trade",
     "Magic"
 };
 
-char const **FactionStrs = fs;
-
 // LLS - fix up the template strings
-char const *tp[] = {
+const EnumArray<const char*, Templates::size()> TemplateStrs = {
     "off",
     "short",
     "long",
     "map"
 };
 
-char const **TemplateStrs = tp;
-
-int ParseTemplate(AString *token)
+Templates ParseTemplate(const AString& token)
 {
-    for (int i = 0; i < NTEMPLATES; i++)
-        if (*token == TemplateStrs[i]) return i;
-    return -1;
+    for (auto i = Templates::begin(); i != Templates::end(); ++i)
+    {
+        if (token == TemplateStrs[*i])
+        {
+            return *i;
+        }
+    }
+    return Templates();
 }
 
-int ParseAttitude(AString *token)
+Attitudes ParseAttitude(const AString& token)
 {
-    for (int i=0; i<NATTITUDES; i++)
-        if (*token == AttitudeStrs[i]) return i;
-    return -1;
+    for (auto i = Attitudes::begin(); i != Attitudes::end(); ++i)
+    {
+        if (token == AttitudeStrs[*i])
+        {
+            return *i;
+        }
+    }
+    return Attitudes();
 }
 
 FactionVector::FactionVector(size_t size)
@@ -109,9 +113,9 @@ Faction::Faction()
     lastchange = -6;
     times = 0;
     showunitattitudes = 0;
-    temformat = TEMPLATE_OFF;
+    temformat = Templates::Types::TEMPLATE_OFF;
     quit = 0;
-    defaultattitude = A_NEUTRAL;
+    defaultattitude = Attitudes::Types::A_NEUTRAL;
     unclaimed = 0;
     noStartLeader = 0;
     startturn = 0;
@@ -128,8 +132,8 @@ Faction::Faction(size_t n)
     password = AString("none");
     times = 1;
     showunitattitudes = 0;
-    temformat = TEMPLATE_LONG;
-    defaultattitude = A_NEUTRAL;
+    temformat = Templates::Types::TEMPLATE_LONG;
+    defaultattitude = Attitudes::Types::A_NEUTRAL;
     quit = 0;
     unclaimed = 0;
     noStartLeader = 0;
@@ -183,7 +187,7 @@ void Faction::Readin(Ainfile *f, ATL_VER v)
     password = f->GetStr();
     times = f->GetInt<int>();
     showunitattitudes = f->GetInt<int>();
-    temformat = f->GetInt<int>();
+    temformat = f->GetInt<Templates>();
 
     skills.Readin(f);
     items.Readin(f);
@@ -246,14 +250,14 @@ AString Faction::FactionTypeStr()
         return(AString("Normal"));
     } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
         int comma = 0;
-        for (size_t i=0; i<NFACTYPES; i++) {
-            if (type[i]) {
+        for (auto i = Factions::begin(); i != Factions::end(); ++i) {
+            if (type[*i]) {
                 if (comma) {
                     temp += ", ";
                 } else {
                     comma = 1;
                 }
-                temp += AString(FactionStrs[i]) + " " + type[i];
+                temp += AString(FactionStrs[*i]) + " " + type[*i];
             }
         }
         if (!comma) return AString("none");
@@ -518,15 +522,15 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     AString temp = AString("Declared Attitudes (default ") +
         AttitudeStrs[defaultattitude] + "):";
     f->PutStr(temp);
-    for (int i=0; i<NATTITUDES; i++) {
-        int j=0;
-        temp = AString(AttitudeStrs[i]) + " : ";
+    for (auto i = Attitudes::begin(); i != Attitudes::end(); ++i) {
+        bool j = false;
+        temp = AString(AttitudeStrs[*i]) + " : ";
         for(const auto& a: attitudes) {
-            if (a->attitude == i) {
+            if (a->attitude == *i) {
                 if (j) temp += ", ";
                 temp += GetFaction(pGame->factions,
                             a->factionnum)->name;
-                j = 1;
+                j = true;
             }
         }
         if (!j) temp += "none";
@@ -552,20 +556,24 @@ void Faction::WriteReport(Areport *f, Game *pGame)
 void Faction::WriteTemplate(Areport *f, Game *pGame)
 {
     AString temp;
-    if (temformat == TEMPLATE_OFF)
+    if (temformat == Templates::Types::TEMPLATE_OFF)
+    {
         return;
+    }
     if (!IsNPC()) {
         f->PutStr("");
-        switch (temformat) {
-            case TEMPLATE_SHORT:
+        switch (temformat.asEnum()) {
+            case Templates::Types::TEMPLATE_SHORT:
                 f->PutStr("Orders Template (Short Format):");
                 break;
-            case TEMPLATE_LONG:
+            case Templates::Types::TEMPLATE_LONG:
                 f->PutStr("Orders Template (Long Format):");
                 break;
             // DK
-            case TEMPLATE_MAP:
+            case Templates::Types::TEMPLATE_MAP:
                 f->PutStr("Orders Template (Map Format):");
+                break;
+            default:
                 break;
         }
 
@@ -662,31 +670,43 @@ void Faction::RemoveAttitude(size_t f)
     }
 }
 
-int Faction::GetAttitude(size_t n) const
+Attitudes Faction::GetAttitude(size_t n) const
 {
-    if (n == num) return A_ALLY;
-    for(const auto& a: attitudes) {
+    if (n == num)
+    {
+        return Attitudes::Types::A_ALLY;
+    }
+    for(const auto& a: attitudes)
+    {
         if (a->factionnum == n)
+        {
             return a->attitude;
+        }
     }
     return defaultattitude;
 }
 
-void Faction::SetAttitude(size_t num, int att)
+void Faction::SetAttitude(size_t num, const Attitudes& att)
 {
-    for(auto it = attitudes.begin(); it != attitudes.end(); ++it) {
+    for(auto it = attitudes.begin(); it != attitudes.end(); ++it)
+    {
         const auto& a = *it;
-        if (a->factionnum == num) {
-            if (att == -1) {
+        if (a->factionnum == num)
+        {
+            if (!att.isValid())
+            {
                 attitudes.erase(it);
                 return;
-            } else {
+            }
+            else
+            {
                 a->attitude = att;
                 return;
             }
         }
     }
-    if (att != -1) {
+    if (att.isValid())
+    {
         auto& a = attitudes.emplace_back(std::make_shared<Attitude>());
         a->factionnum = num;
         a->attitude = att;
@@ -842,7 +862,10 @@ void Faction::SetNPC()
 
 bool Faction::IsNPC() const
 {
-    if (type[F_WAR] == -1) return true;
+    if (type[Factions::Types::F_WAR] == -1)
+    {
+        return true;
+    }
     return false;
 }
 

@@ -54,6 +54,7 @@ class Object;
 #include "items.h"
 #include "itemtype.h"
 #include "skilltype.h"
+#include "attitudetype.h"
 
 enum {
     GUARD_NONE,
@@ -107,7 +108,7 @@ enum {
 class Unit : std::enable_shared_from_this<Unit>
 {
     private:
-        void WriteReport_(Areport *, unsigned int, size_t, bool, int, bool);
+        void WriteReport_(Areport *, unsigned int, size_t, bool, const Attitudes&, bool);
 
     public:
         using Handle = std::shared_ptr<Unit>;
@@ -125,8 +126,8 @@ class Unit : std::enable_shared_from_this<Unit>
 
         AString SpoilsReport(void);
         bool CanGetSpoil(const Item::Handle& i);
-        void WriteReport(Areport *, size_t, bool, int, bool);
-        void WriteReport(Areport *, unsigned int, size_t, bool, bool, int, bool);
+        void WriteReport(Areport *, size_t, bool, const Attitudes&, bool);
+        void WriteReport(Areport *, unsigned int, size_t, bool, bool, const Attitudes&, bool);
         AString GetName(unsigned int);
         AString MageReport();
         AString ReadyItem();
@@ -191,7 +192,7 @@ class Unit : std::enable_shared_from_this<Unit>
         unsigned int CanSee(const ARegion&, const Unit::Handle&, int practice = 0);
         bool CanCatch(const ARegion&, const Unit::Handle&);
         int AmtsPreventCrime(const Unit::Handle&);
-        int GetAttitude(const ARegion&, const Unit::Handle&); /* Get this unit's attitude toward
+        Attitudes GetAttitude(const ARegion&, const Unit::Handle&); /* Get this unit's attitude toward
                                               the Unit parameter */
         int Hostile();
         bool Forbids(const ARegion&,const Unit::Handle&);

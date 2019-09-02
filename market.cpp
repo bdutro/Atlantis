@@ -119,12 +119,10 @@ void Market::Writeout(Aoutfile *f)
 
 void Market::Readin(Ainfile *f)
 {
-    AString *temp;
     type = f->GetInt<int>();
 
-    temp = f->GetStr();
-    item = LookupItem(*temp);
-    delete temp;
+    AString temp = f->GetStr();
+    item = LookupItem(temp);
 
     price = f->GetInt<int>();
     amount = f->GetInt<int>();

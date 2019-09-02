@@ -25,10 +25,11 @@
 #ifndef FILE_IO
 #define FILE_IO
 
-#include "astring.h"
-
 #include <iostream>
 #include <fstream>
+#include <exception>
+
+#include "astring.h"
 
 class Ainfile {
     public:
@@ -83,7 +84,7 @@ class Aorders {
         int OpenByName(const AString &);
         void Close();
 
-        AString *GetLine();
+        AString GetLine();
 
         std::ifstream *file;
 };
@@ -144,4 +145,9 @@ class Arules {
         int tabs;
         int wraptab;
 };
+
+class AFileException : public std::exception
+{
+};
+
 #endif
