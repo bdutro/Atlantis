@@ -1,6 +1,7 @@
 #ifndef VALIDVALUE_CLASS
 #define VALIDVALUE_CLASS
 
+#include <algorithm>
 #include <stdexcept>
 
 template<typename T>
@@ -88,6 +89,35 @@ class ValidValue
             ValidValue tmp = *this;
             ++(*this);
             return tmp;
+        }
+
+        ValidValue& operator--()
+        {
+            if(!isValid())
+            {
+                throw std::runtime_error("Attempted to use an invalid ValidValue");
+            }
+            --val_;
+            return *this;
+        }
+
+        ValidValue operator--(int)
+        {
+            ValidValue tmp = *this;
+            --(*this);
+            return tmp;
+        }
+
+        ValidValue& operator+=(const T& rhs)
+        {
+            val_ += rhs;
+            return *this;
+        }
+
+        ValidValue& operator-=(const T& rhs)
+        {
+            val_ -= rhs;
+            return *this;
         }
 };
 

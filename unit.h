@@ -161,7 +161,8 @@ class Unit : std::enable_shared_from_this<Unit>
         void Short(int, int);
         size_t SkillLevels();
         void SkillStarvation();
-        Skill *GetSkillObject(int);
+        const Skill& GetSkillObject(const Skills&) const;
+        Skill& GetSkillObject(const Skills&);
 
         size_t GetAttackRiding();
         size_t GetDefenseRiding();
@@ -171,7 +172,7 @@ class Unit : std::enable_shared_from_this<Unit>
         //
         // LLS
         unsigned int GetAttribute(char const *ident);
-        int PracticeAttribute(char const *ident);
+        bool PracticeAttribute(char const *ident);
         int GetProductionBonus(const Items&);
 
         size_t GetSkill(const Skills&);

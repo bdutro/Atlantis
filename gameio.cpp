@@ -115,3 +115,9 @@ AString *AGetString()
     std::cin.getline( buf, 256, '\n' );
     return( new AString( buf ));
 }
+
+template<>
+float getrandom(float range)
+{
+    return static_cast<float>(getrandom(range));
+}

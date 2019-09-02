@@ -23,6 +23,8 @@
 //
 // END A3HEADER
 
+#include <algorithm>
+
 #include "unit.h"
 #include "gamedata.h"
 
@@ -2982,139 +2984,246 @@ void Unit::DiscardUnfinishedShips() {
 void Unit::Event(const AString & s)
 {
     AString temp = *name + ": " + s;
-    faction->Event(temp);
+    faction.lock()->Event(temp);
 }
 
 void Unit::Error(const AString & s)
 {
     AString temp = *name + ": " + s;
-    faction->Error(temp);
+    faction.lock()->Error(temp);
 }
 
 unsigned int Unit::GetAttribute(char const *attrib)
 {
-    AttribModType *ap = FindAttrib(attrib);
-    if (ap == nullptr) return 0;
-    AString temp;
-    int base = 0;
-    int bonus = 0;
-    int monbase = -1;
-    int monbonus = 0;
+    try
+    {
+        const AttribModType& ap = FindAttrib(attrib);
+        unsigned int base = 0;
+        unsigned int bonus = 0;
+        ValidValue<unsigned int> monbase;
+        unsigned int monbonus = 0;
 
-    if (ap->flags & AttribModType::CHECK_MONSTERS) {
-        forlist (&items) {
-            Item *i = (Item *) elem;
-            if (ItemDefs[i->type].type & IT_MONSTER) {
-                MonType *mp = FindMonster(ItemDefs[i->type].abr,
-                        (ItemDefs[i->type].type & IT_ILLUSION));
-                int val = 0;
-                temp = attrib;
-                if (temp == "observation") val = mp->obs;
-                else if (temp == "stealth") val = mp->stealth;
-                else if (temp == "tactics") val = mp->tactics;
-                else continue;
-                if (monbase == -1) monbase = val;
-                else if (ap->flags & AttribModType::USE_WORST)
-                    monbase = (val < monbase) ? val : monbase;
-                else
-                    monbase = (val > monbase) ? val : monbase;
-            }
-        }
-    }
-
-    for (int index = 0; index < 5; index++) {
-        int val = 0;
-        if (ap->mods[index].flags & AttribModItem::SKILL) {
-            temp = ap->mods[index].ident;
-            int sk = LookupSkill(&temp);
-            val = GetAvailSkill(sk);
-            if (ap->mods[index].modtype == AttribModItem::UNIT_LEVEL_HALF) {
-                val = ((val + 1)/2) * ap->mods[index].val;
-            } else if (ap->mods[index].modtype == AttribModItem::CONSTANT) {
-                val = ap->mods[index].val;
-            } else {
-                val *= ap->mods[index].val;
-            }
-        } else if (ap->mods[index].flags & AttribModItem::ITEM) {
-            val = 0;
-            temp = ap->mods[index].ident;
-            int item = LookupItem(&temp);
-            if (item != -1) {
-                if (ItemDefs[item].type & IT_MAGEONLY
-                    && type != U_MAGE
-                    && type != U_APPRENTICE
-                    && type != U_GUARDMAGE) {
-                    // Ignore mage only items for non-mages
-                } else if (ap->mods[index].flags & AttribModItem::PERMAN) {
-                    int men = GetMen();
-                    if (men <= items.GetNum(item))
-                        val = ap->mods[index].val;
-                } else {
-                    if (items.GetNum(item) > 0)
-                        val = ap->mods[index].val;
+        if (ap.flags & AttribModType::CHECK_MONSTERS)
+        {
+            for(const auto& i: items)
+            {
+                if (ItemDefs[i->type].type & IT_MONSTER)
+                {
+                    const MonType& mp = FindMonster(ItemDefs[i->type].abr,
+                            (ItemDefs[i->type].type & IT_ILLUSION));
+                    int val = 0;
+                    const std::string temp = attrib;
+                    if (temp == "observation")
+                    {
+                        val = mp.obs;
+                    }
+                    else if (temp == "stealth")
+                    {
+                        val = mp.stealth;
+                    }
+                    else if (temp == "tactics")
+                    {
+                        val = mp.tactics;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    if (!monbase.isValid())
+                    {
+                        if(val >= 0)
+                        {
+                            monbase = static_cast<unsigned int>(val);
+                        }
+                    }
+                    else if (ap.flags & AttribModType::USE_WORST)
+                    {
+                        if(val < 0)
+                        {
+                            monbase.invalidate();
+                        }
+                        else
+                        {
+                            monbase = std::min(static_cast<unsigned int>(val),
+                                               static_cast<unsigned int>(monbase));
+                        }
+                    }
+                    else
+                    {
+                        if(val >= 0)
+                        {
+                            monbase = std::max(static_cast<unsigned int>(val),
+                                               static_cast<unsigned int>(monbase));
+                        }
+                    }
                 }
             }
-        } else if (ap->mods[index].flags & AttribModItem::FLAGGED) {
-            temp = ap->mods[index].ident;
-            if (temp == "invis")
-                val = (GetFlag(FLAG_INVIS) ? ap->mods[index].val : 0);
-            if (temp == "guard")
-                val = (guard == GUARD_GUARD ? ap->mods[index].val : 0);
-
         }
-        if (ap->mods[index].flags & AttribModItem::NOT)
-            val = ((val == 0) ? ap->mods[index].val : 0);
-        if (val && ap->mods[index].modtype == AttribModItem::FORCECONSTANT)
-            return val;
-        // Only flags can add to monster bonuses
-        if (ap->mods[index].flags & AttribModItem::FLAGGED) {
-            if (ap->flags & AttribModType::CHECK_MONSTERS) monbonus += val;
+
+        for (const auto& mod: ap.mods)
+        {
+            unsigned int val = 0;
+            if (mod.flags & AttribModItem::SKILL)
+            {
+                const auto& temp = mod.ident;
+                const Skills sk = LookupSkill(temp);
+                val = static_cast<unsigned int>(GetAvailSkill(sk));
+                if (mod.modtype == AttribModItem::UNIT_LEVEL_HALF)
+                {
+                    val = ((val + 1)/2) * mod.val;
+                }
+                else if (mod.modtype == AttribModItem::CONSTANT)
+                {
+                    val = mod.val;
+                }
+                else
+                {
+                    val *= mod.val;
+                }
+            }
+            else if (mod.flags & AttribModItem::ITEM)
+            {
+                val = 0;
+                const auto& temp = mod.ident;
+                const Items item = LookupItem(temp);
+                if (item.isValid())
+                {
+                    if (ItemDefs[item].type & IT_MAGEONLY
+                        && type != U_MAGE
+                        && type != U_APPRENTICE
+                        && type != U_GUARDMAGE)
+                    {
+                        // Ignore mage only items for non-mages
+                    }
+                    else if (mod.flags & AttribModItem::PERMAN)
+                    {
+                        const size_t men = GetMen();
+                        if (men <= items.GetNum(item))
+                        {
+                            val = mod.val;
+                        }
+                    }
+                    else
+                    {
+                        if (items.GetNum(item) > 0)
+                        {
+                            val = mod.val;
+                        }
+                    }
+                }
+            }
+            else if (mod.flags & AttribModItem::FLAGGED)
+            {
+                const std::string temp = mod.ident;
+                if (temp == "invis")
+                {
+                    val = (GetFlag(FLAG_INVIS) ? mod.val : 0);
+                }
+                if (temp == "guard")
+                {
+                    val = (guard == GUARD_GUARD ? mod.val : 0);
+                }
+
+            }
+            if (mod.flags & AttribModItem::NOT)
+            {
+                val = ((val == 0) ? mod.val : 0);
+            }
+            if (val && mod.modtype == AttribModItem::FORCECONSTANT)
+            {
+                return val;
+            }
+            // Only flags can add to monster bonuses
+            if (mod.flags & AttribModItem::FLAGGED)
+            {
+                if (ap.flags & AttribModType::CHECK_MONSTERS)
+                {
+                    monbonus += val;
+                }
+            }
+            if (mod.flags & AttribModItem::CUMULATIVE)
+            {
+                base += val;
+            }
+            else if (val > bonus)
+            {
+                bonus = val;
+            }
         }
-        if (ap->mods[index].flags & AttribModItem::CUMULATIVE)
-            base += val;
-        else if (val > bonus) bonus = val;
-    }
 
-    base += bonus;
+        base += bonus;
 
-    if (monbase != -1) {
-        monbase += monbonus;
-        if (GetMen() > 0) {
-            if (ap->flags & AttribModType::USE_WORST)
-                base = (monbase < base) ? monbase : base;
+        if (monbase.isValid())
+        {
+            monbase += monbonus;
+            if (GetMen() > 0)
+            {
+                if (ap.flags & AttribModType::USE_WORST)
+                {
+                    base = (monbase < base) ? monbase : base;
+                }
+                else
+                {
+                    base = (monbase > base) ? monbase : base;
+                }
+            }
             else
-                base = (monbase > base) ? monbase : base;
-        }
-        else
-            base = monbase; // monster units have no men
-    }    
-    return base;
-}
-
-int Unit::PracticeAttribute(char const *attrib)
-{
-    AttribModType *ap = FindAttrib(attrib);
-    if (ap == nullptr) return 0;
-    for (int index = 0; index < 5; index++) {
-        if (ap->mods[index].flags & AttribModItem::SKILL) {
-            AString temp = ap->mods[index].ident;
-            int sk = LookupSkill(&temp);
-            if (sk != -1)
-                if (Practice(sk)) return 1;
-        }
+            {
+                base = monbase; // monster units have no men
+            }
+        }    
+        return base;
     }
-    return 0;
+    catch(const NoSuchItemException&)
+    {
+        return 0;
+    }
 }
 
-int Unit::GetProductionBonus(int item)
+bool Unit::PracticeAttribute(char const *attrib)
 {
-    int bonus = 0;
-    if (ItemDefs[item].mult_item != -1)
+    try
+    {
+        const AttribModType& ap = FindAttrib(attrib);
+        for (const auto& mod: ap.mods)
+        {
+            if (mod.flags & AttribModItem::SKILL)
+            {
+                const auto& temp = mod.ident;
+                const Skills sk = LookupSkill(temp);
+                if (sk.isValid())
+                {
+                    if (Practice(sk))
+                    {
+                        return 1;
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+    catch(const NoSuchItemException&)
+    {
+        return 0;
+    }
+}
+
+int Unit::GetProductionBonus(const Items& item)
+{
+    size_t bonus = 0;
+    if (ItemDefs[item].mult_item.isValid())
+    {
         bonus = items.GetNum(ItemDefs[item].mult_item);
+    }
     else
+    {
         bonus = GetMen();
-    if (bonus > GetMen()) bonus = GetMen();
-    return bonus * ItemDefs[item].mult_val;
+    }
+    if (bonus > GetMen())
+    {
+        bonus = GetMen();
+    }
+    return static_cast<int>(bonus) * ItemDefs[item].mult_val;
 }
 
 size_t Unit::SkillLevels()
@@ -3127,61 +3236,102 @@ size_t Unit::SkillLevels()
     return levels;
 }
 
-Skill *Unit::GetSkillObject(int sk)
+const Skill& Unit::GetSkillObject(const Skills& sk) const
 {
-    forlist(&skills) {
-        Skill *s = (Skill *)elem;
-        if (s->type == sk)
+    for(const auto& s: skills)
+    {
+        if (!s.type.isValid() && !sk.isValid())
+        {
             return s;
+        }
+        if (s.type.isValid() && sk.isValid() && s.type == sk)
+        {
+            return s;
+        }
     }
-    return nullptr;
+
+    throw NoSuchItemException();
+}
+
+Skill& Unit::GetSkillObject(const Skills& sk)
+{
+    for(auto& s: skills)
+    {
+        if (!s.type.isValid() && !sk.isValid())
+        {
+            return s;
+        }
+        if (s.type.isValid() && sk.isValid() && s.type == sk)
+        {
+            return s;
+        }
+    }
+
+    throw NoSuchItemException();
 }
 
 void Unit::SkillStarvation()
 {
-    int can_forget[NSKILLS];
+    std::array<bool, Skills::size()> can_forget = {false};
     int count = 0;
-    int i;
-    for (i = 0; i < NSKILLS; i++) {
-        if (SkillDefs[i].flags & SkillType::DISABLED) {
-            can_forget[i] = 0;
+    for (auto i = Skills::begin(); i != Skills::end(); ++i)
+    {
+        if (SkillDefs[*i].flags & SkillType::DISABLED)
+        {
+            can_forget[*i] = false;
             continue;
         }
-        if (GetSkillObject(i)) {
-            can_forget[i] = 1;
+        try
+        {
+            GetSkillObject(*i);
+            can_forget[*i] = true;
             count++;
-        } else {
-            can_forget[i] = 0;
+        }
+        catch(const NoSuchItemException&)
+        {
+            can_forget[*i] = false;
         }
     }
-    for (i = 0; i < NSKILLS; i++) {
-        if (!can_forget[i]) continue;
-        Skill *si = GetSkillObject(i);
-        for (int j=0; j < NSKILLS; j++) {
-            if (SkillDefs[j].flags & SkillType::DISABLED) continue;
-            Skill *sj = GetSkillObject(j);
-            int dependancy_level = 0;
-            unsigned int c;
-            for (c=0;c < sizeof(SkillDefs[i].depends)/sizeof(SkillDepend);c++) {
-                AString skname = SkillDefs[i].depends[c].skill;
-                if (skname == SkillDefs[j].abbr) {
-                    dependancy_level = SkillDefs[i].depends[c].level;
+    for (auto i = Skills::begin(); i != Skills::end(); ++i)
+    {
+        if (!can_forget[*i])
+        {
+            continue;
+        }
+        const Skill& si = GetSkillObject(*i);
+        for (auto j = Skills::begin(); j  != Skills::end(); ++j) {
+            if (SkillDefs[*j].flags & SkillType::DISABLED)
+            {
+                continue;
+            }
+            const Skill& sj = GetSkillObject(*j);
+            unsigned int dependancy_level = 0;
+            for (const auto& dep: SkillDefs[*i].depends)
+            {
+                const AString& skname = dep.skill;
+                if (skname == SkillDefs[*j].abbr)
+                {
+                    dependancy_level = dep.level;
                     break;
                 }
             }
-            if (dependancy_level > 0) {
-                if (GetLevelByDays(sj->days) == GetLevelByDays(si->days)) {
-                    can_forget[j] = 0;
+            if (dependancy_level > 0)
+            {
+                if (GetLevelByDays(sj.days) == GetLevelByDays(si.days))
+                {
+                    can_forget[*j] = 0;
                     count--;
                 }
             }
         }
     }
-    if (!count) {
-        forlist(&items) {
-            Item *i = (Item *)elem;
-            if (ItemDefs[i->type].type & IT_MAN) {
-                count += items.GetNum(i->type);
+    if (!count)
+    {
+        for(const auto& i: items)
+        {
+            if (ItemDefs[i->type].type & IT_MAN)
+            {
+                count += static_cast<int>(items.GetNum(i->type));
                 items.SetNum(i->type, 0);
             }
         }
@@ -3189,31 +3339,36 @@ void Unit::SkillStarvation()
         Error(temp);
         return;
     }
-    count = getrandom(count)+1;
-    for (i = 0; i < NSKILLS; i++) {
-        if (can_forget[i]) {
-            if (--count == 0) {
-                Skill *s = GetSkillObject(i);
-                AString temp = AString("Starves and forgets one level of ")+
-                    SkillDefs[i].name + ".";
+    count = getrandom(count) + 1;
+    for (auto i = Skills::begin(); i != Skills::end(); ++i)
+    {
+        if (can_forget[*i])
+        {
+            if (--count == 0)
+            {
+                Skill& s = GetSkillObject(*i);
+                AString temp = AString("Starves and forgets one level of ") + SkillDefs[*i].name + ".";
                 Error(temp);
-                switch(GetLevelByDays(s->days)) {
+                switch(GetLevelByDays(s.days))
+                {
                     case 1:
-                        s->days -= 30;
-                        if (s->days <= 0)
-                            ForgetSkill(i);
+                        s.days -= 30;
+                        if (s.days <= 0)
+                        {
+                            ForgetSkill(*i);
+                        }
                         break;
                     case 2:
-                        s->days -= 60;
+                        s.days -= 60;
                         break;
                     case 3:
-                        s->days -= 90;
+                        s.days -= 90;
                         break;
                     case 4:
-                        s->days -= 120;
+                        s.days -= 120;
                         break;
                     case 5:
-                        s->days -= 150;
+                        s.days -= 150;
                         break;
                 }
             }
@@ -3226,12 +3381,12 @@ int Unit::CanUseWeapon(const WeaponType& pWep, const Items& riding)
 {
     if (!riding.isValid())
     {
-        if (pWep->flags & WeaponType::NOFOOT)
+        if (pWep.flags & WeaponType::NOFOOT)
         {
             return -1;
         }
     }
-    else if (pWep->flags & WeaponType::NOMOUNT)
+    else if (pWep.flags & WeaponType::NOMOUNT)
     {
         return -1;
     }
@@ -3245,23 +3400,23 @@ int Unit::CanUseWeapon(const WeaponType& pWep)
 
     Skills bsk, orsk;
 
-    if (pWep->baseSkill != nullptr)
+    if (pWep.baseSkill != nullptr)
     {
-        const auto& skname = pWep->baseSkill;
-        bsk = LookupSkill(&skname);
+        const auto& skname = pWep.baseSkill;
+        bsk = LookupSkill(skname);
         if (bsk.isValid())
         {
-            baseSkillLevel = GetSkill(bsk);
+            baseSkillLevel = static_cast<int>(GetSkill(bsk));
         }
     }
 
-    if (pWep->orSkill != nullptr)
+    if (pWep.orSkill != nullptr)
     {
-        const auto& skname = pWep->orSkill;
-        orsk = LookupSkill(&skname);
+        const auto& skname = pWep.orSkill;
+        orsk = LookupSkill(skname);
         if (orsk.isValid())
         {
-            tempSkillLevel = GetSkill(orsk);
+            tempSkillLevel = static_cast<int>(GetSkill(orsk));
         }
     }
 
@@ -3275,7 +3430,7 @@ int Unit::CanUseWeapon(const WeaponType& pWep)
         Practice(bsk);
     }
 
-    if (pWep->flags & WeaponType::NEEDSKILL && !baseSkillLevel)
+    if (pWep.flags & WeaponType::NEEDSKILL && !baseSkillLevel)
     {
         return -1;
     }

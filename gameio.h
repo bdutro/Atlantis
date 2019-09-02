@@ -49,12 +49,6 @@ I getrandom(I range)
     return ret;
 }
 
-template<>
-float getrandom(float range)
-{
-    return static_cast<float>(getrandom(range));
-}
-
 /* Seed the random number generator */
 void seedrandom(int);
 void seedrandomrandom();
