@@ -23,13 +23,14 @@
 //
 // END A3HEADER
 
-#include "game.h"
-#include "gamedata.h"
-#include <stdio.h>
+#include <cstdio>
 #ifdef WIN32
 #include <memory.h>
 #endif
-#include <string.h>
+#include <cstring>
+
+#include "game.h"
+#include "gamedata.h"
 
 #define LINE_WIDTH 70
 #define MAP_WIDTH 23

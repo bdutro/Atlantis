@@ -23,7 +23,7 @@
 //
 // END A3HEADER
 
-#include <stdlib.h>
+#include <cstdlib>
 #include "items.h"
 #include "skills.h"
 #include "object.h"

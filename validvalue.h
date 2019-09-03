@@ -57,6 +57,20 @@ class ValidValue
 
         operator T() const
         {
+            return get();
+        }
+
+        const T& get() const
+        {
+            if(!isValid())
+            {
+                throw std::runtime_error("Attempted to use an invalid ValidValue");
+            }
+            return val_;
+        }
+
+        T& get()
+        {
             if(!isValid())
             {
                 throw std::runtime_error("Attempted to use an invalid ValidValue");

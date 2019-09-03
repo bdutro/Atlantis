@@ -2197,10 +2197,10 @@ void Game::DoGiveOrders()
                                 s = r->GetUnitId(o->target, u_fac->num).lock();
                                 if (!s || !u->CanSee(*r, s)) {
                                     u->Error(AString("TAKE: Nonexistant target (") +
-                                            static_cast<UnitId>(o->target).Print() + ").");
+                                            o->target.get().Print() + ").");
                                     continue;
                                 } else if (u_fac != s->faction.lock()) {
-                                    u->Error(AString("TAKE: ") + static_cast<UnitId>(o->target).Print() +
+                                    u->Error(AString("TAKE: ") + o->target.get().Print() +
                                             " is not a member of your faction.");
                                     continue;
                                 }
@@ -2450,7 +2450,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
     }
 
     const size_t o_item = static_cast<size_t>(o.item);
-    const auto o_target = static_cast<UnitId>(o.target);
+    const auto o_target = o.target.get();
     auto u_fac = u->faction.lock();
     /* Transfer/GIVE ship items: */
     if (o.item >= 0)
@@ -3044,7 +3044,7 @@ void Game::CheckTransportOrders()
                     AString ordertype =
                         (o->type == Orders::Types::O_DISTRIBUTE) ? "DISTRIBUTE" :
                         "TRANSPORT";
-                    if (!o->target.isValid() || !static_cast<UnitId>(o->target).unitnum.isValid()) {
+                    if (!o->target.isValid() || !o->target.get().unitnum.isValid()) {
                         u->Error(ordertype + ": Target does not exist.");
                         o->type = *Orders::end();
                         continue;

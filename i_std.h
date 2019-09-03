@@ -39,6 +39,7 @@ Standard definitions and types, Bob Jenkins
 #    endif
 
 #include <cstdint>
+#include <type_traits>
 
 typedef    uint32_t    ub4;   /* unsigned 4-byte quantities */
 #define    UB4MAXVAL 0xffffffff
@@ -68,6 +69,12 @@ typedef    int            word;  /* fastest type available */
 //#endif /* align */
 //#ifndef abs
 //#    define abs(a)   (((a)>0) ? (a) : -(a))
+
+template<typename T>
+typename std::enable_if<std::is_signed<T>::value, T>::type abs(const T& a)
+{
+    return a > 0 ? a : -a;
+}
 //#endif
 //#define TRUE  1
 //#define FALSE 0

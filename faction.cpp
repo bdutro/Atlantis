@@ -109,7 +109,7 @@ void Attitude::Readin(Ainfile *f, ATL_VER)
 Faction::Faction()
 {
     exists = true;
-    type = {1};
+    type.fill(1);
     lastchange = -6;
     times = 0;
     showunitattitudes = 0;
@@ -125,7 +125,7 @@ Faction::Faction(size_t n)
 {
     exists = true;
     num = n;
-    type = {1};
+    type.fill(1);
     lastchange = -6;
     name = AString("Faction (") + AString(num) + AString(")");
     address = AString("NoAddress");
@@ -857,7 +857,7 @@ void Faction::TimesReward()
 
 void Faction::SetNPC()
 {
-    type = {-1};
+    type.fill(-1);
 }
 
 bool Faction::IsNPC() const

@@ -23,7 +23,7 @@
 //
 // END A3HEADER
 
-#include <time.h>
+#include <ctime>
 
 #include "game.h"
 #include "gamedata.h"

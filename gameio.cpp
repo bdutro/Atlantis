@@ -24,12 +24,12 @@
 // END A3HEADER
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
+#include <cstdio>
+#include <ctime>
 
 #include "gameio.h"
 #include "gamedefs.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
 
 randctx isaac_ctx;
 

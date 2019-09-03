@@ -2,7 +2,7 @@
 #include <memory.h>  // Needed for memcpy on windows
 #endif
 
-#include <string.h>
+#include <cstring>
 
 #include "game.h"
 #include "unit.h"

@@ -300,7 +300,7 @@ public:
     int BASE_MAN_COST;
 
     // Are the lastorders values maintained by external scripts?
-    int LASTORDERS_MAINTAINED_BY_SCRIPTS;
+    bool LASTORDERS_MAINTAINED_BY_SCRIPTS;
 
     // How many turns to allow a faction to be inactive.
     // Set to -1 if you don't want this check performed.
