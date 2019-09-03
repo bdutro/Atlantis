@@ -296,8 +296,7 @@ void Battle::UpdateShields(const Army::Handle& a)
             }
         }
 
-        AddLine(*(a->soldiers[i]->unit.lock()->name) + " casts " +
-                spd.shielddesc + ".");
+        AddLine(a->soldiers[i]->unit.lock()->name + " casts " + spd.shielddesc + ".");
     }
 }
 

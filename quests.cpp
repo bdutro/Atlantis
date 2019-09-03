@@ -42,8 +42,6 @@ Quest::Quest()
 
 int QuestList::ReadQuests(Ainfile *f)
 {
-    AString *name;
-
     quests.clear();
 
     int count = f->GetInt<int>();
@@ -51,6 +49,8 @@ int QuestList::ReadQuests(Ainfile *f)
     {
         return 0;
     }
+
+    AString name;
     while (count-- > 0) {
         Quest::Handle quest = std::make_shared<Quest>();
         quest->type = f->GetInt<Quests>();
@@ -65,20 +65,17 @@ int QuestList::ReadQuests(Ainfile *f)
             case Quests::Types::BUILD:
                 name = f->GetStr();
                 quest->building = LookupObject(name);
-                delete name;
                 name = f->GetStr();
-                quest->regionname = *name;
-                delete name;
+                quest->regionname = name;
                 break;
             case Quests::Types::VISIT:
             {
                 name = f->GetStr();
                 quest->building = LookupObject(name);
-                delete name;
                 int dests = f->GetInt<int>();
                 while (dests-- > 0) {
                     name = f->GetStr();
-                    quest->destinations.insert(name->Str());
+                    quest->destinations.insert(name.Str());
                 }
                 break;
             }
@@ -92,15 +89,13 @@ int QuestList::ReadQuests(Ainfile *f)
                 quest->objective.Readin(f);
                 name = f->GetStr();
                 quest->building = LookupObject(name);
-                delete name;
                 quest->regionnum = f->GetInt<int>();
                 name = f->GetStr();
-                quest->regionname = *name;
-                delete name;
+                quest->regionname = name;
                 int dests = f->GetInt<int>();
                 while (dests-- > 0) {
                     name = f->GetStr();
-                    quest->destinations.insert(name->Str());
+                    quest->destinations.insert(name.Str());
                 }
                 break;
             }
@@ -240,7 +235,7 @@ bool QuestList::CheckQuestBuildTarget(const ARegion::Handle& r, const Objects& b
         const auto& q = *it;
         if (q->type == Quests::Types::BUILD &&
                 q->building == building &&
-                q->regionname == *r->name) {
+                q->regionname == r->name) {
             const auto u_fac = u->faction.lock();
             for(const auto& i: q->rewards) {
                 u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
@@ -263,11 +258,11 @@ bool QuestList::CheckQuestVisitTarget(const ARegion::Handle& r, const Unit::Hand
         const auto& q = *it;
         if (q->type != Quests::Types::VISIT)
             continue;
-        if (!q->destinations.count(r->name->Str()))
+        if (!q->destinations.count(r->name.Str()))
             continue;
         for(const auto& o: r->objects) {
             if (o->type == q->building) {
-                u->visited.insert(r->name->Str());
+                u->visited.insert(r->name.Str());
                 intersection.clear();
                 set_intersection(
                     q->destinations.begin(),

@@ -32,21 +32,21 @@
 // Spell parsing - generic
 //
 void ProcessGenericSpell(const Unit::Handle&, const Skills&, const OrdersCheck::Handle&pCheck);
-void ProcessRegionSpell(const Unit::Handle&, AString *, const Skills&, const OrdersCheck::Handle&pCheck);
+void ProcessRegionSpell(const Unit::Handle&, AString &, const Skills&, const OrdersCheck::Handle&pCheck);
 
 //
 // Spell parsing - specific
 //
-void ProcessCastGateLore(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessCastPortalLore(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessPhanBeasts(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessPhanUndead(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessPhanDemons(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessInvisibility(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessBirdLore(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessMindReading(const Unit::Handle&,AString *, const OrdersCheck::Handle&pCheck );
-void ProcessLacandonTeleport(const Unit::Handle&, AString *, const OrdersCheck::Handle&pCheck);
-void ProcessTransmutation(const Unit::Handle&, AString *, const OrdersCheck::Handle&pCheck);
+void ProcessCastGateLore(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessCastPortalLore(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessPhanBeasts(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessPhanUndead(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessPhanDemons(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessInvisibility(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessBirdLore(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessMindReading(const Unit::Handle&, AString&, const OrdersCheck::Handle&pCheck );
+void ProcessLacandonTeleport(const Unit::Handle&, AString &, const OrdersCheck::Handle&pCheck);
+void ProcessTransmutation(const Unit::Handle&, AString &, const OrdersCheck::Handle&pCheck);
 
 //
 // Spell helpers

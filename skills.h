@@ -140,7 +140,7 @@ class ShowSkill {
 
         ShowSkill(const Skills&, unsigned int);
 
-        AString * Report(Faction&);
+        AString Report(Faction&);
 
         Skills skill;
         unsigned int level;

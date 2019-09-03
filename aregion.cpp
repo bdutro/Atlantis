@@ -1828,7 +1828,17 @@ unsigned int ARegion::IsCoastalOrLakeside()
     return seacount;
 }
 
-unsigned int ARegion::MoveCost(int movetype, const ARegion& fromRegion, const Directions& dir, AString *road) const
+unsigned int ARegion::MoveCost(int movetype, const ARegion& fromRegion, const Directions& dir) const
+{
+    return MoveCost_(movetype, fromRegion, dir, nullptr);
+}
+
+unsigned int ARegion::MoveCost(int movetype, const ARegion& fromRegion, const Directions& dir, AString& road) const
+{
+    return MoveCost_(movetype, fromRegion, dir, &road);
+}
+
+unsigned int ARegion::MoveCost_(int movetype, const ARegion& fromRegion, const Directions& dir, AString *road) const
 {
     int cost = 1;
     if (Globals->WEATHER_EXISTS)

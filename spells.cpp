@@ -49,17 +49,16 @@ static int RandomiseSummonAmount(int num)
 }
 
 void Game::ProcessCastOrder(const Unit::Handle& u,
-                            AString * o,
+                            AString& o,
                             const OrdersCheck::Handle& pCheck )
 {
-    AString * token = o->gettoken();
-    if (!token) {
+    AString token = o.gettoken();
+    if (!token.Len()) {
         ParseError( pCheck, u, 0, "CAST: No skill given.");
         return;
     }
 
     Skills sk = ParseSkill(token);
-    delete token;
     if (!sk.isValid()) {
         ParseError( pCheck, u, 0, "CAST: Invalid skill.");
         return;
@@ -167,7 +166,7 @@ void Game::ProcessCastOrder(const Unit::Handle& u,
     }
 }
 
-void Game::ProcessMindReading(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessMindReading(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const auto id = ParseUnit(o);
 
@@ -185,16 +184,16 @@ void Game::ProcessMindReading(const Unit::Handle& u, AString *o, const OrdersChe
     u->castorders = order;
 }
 
-void Game::ProcessBirdLore(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessBirdLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         u->Error("CAST: Missing arguments.");
         return;
     }
 
-    if (*token == "eagle") {
+    if (token == "eagle") {
         const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
         order->spell = Skills::Types::S_BIRD_LORE;
         order->level = 3;
@@ -203,17 +202,15 @@ void Game::ProcessBirdLore(const Unit::Handle& u, AString *o, const OrdersCheck:
         return;
     }
 
-    if (*token == "direction") {
-        delete token;
-        token = o->gettoken();
+    if (token == "direction") {
+        token = o.gettoken();
 
-        if (!token) {
+        if (!token.Len()) {
             u->Error("CAST: Missing arguments.");
             return;
         }
 
         const Directions dir = ParseDir(token);
-        delete token;
         if (!dir.isRegularDirection()) {
             u->Error("CAST: Invalid direction.");
             return;
@@ -230,18 +227,16 @@ void Game::ProcessBirdLore(const Unit::Handle& u, AString *o, const OrdersCheck:
     }
 
     u->Error("CAST: Invalid arguments.");
-    delete token;
 }
 
-void Game::ProcessInvisibility(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessInvisibility(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
 
-    if (!token || !(*token == "units")) {
+    if (!token.Len() || token != "units") {
         u->Error("CAST: Must specify units to render invisible.");
         return;
     }
-    delete token;
 
     CastUnitsOrder::Handle order;
     if (u->castorders && u->castorders->type == Orders::Types::O_CAST &&
@@ -263,90 +258,84 @@ void Game::ProcessInvisibility(const Unit::Handle& u, AString *o, const OrdersCh
     }
 }
 
-void Game::ProcessPhanDemons(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessPhanDemons(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
     order->spell = Skills::Types::S_CREATE_PHANTASMAL_DEMONS;
     order->level = 0;
     order->target = 1;
 
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         u->Error("CAST: Illusion to summon must be given.");
         return;
     }
 
-    if (*token == "imp" || *token == "imps") {
+    if (token == "imp" || token == "imps") {
         order->level = 1;
     }
 
-    if (*token == "demon" || *token == "demons") {
+    if (token == "demon" || token == "demons") {
         order->level = 3;
     }
 
-    if (*token == "balrog" || *token == "balrogs") {
+    if (token == "balrog" || token == "balrogs") {
         order->level = 5;
     }
-
-    delete token;
 
     if (!order->level) {
         u->Error("CAST: Can't summon that illusion.");
         return;
     }
 
-    token = o->gettoken();
+    token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         order->target = 1;
     } else {
-        order->target = token->value();
-        delete token;
+        order->target = token.value<int>();
     }
 
     u->ClearCastOrders();
     u->castorders = order;
 }
 
-void Game::ProcessPhanUndead(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessPhanUndead(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
     order->spell = Skills::Types::S_CREATE_PHANTASMAL_UNDEAD;
     order->level = 0;
     order->target = 1;
 
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         u->Error("CAST: Must specify which illusion to summon.");
         return;
     }
 
-    if (*token == "skeleton" || *token == "skeletons") {
+    if (token == "skeleton" || token == "skeletons") {
         order->level = 1;
     }
 
-    if (*token == "undead") {
+    if (token == "undead") {
         order->level = 3;
     }
 
-    if (*token == "lich" || *token == "liches") {
+    if (token == "lich" || token == "liches") {
         order->level = 5;
     }
-
-    delete token;
 
     if (!order->level) {
         u->Error("CAST: Must specify which illusion to summon.");
         return;
     }
 
-    token = o->gettoken();
+    token = o.gettoken();
 
-    if (token) {
-        order->target = token->value();
-        delete token;
+    if (token.Len()) {
+        order->target = token.value<int>();
     } else {
         order->target = 1;
     }
@@ -355,40 +344,38 @@ void Game::ProcessPhanUndead(const Unit::Handle& u, AString *o, const OrdersChec
     u->castorders = order;
 }
 
-void Game::ProcessPhanBeasts(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessPhanBeasts(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
     order->spell = Skills::Types::S_CREATE_PHANTASMAL_BEASTS;
     order->level = 0;
     order->target = 1;
 
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         u->Error("CAST: Must specify which illusion to summon.");
         return;
     }
 
-    if (*token == "wolf" || *token == "wolves") {
+    if (token == "wolf" || token == "wolves") {
         order->level = 1;
     }
-    if (*token == "eagle" || *token == "eagles") {
+    if (token == "eagle" || token == "eagles") {
         order->level = 3;
     }
-    if (*token == "dragon" || *token == "dragon") {
+    if (token == "dragon" || token == "dragon") {
         order->level = 5;
     }
 
-    delete token;
     if (!order->level) {
         u->Error("CAST: Must specify which illusion to summon.");
         return;
     }
 
-    token = o->gettoken();
-    if (token) {
-        order->target = token->value();
-        delete token;
+    token = o.gettoken();
+    if (token.Len()) {
+        order->target = token.value<int>();
     }
 
     u->ClearCastOrders();
@@ -404,52 +391,38 @@ void Game::ProcessGenericSpell(const Unit::Handle& u,  const Skills& spell, cons
     u->castorders = orders;
 }
 
-void Game::ProcessRegionSpell(const Unit::Handle& u,  AString *o, const Skills& spell, const OrdersCheck::Handle&)
+void Game::ProcessRegionSpell(const Unit::Handle& u, AString& o, const Skills& spell, const OrdersCheck::Handle&)
 {
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
     ValidValue<unsigned int> x;
     ValidValue<unsigned int> y;
     ValidValue<unsigned int> z;
 
-    if (token) {
-        if (*token == "region") {
-            delete token;
-            token = o->gettoken();
-            if (!token) {
+    if (token.Len()) {
+        if (token == "region") {
+            token = o.gettoken();
+            if (!token.Len()) {
                 u->Error("CAST: Region X coordinate not specified.");
                 return;
             }
-            const int x_temp = token->value();
-            if(x_temp != -1)
-            {
-                x = static_cast<unsigned int>(x_temp);
-            }
-            delete token;
 
-            token = o->gettoken();
-            if (!token) {
+            x = token.value<unsigned int>();
+
+            token = o.gettoken();
+            if (!token.Len()) {
                 u->Error("CAST: Region Y coordinate not specified.");
                 return;
             }
-            const int y_temp = token->value();
-            if(y_temp != -1)
-            {
-                y = static_cast<unsigned int>(y_temp);
-            }
-            delete token;
+
+            y = token.value<unsigned int>();
 
             try
             {
                 const RangeType& range = FindRange(SkillDefs[spell].range);
                 if (range.flags & RangeType::RNG_CROSS_LEVELS) {
-                    token = o->gettoken();
-                    if (token) {
-                        const int z_temp = token->value();
-                        if(z_temp != -1)
-                        {
-                            z = static_cast<unsigned int>(z_temp);
-                        }
-                        delete token;
+                    token = o.gettoken();
+                    if (token.Len()) {
+                        z = token.value<unsigned int>();
                         if (!z.isValid() || (z >= Globals->UNDERWORLD_LEVELS +
                                     Globals->UNDERDEEP_LEVELS +
                                     Globals->ABYSS_LEVEL + 2)) {
@@ -462,8 +435,6 @@ void Game::ProcessRegionSpell(const Unit::Handle& u,  AString *o, const Skills& 
             catch(const NoSuchItemException&)
             {
             }
-        } else {
-            delete token;
         }
     }
 
@@ -511,25 +482,23 @@ void Game::ProcessRegionSpell(const Unit::Handle& u,  AString *o, const Skills& 
     }
 }
 
-void Game::ProcessCastPortalLore(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessCastPortalLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
-    AString *token = o->gettoken();
-    if (!token) {
+    AString token = o.gettoken();
+    if (!token.Len()) {
         u->Error("CAST: Requires a target mage.");
         return;
     }
-    int gate = token->value();
-    delete token;
-    token = o->gettoken();
+    int gate = token.value<int>();
+    token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         u->Error("CAST: No units to teleport.");
         return;
     }
 
-    if (!(*token == "units")) {
+    if (token != "units") {
         u->Error("CAST: No units to teleport.");
-        delete token;
         return;
     }
 
@@ -554,20 +523,25 @@ void Game::ProcessCastPortalLore(const Unit::Handle& u, AString *o, const Orders
     }
 }
 
-void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCheck::Handle&)
+void Game::ProcessCastGateLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
-    AString *token = o->gettoken();
+    AString token = o.gettoken();
 
-    if (!token) {
+    if (!token.Len()) {
         u->Error("CAST: Missing argument.");
         return;
     }
 
-    if ((*token) == "gate") {
-        delete token;
-        token = o->gettoken();
+    if (token == "gate") {
+        token = o.gettoken();
 
-        if (!token || token->value() < 1) {
+        int token_val = -1;
+        if(token.Len())
+        {
+            token_val = token.value<int>();
+        }
+
+        if (!token.Len() || token_val < 1) {
             u->Error("CAST: Requires a target gate.");
             return;
         }
@@ -575,7 +549,7 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCh
         TeleportOrder::Handle order;
 
         if (u->teleportorders && u->teleportorders->spell == Skills::Types::S_GATE_LORE &&
-                u->teleportorders->gate == token->value()) {
+                u->teleportorders->gate == token_val) {
             order = u->teleportorders;
         } else {
             order = std::make_shared<TeleportOrder>();
@@ -583,17 +557,14 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCh
             u->teleportorders = order;
         }
 
-        order->gate = token->value();
+        order->gate = token_val;
         order->spell = Skills::Types::S_GATE_LORE;
         order->level = 3;
 
-        delete token;
+        token = o.gettoken();
 
-        token = o->gettoken();
-
-        if (!token) return;
-        if (!(*token == "units")) {
-            delete token;
+        if (!token.Len() || token != "units")
+        {
             return;
         }
 
@@ -605,7 +576,7 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCh
         return;
     }
 
-    if ((*token) == "random") {
+    if (token == "random") {
         TeleportOrder::Handle order;
 
         if (u->teleportorders &&
@@ -622,20 +593,22 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCh
         order->spell = Skills::Types::S_GATE_LORE;
         order->level = 1;
 
-        delete token;
+        token = o.gettoken();
 
-        token = o->gettoken();
-
-        if (!token) return;
-        if (*token == "level") {
+        if (!token.Len())
+        {
+            return;
+        }
+        if (token == "level") {
             order->gate = -2;
             order->level = 2;
-            delete token;
-            token = o->gettoken();
+            token = o.gettoken();
         }
-        if (!token) return;
-        if (!(*token == "units")) {
-            delete token;
+        if (!token.Len())
+        {
+            return;
+        }
+        if (token != "units") {
             return;
         }
 
@@ -647,8 +620,7 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCh
         return;
     }
 
-    if ((*token) == "detect") {
-        delete token;
+    if (token == "detect") {
         u->ClearCastOrders();
         CastOrder::Handle to = std::make_shared<CastOrder>();
         to->spell = Skills::Types::S_GATE_LORE;
@@ -657,33 +629,30 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString *o, const OrdersCh
         return;
     }
 
-    delete token;
     u->Error("CAST: Invalid argument.");
 }
 
-void Game::ProcessTransmutation(const Unit::Handle& u,  AString *o, const OrdersCheck::Handle&)
+void Game::ProcessTransmutation(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
-    AString *token;
-
     CastTransmuteOrder::Handle order = std::make_shared<CastTransmuteOrder>();
     order->spell = Skills::Types::S_TRANSMUTATION;
     order->level = 0;
     order->item.invalidate();
     order->number = -1;
 
-    token = o->gettoken();
-    if (!token) {
+    AString token = o.gettoken();
+    if (!token.Len()) {
         u->Error("CAST: You must specify what you wish to create.");
         return;
     }
-    if (token->value() > 0) {
-        order->number = token->value();
-        delete token;
-        token = o->gettoken();
+
+    const int token_val = token.value<int>();
+    if (token_val > 0) {
+        order->number = token_val;
+        token = o.gettoken();
     }
 
     order->item = ParseEnabledItem(token);
-    delete token;
     if (!order->item.isValid()) {
         u->Error("CAST: You must specify what you wish to create.");
         return;
@@ -976,8 +945,7 @@ bool Game::RunMindReading(const ARegion::Handle& r, const Unit::Handle& u)
     }
 
     const auto tar = tar_w.lock();
-    AString temp = AString("Casts Mind Reading: ") + *(tar->name) + ", " +
-        *(tar->faction.lock()->name);
+    AString temp = AString("Casts Mind Reading: ") + tar->name + ", " + tar->faction.lock()->name;
 
     if (level < 4) {
         u->Event(temp + ".");
@@ -1156,7 +1124,7 @@ bool Game::RunEngraveRunes(const ARegion::Handle&, const Object::Handle& o, cons
     } else {
         o->runes = 3;
     }
-    u->Event(AString("Engraves Runes of Warding on ") + *(o->name) + ".");
+    u->Event(AString("Engraves Runes of Warding on ") + o->name + ".");
     return true;
 }
 
@@ -1485,7 +1453,7 @@ bool Game::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
         }
 
         const auto tar = tar_w.lock();
-        if (tar->GetAttitude(*r, u) < A_FRIENDLY)
+        if (tar->GetAttitude(*r, u).isNotFriendly())
         {
             continue;
         }
@@ -1509,13 +1477,12 @@ bool Game::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
         }
 
         const auto tar = tar_w.lock();
-        if (tar->GetAttitude(*r, u) < A_FRIENDLY)
+        if (tar->GetAttitude(*r, u).isNotFriendly())
         {
             continue;
         }
         tar->SetFlag(FLAG_INVIS,1);
-        tar->Event(AString("Is rendered invisible by ") +
-                *(u->name) + ".");
+        tar->Event(AString("Is rendered invisible by ") + u->name + ".");
     }
 
     u->Event("Casts invisibility.");
@@ -1937,7 +1904,7 @@ bool Game::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Un
                     continue;
                 }
 
-                if (loc_unit->GetAttitude(*r, u) < A_ALLY) {
+                if (loc_unit->GetAttitude(*r, u).isNotAlly()) {
                     u->Error("CAST: Unit is not allied.");
                 } else {
                     if (comma) {
@@ -1949,7 +1916,7 @@ bool Game::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Un
                     loc_unit->DiscardUnfinishedShips();
                     loc_unit->Event(AString("Is teleported through a ") +
                             "Gate to " + tar->Print(regions) + " by " +
-                            *u->name + ".");
+                            u->name + ".");
                     loc_unit->MoveUnit( tar->GetDummy() );
                     if (loc_unit != u) loc_unit->ClearCastOrders();
                 }
@@ -2008,7 +1975,7 @@ bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const 
     }
 
     const auto tar_u = tar->unit.lock();
-    if (tar_u->faction.lock()->GetAttitude(ufac_num) < A_FRIENDLY) {
+    if (tar_u->faction.lock()->GetAttitude(ufac_num).isNotFriendly()) {
         u->Error("CAST: Target mage is not friendly.");
         return false;
     }
@@ -2035,13 +2002,13 @@ bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const 
         const auto loc = r->GetLocation(elem, ufac_num);
         if (loc) {
             const auto loc_u = loc->unit.lock();
-            if (loc_u->GetAttitude(*r, u) < A_ALLY) {
+            if (loc_u->GetAttitude(*r, u).isNotAlly()) {
                 u->Error("CAST: Unit is not allied.");
             } else {
                 loc_u->DiscardUnfinishedShips();
                 loc_u->Event(AString("Is teleported to ") +
                         tar_r->Print(regions) +
-                        " by " + *u->name + ".");
+                        " by " + u->name + ".");
                 loc_u->MoveUnit( tar->obj );
                 if (loc_u != u) loc_u->ClearCastOrders();
             }
@@ -2189,7 +2156,7 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
             tower->type = Objects::Types::O_BKEEP;
             tower->incomplete = ObjectDefs[tower->type].cost;
             tower->num = i;
-            tower->SetName(new AString("Building"));
+            tower->SetName("Building");
             WriteTimesArticle("The earth shakes as a blasphemous word is uttered.");
         }
         else
@@ -2242,7 +2209,7 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
             message = "Vile rituals are being performed in the ";
             message += TerrainDefs[r->type].name;
             message += " of ";
-            message += *r->name;
+            message += r->name;
             message += "!";
             WriteTimesArticle(message);
         }
@@ -2252,13 +2219,13 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
             const auto start = regions.FindNearestStartingCity(r, dir).lock();
             message = "A blasphemous construction is taking shape in ";
             if (start == r) {
-                message += *start->town->name;
+                message += start->town->name;
                 message += ", in ";
             }
             message += "the ";
             message += TerrainDefs[r->type].name;
             message += " of ";
-            message += *r->name;
+            message += r->name;
             if (start && start != r && dir.isValid()) {
                 message += ", ";
                 if (r->zloc != start->zloc && dir != Directions::MOVE_IN)
@@ -2292,7 +2259,7 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
                     message += "through a shaft in";
                 }
                 message += " ";
-                message += *start->town->name;
+                message += start->town->name;
             }
             message += "!";
             WriteTimesArticle(message);
@@ -2306,13 +2273,13 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
         }
         if (tower->incomplete == max / 10) {
             // 90% complete
-            message = *u->faction.lock()->name;
+            message = u->faction.lock()->name;
             message += " have almost completed a blasphemous tower in the ";
             message += r->ShortPrint(regions);
             message += ".  Their folly will doom everyone!";
             WriteTimesArticle(message);
         }
-        mage->Event(AString("Sacrifices ") + ItemDefs[sac].name + " from " + victim->name->Str());
+        mage->Event(AString("Sacrifices ") + ItemDefs[sac].name + " from " + victim->name.Str());
         if (!victim->GetMen())
             r->Kill(victim);
         if (!mage->GetMen())

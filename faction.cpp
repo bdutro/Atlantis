@@ -279,11 +279,10 @@ void Faction::WriteReport(Areport *f, Game *pGame)
             if (!shows.empty()) {
                 f->PutStr("Skill reports:");
                 for(const auto& s: shows) {
-                    AString *string = s->Report(*this);
-                    if (string) {
+                    AString string = s->Report(*this);
+                    if (string.Len()) {
                         f->PutStr("");
-                        f->PutStr(*string);
-                        delete string;
+                        f->PutStr(string);
                     }
                 }
                 shows.clear();
@@ -483,12 +482,11 @@ void Faction::WriteReport(Areport *f, Game *pGame)
     {
         f->PutStr("Skill reports:");
         for(const auto& s: shows) {
-            AString* string = s->Report(*this);
-            if (string) {
+            AString string = s->Report(*this);
+            if (string.Len()) {
                 f->PutStr("");
-                f->PutStr(*string);
+                f->PutStr(string);
             }
-            delete string;
         }
         shows.clear();
         f->EndLine();

@@ -383,18 +383,16 @@ void Battle::WriteSides(const ARegion::Handle& r,
             {
                 aobs = a;
             }
-            AString * temp = u->BattleReport(dobs);
-            AddLine(*temp);
-            delete temp;
+            AString temp = u->BattleReport(dobs);
+            AddLine(temp);
         }
     }
     AddLine("");
     AddLine("Defenders:");
     {
         for(const auto& l: defs) {
-            AString * temp = l->unit.lock()->BattleReport(aobs);
-            AddLine(*temp);
-            delete temp;
+            AString temp = l->unit.lock()->BattleReport(aobs);
+            AddLine(temp);
         }
     }
     AddLine("");

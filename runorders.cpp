@@ -316,7 +316,7 @@ void Game::Do1Assassinate(const ARegion::Handle& r, const Object::Handle&, const
             succ = 0;
             break;
         }
-        if (f->GetAttitude(tar_fac->num) == A_ALLY) {
+        if (f->GetAttitude(tar_fac->num) == Attitudes::Types::A_ALLY) {
             succ = 0;
             break;
         }
@@ -326,8 +326,8 @@ void Game::Do1Assassinate(const ARegion::Handle& r, const Object::Handle&, const
         }
     }
     if (!succ) {
-        AString temp = *(u->name) + " is caught attempting to assassinate " +
-            *(tar->name) + " in " + *(r->name) + ".";
+        AString temp = u->name + " is caught attempting to assassinate " +
+            tar->name + " in " + r->name + ".";
         for(const auto& f: seers) {
             f.lock()->Event(temp);
         }
@@ -343,7 +343,7 @@ void Game::Do1Assassinate(const ARegion::Handle& r, const Object::Handle&, const
         // cannot be assassinated by someone with a ring of invisibility
         if (tar->AmtsPreventCrime(u)) {
             tar->Event("Assassination prevented by amulet of true seeing.");
-            u->Event(AString("Attempts to assassinate ") + *(tar->name) +
+            u->Event(AString("Attempts to assassinate ") + tar->name +
                     ", but is prevented by amulet of true seeing.");
             return;
         }
@@ -392,7 +392,7 @@ void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit:
             succ = false;
             break;
         }
-        if (f->GetAttitude(tar_fac->num) == A_ALLY) {
+        if (f->GetAttitude(tar_fac->num) == Attitudes::Types::A_ALLY) {
             succ = false;
             break;
         }
@@ -403,8 +403,8 @@ void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit:
     }
 
     if (!succ) {
-        AString temp = *(u->name) + " is caught attempting to steal from " +
-            *(tar->name) + " in " + *(r->name) + ".";
+        AString temp = u->name + " is caught attempting to steal from " +
+            tar->name + " in " + r->name + ".";
         for(const auto& f: seers) {
             f.lock()->Event(temp);
         }
@@ -419,7 +419,7 @@ void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit:
     //
     if (tar->AmtsPreventCrime(u)) {
         tar->Event("Theft prevented by amulet of true seeing.");
-        u->Event(AString("Attempts to steal from ") + *(tar->name) + ", but "
+        u->Event(AString("Attempts to steal from ") + tar->name + ", but "
                 "is prevented by amulet of true seeing.");
         return;
     }
@@ -440,8 +440,7 @@ void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit:
     tar->items.SetNum(so->item, tar->items.GetNum(so->item) - amt);
 
     {
-        AString temp = *(u->name) + " steals " +
-            ItemString(so->item, amt) + " from " + *(tar->name) + ".";
+        AString temp = u->name + " steals " + ItemString(so->item, amt) + " from " + tar->name + ".";
         for(const auto& f: seers) {
             f.lock()->Event(temp);
         }
@@ -571,7 +570,7 @@ void Game::Do1Destroy(const ARegion::Handle& r,
     }
 
     if (o->CanModify()) {
-        u->Event(AString("Destroys ") + *(o->name) + ".");
+        u->Event(AString("Destroys ") + o->name + ".");
         const auto dest = r->GetDummy();
         for(const auto& u: o->units) {
             u->destroy = 0;
@@ -610,8 +609,8 @@ void Game::RunFindUnit(const Unit::Handle& u)
         if (!all) {
             const auto fac = GetFaction(factions, static_cast<size_t>(f->find));
             if (fac) {
-                u_fac->Event(AString("The address of ") + *(fac->name) +
-                        " is " + *(fac->address) + ".");
+                u_fac->Event(AString("The address of ") + fac->name +
+                        " is " + fac->address + ".");
             } else {
                 u->Error(AString("FIND: ") + f->find + " is not a valid "
                         "faction number.");
@@ -620,7 +619,7 @@ void Game::RunFindUnit(const Unit::Handle& u)
             for(const auto& fac: factions) {
                 if (fac) {
                     u_fac->Event(AString("The address of ") +
-                            *(fac->name) + " is " + *(fac->address) + ".");
+                            fac->name + " is " + fac->address + ".");
                 }
             }
         }
@@ -830,8 +829,7 @@ void Game::RunPillageRegion(const ARegion::Handle& reg)
                 for(const auto& fp_w: facs) {
                     const auto fp = fp_w.lock();
                     if (fp != u_fac) {
-                        fp->Event(*(u->name) + " pillages " +
-                                *(reg->name) + ".");
+                        fp->Event(u->name + " pillages " + reg->name + ".");
                     }
                 }
             }
@@ -945,8 +943,8 @@ void Game::Do1EvictOrder(const Object::Handle& obj, const Unit::Handle& u)
         }
         const auto to = obj_reg->GetDummy();
         tar->MoveUnit(to);
-        tar->Event(AString("Evicted from ") + *obj->name + " by " + *u->name);
-        u->Event(AString("Evicted ") + *tar->name + " from " + *obj->name);
+        tar->Event(AString("Evicted from ") + obj->name + " by " + u->name);
+        u->Event(AString("Evicted ") + tar->name + " from " + obj->name);
     }
 }
 
@@ -1154,7 +1152,7 @@ void Game::EndGame(const Faction::Handle& pVictor)
             pFac->quit = QUIT_GAME_OVER;
 
         if (pVictor)
-            pFac->Event(*(pVictor->name) + " has won the game!");
+            pFac->Event(pVictor->name + " has won the game!");
         else
             pFac->Event("The game has ended with no winner.");
     }
@@ -1298,7 +1296,7 @@ void Game::DoAutoAttackOn(const ARegion::Handle& r, const Unit::Handle& t)
     for(const auto& o: r->objects) {
         for(const auto& u: o->units) {
             if (u->guard != GUARD_AVOID &&
-                    (u->GetAttitude(*r, t) == A_HOSTILE) && u->IsAlive() &&
+                    (u->GetAttitude(*r, t) == Attitudes::Types::A_HOSTILE) && u->IsAlive() &&
                     u->canattack)
             {
                 AttemptAttack(r, u, t, 1);
@@ -1325,7 +1323,7 @@ void Game::DoAutoAttack(const ARegion::Handle& r, const Unit::Handle& u) {
         return;
     for(const auto& o: r->objects) {
         for(const auto& t: o->units) {
-            if (u->GetAttitude(*r, t) == A_HOSTILE) {
+            if (u->GetAttitude(*r, t) == Attitudes::Types::A_HOSTILE) {
                 AttemptAttack(r, u, t, 1);
             }
             if (u->canattack == 0 || u->IsAlive() == 0)
@@ -1813,7 +1811,7 @@ void Game::CheckAllyMaintenanceItem(const Items& item, int value)
                     for(const auto& obj2: r->objects) {
                         for(const auto& u2: obj2->units) {
                             if (u->faction.lock() != u2->faction.lock() &&
-                                u2->GetAttitude(*r, u) == A_ALLY) {
+                                u2->GetAttitude(*r, u) == Attitudes::Types::A_ALLY) {
                                 int amount = static_cast<int>(u2->items.GetNum(item));
                                 if (amount) {
                                     int eat = (u->needed + value - 1) / value;
@@ -1837,12 +1835,12 @@ void Game::CheckAllyMaintenanceItem(const Items& item, int value)
                                     if (eat) {
                                         u->needed -= eat * value;
                                         u2->items.SetNum(item, static_cast<size_t>(amount - eat));
-                                        u2->Event(*(u->name) + " borrows " +
+                                        u2->Event(u->name + " borrows " +
                                                 ItemString(item, eat) +
                                                 " for maintenance.");
                                         u->Event(AString("Borrows ") +
                                                 ItemString(item, eat) +
-                                                " from " + *(u2->name) +
+                                                " from " + u2->name +
                                                 " for maintenance.");
                                         u2->items.SetNum(item, static_cast<size_t>(amount - eat));
                                     }
@@ -1931,7 +1929,7 @@ void Game::CheckAllyHungerItem(const Items& item, int value)
                     for(const auto& obj2: r->objects) {
                         for(const auto& u2: obj2->units) {
                             if (u->faction.lock() != u2->faction.lock() &&
-                                u2->GetAttitude(*r, u) == A_ALLY) {
+                                u2->GetAttitude(*r, u) == Attitudes::Types::A_ALLY) {
                                 int amount = static_cast<int>(u2->items.GetNum(item));
                                 if (amount) {
                                     int eat = (u->hunger + value - 1) / value;
@@ -1946,12 +1944,12 @@ void Game::CheckAllyHungerItem(const Items& item, int value)
                                         u->stomach_space = 0;
                                     }
                                     u2->items.SetNum(item, static_cast<size_t>(amount - eat));
-                                        u2->Event(*(u->name) + " borrows " +
+                                        u2->Event(u->name + " borrows " +
                                                 ItemString(item, eat) +
                                                 " to fend off starvation.");
                                         u->Event(AString("Borrows ") +
                                                 ItemString(item, eat) +
-                                                " from " + *(u2->name) +
+                                                " from " + u2->name +
                                                 " to fend off starvation.");
                                         u2->items.SetNum(item, static_cast<size_t>(amount - eat));
                                 }
@@ -2384,14 +2382,14 @@ void Game::DoExchangeOrder(const ARegion::Handle& r,
                             (tOrder->exchangeStatus == 1)) {
                         u->Event(AString("Exchanges ") +
                                 ItemString(o->giveItem, o->giveAmount) +
-                                " with " + *t->name + " for " +
+                                " with " + t->name + " for " +
                                 ItemString(tOrder->giveItem,
                                     tOrder->giveAmount) +
                                 ".");
                         t->Event(AString("Exchanges ") +
                                 ItemString(tOrder->giveItem,
                                     tOrder->giveAmount) + " with " +
-                                *u->name + " for " +
+                                u->name + " for " +
                                 ItemString(o->giveItem, o->giveAmount) + ".");
                         u->ConsumeShared(o->giveItem,
                                          static_cast<size_t>(o->giveAmount));
@@ -2543,12 +2541,12 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
             return 0;
         }
         if (!u->CanSee(*r, t) &&
-            (t_fac->GetAttitude(u_fac->num) < A_FRIENDLY)) {
+            (t_fac->GetAttitude(u_fac->num).isNotFriendly())) {
                 u->Error(ord + ": Nonexistant target (" +
                     o_target.Print() + ").");
                 return 0;
         }
-        if (t_fac->GetAttitude(u_fac->num) < A_FRIENDLY) {
+        if (t_fac->GetAttitude(u_fac->num).isNotFriendly()) {
                 u->Error(ord + ": Target is not a member of a friendly faction.");
                 return 0;
         }
@@ -2620,14 +2618,11 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
             it->type = o_item;
             it->num = s->items.GetNum(o_item);
             if (o.type == Orders::Types::O_TAKE) {
-                u->Event(AString("Takes ") + it->Report(1) +
-                    " from " + *s->name + ".");
+                u->Event(AString("Takes ") + it->Report(1) + " from " + s->name + ".");
             } else {
-                u->Event(AString("Gives ") + it->Report(1) +
-                    " to " + *t->name + ".");
+                u->Event(AString("Gives ") + it->Report(1) + " to " + t->name + ".");
                 if (s_fac != t_fac) {
-                    t->Event(AString("Receives ") + it->Report(1) +
-                        " from " + *s->name + ".");
+                    t->Event(AString("Receives ") + it->Report(1) + " from " + s->name + ".");
                 }
             }
             s->items.SetNum(o_item, 0);
@@ -2662,7 +2657,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
                 const auto fleet = std::make_shared<Object>(r);
                 fleet->type = Objects::Types::O_FLEET;
                 fleet->num = shipseq++;
-                fleet->name = new AString(AString("Fleet [") + fleet->num + "]");
+                fleet->name = AString("Fleet [") + fleet->num + "]";
                 t_obj->region.lock()->AddFleet(fleet);
                 t->MoveUnit(fleet);
             }
@@ -2675,10 +2670,10 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
                 }
             }
             s->Event(AString("Transfers ") + ItemString(o_item, amt) + " to " +
-                *t_obj->name + ".");
+                t_obj->name + ".");
             if (s_fac != t_fac) {
                 t->Event(AString("Receives ") + ItemString(o_item, amt) +
-                    " from " + *s_obj->name + ".");
+                    " from " + s_obj->name + ".");
             }
             s_obj->SetNumShips(o_item, s_obj->GetNumShips(o_item) - static_cast<size_t>(amt));
             t_obj->SetNumShips(o_item, t_obj->GetNumShips(o_item) + static_cast<size_t>(amt));
@@ -2784,7 +2779,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
     }
     // New RULE -- Must be able to see unit to give something to them!
     if (!u->CanSee(*r, t) &&
-            (t_fac->GetAttitude(u_fac->num) < A_FRIENDLY)) {
+            (t_fac->GetAttitude(u_fac->num).isNotFriendly())) {
         u->Error(ord + ": Nonexistant target (" +
                 o_target.Print() + ").");
         return 0;
@@ -2816,7 +2811,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
     }
 
     if ((o.item < 0 || Items(o.item) != Items::Types::I_SILVER) &&
-            t_fac->GetAttitude(s_fac->num) < A_FRIENDLY) {
+            t_fac->GetAttitude(s_fac->num).isNotFriendly()) {
         u->Error("GIVE: Target is not a member of a friendly faction.");
         return 0;
     }
@@ -2866,11 +2861,11 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
         }
 
         notallied = 1;
-        if (t_fac->GetAttitude(u_fac->num) == A_ALLY) {
+        if (t_fac->GetAttitude(u_fac->num) == Attitudes::Types::A_ALLY) {
             notallied = 0;
         }
 
-        u->Event(AString("Gives unit to ") + *(t_fac->name) + ".");
+        u->Event(AString("Gives unit to ") + t_fac->name + ".");
         u_fac = t_fac;
         u->Event("Is given to your faction.");
 
@@ -2961,14 +2956,11 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
     }
 
     if (o.type == Orders::Types::O_TAKE) {
-        u->Event(AString("Takes ") + ItemString(o.item, amt) +
-                " from " + *s->name + ".");
+        u->Event(AString("Takes ") + ItemString(o.item, amt) + " from " + s->name + ".");
     } else {
-        u->Event(AString("Gives ") + ItemString(o.item, amt) + " to " +
-                *t->name + ".");
+        u->Event(AString("Gives ") + ItemString(o.item, amt) + " to " + t->name + ".");
         if (s_fac != t_fac) {
-            t->Event(AString("Receives ") + ItemString(o.item, amt) +
-                    " from " + *s->name + ".");
+            t->Event(AString("Receives ") + ItemString(o.item, amt) + " from " + s->name + ".");
         }
     }
     s->ConsumeShared(o.item, static_cast<size_t>(amt));
@@ -3067,7 +3059,7 @@ void Game::CheckTransportOrders()
                     }
 
                     // Make sure the target and unit are at least friendly
-                    if (tar_unit->faction.lock()->GetAttitude(u_fac->num) < A_FRIENDLY) {
+                    if (tar_unit->faction.lock()->GetAttitude(u_fac->num).isNotFriendly()) {
                         u->Error(ordertype +
                                 ": Target is not a member of a friendly "
                                 "faction.");
@@ -3285,13 +3277,13 @@ void Game::RunTransportOrders()
                     ordertype = (t->type == Orders::Types::O_TRANSPORT) ?
                         "Transports " : "Distributes ";
                     u->Event(ordertype + ItemString(t->item, amt) + " to " +
-                            *tar_unit->name + " for $" + cost + ".");
+                            tar_unit->name + " for $" + cost + ".");
 
                     const auto tu_fac = tar_unit->faction.lock();
                     if (u_fac != tu_fac) {
                         tar_unit->Event(AString("Recieves ") +
                                 ItemString(t->item, amt) + " from " +
-                                *u->name + ".");
+                                u->name + ".");
                     }
 
                     tar_unit->items.SetNum(t->item,

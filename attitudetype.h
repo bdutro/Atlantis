@@ -47,7 +47,17 @@ class Attitudes : public ValidEnum<_Attitudes, _Attitudes::NATTITUDES>
 
         bool isNotFriendly() const
         {
-            return *this <= Attitudes(Attitudes::Types::A_NEUTRAL);
+            return *this < Attitudes(Attitudes::Types::A_FRIENDLY);
+        }
+
+        bool isNotAlly() const
+        {
+            return *this < Attitudes(Attitudes::Types::A_ALLY);
+        }
+
+        bool isUnfriendlyOrHostile() const
+        {
+            return *this < Attitudes(Attitudes::Types::A_NEUTRAL);
         }
 };
 

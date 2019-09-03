@@ -77,9 +77,8 @@ Unit::Unit(size_t seq, const Faction::Handle& f, int a)
 {
     num = seq;
     type = U_NORMAL;
-    name = new AString;
     describe = 0;
-    *name = AString("Unit (") + num + ")";
+    name = AString("Unit (") + num + ")";
     faction = f;
     formfaction = f;
     alias = a;
@@ -99,18 +98,6 @@ Unit::Unit(size_t seq, const Faction::Handle& f, int a)
     raised = 0;
 }
 
-Unit::~Unit()
-{
-    if (name)
-    {
-        delete name;
-    }
-    if (describe)
-    {
-        delete describe;
-    }
-}
-
 void Unit::SetMonFlags()
 {
     guard = GUARD_AVOID;
@@ -119,7 +106,7 @@ void Unit::SetMonFlags()
 
 void Unit::MakeWMon(char const *monname, const Items& mon, size_t num)
 {
-    AString *temp = new AString(monname);
+    AString temp(monname);
     SetName(temp);
 
     type = U_WMON;
@@ -129,9 +116,9 @@ void Unit::MakeWMon(char const *monname, const Items& mon, size_t num)
 
 void Unit::Writeout(Aoutfile *s)
 {
-    s->PutStr(*name);
-    if (describe) {
-        s->PutStr(*describe);
+    s->PutStr(name);
+    if (describe.Len()) {
+        s->PutStr(describe);
     } else {
         s->PutStr("none");
     }
@@ -191,9 +178,8 @@ void Unit::Readin(Ainfile *s, const PtrList<Faction>& facs, ATL_VER)
 {
     name = s->GetStr();
     describe = s->GetStr();
-    if (*describe == "none") {
-        delete describe;
-        describe = 0;
+    if (describe == "none") {
+        describe.clear();
     }
     num = s->GetInt<size_t>();
     type = s->GetInt<int>();
@@ -219,32 +205,26 @@ void Unit::Readin(Ainfile *s, const PtrList<Faction>& facs, ATL_VER)
     }
 
     free = s->GetInt<size_t>();
-    AString *temp;
-    temp = s->GetStr();
-    readyItem = LookupItem(*temp);
-    delete temp;
+    AString temp = s->GetStr();
+    readyItem = LookupItem(temp);
     for (size_t i = 0; i < MAX_READY; i++) {
         temp = s->GetStr();
-        readyWeapon[i] = LookupItem(*temp);
-        delete temp;
+        readyWeapon[i] = LookupItem(temp);
         temp = s->GetStr();
-        readyArmor[i] = LookupItem(*temp);
-        delete temp;
+        readyArmor[i] = LookupItem(temp);
     }
     flags = s->GetInt<int>();
 
     items.Readin(s);
     skills.Readin(s);
     temp = s->GetStr();
-    combat = LookupSkill(*temp);
-    delete temp;
+    combat = LookupSkill(temp);
     savedmovement = s->GetInt<int>();
     savedmovedir = s->GetInt<Directions>();
     size_t num_visited = s->GetInt<size_t>();
     while (num_visited-- > 0) {
         temp = s->GetStr();
-        visited.insert(temp->Str());
-        delete temp;
+        visited.insert(temp.Str());
     }
 }
 
@@ -357,11 +337,11 @@ AString Unit::StudyableSkills()
 
 AString Unit::GetName(unsigned int obs)
 {
-    AString ret = *name;
+    AString ret = name;
     unsigned int stealth = GetAttribute("stealth");
     if (reveal == REVEAL_FACTION || obs > stealth) {
         ret += ", ";
-        ret += *faction.lock()->name;
+        ret += faction.lock()->name;
     }
     return ret;
 }
@@ -548,34 +528,36 @@ void Unit::WriteReport_(Areport *f,
     /* Write the report */
     AString temp;
     if (obs == 2) {
-        temp += AString("* ") + *name;
+        temp += AString("* ") + name;
     } else {
         if (showattitudes) {
-            switch (attitude) {
-            case A_ALLY: 
-                temp += AString("= ") +*name;
-                break;
-            case A_FRIENDLY: 
-                temp += AString(": ") +*name;
-                break;
-            case A_NEUTRAL: 
-                temp += AString("- ") +*name;
-                break;
-            case A_UNFRIENDLY: 
-                temp += AString("% ") +*name;
-                break;
-            case A_HOSTILE: 
-                temp += AString("! ") +*name;
-                break;
+            switch (attitude.asEnum()) {
+                case Attitudes::Types::A_ALLY: 
+                    temp += AString("= ") + name;
+                    break;
+                case Attitudes::Types::A_FRIENDLY: 
+                    temp += AString(": ") + name;
+                    break;
+                case Attitudes::Types::A_NEUTRAL: 
+                    temp += AString("- ") + name;
+                    break;
+                case Attitudes::Types::A_UNFRIENDLY: 
+                    temp += AString("% ") + name;
+                    break;
+                case Attitudes::Types::A_HOSTILE: 
+                    temp += AString("! ") + name;
+                    break;
+                default:
+                    break;
             }
         } else {
-            temp += AString("- ") + *name;
+            temp += AString("- ") + name;
         }
     }
 
     if (guard == GUARD_GUARD) temp += ", on guard";
     if (obs > 0) {
-        temp += AString(", ") + *faction.lock()->name;
+        temp += AString(", ") + faction.lock()->name;
         if (guard == GUARD_AVOID) temp += ", avoiding";
         if (GetFlag(FLAG_BEHIND)) temp += ", behind";
     }
@@ -638,8 +620,8 @@ void Unit::WriteReport_(Areport *f,
         }
     }
 
-    if (describe) {
-        temp += AString("; ") + *describe;
+    if (describe.Len()) {
+        temp += AString("; ") + describe;
     }
     temp += ".";
     f->PutStr(temp);
@@ -648,8 +630,7 @@ void Unit::WriteReport_(Areport *f,
 AString Unit::TemplateReport()
 {
     /* Write the report */
-    AString temp;
-    temp = *name;
+    AString temp = name;
 
     if (guard == GUARD_GUARD) temp += ", on guard";
     if (guard == GUARD_AVOID) temp += ", avoiding";
@@ -705,43 +686,50 @@ AString Unit::TemplateReport()
         }
     }
 
-    if (describe) {
-        temp += AString("; ") + *describe;
+    if (describe.Len()) {
+        temp += AString("; ") + describe;
     }
     temp += ".";
     return temp;
 }
 
-AString *Unit::BattleReport(unsigned int obs)
+AString Unit::BattleReport(unsigned int obs)
 {
-    AString *temp = new AString("");
+    AString temp;
     if (Globals->BATTLE_FACTION_INFO)
-        *temp += GetName(obs);
+    {
+        temp += GetName(obs);
+    }
     else
-        *temp += *name;
+    {
+        temp += name;
+    }
 
-    if (GetFlag(FLAG_BEHIND)) *temp += ", behind";
+    if (GetFlag(FLAG_BEHIND))
+    {
+        temp += ", behind";
+    }
 
-    *temp += items.BattleReport();
+    temp += items.BattleReport();
 
     for(const auto& s: skills) {
         if (SkillDefs[s.type].flags & SkillType::BATTLEREP) {
             const size_t lvl = GetAvailSkill(s.type);
             if (lvl) {
-                *temp += ", ";
-                *temp += SkillDefs[s.type].name;
-                *temp += " ";
-                *temp += lvl;
+                temp += ", ";
+                temp += SkillDefs[s.type].name;
+                temp += " ";
+                temp += lvl;
             }
         }
     }
 
-    if (describe) {
-        *temp += "; ";
-        *temp += *describe;
+    if (describe.Len()) {
+        temp += "; ";
+        temp += describe;
     }
 
-    *temp += ".";
+    temp += ".";
     return temp;
 }
 
@@ -909,30 +897,28 @@ void Unit::PostTurn(const ARegion&)
     }
 }
 
-void Unit::SetName(AString *s)
+void Unit::SetName(const AString& s)
 {
-    if (s) {
-        AString *newname = s->getlegal();
-        if (!newname) {
-            delete s;
+    if (s.Len()) {
+        AString newname = s.getlegal();
+        if (!newname.Len()) {
             return;
         }
-        *newname += AString(" (") + num + ")";
-        delete s;
-        delete name;
+        newname += AString(" (") + num + ")";
         name = newname;
     }
 }
 
-void Unit::SetDescribe(AString *s)
+void Unit::SetDescribe(const AString& s)
 {
-    if (describe) delete describe;
-    if (s) {
-        AString *newname = s->getlegal();
-        delete s;
-        describe = newname;
-    } else
-        describe = 0;
+    if (describe.Len())
+    {
+        describe.clear();
+    }
+    if (s.Len())
+    {
+        describe = s.getlegal();
+    }
 }
 
 bool Unit::IsAlive()
@@ -1058,13 +1044,13 @@ void Unit::ConsumeShared(const Items& item, size_t n)
                 if (u->items.GetNum(item) >= n)
                 {
                     u->items.SetNum(item, u->items.GetNum(item) - n);
-                    u->Event(*(u->name) + " shares " + ItemString(item, n) +
-                            " with " + *name + ".");
+                    u->Event(u->name + " shares " + ItemString(item, n) +
+                            " with " + name + ".");
                     return;
                 }
-                u->Event(*(u->name) + " shares " +
+                u->Event(u->name + " shares " +
                         ItemString(item, u->items.GetNum(item)) +
-                        " with " + *name + ".");
+                        " with " + name + ".");
                 n -= u->items.GetNum(item);
                 u->items.SetNum(item, 0);
             }
@@ -2164,7 +2150,7 @@ bool Unit::CanMoveTo(const ARegion& r1, const ARegion& r2)
         return false;
     }
     int mp = static_cast<int>(CalcMovePoints() - moved);
-    if (mp < static_cast<int>(r2.MoveCost(mt, r1, dir, 0)))
+    if (mp < static_cast<int>(r2.MoveCost(mt, r1, dir)))
     {
         return false;
     }
@@ -2209,16 +2195,16 @@ int Unit::AmtsPreventCrime(const Unit::Handle& u)
     return 0;
 }
 
-int Unit::GetAttitude(const ARegion& r, const Unit::Handle& u)
+Attitudes Unit::GetAttitude(const ARegion& r, const Unit::Handle& u)
 {
     const auto faction_s = faction.lock();
     const auto ufac = u->faction.lock();
     if (faction_s == ufac)
     {
-        return A_ALLY;
+        return Attitudes::Types::A_ALLY;
     }
-    int att = faction_s->GetAttitude(ufac->num);
-    if (att >= A_FRIENDLY && att >= faction_s->defaultattitude)
+    Attitudes att = faction_s->GetAttitude(ufac->num);
+    if (!att.isNotFriendly() && att >= faction_s->defaultattitude)
     {
         return att;
     }
@@ -2273,7 +2259,7 @@ bool Unit::Forbids(const ARegion& r, const Unit::Handle& u)
     {
         return false;
     }
-    if (GetAttitude(r, u) < A_NEUTRAL)
+    if (GetAttitude(r, u).isUnfriendlyOrHostile())
     {
         return true;
     }
@@ -2983,13 +2969,13 @@ void Unit::DiscardUnfinishedShips() {
 
 void Unit::Event(const AString & s)
 {
-    AString temp = *name + ": " + s;
+    AString temp = name + ": " + s;
     faction.lock()->Event(temp);
 }
 
 void Unit::Error(const AString & s)
 {
-    AString temp = *name + ": " + s;
+    AString temp = name + ": " + s;
     faction.lock()->Error(temp);
 }
 

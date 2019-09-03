@@ -116,7 +116,7 @@ class Unit : std::enable_shared_from_this<Unit>
 
         Unit();
         Unit(size_t, const std::shared_ptr<Faction>&, int = 0);
-        ~Unit();
+        ~Unit() = default;
 
         void SetMonFlags();
         void MakeWMon(char const *, const Items&, size_t);
@@ -132,14 +132,14 @@ class Unit : std::enable_shared_from_this<Unit>
         AString MageReport();
         AString ReadyItem();
         AString StudyableSkills();
-        AString * BattleReport(unsigned int);
+        AString BattleReport(unsigned int);
         AString TemplateReport();
 
         void ClearOrders();
         void ClearCastOrders();
         void DefaultOrders(const std::shared_ptr<Object>&);
-        void SetName(AString *);
-        void SetDescribe(AString *);
+        void SetName(const AString&);
+        void SetDescribe(const AString&);
         void PostTurn(const ARegion& reg);
 
         bool IsLeader();

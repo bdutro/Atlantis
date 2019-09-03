@@ -547,10 +547,8 @@ void ARegion::GetMapLine(char *buffer, unsigned int line, const ARegionList&)
     char *dest = buffer+TMPL_MAP_OFS;
     memcpy(dest, TemplateMap[line], TMPL_MAP_WIDTH);
 
-    char *name;
-
     size_t t = (static_cast<size_t>(type) + 1) * 2;
-    name = (town ? town->name->Str() : NULL);
+    const char* name = (town ? town->name.Str() : nullptr);
 
     auto i = Directions::begin();
     for (;;) {
@@ -582,7 +580,7 @@ void ARegion::GetMapLine(char *buffer, unsigned int line, const ARegionList&)
         if (!r_w.expired()) {
             const auto r = r_w.lock();
             t = (r->type + 1) * 2;
-            name = (r->town ? r->town->name->Str() : NULL);
+            name = (r->town ? r->town->name.Str() : nullptr);
         } else {
             t = 0;
             name = NULL;

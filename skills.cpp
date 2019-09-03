@@ -101,11 +101,11 @@ Skills LookupSkill(const AString& token)
     return Skills();
 }
 
-Skills ParseSkill(AString *token)
+Skills ParseSkill(const AString& token)
 {
     Skills r;
     for (auto i = Skills::begin(); i != Skills::end(); ++i) {
-        if ((*token == SkillDefs[*i].name) || (*token == SkillDefs[*i].abbr)) {
+        if ((token == SkillDefs[*i].name) || (token == SkillDefs[*i].abbr)) {
             r = *i;
             break;
         }
@@ -253,25 +253,18 @@ ShowSkill::ShowSkill(const Skills& s, unsigned int l)
 
 void Skill::Readin(Ainfile *f)
 {
-    AString *temp, *token;
+    AString temp = f->GetStr();
+    AString token = temp.gettoken();
+    type = LookupSkill(token);
 
-    temp = f->GetStr();
-    token = temp->gettoken();
-    type = LookupSkill(*token);
-    delete token;
-
-    token = temp->gettoken();
-    days = static_cast<unsigned int>(token->value());
-    delete token;
+    token = temp.gettoken();
+    days = token.value<unsigned int>();
 
     exp = 0;
     if (Globals->REQUIRED_EXPERIENCE) {
-        token = temp->gettoken();
-        exp = static_cast<unsigned int>(token->value());
-        delete token;
+        token = temp.gettoken();
+        exp = token.value<unsigned int>();
     }
-
-    delete temp;
 }
 
 void Skill::Writeout(Aoutfile *f) const

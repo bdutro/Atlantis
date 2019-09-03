@@ -329,10 +329,10 @@ private:
                       const Unit::Handle& unit,
                       AString& order,
                       const OrdersCheck::Handle& pCheck);
-    void ProcessMoveOrder(const Unit::Handle&, const AString&, const OrdersCheck::Handle& pCheck);
-    void ProcessAdvanceOrder(const Unit::Handle&, const AString&, const OrdersCheck::Handle& pCheck);
+    void ProcessMoveOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);
+    void ProcessAdvanceOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);
     Unit::Handle ProcessFormOrder(const Unit::Handle& former,
-                                  const AString& order,
+                                  AString& order,
                                   const OrdersCheck::Handle& pCheck,
                                   int atsign);
     void ProcessAddressOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);

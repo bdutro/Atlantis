@@ -1806,7 +1806,6 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
     const auto pFac = GetFaction(factions, guardfaction);
     Unit::Handle u = GetNewUnit(pFac);
     Unit::Handle u2;
-    AString *s = new AString("City Guard");
     
     /*
     Awrite(AString("Begin setting up city guard in..."));
@@ -1825,7 +1824,7 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,num);
         u->SetMoney(num * Globals->GUARD_MONEY);
         u->SetSkill(Skills::Types::S_COMBAT, skilllevel);
-        u->SetName(s);
+        u->SetName("City Guard");
         u->type = U_GUARD;
         u->guard = GUARD_GUARD;
         u->reveal = REVEAL_FACTION;
@@ -1837,15 +1836,14 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         u = MakeManUnit(pFac, pReg->race, n, skilllevel, 1, plate, 0);
         if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,num);
         u->SetMoney(num * Globals->GUARD_MONEY / 2);
-        u->SetName(s);
+        u->SetName("City Guard");
         u->type = U_GUARD;
         u->guard = GUARD_GUARD;
         u->reveal = REVEAL_FACTION;
         u2 = MakeManUnit(pFac, pReg->race, n, skilllevel, 1, plate, 1);
         if (IV) u2->items.SetNum(Items::Types::I_AMULETOFI,num);
         u2->SetMoney(num * Globals->GUARD_MONEY / 2);
-        AString *un = new AString("City Guard");
-        u2->SetName(un);
+        u2->SetName("City Guard");
         u2->type = U_GUARD;
         u2->guard = GUARD_GUARD;
         u2->reveal = REVEAL_FACTION;
@@ -1881,8 +1879,7 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
 
     if (AC && Globals->START_CITY_MAGES && needmage) {
         u = GetNewUnit(pFac);
-        s = new AString("City Mage");
-        u->SetName(s);
+        u->SetName("City Mage");
         u->type = U_GUARDMAGE;
         u->reveal = REVEAL_FACTION;
         u->SetMen(Items::Types::I_LEADERS, 1);

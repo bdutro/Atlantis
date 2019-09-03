@@ -77,11 +77,8 @@ void Production::Writeout(Aoutfile *f)
 
 void Production::Readin(Ainfile *f)
 {
-    AString *temp;
-
-    temp = f->GetStr();
-    itemtype = LookupItem(*temp);
-    delete temp;
+    AString temp = f->GetStr();
+    itemtype = LookupItem(temp);
 
     amount = f->GetInt<int>();
     baseamount = f->GetInt<int>();
@@ -92,10 +89,9 @@ void Production::Readin(Ainfile *f)
     }
     else
     {
-        temp = new AString(ItemDefs[itemtype].pSkill);
+        temp = AString(ItemDefs[itemtype].pSkill);
     }
-    skill = LookupSkill(*temp);
-    delete temp;
+    skill = LookupSkill(temp);
 
     productivity = f->GetInt<int>();
 }

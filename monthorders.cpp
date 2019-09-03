@@ -1833,7 +1833,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     road = "";
     int startmove = 0;
     int movetype = unit->MoveType(region);
-    unsigned int cost = newreg->MoveCost(movetype, *region, x->dir, &road);
+    unsigned int cost = newreg->MoveCost(movetype, *region, x->dir, road);
     if (x->dir == Directions::MOVE_PAUSE)
         cost = 1;
     if (region->type == Regions::Types::R_NEXUS) {
