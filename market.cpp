@@ -97,40 +97,40 @@ void Market::PostTurn(int population, int wages)
     }
 }
 
-void Market::Writeout(Aoutfile *f)
+void Market::Writeout(Aoutfile& f)
 {
-    f->PutInt(type);
+    f.PutInt(type);
     if (item.isValid())
     {
-        f->PutStr(ItemDefs[item].abr);
+        f.PutStr(ItemDefs[item].abr);
     }
     else
     {
-        f->PutStr("NO_ITEM");
+        f.PutStr("NO_ITEM");
     }
-    f->PutInt(price);
-    f->PutInt(amount);
-    f->PutInt(minpop);
-    f->PutInt(maxpop);
-    f->PutInt(minamt);
-    f->PutInt(maxamt);
-    f->PutInt(baseprice);
+    f.PutInt(price);
+    f.PutInt(amount);
+    f.PutInt(minpop);
+    f.PutInt(maxpop);
+    f.PutInt(minamt);
+    f.PutInt(maxamt);
+    f.PutInt(baseprice);
 }
 
-void Market::Readin(Ainfile *f)
+void Market::Readin(Ainfile& f)
 {
-    type = f->GetInt<int>();
+    type = f.GetInt<int>();
 
-    AString temp = f->GetStr();
+    AString temp = f.GetStr();
     item = LookupItem(temp);
 
-    price = f->GetInt<int>();
-    amount = f->GetInt<int>();
-    minpop = f->GetInt<int>();
-    maxpop = f->GetInt<int>();
-    minamt = f->GetInt<int>();
-    maxamt = f->GetInt<int>();
-    baseprice = f->GetInt<int>();
+    price = f.GetInt<int>();
+    amount = f.GetInt<int>();
+    minpop = f.GetInt<int>();
+    maxpop = f.GetInt<int>();
+    minamt = f.GetInt<int>();
+    maxamt = f.GetInt<int>();
+    baseprice = f.GetInt<int>();
 }
 
 AString Market::Report()
@@ -147,18 +147,18 @@ void MarketList::PostTurn(int population, int wages)
     }
 }
 
-void MarketList::Writeout(Aoutfile *f)
+void MarketList::Writeout(Aoutfile& f)
 {
-    f->PutInt(markets_.size());
+    f.PutInt(markets_.size());
     for(const auto& elem: markets_)
     {
         elem->Writeout(f);
     }
 }
 
-void MarketList::Readin(Ainfile *f)
+void MarketList::Readin(Ainfile& f)
 {
-    size_t n = f->GetInt<size_t>();
+    size_t n = f.GetInt<size_t>();
     for (size_t i = 0; i < n; ++i) {
         auto& m = markets_.emplace_back(std::make_shared<Market>());
         m->Readin(f);

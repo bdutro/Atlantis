@@ -1333,7 +1333,7 @@ AString Item::Report(bool seeillusions)
     return ret;
 }
 
-void Item::Writeout(Aoutfile *f)
+void Item::Writeout(Aoutfile& f)
 {
     AString temp;
     if (type.isValid()) {
@@ -1345,30 +1345,30 @@ void Item::Writeout(Aoutfile *f)
     {
         temp = "-1 NO_ITEM";
     }
-    f->PutStr(temp);
+    f.PutStr(temp);
 }
 
-void Item::Readin(Ainfile *f)
+void Item::Readin(Ainfile& f)
 {
-    AString temp = f->GetStr();
+    AString temp = f.GetStr();
     AString token = temp.gettoken();
     num = token.value<size_t>();
     token = temp.gettoken();
     type = LookupItem(token);
 }
 
-void ItemList::Writeout(Aoutfile *f)
+void ItemList::Writeout(Aoutfile& f)
 {
-    f->PutInt(size());
+    f.PutInt(size());
     for(const auto& e: *this)
     {
         e->Writeout(f);
     }
 }
 
-void ItemList::Readin(Ainfile *f)
+void ItemList::Readin(Ainfile& f)
 {
-    size_t i = f->GetInt<size_t>();
+    size_t i = f.GetInt<size_t>();
     for (size_t j=0; j<i; j++) {
         Item::Handle temp = std::make_shared<Item>();
         temp->Readin(f);

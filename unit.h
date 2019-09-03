@@ -108,7 +108,7 @@ enum {
 class Unit : std::enable_shared_from_this<Unit>
 {
     private:
-        void WriteReport_(Areport *, unsigned int, size_t, bool, const Attitudes&, bool);
+        void WriteReport_(Areport&, unsigned int, size_t, bool, const Attitudes&, bool);
 
     public:
         using Handle = std::shared_ptr<Unit>;
@@ -121,13 +121,13 @@ class Unit : std::enable_shared_from_this<Unit>
         void SetMonFlags();
         void MakeWMon(char const *, const Items&, size_t);
 
-        void Writeout( Aoutfile *f );
-        void Readin( Ainfile *f, const PtrList<Faction>&, ATL_VER v );
+        void Writeout( Aoutfile& f );
+        void Readin( Ainfile& f, const PtrList<Faction>&, ATL_VER v );
 
         AString SpoilsReport(void);
         bool CanGetSpoil(const Item::Handle& i);
-        void WriteReport(Areport *, size_t, bool, const Attitudes&, bool);
-        void WriteReport(Areport *, unsigned int, size_t, bool, bool, const Attitudes&, bool);
+        void WriteReport(Areport&, size_t, bool, const Attitudes&, bool);
+        void WriteReport(Areport&, unsigned int, size_t, bool, bool, const Attitudes&, bool);
         AString GetName(unsigned int);
         AString MageReport();
         AString ReadyItem();

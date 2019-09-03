@@ -59,8 +59,8 @@ public:
     int activity;
 
     void PostTurn(int,int);
-    void Writeout(Aoutfile * f);
-    void Readin(Ainfile * f);
+    void Writeout(Aoutfile& f);
+    void Readin(Ainfile& f);
 
     static constexpr int DEFAULT_WAGE_MULTIPLIER = 4;
     static int calculateWagesWithRatio(int wages, float ratio, int multiplier = DEFAULT_WAGE_MULTIPLIER);
@@ -77,8 +77,8 @@ class MarketList {
         using const_iterator = list_type::const_iterator;
     
         void PostTurn(int,int);
-        void Writeout(Aoutfile * f);
-        void Readin(Ainfile * f);
+        void Writeout(Aoutfile& f);
+        void Readin(Ainfile& f);
         void DeleteAll();
         void Add(int, const Items&, int, int, int, int, int, int);
         void Add(const Market::Handle&);

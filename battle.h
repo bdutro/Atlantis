@@ -54,7 +54,7 @@ class Battle
         Battle() = default;
         ~Battle() = default;
 
-        void Report(Areport*, const Faction&);
+        void Report(Areport&, const Faction&);
         void AddLine(const AString &);
 
         int Run(const std::shared_ptr<ARegion>&,

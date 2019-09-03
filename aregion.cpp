@@ -77,18 +77,18 @@ AString TownString(TownTypeEnum i)
     }
 }
 
-void TownInfo::Readin(Ainfile *f, ATL_VER &)
+void TownInfo::Readin(Ainfile& f, ATL_VER &)
 {
-    name = f->GetStr();
-    pop = f->GetInt<int>();
-    hab = f->GetInt<int>();
+    name = f.GetStr();
+    pop = f.GetInt<int>();
+    hab = f.GetInt<int>();
 }
 
-void TownInfo::Writeout(Aoutfile *f)
+void TownInfo::Writeout(Aoutfile& f)
 {
-    f->PutStr(name);
-    f->PutInt(pop);
-    f->PutInt(hab);
+    f.PutStr(name);
+    f.PutInt(pop);
+    f.PutInt(hab);
 }
 
 ARegion::ARegion()
@@ -1020,63 +1020,63 @@ WeakPtrList<Faction> ARegion::PresentFactions()
     return facs;
 }
 
-void ARegion::Writeout(Aoutfile *f)
+void ARegion::Writeout(Aoutfile& f)
 {
-    f->PutStr(name);
-    f->PutInt(num);
+    f.PutStr(name);
+    f.PutInt(num);
     if (type.isValid())
     {
-        f->PutStr(TerrainDefs[type].type);
+        f.PutStr(TerrainDefs[type].type);
     }
     else
     {
-        f->PutStr("NO_TERRAIN");
+        f.PutStr("NO_TERRAIN");
     }
-    f->PutInt(buildingseq);
-    f->PutInt(gate);
+    f.PutInt(buildingseq);
+    f.PutInt(gate);
     if (gate > 0)
     {
-        f->PutInt(gatemonth);
+        f.PutInt(gatemonth);
     }
     if (race.isValid())
     {
-        f->PutStr(ItemDefs[race].abr);
+        f.PutStr(ItemDefs[race].abr);
     }
     else
     {
-        f->PutStr("NO_RACE");
+        f.PutStr("NO_RACE");
     }
-    f->PutInt(population);
-    f->PutInt(basepopulation);
-    f->PutInt(wages);
-    f->PutInt(maxwages);
-    f->PutInt(wealth);
+    f.PutInt(population);
+    f.PutInt(basepopulation);
+    f.PutInt(wages);
+    f.PutInt(maxwages);
+    f.PutInt(wealth);
 
-    f->PutInt(elevation);
-    f->PutInt(humidity);
-    f->PutInt(temperature);
-    f->PutInt(vegetation);
-    f->PutInt(culture);
+    f.PutInt(elevation);
+    f.PutInt(humidity);
+    f.PutInt(temperature);
+    f.PutInt(vegetation);
+    f.PutInt(culture);
 
-    f->PutInt(habitat);
-    f->PutInt(development);
+    f.PutInt(habitat);
+    f.PutInt(development);
 
     if (town) {
-        f->PutInt(1);
+        f.PutInt(1);
         town->Writeout(f);
     } else {
-        f->PutInt(0);
+        f.PutInt(0);
     }
 
-    f->PutInt(xloc);
-    f->PutInt(yloc);
-    f->PutInt(zloc);
-    f->PutInt(visited);
+    f.PutInt(xloc);
+    f.PutInt(yloc);
+    f.PutInt(zloc);
+    f.PutInt(visited);
 
     products.Writeout(f);
     markets.Writeout(f);
 
-    f->PutInt(objects.size());
+    f.PutInt(objects.size());
     for(const auto& o: objects)
     {
         o->Writeout(f);
@@ -1094,38 +1094,38 @@ Regions LookupRegionType(const AString& token)
     return Regions();
 }
 
-void ARegion::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
+void ARegion::Readin(Ainfile& f, const PtrList<Faction>& facs, ATL_VER v)
 {
     AString temp;
 
-    name = f->GetStr();
+    name = f.GetStr();
 
-    num = f->GetInt<size_t>();
-    temp = f->GetStr();
+    num = f.GetInt<size_t>();
+    temp = f.GetStr();
     type = LookupRegionType(temp);
-    buildingseq = f->GetInt<int>();
-    gate = f->GetInt<int>();
-    if (gate > 0) gatemonth = f->GetInt<size_t>();
+    buildingseq = f.GetInt<int>();
+    gate = f.GetInt<int>();
+    if (gate > 0) gatemonth = f.GetInt<size_t>();
 
-    temp = f->GetStr();
+    temp = f.GetStr();
     race = LookupItem(temp);
 
-    population = f->GetInt<int>();
-    basepopulation = f->GetInt<int>();
-    wages = f->GetInt<int>();
-    maxwages = f->GetInt<int>();
-    wealth = f->GetInt<int>();
+    population = f.GetInt<int>();
+    basepopulation = f.GetInt<int>();
+    wages = f.GetInt<int>();
+    maxwages = f.GetInt<int>();
+    wealth = f.GetInt<int>();
     
-    elevation = f->GetInt<int>();
-    humidity = f->GetInt<int>();
-    temperature = f->GetInt<int>();
-    vegetation = f->GetInt<int>();
-    culture = f->GetInt<int>();
+    elevation = f.GetInt<int>();
+    humidity = f.GetInt<int>();
+    temperature = f.GetInt<int>();
+    vegetation = f.GetInt<int>();
+    culture = f.GetInt<int>();
 
-    habitat = f->GetInt<int>();
-    development = f->GetInt<int>();
+    habitat = f.GetInt<int>();
+    development = f.GetInt<int>();
 
-    if (f->GetInt<int>()) {
+    if (f.GetInt<int>()) {
         town = std::make_shared<TownInfo>();
         town->Readin(f, v);
         town->dev = TownDevelopment();
@@ -1133,15 +1133,15 @@ void ARegion::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
         town = 0;
     }
 
-    xloc = f->GetInt<unsigned int>();
-    yloc = f->GetInt<unsigned int>();
-    zloc = f->GetInt<unsigned int>();
-    visited = f->GetInt<int>();
+    xloc = f.GetInt<unsigned int>();
+    yloc = f.GetInt<unsigned int>();
+    zloc = f.GetInt<unsigned int>();
+    visited = f.GetInt<int>();
 
     products.Readin(f);
     markets.Readin(f);
 
-    int i = f->GetInt<int>();
+    int i = f.GetInt<int>();
     buildingseq = 1;
     for (int j=0; j<i; j++) {
         Object::Handle& temp = AddObject();
@@ -1200,7 +1200,7 @@ bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
     return false;
 }
 
-void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
+void ARegion::WriteProducts(Areport& f, const Faction& fac, bool present)
 {
     AString temp = "Products: ";
     bool has = false;
@@ -1219,10 +1219,10 @@ void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
                 if (p->skill == Skills::Types::S_ENTERTAINMENT) {
                     if ((Globals->TRANSIT_REPORT &
                             GameDefs::REPORT_SHOW_ENTERTAINMENT) || present) {
-                        f->PutStr(AString("Entertainment available: $") +
+                        f.PutStr(AString("Entertainment available: $") +
                                 p->amount + ".");
                     } else {
-                        f->PutStr(AString("Entertainment available: $0."));
+                        f.PutStr(AString("Entertainment available: $0."));
                     }
                 }
             } else {
@@ -1245,7 +1245,7 @@ void ARegion::WriteProducts(Areport *f, const Faction& fac, bool present)
         temp += "none";
     }
     temp += ".";
-    f->PutStr(temp);
+    f.PutStr(temp);
 }
 
 bool ARegion::HasItem(const Faction& fac, const Items& item)
@@ -1266,7 +1266,7 @@ bool ARegion::HasItem(const Faction& fac, const Items& item)
     return false;
 }
 
-void ARegion::WriteMarkets(Areport *f, const Faction& fac, bool present)
+void ARegion::WriteMarkets(Areport& f, const Faction& fac, bool present)
 {
     AString temp = "Wanted: ";
     bool has = false;
@@ -1296,7 +1296,7 @@ void ARegion::WriteMarkets(Areport *f, const Faction& fac, bool present)
         temp += "none";
     }
     temp += ".";
-    f->PutStr(temp);
+    f.PutStr(temp);
 
     temp = "For Sale: ";
     has = false;
@@ -1321,43 +1321,43 @@ void ARegion::WriteMarkets(Areport *f, const Faction& fac, bool present)
         temp += "none";
     }
     temp += ".";
-    f->PutStr(temp);
+    f.PutStr(temp);
 }
 
-void ARegion::WriteEconomy(Areport *f, const Faction& fac, bool present)
+void ARegion::WriteEconomy(Areport& f, const Faction& fac, bool present)
 {
-    f->AddTab();
+    f.AddTab();
 
     if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_WAGES) || present) {
-        f->PutStr(AString("Wages: ") + WagesForReport() + ".");
+        f.PutStr(AString("Wages: ") + WagesForReport() + ".");
     } else {
-        f->PutStr(AString("Wages: $0."));
+        f.PutStr(AString("Wages: $0."));
     }
 
     WriteMarkets(f, fac, present);
 
     WriteProducts(f, fac, present);
 
-    f->EndLine();
-    f->DropTab();
+    f.EndLine();
+    f.DropTab();
 }
 
-void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const ExitArray& exits_seen)
+void ARegion::WriteExits(Areport& f, const ARegionList& pRegs, const ExitArray& exits_seen)
 {
-    f->PutStr("Exits:");
-    f->AddTab();
+    f.PutStr("Exits:");
+    f.AddTab();
     int y = 0;
     for (auto d = Directions::begin(); d != Directions::end(); ++d) {
         const ARegion::WeakHandle& r = neighbors[*d];
         if (!r.expired() && exits_seen[*d]) {
-            f->PutStr(AString(DirectionStrs[*d]) + " : " +
+            f.PutStr(AString(DirectionStrs[*d]) + " : " +
                     r.lock()->Print(pRegs) + ".");
             y = 1;
         }
     }
-    if (!y) f->PutStr("none");
-    f->DropTab();
-    f->EndLine();
+    if (!y) f.PutStr("none");
+    f.DropTab();
+    f.EndLine();
 }
 
 #define AC_STRING "%s Nexus is a magical place: the entryway " \
@@ -1365,7 +1365,7 @@ void ARegion::WriteExits(Areport *f, const ARegionList& pRegs, const ExitArray& 
 "keep you safe as long as you should choose to stay. However, rumor " \
 "has it that once you have left the Nexus, you can never return."
 
-void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_t>& month, const ARegionList& pRegions)
+void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_t>& month, const ARegionList& pRegions)
 {
     Farsight::WeakHandle farsight = GetFarsight(farsees, fac);
     const bool has_farsight = !farsight.expired();
@@ -1390,11 +1390,11 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
             }
         }
         temp += ".";
-        f->PutStr(temp);
-        f->PutStr("-------------------------------------------------"
+        f.PutStr(temp);
+        f.PutStr("-------------------------------------------------"
                 "-----------");
 
-        f->AddTab();
+        f.AddTab();
         if (Globals->WEATHER_EXISTS) {
             temp = "It was ";
             if (clearskies) temp += "unnaturally clear ";
@@ -1417,17 +1417,17 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
             temp += "it will be ";
             temp += SeasonNames[nxtweather];
             temp += " next month.";
-            f->PutStr(temp);
+            f.PutStr(temp);
         }
         
 #if 0
-        f->PutStr("");
+        f.PutStr("");
         temp = "Elevation is ";
-        f->PutStr(temp + elevation);
+        f.PutStr(temp + elevation);
         temp = "Humidity is ";
-        f->PutStr(temp + humidity);
+        f.PutStr(temp + humidity);
         temp = "Temperature is ";
-        f->PutStr(temp + temperature);
+        f.PutStr(temp + temperature);
 #endif
 
         if (type == Regions::Types::R_NEXUS) {
@@ -1435,13 +1435,13 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
             char *nexus_desc = new char[len];
             sprintf(nexus_desc, AC_STRING, Globals->WORLD_NAME,
                     Globals->WORLD_NAME);
-            f->PutStr("");
-            f->PutStr(nexus_desc);
-            f->PutStr("");
+            f.PutStr("");
+            f.PutStr(nexus_desc);
+            f.PutStr("");
             delete [] nexus_desc;
         }
 
-        f->DropTab();
+        f.DropTab();
 
         WriteEconomy(f, fac, present || has_farsight);
 
@@ -1509,11 +1509,11 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
                         temp += pRegions.numberofgates;
                     }
                     temp += ").";
-                    f->PutStr(temp);
-                    f->PutStr("");
+                    f.PutStr(temp);
+                    f.PutStr("");
                 } else if (Globals->SHOW_CLOSED_GATES) {
-                    f->PutStr(AString("There is a closed Gate here."));
-                    f->PutStr("");
+                    f.PutStr(AString("There is a closed Gate here."));
+                    f.PutStr("");
                 }
             }
         }
@@ -1565,13 +1565,13 @@ void ARegion::WriteReport(Areport *f, const Faction& fac, const ValidValue<size_
                             passobs, passtrue, passdetfac,
                             present || has_farsight);
             }
-            f->EndLine();
+            f.EndLine();
         }
     }
 }
 
 // DK
-void ARegion::WriteTemplate(Areport *f, const Faction& fac,
+void ARegion::WriteTemplate(Areport& f, const Faction& fac,
         const ARegionList& pRegs, const ValidValue<size_t>& month)
 {
     int header = 0;
@@ -1586,18 +1586,18 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                     if (fac.temformat == Templates::Types::TEMPLATE_MAP) {
                         WriteTemplateHeader(f, fac, pRegs, month);
                     } else {
-                        f->PutStr("");
-                        f->PutStr(AString("*** ") + Print(pRegs) + " ***", 1);
+                        f.PutStr("");
+                        f.PutStr(AString("*** ") + Print(pRegs) + " ***", 1);
                     }
                     header = 1;
                 }
 
-                f->PutStr("");
-                f->PutStr(AString("unit ") + u->num);
+                f.PutStr("");
+                f.PutStr(AString("unit ") + u->num);
                 // DK
                 if (fac.temformat == Templates::Types::TEMPLATE_LONG ||
                         fac.temformat == Templates::Types::TEMPLATE_MAP) {
-                    f->PutStr(u->TemplateReport(), 1);
+                    f.PutStr(u->TemplateReport(), 1);
                 }
                 int gotMonthOrder = 0;
                 for(const auto& s: u->oldorders) {
@@ -1632,12 +1632,12 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                             break;
                     }
                     if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
-                        f->DropTab();
-                    f->PutStr(*s);
+                        f.DropTab();
+                    f.PutStr(*s);
                     if (order == Orders::Types::O_TURN || order == Orders::Types::O_FORM)
-                        f->AddTab();
+                        f.AddTab();
                 }
-                f->ClearTab();
+                f.ClearTab();
                 u->oldorders.clear();
 
                 int firstMonthOrder = gotMonthOrder;
@@ -1646,10 +1646,10 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                     {
                         if (firstMonthOrder) {
                             if (tOrder->repeating)
-                                f->PutStr(AString("@TURN"));
+                                f.PutStr(AString("@TURN"));
                             else
-                                f->PutStr(AString("TURN"));
-                            f->AddTab();
+                                f.PutStr(AString("TURN"));
+                            f.AddTab();
                         }
                         for(const auto& t: tOrder->turnOrders) {
                             temp = *t;
@@ -1664,22 +1664,22 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                                 order = Orders::Types::NORDERS;
                             }
                             if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
-                                f->DropTab();
-                            f->PutStr(*t);
+                                f.DropTab();
+                            f.PutStr(*t);
                             if (order == Orders::Types::O_TURN || order == Orders::Types::O_FORM)
-                                f->AddTab();
+                                f.AddTab();
                         }
                         if (firstMonthOrder) {
-                            f->DropTab();
-                            f->PutStr(AString("ENDTURN"));
+                            f.DropTab();
+                            f.PutStr(AString("ENDTURN"));
                         }
                         firstMonthOrder = 1;
-                        f->ClearTab();
+                        f.ClearTab();
                     }
                     const TurnOrder::Handle& tOrder = u->turnorders.front();
                     if (tOrder->repeating && !gotMonthOrder) {
-                        f->PutStr(AString("@TURN"));
-                        f->AddTab();
+                        f.PutStr(AString("@TURN"));
+                        f.AddTab();
                         for(const auto& t: tOrder->turnOrders) {
                             temp = *t;
                             temp.getat();
@@ -1693,13 +1693,13 @@ void ARegion::WriteTemplate(Areport *f, const Faction& fac,
                                 order = Orders::Types::NORDERS;
                             }
                             if (order == Orders::Types::O_ENDTURN || order == Orders::Types::O_ENDFORM)
-                                f->DropTab();
-                            f->PutStr(*t);
+                                f.DropTab();
+                            f.PutStr(*t);
                             if (order == Orders::Types::O_TURN || order == Orders::Types::O_FORM)
-                                f->AddTab();
+                                f.AddTab();
                         }
-                        f->ClearTab();
-                        f->PutStr(AString("ENDTURN"));
+                        f.ClearTab();
+                        f.PutStr(AString("ENDTURN"));
                     }
                 }
                 u->turnorders.clear();
@@ -2086,52 +2086,52 @@ ARegionList::ARegionList()
     numberofgates = 0;
 }
 
-void ARegionList::WriteRegions(Aoutfile *f)
+void ARegionList::WriteRegions(Aoutfile& f)
 {
-    f->PutInt(regions_.size());
+    f.PutInt(regions_.size());
 
-    f->PutInt(numLevels);
+    f.PutInt(numLevels);
     for (const auto& pRegs: pRegionArrays) {
-        f->PutInt(pRegs->x);
-        f->PutInt(pRegs->y);
+        f.PutInt(pRegs->x);
+        f.PutInt(pRegs->y);
         if (pRegs->strName.Len()) {
-            f->PutStr(pRegs->strName);
+            f.PutStr(pRegs->strName);
         } else {
-            f->PutStr("none");
+            f.PutStr("none");
         }
-        f->PutInt(pRegs->levelType);
+        f.PutInt(pRegs->levelType);
     }
 
-    f->PutInt(numberofgates);
+    f.PutInt(numberofgates);
     for(const auto& reg: regions_)
     {
         reg->Writeout(f);
     }
     {
-        f->PutStr("Neighbors");
+        f.PutStr("Neighbors");
         for(const auto& reg: regions_)
         {
             for (const auto& n: reg->neighbors) {
                 if (!n.expired()) {
-                    f->PutInt(n.lock()->num);
+                    f.PutInt(n.lock()->num);
                 } else {
-                    f->PutInt(-1);
+                    f.PutInt(-1);
                 }
             }
         }
     }
 }
 
-bool ARegionList::ReadRegions(Ainfile *f, const PtrList<Faction>& factions, ATL_VER v)
+bool ARegionList::ReadRegions(Ainfile& f, const PtrList<Faction>& factions, ATL_VER v)
 {
-    unsigned int num = f->GetInt<unsigned int>();
+    unsigned int num = f.GetInt<unsigned int>();
 
-    numLevels = f->GetInt<unsigned int>();
+    numLevels = f.GetInt<unsigned int>();
     CreateLevels(numLevels);
     for (unsigned int i = 0; i < numLevels; i++) {
-        unsigned int curX = f->GetInt<unsigned int>();
-        unsigned int curY = f->GetInt<unsigned int>();
-        AString name = f->GetStr();
+        unsigned int curX = f.GetInt<unsigned int>();
+        unsigned int curY = f.GetInt<unsigned int>();
+        AString name = f.GetStr();
         ARegionArray::Handle pRegs = std::make_shared<ARegionArray>(curX, curY);
         if (name == "none")
         {
@@ -2141,11 +2141,11 @@ bool ARegionList::ReadRegions(Ainfile *f, const PtrList<Faction>& factions, ATL_
         {
             pRegs->strName = name;
         }
-        pRegs->levelType = f->GetInt<int>();
+        pRegs->levelType = f.GetInt<int>();
         pRegionArrays[i] = pRegs;
     }
 
-    numberofgates = f->GetInt<unsigned int>();
+    numberofgates = f.GetInt<unsigned int>();
 
     ARegionFlatArray fa(num);
 
@@ -2160,10 +2160,10 @@ bool ARegionList::ReadRegions(Ainfile *f, const PtrList<Faction>& factions, ATL_
 
     Awrite("Setting up the neighbors...");
     {
-        f->GetStr();
+        f.GetStr();
         for(const auto& reg: regions_) {
             for (auto& n: reg->neighbors) {
-                ssize_t j = f->GetInt<ssize_t>();
+                ssize_t j = f.GetInt<ssize_t>();
                 if (j != -1) {
                     n = fa.GetRegion(static_cast<size_t>(j));
                 } else {

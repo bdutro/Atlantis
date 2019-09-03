@@ -93,9 +93,9 @@ class Object : public std::enable_shared_from_this<Object>
         Object(const std::weak_ptr<ARegion>& region);
         ~Object();
 
-        void Readin(Ainfile *f, const PtrList<Faction>&, ATL_VER v);
-        void Writeout(Aoutfile *f);
-        void Report(Areport *, const Faction&, unsigned int, size_t, bool, unsigned int, size_t, bool, bool);
+        void Readin(Ainfile& f, const PtrList<Faction>&, ATL_VER v);
+        void Writeout(Aoutfile& f);
+        void Report(Areport&, const Faction&, unsigned int, size_t, bool, unsigned int, size_t, bool, bool);
 
         void SetName(const AString&);
         void SetDescribe(const AString&);
@@ -118,8 +118,8 @@ class Object : public std::enable_shared_from_this<Object>
         void MoveObject(const std::shared_ptr<ARegion>& toreg);
         
         // Fleets
-        void ReadinFleet(Ainfile *f);
-        void WriteoutFleet(Aoutfile *f);
+        void ReadinFleet(Ainfile& f);
+        void WriteoutFleet(Aoutfile& f);
         bool CheckShip(const Items&);
         size_t GetNumShips(const Items&);
         void SetNumShips(const Items&, size_t);

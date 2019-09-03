@@ -531,7 +531,7 @@ void ARegion::WriteTemplateHeader(Areport *f,
 // NEW FUNCTION DK 2000.03.07,
 // converted WriteExits
 //
-void ARegion::GetMapLine(char *buffer, unsigned int line, const ARegionList&)
+void ARegion::GetMapLine(std::string& buffer, unsigned int line, const ARegionList&)
 {
 
     for (int m=0; m<MAP_WIDTH; m++) {

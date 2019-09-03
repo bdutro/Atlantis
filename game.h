@@ -49,7 +49,7 @@ public:
 
     OrdersCheck();
 
-    Aoutfile *pCheckFile;
+    Aoutfile::Handle pCheckFile;
     Unit::Handle dummyUnit;
     Faction::Handle dummyFaction;
     Order dummyOrder;
@@ -121,7 +121,7 @@ public:
     // Handle special gm unit modification functions
     Unit::WeakHandle ParseGMUnit(const AString& tag, const Faction::Handle& pFac);
 
-    size_t TurnNumber();
+    size_t TurnNumber() const;
 
     // JLT
     // Functions to allow enabling/disabling parts of the data tables
@@ -178,8 +178,8 @@ private:
     bool MakeWMon(const ARegion::Handle& pReg);
     void MakeLMon(const Object::Handle& pObj);
 
-    void WriteSurfaceMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type);
-    void WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type);
+    void WriteSurfaceMap(Aoutfile& f, const ARegionArray::Handle& pArr, int type);
+    void WriteUnderworldMap(Aoutfile& f, const ARegionArray::Handle& pArr, int type);
     char GetRChar(const ARegion::Handle& r);
     AString GetXtraMap(const ARegion::Handle&, int);
 
@@ -445,12 +445,12 @@ private:
         return allowed[points];
     }
 
-    unsigned int AllowedMages(const Faction& pFac);
-    unsigned int AllowedApprentices(const Faction& pFact);
-    unsigned int AllowedQuarterMasters(const Faction& pFact);
-    unsigned int AllowedTacticians(const Faction& pFact);
-    int AllowedTaxes(const Faction& pFac);
-    int AllowedTrades(const Faction& pFac);
+    unsigned int AllowedMages(const Faction& pFac) const;
+    unsigned int AllowedApprentices(const Faction& pFact) const;
+    unsigned int AllowedQuarterMasters(const Faction& pFact) const;
+    unsigned int AllowedTacticians(const Faction& pFact) const;
+    int AllowedTaxes(const Faction& pFac) const;
+    int AllowedTrades(const Faction& pFac) const;
     bool TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
     bool TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac);
 

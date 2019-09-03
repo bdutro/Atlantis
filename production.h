@@ -45,8 +45,8 @@ public:
     Production(const Items&, int); /* item type, amt max */
     Production();
     
-    void Writeout(Aoutfile *);
-    void Readin(Ainfile *);
+    void Writeout(Aoutfile&);
+    void Readin(Ainfile&);
     AString WriteReport();
     
     Items itemtype;
@@ -68,8 +68,8 @@ public:
     Production::WeakHandle GetProd(const Items&, const Skills&); /* item type, skill */
     void AddProd(const Production::Handle&);
 
-    void Writeout(Aoutfile *);
-    void Readin(Ainfile *);
+    void Writeout(Aoutfile&);
+    void Readin(Ainfile&);
     void Add(const Items& it, int maxamt);
     void Add(const Production::Handle& p);
 

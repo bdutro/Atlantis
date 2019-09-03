@@ -77,8 +77,8 @@ class QuestList
         using iterator = list_type::iterator;
         using const_iterator = list_type::const_iterator;
 
-        int ReadQuests(Ainfile *f);
-        void WriteQuests(Aoutfile *f);
+        int ReadQuests(Ainfile& f);
+        void WriteQuests(Aoutfile& f);
 
         bool CheckQuestKillTarget(const Unit::Handle& u, ItemList& reward);
         bool CheckQuestHarvestTarget(const ARegion::Handle& r,

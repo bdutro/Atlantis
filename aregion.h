@@ -157,8 +157,8 @@ class TownInfo
         TownInfo() = default;
         ~TownInfo() = default;
 
-        void Readin(Ainfile *, ATL_VER &);
-        void Writeout(Aoutfile *);
+        void Readin(Ainfile&, ATL_VER &);
+        void Writeout(Aoutfile&);
         TownTypeEnum TownType();
 
         AString name;
@@ -187,21 +187,21 @@ class ARegion : std::enable_shared_from_this<ARegion>
         void ZeroNeighbors();
         void SetName(const std::string&);
 
-        void Writeout(Aoutfile *);
-        void Readin(Ainfile *, const PtrList<Faction>&, ATL_VER v);
+        void Writeout(Aoutfile&);
+        void Readin(Ainfile&, const PtrList<Faction>&, ATL_VER v);
 
         bool CanMakeAdv(const Faction&, const Items&);
         bool HasItem(const Faction&, const Items&);
-        void WriteProducts(Areport *, const Faction&, bool);
-        void WriteMarkets(Areport *, const Faction&, bool);
-        void WriteEconomy(Areport *, const Faction&, bool);
-        void WriteExits(Areport *, const ARegionList& pRegs, const ExitArray& exits_seen);
-        void WriteReport(Areport *f, const Faction& fac, const ValidValue<size_t>& month,
+        void WriteProducts(Areport& , const Faction&, bool);
+        void WriteMarkets(Areport& , const Faction&, bool);
+        void WriteEconomy(Areport& , const Faction&, bool);
+        void WriteExits(Areport& , const ARegionList& pRegs, const ExitArray& exits_seen);
+        void WriteReport(Areport& f, const Faction& fac, const ValidValue<size_t>& month,
                 const ARegionList& pRegions);
         // DK
-        void WriteTemplate(Areport *, const Faction&, const ARegionList& , const ValidValue<size_t>&);
-        void WriteTemplateHeader(Areport *, const Faction&, const ARegionList& , const ValidValue<size_t>&);
-        void GetMapLine(char *, unsigned int, const ARegionList& );
+        void WriteTemplate(Areport& , const Faction&, const ARegionList& , const ValidValue<size_t>&);
+        void WriteTemplateHeader(Areport& , const Faction&, const ARegionList& , const ValidValue<size_t>&);
+        void GetMapLine(std::string&, unsigned int, const ARegionList& );
 
         AString ShortPrint(const ARegionList& pRegs);
         AString Print(const ARegionList& pRegs);
@@ -482,7 +482,7 @@ class GeoMap
         int GetTemperature(int, int);
         int GetVegetation(int, int);
         int GetCulture(int, int);
-        void ApplyGeography(ARegionArray *pArr);
+        void ApplyGeography(ARegionArray& pArr);
         
         int size, xscale, yscale, xoff, yoff;
         std::map<long int,Geography> geomap;
@@ -500,12 +500,12 @@ class ARegionList
 
         ARegion::WeakHandle GetRegion(size_t);
         ARegion::WeakHandle GetRegion(unsigned int, unsigned int, unsigned int);
-        bool ReadRegions(Ainfile *f, const PtrList<Faction>&, ATL_VER v);
-        void WriteRegions(Aoutfile *f);
+        bool ReadRegions(Ainfile& f, const PtrList<Faction>&, ATL_VER v);
+        void WriteRegions(Aoutfile& f);
         Location::Handle FindUnit(size_t);
         Location::Handle GetUnitId(const UnitId& id, size_t faction, const ARegion& cur);
 
-        void ChangeStartingCity(ARegion *, int);
+        void ChangeStartingCity(const ARegion&, int);
         ARegion::WeakHandle GetStartingCity(const ARegion& AC, size_t num, unsigned int level, unsigned int maxX, unsigned int maxY);
 
         ARegion::WeakHandle FindGate(int);

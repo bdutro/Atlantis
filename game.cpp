@@ -50,7 +50,7 @@ Game::~Game()
     maxppunits = 0;
 }
 
-size_t Game::TurnNumber()
+size_t Game::TurnNumber() const
 {
     return (year-1)*12 + (month.isValid() ? month + 1 : 0);
 }
@@ -110,12 +110,12 @@ AString Game::GetXtraMap(const ARegion::Handle& reg,int type)
     return(" ");
 }
 
-void Game::WriteSurfaceMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type)
+void Game::WriteSurfaceMap(Aoutfile& f, const ARegionArray::Handle& pArr, int type)
 {
     unsigned int yy = 0;
     unsigned int xx = 0;
 
-    f->PutStr(AString("Map (") + xx*32 + "," + yy*16 + ")");
+    f.PutStr(AString("Map (") + xx*32 + "," + yy*16 + ")");
     for (unsigned int y=0; y < pArr->y; y+=2) {
         AString temp;
         for (unsigned int x=0; x< pArr->x; x+=2) {
@@ -124,7 +124,7 @@ void Game::WriteSurfaceMap(Aoutfile *f, const ARegionArray::Handle& pArr, int ty
             temp += GetXtraMap(reg, type);
             temp += "  ";
         }
-        f->PutStr(temp);
+        f.PutStr(temp);
         temp = "  ";
         for (unsigned int x=1; x< pArr->x; x+=2) {
             const auto reg = pArr->GetRegion(x+xx*32,y+yy*16+1).lock();
@@ -132,16 +132,16 @@ void Game::WriteSurfaceMap(Aoutfile *f, const ARegionArray::Handle& pArr, int ty
             temp += GetXtraMap(reg,type);
             temp += "  ";
         }
-        f->PutStr(temp);
+        f.PutStr(temp);
     }
-    f->PutStr("");
+    f.PutStr("");
 }
 
-void Game::WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int type)
+void Game::WriteUnderworldMap(Aoutfile& f, const ARegionArray::Handle& pArr, int type)
 {
     unsigned int xx = 0;
     unsigned int yy = 0;
-    f->PutStr(AString("Map (") + xx*32 + "," + yy*16 + ")");
+    f.PutStr(AString("Map (") + xx*32 + "," + yy*16 + ")");
     for (unsigned int y=0; y< pArr->y; y+=2) {
         AString temp = " ";
         AString temp2;
@@ -163,8 +163,8 @@ void Game::WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int
 
             temp2 += " ";
         }
-        f->PutStr(temp);
-        f->PutStr(temp2);
+        f.PutStr(temp);
+        f.PutStr(temp2);
 
         temp = " ";
         temp2 = "  ";
@@ -188,10 +188,10 @@ void Game::WriteUnderworldMap(Aoutfile *f, const ARegionArray::Handle& pArr, int
 
             temp2 += " ";
         }
-        f->PutStr(temp);
-        f->PutStr(temp2);
+        f.PutStr(temp);
+        f.PutStr(temp2);
     }
-    f->PutStr("");
+    f.PutStr("");
 }
 
 int Game::ViewMap(const AString & typestr,const AString & mapfile)
@@ -228,15 +228,15 @@ int Game::ViewMap(const AString & typestr,const AString & mapfile)
                 break;
             case ARegionArray::LEVEL_SURFACE:
                 f.PutStr(AString("Level ") + i + ": Surface");
-                WriteSurfaceMap(&f, pArr, type);
+                WriteSurfaceMap(f, pArr, type);
                 break;
             case ARegionArray::LEVEL_UNDERWORLD:
                 f.PutStr(AString("Level ") + i + ": Underworld");
-                WriteUnderworldMap(&f, pArr, type);
+                WriteUnderworldMap(f, pArr, type);
                 break;
             case ARegionArray::LEVEL_UNDERDEEP:
                 f.PutStr(AString("Level ") + i + ": Underdeep");
-                WriteUnderworldMap(&f, pArr, type);
+                WriteUnderworldMap(f, pArr, type);
                 break;
         }
     }
@@ -405,23 +405,25 @@ int Game::OpenGame()
 
     for (int j=0; j<i; j++) {
         Faction::Handle& temp = factions.emplace_back(std::make_shared<Faction>());
-        temp->Readin(&f, eVersion);
+        temp->Readin(f, eVersion);
     }
 
     //
     // Read in the ARegions
     //
-    i = regions.ReadRegions(&f, factions, eVersion);
+    i = regions.ReadRegions(f, factions, eVersion);
     if (!i) return 0;
 
     // read in quests
-    if (!quests.ReadQuests(&f))
+    if (!quests.ReadQuests(f))
+    {
         return 0;
+    }
 
     SetupUnitNums();
 
     f.Close();
-    return(1);
+    return 1;
 }
 
 int Game::SaveGame()
@@ -452,19 +454,19 @@ int Game::SaveGame()
     f.PutInt(factions.size());
 
     for(const auto& fac: factions) {
-        fac->Writeout(&f);
+        fac->Writeout(f);
     }
 
     //
     // Write out the ARegions
     //
-    regions.WriteRegions(&f);
+    regions.WriteRegions(f);
 
     // Write out quests
-    quests.WriteQuests(&f);
+    quests.WriteQuests(f);
 
     f.Close();
-    return(1);
+    return 1;
 }
 
 void Game::DummyGame()
@@ -497,11 +499,11 @@ int Game::WritePlayers()
     f.PutStr("");
 
     for(const auto& fac: factions) {
-        fac->WriteFacInfo(&f);
+        fac->WriteFacInfo(f);
     }
 
     f.Close();
-    return(1);
+    return 1;
 }
 
 int Game::ReadPlayers()
@@ -1013,19 +1015,19 @@ int Game::DoOrdersCheck(const AString &strOrders, const AString &strCheck)
         return(0);
     }
 
-    Aoutfile checkFile;
-    if (checkFile.OpenByName(strCheck) == -1) {
+    Aoutfile::Handle checkFile = std::make_shared<Aoutfile>();
+    if (checkFile->OpenByName(strCheck) == -1) {
         Awrite("Couldn't open the orders check file!");
         return(0);
     }
 
     OrdersCheck::Handle check = std::make_shared<OrdersCheck>();
-    check->pCheckFile = &checkFile;
+    check->pCheckFile = checkFile;
 
     ParseOrders(0, ordersFile, check);
 
     ordersFile.Close();
-    checkFile.Close();
+    checkFile->Close();
 
     return(1);
 }
@@ -1171,7 +1173,7 @@ void Game::WriteReport()
             (fac->num == 1))) {
             int i = f.OpenByName(str);
             if (i != -1) {
-                fac->WriteReport(&f, this);
+                fac->WriteReport(f, *this);
                 f.Close();
             }
         }
@@ -1191,7 +1193,7 @@ void Game::WriteTemplates()
         if (!fac->IsNPC()) {
             int i = f.OpenByName(str);
             if (i != -1) {
-                fac->WriteTemplate(&f, this);
+                fac->WriteTemplate(f, *this);
                 f.Close();
             }
             fac->present_regions.clear();
@@ -1496,37 +1498,37 @@ size_t Game::CountApprentices(const Faction::Handle& pFac)
     return i;
 }
 
-unsigned int Game::AllowedMages(const Faction& pFac)
+unsigned int Game::AllowedMages(const Faction& pFac) const
 {
     return getAllowedPoints(pFac.type[Factions::Types::F_MAGIC],
                             allowedMages);
 }
 
-unsigned int Game::AllowedQuarterMasters(const Faction& pFac)
+unsigned int Game::AllowedQuarterMasters(const Faction& pFac) const
 {
     return getAllowedPoints(pFac.type[Factions::Types::F_TRADE],
                             allowedQuartermasters);
 }
 
-unsigned int Game::AllowedTacticians(const Faction& pFac)
+unsigned int Game::AllowedTacticians(const Faction& pFac) const
 {
     return getAllowedPoints(pFac.type[Factions::Types::F_WAR],
                             allowedTacticians);
 }
 
-unsigned int Game::AllowedApprentices(const Faction& pFac)
+unsigned int Game::AllowedApprentices(const Faction& pFac) const
 {
     return getAllowedPoints(pFac.type[Factions::Types::F_MAGIC],
                             allowedApprentices);
 }
 
-int Game::AllowedTaxes(const Faction& pFac)
+int Game::AllowedTaxes(const Faction& pFac) const
 {
     return getAllowedPoints(pFac.type[Factions::Types::F_WAR],
                             allowedTaxes);
 }
 
-int Game::AllowedTrades(const Faction& pFac)
+int Game::AllowedTrades(const Faction& pFac) const
 {
     return getAllowedPoints(pFac.type[Factions::Types::F_TRADE],
                             allowedTrades);

@@ -398,14 +398,14 @@ void Battle::WriteSides(const ARegion::Handle& r,
     AddLine("");
 }
 
-void Battle::Report(Areport * f, const Faction& fac) {
+void Battle::Report(Areport& f, const Faction& fac) {
     if (assassination == ASS_SUCC && &fac != attacker.lock().get()) {
-        f->PutStr(asstext);
-        f->PutStr("");
+        f.PutStr(asstext);
+        f.PutStr("");
         return;
     }
     for(const auto& s: text) {
-        f->PutStr(*s);
+        f.PutStr(*s);
     }
 }
 

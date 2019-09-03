@@ -97,8 +97,8 @@ public:
 
     Attitude() = default;
     ~Attitude() = default;
-    void Writeout(Aoutfile * );
-    void Readin( Ainfile *, ATL_VER version );
+    void Writeout(Aoutfile& );
+    void Readin( Ainfile&, ATL_VER version );
     
     size_t factionnum;
     Attitudes attitude;
@@ -114,8 +114,8 @@ public:
     Faction(size_t);
     ~Faction() = default;
     
-    void Readin( Ainfile *, ATL_VER version );
-    void Writeout( Aoutfile * );
+    void Readin( Ainfile&, ATL_VER version );
+    void Writeout( Aoutfile& );
     void View();
     
     void SetName(const AString&);
@@ -127,10 +127,10 @@ public:
     void Event(const AString &);
     
     AString FactionTypeStr();
-    void WriteReport( Areport *f, Game *pGame );
+    void WriteReport(Areport& f, const Game& pGame );
     // LLS - write order template
-    void WriteTemplate(Areport *f, Game *pGame);
-    void WriteFacInfo(Aoutfile *);
+    void WriteTemplate(Areport& f, const Game& pGame);
+    void WriteFacInfo(Aoutfile&);
     
     void SetAttitude(size_t, const Attitudes&); /* faction num, attitude */
     /* if attitude == -1, clear it */

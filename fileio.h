@@ -28,13 +28,14 @@
 #include <iostream>
 #include <fstream>
 #include <exception>
+#include <memory>
 
 #include "astring.h"
 
 class Ainfile {
     public:
         Ainfile();
-        ~Ainfile();
+        ~Ainfile() = default;
 
         void Open(const AString &);
         int OpenByName(const AString &);
@@ -52,13 +53,15 @@ class Ainfile {
         }
 
 
-        std::ifstream *file;
+        std::unique_ptr<std::ifstream> file;
 };
 
 class Aoutfile {
     public:
+        using Handle = std::shared_ptr<Aoutfile>;
+
         Aoutfile();
-        ~Aoutfile();
+        ~Aoutfile() = default;
 
         void Open(const AString &);
         int OpenByName(const AString &);
@@ -72,13 +75,13 @@ class Aoutfile {
         void PutInt(size_t);
         void PutBool(bool);
 
-        std::ofstream *file;
+        std::unique_ptr<std::ofstream> file;
 };
 
 class Aorders {
     public:
         Aorders();
-        ~Aorders();
+        ~Aorders() = default;
 
         void Open(const AString &);
         int OpenByName(const AString &);
@@ -86,13 +89,13 @@ class Aorders {
 
         AString GetLine();
 
-        std::ifstream *file;
+        std::unique_ptr<std::ifstream> file;
 };
 
 class Areport {
     public:
         Areport();
-        ~Areport();
+        ~Areport() = default;
 
         void Open(const AString &);
         int OpenByName(const AString &);
@@ -106,14 +109,14 @@ class Areport {
         void PutNoFormat(const AString &);
         void EndLine();
 
-        std::ofstream *file;
+        std::unique_ptr<std::ofstream> file;
         int tabs;
 };
 
 class Arules {
     public:
         Arules();
-        ~Arules();
+        ~Arules() = default;
 
         void Open(const AString &);
         int OpenByName(const AString &);
@@ -141,7 +144,7 @@ class Arules {
         AString Link(const AString &href, const AString &text);
         void LinkRef(const AString &name);
 
-        std::ofstream *file;
+        std::unique_ptr<std::ofstream> file;
         int tabs;
         int wraptab;
 };

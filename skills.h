@@ -148,8 +148,8 @@ class ShowSkill {
 
 class Skill {
     public:
-        void Readin(Ainfile *);
-        void Writeout(Aoutfile *) const;
+        void Readin(Ainfile&);
+        void Writeout(Aoutfile&) const;
 
         Skill Split(size_t, size_t); /* total num, num leaving */
 
@@ -175,8 +175,8 @@ class SkillList {
         size_t GetStudyRate(const Skills&, size_t); /* Skill, num of men */
         SkillList Split(size_t, size_t); /* total men, num to split */
         AString Report(size_t); /* Number of men */
-        void Readin(Ainfile *);
-        void Writeout(Aoutfile *);
+        void Readin(Ainfile&);
+        void Writeout(Aoutfile&);
 
         iterator begin()
         {

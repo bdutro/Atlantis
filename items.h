@@ -372,8 +372,8 @@ class Item
         Item();
         ~Item();
 
-        void Readin(Ainfile *);
-        void Writeout(Aoutfile *);
+        void Readin(Ainfile&);
+        void Writeout(Aoutfile&);
         
         AString Report(bool);
 
@@ -392,8 +392,8 @@ class ItemList
         using iterator = list_type::iterator;
         using const_iterator = list_type::const_iterator;
 
-        void Readin(Ainfile *);
-        void Writeout(Aoutfile *);
+        void Readin(Ainfile&);
+        void Writeout(Aoutfile&);
 
         AString Report(unsigned int, bool, bool);
         AString BattleReport();

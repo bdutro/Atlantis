@@ -34,54 +34,29 @@ extern long _ftype,_fcreator;
 
 static char buf[1024];
 
-Aoutfile::Aoutfile()
+Aoutfile::Aoutfile() :
+    file(std::make_unique<std::ofstream>())
 {
-    file = new std::ofstream;
 }
 
-Aoutfile::~Aoutfile()
+Ainfile::Ainfile() :
+    file(std::make_unique<std::ifstream>())
 {
-    delete file;
 }
 
-Ainfile::Ainfile()
+Aorders::Aorders() :
+    file(std::make_unique<std::ifstream>())
 {
-    file = new std::ifstream;
 }
 
-Ainfile::~Ainfile()
+Areport::Areport() :
+    file(std::make_unique<std::ofstream>())
 {
-    delete file;
 }
 
-Aorders::Aorders()
+Arules::Arules() :
+    file(std::make_unique<std::ofstream>())
 {
-    file = new std::ifstream;
-}
-
-Aorders::~Aorders()
-{
-    delete file;
-}
-
-Areport::Areport()
-{
-    file = new std::ofstream;
-}
-
-Areport::~Areport()
-{
-    delete file;
-}
-
-Arules::Arules()
-{
-    file = new std::ofstream;
-}
-
-Arules::~Arules()
-{
-    delete file;
 }
 
 void Aoutfile::Open(const AString &s)
@@ -150,23 +125,21 @@ void Arules::Close()
     file->close();
 }
 
-void skipwhite(std::ifstream *f);
-
-void skipwhite(std::ifstream *f)
+static void skipwhite(std::ifstream& f)
 {
-    if (f->eof()) return;
-    int ch = f->peek();
+    if (f.eof()) return;
+    int ch = f.peek();
     while((ch == ' ') || (ch == '\n') || (ch == '\t') ||
             (ch == '\r') || (ch == '\0')) {
-        f->get();
-        if (f->eof()) return;
-        ch = f->peek();
+        f.get();
+        if (f.eof()) return;
+        ch = f.peek();
     }
 }
 
 AString Ainfile::GetStr()
 {
-    skipwhite(file);
+    skipwhite(*file);
     if (file->peek() == -1 || file->eof())
     {
         throw AFileException();
@@ -240,7 +213,7 @@ int Aorders::OpenByName(const AString &s)
 
 AString Aorders::GetLine()
 {
-    skipwhite(file);
+    skipwhite(*file);
     if (file->eof() || file->peek() == -1)
     {
         throw AFileException();
