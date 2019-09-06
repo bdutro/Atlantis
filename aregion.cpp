@@ -2600,7 +2600,7 @@ ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle sta
                     if (o->inner != -1) {
                         const auto& inner = GetRegion(static_cast<size_t>(o->inner));
                         if (inner.lock()->distance + 1 == start_sp->distance) {
-                            dir = Directions::MOVE_IN;
+                            dir = Directions::MoveDirection::MOVE_IN;
                             break;
                         }
                     }
@@ -2746,7 +2746,7 @@ ARegionArray::ARegionArray(unsigned int xx, unsigned int yy)
     x = xx;
     y = yy;
     regions.resize(x * y / 2 + 1);
-    strName = 0;
+    strName.clear();
 
     for (unsigned int i = 0; i < x * y / 2; i++)
     {

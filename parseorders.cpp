@@ -66,21 +66,23 @@ Directions Game::ParseDir(AString& token)
     }
     if (token == "in")
     {
-        return Directions::MOVE_IN;
+        return Directions::MoveDirection::MOVE_IN;
     }
     if (token == "out")
     {
-        return Directions::MOVE_OUT;
+        return Directions::MoveDirection::MOVE_OUT;
     }
     if (token == "pause" || token == "p")
     {
-        return Directions::MOVE_PAUSE;
+        return Directions::MoveDirection::MOVE_PAUSE;
     }
 
     const unsigned int num = token.value<unsigned int>();
     if (num)
     {
-        return Directions::MOVE_ENTER + num;
+        Directions::MoveDirection move_dir = Directions::MoveDirection::MOVE_ENTER;
+        move_dir.setMoveObject(num);
+        return move_dir;
     }
     return Directions();
 }

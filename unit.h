@@ -105,7 +105,7 @@ enum {
 #define FLAG_SWIMSPOILS            0x2000
 #define FLAG_SAILSPOILS            0x4000
 
-class Unit : std::enable_shared_from_this<Unit>
+class Unit : public std::enable_shared_from_this<Unit>
 {
     private:
         void WriteReport_(Areport&, unsigned int, size_t, bool, const Attitudes&, bool);

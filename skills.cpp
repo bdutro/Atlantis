@@ -251,9 +251,9 @@ ShowSkill::ShowSkill(const Skills& s, unsigned int l)
     level = l;
 }
 
-void Skill::Readin(Ainfile *f)
+void Skill::Readin(Ainfile& f)
 {
-    AString temp = f->GetStr();
+    AString temp = f.GetStr();
     AString token = temp.gettoken();
     type = LookupSkill(token);
 
@@ -267,7 +267,7 @@ void Skill::Readin(Ainfile *f)
     }
 }
 
-void Skill::Writeout(Aoutfile *f) const
+void Skill::Writeout(Aoutfile& f) const
 {
     AString temp;
 
@@ -284,7 +284,7 @@ void Skill::Writeout(Aoutfile *f) const
             temp = AString("NO_SKILL 0");
         }
     }
-    f->PutStr(temp);
+    f.PutStr(temp);
 }
 
 Skill Skill::Split(size_t total, size_t leave)
@@ -448,9 +448,9 @@ AString SkillList::Report(size_t nummen)
     return temp;
 }
 
-void SkillList::Readin(Ainfile *f)
+void SkillList::Readin(Ainfile& f)
 {
-    const size_t n = f->GetInt<size_t>();
+    const size_t n = f.GetInt<size_t>();
     for (size_t i = 0; i < n; ++i) {
         Skill s;
         s.Readin(f);
@@ -463,9 +463,9 @@ void SkillList::Readin(Ainfile *f)
     }
 }
 
-void SkillList::Writeout(Aoutfile *f)
+void SkillList::Writeout(Aoutfile& f)
 {
-    f->PutInt(skills_.size());
+    f.PutInt(skills_.size());
     for(const auto& s: skills_)
     {
         s.Writeout(f);

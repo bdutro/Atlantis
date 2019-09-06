@@ -417,6 +417,10 @@ void ARegion::SetupCityMarket()
             for(const auto& p: TerrainDefs[type].prods)
             {
                 const auto& resource = p.product;
+                if(!resource.isValid())
+                {
+                    continue;
+                }
                 if (i == resource) {
                     canProduceHere = true;
                     break;
@@ -1116,11 +1120,16 @@ int ARegion::TownHabitat()
     int fort = 0;
     for(const auto& obj: objects) {
         if (ObjectDefs[obj->type].protect > fort) fort = ObjectDefs[obj->type].protect;
-        if (ItemDefs[ObjectDefs[obj->type].productionAided].flags & IT_FOOD) farm++;
-        if (ObjectDefs[obj->type].productionAided == Items::Types::I_SILVER) inn++;
-        if (ObjectDefs[obj->type].productionAided == Items::Types::I_HERBS) temple++;
+        const auto& production_aided = ObjectDefs[obj->type].productionAided;
+        if(!production_aided.isValid())
+        {
+            continue;
+        }
+        if (ItemDefs[production_aided].flags & IT_FOOD) farm++;
+        if (production_aided == Items::Types::I_SILVER) inn++;
+        if (production_aided == Items::Types::I_HERBS) temple++;
         if ((ObjectDefs[obj->type].flags & ObjectType::TRANSPORT)
-            && (ItemDefs[ObjectDefs[obj->type].productionAided].flags & IT_MOUNT)) caravan++;
+            && (ItemDefs[production_aided].flags & IT_MOUNT)) caravan++;
     }
     int hab = 2;
     int step = 0;

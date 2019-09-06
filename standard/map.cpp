@@ -938,9 +938,10 @@ void ARegionList::RandomTerrain(const ARegionArray::Handle& pArr)
                         continue;
                     }
                     const auto newregion = newregion_w.lock();
-                    if ((TerrainDefs[newregion->type].similar_type !=
-                                Regions::Types::R_OCEAN) && (newregion->type != Regions::Types::R_NUM) &&
-                            (newregion->wages > 0)) {
+                    if ((newregion->type != Regions::Types::R_NUM) &&
+                        (TerrainDefs[newregion->type].similar_type != Regions::Types::R_OCEAN) && 
+                        (newregion->wages > 0))
+                    {
                         adjtype = newregion->type;
                         adjname = newregion->wages;
                     }

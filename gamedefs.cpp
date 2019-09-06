@@ -63,3 +63,9 @@ const SeasonStringArray SeasonNames {
     "monsoon season",
     "blizzard"
 };
+
+const Directions::MoveDirection Directions::MoveDirection::MOVE_PAUSE(MoveDirection::_MOVE_PAUSE);
+const Directions::MoveDirection Directions::MoveDirection::MOVE_IN(MoveDirection::_MOVE_IN);
+const Directions::MoveDirection Directions::MoveDirection::MOVE_OUT(MoveDirection::_MOVE_OUT);
+const Directions::MoveDirection Directions::MoveDirection::MOVE_ENTER(MoveDirection::_MOVE_ENTER);
+

@@ -166,11 +166,26 @@ void Game::RunMovementOrders()
                                 " remaining moves queued.");
                         for(const auto& d: mo->dirs) {
                             *tOrder += " ";
-                            if (d->dir.isRegularDirection()) *tOrder += DirectionAbrs[d->dir];
-                            else if (d->dir == Directions::MOVE_IN) *tOrder += "IN";
-                            else if (d->dir == Directions::MOVE_OUT) *tOrder += "OUT";
-                            else if (d->dir == Directions::MOVE_PAUSE) *tOrder += "P";
-                            else *tOrder += d->dir - Directions::MOVE_ENTER;
+                            if (d->dir.isRegularDirection())
+                            {
+                                *tOrder += DirectionAbrs[d->dir];
+                            }
+                            else if (d->dir.isMoveIn())
+                            {
+                                *tOrder += "IN";
+                            }
+                            else if (d->dir.isMoveOut())
+                            {
+                                *tOrder += "OUT";
+                            }
+                            else if (d->dir.isMovePause())
+                            {
+                                *tOrder += "P";
+                            }
+                            else
+                            {
+                                *tOrder += d->dir.getMoveObject();
+                            }
                         }
                     }
                 }
@@ -189,10 +204,14 @@ void Game::RunMovementOrders()
                         auto& tOrder = u->oldorders.emplace_front(std::make_shared<AString>("SAIL"));
                         for(const auto& d: so->dirs) {
                             *tOrder += " ";
-                            if (d->dir == Directions::MOVE_PAUSE)
+                            if (d->dir.isMovePause())
+                            {
                                 *tOrder += "P";
-                            else
+                            }
+                            else if(!d->dir.isMoveInOutOrEnter())
+                            {
                                 *tOrder += DirectionAbrs[d->dir];
+                            }
                         }
                     }
                 }
@@ -241,7 +260,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
     } else {
         const auto& x = o->dirs.front();
         ARegion::Handle newreg;
-        if (x->dir == Directions::MOVE_PAUSE) {
+        if (x->dir.isMovePause()) {
             newreg = reg;
         } else {
             newreg = reg->neighbors[x->dir].lock();
@@ -252,7 +271,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
                     !newreg->clearskies)
                 cost = 2;
         }
-        if (x->dir == Directions::MOVE_PAUSE) {
+        if (x->dir.isMovePause()) {
             cost = 1;
         }
         // We probably shouldn't see terrain-based errors until
@@ -262,7 +281,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
         if (!newreg) {
             cap->Error("SAIL: Can't sail that way.");
             stop = true;
-        } else if (x->dir == Directions::MOVE_PAUSE) {
+        } else if (x->dir.isMovePause()) {
             // Can always do maneuvers
         } else if (fleet->flying < 1 && !newreg->IsCoastalOrLakeside()) {
             cap->Error("SAIL: Can't sail inland.");
@@ -325,7 +344,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
 
         if (!stop) {
             fleet->movepoints -= cost * Globals->MAX_SPEED;
-            if (x->dir != Directions::MOVE_PAUSE) {
+            if (!x->dir.isMovePause()) {
                 fleet->MoveObject(newreg);
                 fleet->SetPrevDir(reg->GetRealDirComp(x->dir));
             }
@@ -350,7 +369,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
 
             for(const auto& f_w: facs) {
                 auto f = f_w.lock();
-                if (x->dir == Directions::MOVE_PAUSE) {
+                if (x->dir.isMovePause()) {
                     f->Event(fleet->name +
                         AString(" performs maneuvers in ") +
                         reg->ShortPrint(regions) +
@@ -365,7 +384,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
                 }
             }
             if (Globals->TRANSIT_REPORT != GameDefs::REPORT_NOTHING &&
-                    x->dir != Directions::MOVE_PAUSE) {
+                    !x->dir.isMovePause()) {
                 if (!(cap->faction.lock()->IsNPC())) newreg->visited = 1;
                 for(const auto& unit: fleet->units) {
                     // Everyone onboard gets to see the sights
@@ -1577,7 +1596,7 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
     while (!o->dirs.empty()) {
         const auto& x = o->dirs.front();
         const auto& i = x->dir;
-        if (i != Directions::MOVE_OUT && !i.isMoveEnter())
+        if (!i.isMoveOut() && !i.isMoveEnter())
         {
             return;
         }
@@ -1637,7 +1656,7 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
             unit->Event(AString("Enters ") + to->name + ".");
             obj = to;
         } else {
-            if (i == Directions::MOVE_OUT) {
+            if (i.isMoveOut()) {
                 if (TerrainDefs[region->type].similar_type == Regions::Types::R_OCEAN &&
                         (!unit->CanSwim() ||
                          unit->GetFlag(FLAG_NOCROSS_WATER)))
@@ -1670,7 +1689,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
 
     ARegion::Handle newreg;
 
-    if (x->dir == Directions::MOVE_IN) {
+    if (x->dir.isMoveIn()) {
         if (obj->inner == -1) {
             unit->Error("MOVE: Can't move IN there.");
             unit->monthorders.reset();
@@ -1816,7 +1835,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
                     }
             }
         }
-    } else if (x->dir == Directions::MOVE_PAUSE) {
+    } else if (x->dir.isMovePause()) {
         newreg = region;
     } else {
         newreg = region->neighbors[x->dir].lock();
@@ -1834,8 +1853,10 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     int startmove = 0;
     int movetype = unit->MoveType(region);
     unsigned int cost = newreg->MoveCost(movetype, *region, x->dir, road);
-    if (x->dir == Directions::MOVE_PAUSE)
+    if (x->dir.isMovePause())
+    {
         cost = 1;
+    }
     if (region->type == Regions::Types::R_NEXUS) {
         cost = 1;
         startmove = 1;
@@ -1885,7 +1906,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
         return nullptr;
     }
 
-    if (x->dir == Directions::MOVE_PAUSE) {
+    if (x->dir.isMovePause()) {
         unit->Event(AString("Pauses to admire the scenery in ") + region->ShortPrint(regions) + ".");
         unit->movepoints -= cost * Globals->MAX_SPEED;
         unit->moved += cost;

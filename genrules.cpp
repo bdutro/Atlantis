@@ -568,19 +568,19 @@ int Game::GenRules(const AString &rules, const AString &css,
             f.PutStr(i);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"center\" nowrap");
-            temp = AllowedTaxes(fac);
+            temp = AString(AllowedTaxes(fac));
             if (Globals->TACTICS_NEEDS_WAR)
                 temp+= AString(" / ") + AllowedTacticians(fac);
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"center\" nowrap");
-            temp = AllowedTrades(fac);
+            temp = AString(AllowedTrades(fac));
             if (qm_exist)
                 temp += AString(" / ") + AllowedQuarterMasters(fac);
             f.PutStr(temp);
             f.Enclose(0, "td");
             f.Enclose(1, "td align=\"center\" nowrap");
-            temp = AllowedMages(fac);
+            temp = AString(AllowedMages(fac));
             if (app_exist)
                 temp += AString(" / ") + AllowedApprentices(fac);
             f.PutStr(temp);
@@ -1317,7 +1317,7 @@ int Game::GenRules(const AString &rules, const AString &css,
                 f.PutStr(cap);
             }
             else {
-                temp = (cap + static_cast<int>(item_def.hitchwalk));
+                temp = AString(cap + static_cast<int>(item_def.hitchwalk));
                 temp += " (with ";
                 temp += ItemDefs[item_def.hitchItem].name;
                 temp += ")";
@@ -2396,7 +2396,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(0, "td");
         f.Enclose(1, "td align=\"left\" nowrap");
         if (item_def.pMonths) {
-            temp = item_def.pMonths;
+            temp = AString(item_def.pMonths);
             temp += AString(" month") + (item_def.pMonths == 1 ? "" : "s");
         } else {
             temp = "&nbsp;";
@@ -2404,7 +2404,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.PutStr(temp);
         f.Enclose(0, "td");
         f.Enclose(1, "td align=\"left\" nowrap");
-        temp = item_def.weight;
+        temp = AString(item_def.weight);
         cap = static_cast<int>(item_def.walk - item_def.weight);
         if (item_def.walk || item_def.hitchItem.isValid()) {
             temp += " (";

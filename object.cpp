@@ -116,26 +116,30 @@ Object::~Object()
     region.reset();
 }
 
-void Object::Writeout(Aoutfile *f)
+void Object::Writeout(Aoutfile& f)
 {
-    f->PutInt(num);
-    if (IsFleet()) f->PutStr(ObjectDefs[Objects::Types::O_FLEET].name);
-    else if (type.isValid()) f->PutStr(ObjectDefs[type].name);
-    else f->PutStr("NO_OBJECT");
-    f->PutInt(incomplete);
-    f->PutStr(name);
+    f.PutInt(num);
+    if (IsFleet()) f.PutStr(ObjectDefs[Objects::Types::O_FLEET].name);
+    else if (type.isValid()) f.PutStr(ObjectDefs[type].name);
+    else f.PutStr("NO_OBJECT");
+    f.PutInt(incomplete);
+    f.PutStr(name);
     if (describe.Len()) {
-        f->PutStr(describe);
+        f.PutStr(describe);
     } else {
-        f->PutStr("none");
+        f.PutStr("none");
     }
-    f->PutInt(inner);
+    f.PutInt(inner);
     if (Globals->PREVENT_SAIL_THROUGH && !Globals->ALLOW_TRIVIAL_PORTAGE)
-        f->PutInt(prevdir);
+    {
+        f.PutInt(prevdir);
+    }
     else
-        f->PutInt(-1);
-    f->PutInt(runes);
-    f->PutInt(units.size());
+    {
+        f.PutInt(-1);
+    }
+    f.PutInt(runes);
+    f.PutInt(units.size());
     for(const auto& u: units)
     {
         u->Writeout(f);
@@ -143,28 +147,28 @@ void Object::Writeout(Aoutfile *f)
     WriteoutFleet(f);
 }
 
-void Object::Readin(Ainfile *f, const PtrList<Faction>& facs, ATL_VER v)
+void Object::Readin(Ainfile& f, const PtrList<Faction>& facs, ATL_VER v)
 {
-    num = f->GetInt<int>();
+    num = f.GetInt<int>();
 
-    AString temp = f->GetStr();
+    AString temp = f.GetStr();
     type = LookupObject(temp);
 
-    incomplete = f->GetInt<int>();
+    incomplete = f.GetInt<int>();
 
-    name = f->GetStr();
-    describe = f->GetStr();
+    name = f.GetStr();
+    describe = f.GetStr();
     if (describe == "none") {
         describe.clear();
     }
-    inner = f->GetInt<ssize_t>();
-    prevdir = f->GetInt<Directions>();
-    runes = f->GetInt<int>();
+    inner = f.GetInt<ssize_t>();
+    prevdir = f.GetInt<Directions>();
+    runes = f.GetInt<int>();
 
     // Now, fix up a save file if ALLOW_TRIVIAL_PORTAGE is allowed, just
     // in case it wasn't when the save file was made.
     if (Globals->ALLOW_TRIVIAL_PORTAGE) prevdir.invalidate();
-    int i = f->GetInt<int>();
+    int i = f.GetInt<int>();
     for (int j=0; j<i; j++) {
         Unit::Handle temp = std::make_shared<Unit>();
         temp->Readin(f, facs, v);
@@ -305,7 +309,7 @@ Unit::WeakHandle Object::GetOwner()
     return units.front();
 }
 
-void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t truesight,
+void Object::Report(Areport& f, const Faction& fac, unsigned int obs, size_t truesight,
         bool detfac, unsigned int passobs, size_t passtrue, bool passdetfac, bool present)
 {
     const auto& ob = ObjectDefs[type];
@@ -357,8 +361,8 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
             temp += AString("; ") + describe;
         }
         temp += ".";
-        f->PutStr(temp);
-        f->AddTab();
+        f.PutStr(temp);
+        f.AddTab();
     } else if (type != Objects::Types::O_DUMMY) {
         AString temp = AString("+ ") + name + " : " + ob.name;
         if (incomplete > 0) {
@@ -384,8 +388,8 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
             temp += ", closed to player units";
         }
         temp += ".";
-        f->PutStr(temp);
-        f->AddTab();
+        f.PutStr(temp);
+        f.AddTab();
     }
 
     for(const auto& u: units) {
@@ -412,9 +416,9 @@ void Object::Report(Areport *f, const Faction& fac, unsigned int obs, size_t tru
             }
         }
     }
-    f->EndLine();
+    f.EndLine();
     if (type != Objects::Types::O_DUMMY) {
-        f->DropTab();
+        f.DropTab();
     }
 }
 
@@ -456,20 +460,20 @@ bool Object::CheckShip(const Items& item)
     return false;
 }
 
-void Object::WriteoutFleet(Aoutfile *f)
+void Object::WriteoutFleet(Aoutfile& f)
 {
     if (!IsFleet()) return;
-    f->PutInt(ships.size());
+    f.PutInt(ships.size());
     for(const auto& s: ships)
     {
         s->Writeout(f);
     }
 }
 
-void Object::ReadinFleet(Ainfile *f)
+void Object::ReadinFleet(Ainfile& f)
 {
     if (type != Objects::Types::O_FLEET) return;
-    size_t nships = f->GetInt<size_t>();
+    size_t nships = f.GetInt<size_t>();
     for (size_t i = 0; i < nships; i++) {
         Item ship;
         ship.Readin(f);

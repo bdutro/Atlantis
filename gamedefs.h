@@ -49,27 +49,101 @@ using _DirectionsVE = ValidEnum<_Directions, _Directions::NDIRS>;
 class Directions : public _DirectionsVE
 {
     public:
-        static constexpr size_t MOVE_PAUSE = 97;
-        static constexpr size_t MOVE_IN = 98;
-        static constexpr size_t MOVE_OUT = 99;
-        /* Enter is MOVE_ENTER + num of object */
-        static constexpr size_t MOVE_ENTER = 100;
+        class MoveDirection
+        {
+            private:
+                static constexpr size_t _MOVE_PAUSE = 97;
+                static constexpr size_t _MOVE_IN = 98;
+                static constexpr size_t _MOVE_OUT = 99;
+                static constexpr size_t _MOVE_ENTER = 100;
         
-        static_assert(MOVE_PAUSE > size());
-        static_assert(MOVE_IN > size());
-        static_assert(MOVE_OUT > size());
-        static_assert(MOVE_ENTER > size());
+                static_assert(_MOVE_PAUSE > Directions::size());
+                static_assert(_MOVE_IN > Directions::size());
+                static_assert(_MOVE_OUT > Directions::size());
+                static_assert(_MOVE_ENTER > Directions::size());
 
+                size_t val_ = 0;
+
+            public:
+                MoveDirection() = default;
+
+                MoveDirection(size_t val) :
+                    val_(val)
+                {
+                }
+
+                bool isMovePause() const
+                {
+                    return val_ == _MOVE_PAUSE;
+                }
+
+                bool isMoveEnter() const
+                {
+                    return val_ == _MOVE_ENTER;
+                }
+
+                bool isMoveIn() const
+                {
+                    return val_ == _MOVE_IN;
+                }
+
+                bool isMoveOut() const
+                {
+                    return val_ == _MOVE_OUT;
+                }
+
+                bool isMoveInOutOrEnter() const
+                {
+                    return val_ >= _MOVE_IN;
+                }
+
+                int getMoveObject() const
+                {
+                    return static_cast<int>(val_ - _MOVE_ENTER);
+                }
+
+                void setMoveObject(size_t obj)
+                {
+                    if(!isMoveEnter())
+                    {
+                        throw std::runtime_error("Attempted to set move object on non-MOVE_ENTER MoveDirection");
+                    }
+
+                    val_ += obj;
+                }
+
+                size_t getRawValue() const
+                {
+                    return val_;
+                }
+
+                static const MoveDirection MOVE_PAUSE;
+                static const MoveDirection MOVE_IN;
+                static const MoveDirection MOVE_OUT;
+                static const MoveDirection MOVE_ENTER;
+
+        };
+
+    private:
+        ValidValue<MoveDirection> move_dir_;
+        static Directions construct_(int type);
+        static Directions construct_(size_t type);
+
+    public:
         Directions() :
             ValidEnum()
         {
         }
 
         Directions(size_t type) :
-            ValidEnum(type)
+            ValidEnum(type <= size() ? ValidEnum(type) : ValidEnum())
         {
+            if(type > size())
+            {
+                move_dir_ = MoveDirection(static_cast<size_t>(type));
+            }
         }
-        
+
         Directions(const Types& type) :
             ValidEnum(type)
         {
@@ -81,43 +155,70 @@ class Directions : public _DirectionsVE
         }
 
         Directions(int type) :
-            ValidEnum(type)
+            ValidEnum(type <= static_cast<int>(size()) ? ValidEnum(type) : ValidEnum())
         {
+            if(type > static_cast<int>(size()))
+            {
+                move_dir_ = MoveDirection(static_cast<size_t>(type));
+            }
+        }
+
+        Directions(const MoveDirection& move_dir) :
+            ValidEnum()
+        {
+            move_dir_ = move_dir;
         }
 
         bool isMovePause() const
         {
-            return static_cast<size_t>(*this) == MOVE_PAUSE;
+            return move_dir_.isValid() && move_dir_.get().isMovePause();
         }
 
         bool isMoveEnter() const
         {
-            return static_cast<size_t>(*this) >= MOVE_ENTER;
+            return move_dir_.isValid() && move_dir_.get().isMoveEnter();
         }
 
         bool isMoveIn() const
         {
-            return static_cast<size_t>(*this) == MOVE_IN;
+            return move_dir_.isValid() && move_dir_.get().isMoveIn();
+        }
+
+        bool isMoveOut() const
+        {
+            return move_dir_.isValid() && move_dir_.get().isMoveOut();
         }
 
         bool isMoveInOutOrEnter() const
         {
-            return static_cast<size_t>(*this) >= MOVE_IN;
+            return move_dir_.isValid() && move_dir_.get().isMoveInOutOrEnter();
         }
 
         int getMoveObject() const
         {
-            return static_cast<int>(static_cast<size_t>(*this) - MOVE_ENTER);
+            return move_dir_.get().getMoveObject();
         }
 
         virtual bool isValid() const override
         {
-            return (val_ == MOVE_PAUSE) || (val_ == MOVE_IN) || (val_ == MOVE_OUT) || (val_ >= MOVE_ENTER) || ValidEnum::isValid();
+            return move_dir_.isValid() || ValidEnum::isValid();
         }
 
         bool isRegularDirection() const
         {
-            return isValid() && static_cast<size_t>(*this) < size();
+            return isValid() && !move_dir_.isValid();
+        }
+
+        operator size_t() const
+        {
+            if(move_dir_.isValid())
+            {
+                return move_dir_.get().getRawValue();
+            }
+            else
+            {
+                return ValidEnum::operator size_t();
+            }
         }
 };
 

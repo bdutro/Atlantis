@@ -170,7 +170,7 @@ class TownInfo
         int dev = 0;
 };
 
-class ARegion : std::enable_shared_from_this<ARegion>
+class ARegion : public std::enable_shared_from_this<ARegion>
 {
     friend class Game;
     friend class ARegionArray;

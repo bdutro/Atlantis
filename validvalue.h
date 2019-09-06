@@ -44,7 +44,7 @@ class ValidValue
             return *this;
         }
 
-        void invalidate()
+        virtual void invalidate()
         {
             valid_ = false;
             val_ = T();

@@ -40,148 +40,148 @@ Quest::Quest()
     regionname = "-";
 }
 
-int QuestList::ReadQuests(Ainfile *f)
+bool QuestList::ReadQuests(Ainfile& f)
 {
     quests.clear();
 
-    int count = f->GetInt<int>();
+    int count = f.GetInt<int>();
     if (count < 0)
     {
-        return 0;
+        return false;
     }
 
     AString name;
     while (count-- > 0) {
         Quest::Handle quest = std::make_shared<Quest>();
-        quest->type = f->GetInt<Quests>();
+        quest->type = f.GetInt<Quests>();
         switch (quest->type.asEnum()) {
             case Quests::Types::SLAY:
-                quest->target = f->GetInt<int>();
+                quest->target = f.GetInt<int>();
                 break;
             case Quests::Types::HARVEST:
                 quest->objective.Readin(f);
-                quest->regionnum = f->GetInt<int>();
+                quest->regionnum = f.GetInt<int>();
                 break;
             case Quests::Types::BUILD:
-                name = f->GetStr();
+                name = f.GetStr();
                 quest->building = LookupObject(name);
-                name = f->GetStr();
+                name = f.GetStr();
                 quest->regionname = name;
                 break;
             case Quests::Types::VISIT:
             {
-                name = f->GetStr();
+                name = f.GetStr();
                 quest->building = LookupObject(name);
-                int dests = f->GetInt<int>();
+                int dests = f.GetInt<int>();
                 while (dests-- > 0) {
-                    name = f->GetStr();
+                    name = f.GetStr();
                     quest->destinations.insert(name.Str());
                 }
                 break;
             }
             case Quests::Types::DEMOLISH:
-                quest->target = f->GetInt<int>();
-                quest->regionnum = f->GetInt<int>();
+                quest->target = f.GetInt<int>();
+                quest->regionnum = f.GetInt<int>();
                 break;
             default:
             {
-                quest->target = f->GetInt<int>();
+                quest->target = f.GetInt<int>();
                 quest->objective.Readin(f);
-                name = f->GetStr();
+                name = f.GetStr();
                 quest->building = LookupObject(name);
-                quest->regionnum = f->GetInt<int>();
-                name = f->GetStr();
+                quest->regionnum = f.GetInt<int>();
+                name = f.GetStr();
                 quest->regionname = name;
-                int dests = f->GetInt<int>();
+                int dests = f.GetInt<int>();
                 while (dests-- > 0) {
-                    name = f->GetStr();
+                    name = f.GetStr();
                     quest->destinations.insert(name.Str());
                 }
                 break;
             }
         }
-        int rewards = f->GetInt<int>();
+        int rewards = f.GetInt<int>();
         while (rewards-- > 0) {
             Item::Handle item = std::make_shared<Item>();
             item->Readin(f);
             if (!item->type.isValid())
             {
-                return 0;
+                return false;
             }
             quest->rewards.push_back(item);
         }
         quests.push_back(quest);
     }
 
-    return 1;
+    return true;
 }
 
-void QuestList::WriteQuests(Aoutfile *f)
+void QuestList::WriteQuests(Aoutfile& f)
 {
     std::set<std::string>::iterator it;
 
-    f->PutInt(quests.size());
+    f.PutInt(quests.size());
     for(const auto& q: *this) {
-        f->PutInt(q->type);
+        f.PutInt(q->type);
         switch(q->type.asEnum()) {
             case Quests::Types::SLAY:
-                f->PutInt(q->target);
+                f.PutInt(q->target);
                 break;
             case Quests::Types::HARVEST:
                 q->objective.Writeout(f);
-                f->PutInt(q->regionnum);
+                f.PutInt(q->regionnum);
                 break;
             case Quests::Types::BUILD:
                 if (q->building.isValid())
-                    f->PutStr(ObjectDefs[q->building].name);
+                    f.PutStr(ObjectDefs[q->building].name);
                 else
-                    f->PutStr("NO_OBJECT");
-                f->PutStr(q->regionname);
+                    f.PutStr("NO_OBJECT");
+                f.PutStr(q->regionname);
                 break;
             case Quests::Types::VISIT:
                 if (q->building.isValid())
                 {
-                    f->PutStr(ObjectDefs[q->building].name);
+                    f.PutStr(ObjectDefs[q->building].name);
                 }
                 else
                 {
-                    f->PutStr("NO_OBJECT");
+                    f.PutStr("NO_OBJECT");
                 }
-                f->PutInt(q->destinations.size());
+                f.PutInt(q->destinations.size());
                 for (it = q->destinations.begin();
                         it != q->destinations.end();
                         it++) {
-                    f->PutStr(it->c_str());
+                    f.PutStr(it->c_str());
                 }
                 break;
             case Quests::Types::DEMOLISH:
-                f->PutInt(q->target);
-                f->PutInt(q->regionnum);
+                f.PutInt(q->target);
+                f.PutInt(q->regionnum);
                 break;
             default:
-                f->PutInt(q->target);
+                f.PutInt(q->target);
                 q->objective.Writeout(f);
                 if (q->building.isValid())
-                    f->PutStr(ObjectDefs[q->building].name);
+                    f.PutStr(ObjectDefs[q->building].name);
                 else
-                    f->PutStr("NO_OBJECT");
-                f->PutInt(q->regionnum);
-                f->PutStr(q->regionname);
-                f->PutInt(q->destinations.size());
+                    f.PutStr("NO_OBJECT");
+                f.PutInt(q->regionnum);
+                f.PutStr(q->regionname);
+                f.PutInt(q->destinations.size());
                 for (it = q->destinations.begin();
                         it != q->destinations.end();
                         it++) {
-                    f->PutStr(it->c_str());
+                    f.PutStr(it->c_str());
                 }
                 break;
         }
-        f->PutInt(q->rewards.size());
+        f.PutInt(q->rewards.size());
         for(const auto& i: q->rewards) {
             i->Writeout(f);
         }
     }
 
-    f->PutInt(0);
+    f.PutInt(0);
 
     return;
 }

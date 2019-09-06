@@ -2228,7 +2228,7 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
             message += r->name;
             if (start && start != r && dir.isValid()) {
                 message += ", ";
-                if (r->zloc != start->zloc && dir != Directions::MOVE_IN)
+                if (r->zloc != start->zloc && !dir.isMoveIn())
                 {
                     message += "through a shaft ";
                 }

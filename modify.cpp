@@ -1237,7 +1237,7 @@ void Game::ModifySpecialTargetObjects(char const *special, int index, const Obje
     {
         return;
     }
-    if ((obj.isValid() && (obj == *Objects::begin())) || obj.overflowed())
+    if ((obj.isValid() && (obj == *Objects::begin())) || (obj == *Objects::end()) || obj.overflowed())
     {
         return;
     }
@@ -1263,7 +1263,7 @@ void Game::ModifySpecialTargetItems(char const *special, int index, const Items&
         return;
     }
 
-    if(item.overflowed())
+    if(item == *Items::end() || item.overflowed())
     {
         return;
     }

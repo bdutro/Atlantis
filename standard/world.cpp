@@ -2498,6 +2498,10 @@ bool ARegion::CanBeStartingCity(const ARegionArray &)
     int regs = 0;
     WeakPtrList<ARegion> inlist, donelist;
     inlist.push_back(weak_from_this());
+    if(inlist.back().expired())
+    {
+        throw std::runtime_error("Failed to get weak_ptr to ARegion");
+    }
 
     while(!inlist.empty()) {
         auto it = inlist.begin();

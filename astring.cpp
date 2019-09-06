@@ -35,6 +35,12 @@ AString::AString(char c, void*)
     str_ = c;
 }
 
+AString & AString::operator=(char c)
+{
+    str_ = c;
+    return *this;
+}
+
 AString & AString::operator=(const char *c)
 {
     str_ = c;
@@ -316,17 +322,16 @@ bool islegal(char c)
 
 AString AString::getlegal() const
 {
-    auto it = str_.begin();
     std::string ret;
 
     bool j = false;
 
-    while(it != str_.end())
+    for(const auto c: str_)
     {
-        if(islegal(*it))
+        if(islegal(c))
         {
-            ret.push_back(*it);
-            if(*it != ' ')
+            ret.push_back(c);
+            if(c != ' ')
             {
                 j = true;
             }

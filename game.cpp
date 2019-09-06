@@ -440,7 +440,14 @@ int Game::SaveGame()
     f.PutInt(Globals->RULESET_VERSION);
 
     f.PutInt(year);
-    f.PutInt(month);
+    if(!month.isValid())
+    {
+        f.PutInt(-1);
+    }
+    else
+    {
+        f.PutInt(month);
+    }
     f.PutInt(getrandom(10000));
     f.PutInt(factionseq);
     f.PutInt(unitseq);

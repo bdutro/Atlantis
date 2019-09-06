@@ -2467,7 +2467,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
                     }
                     ssize_t ship = -1;
                     for(const auto& it: u->items) {
-                        if (it->type == o_item) {
+                        if (it->type == Items(o_item)) {
                             u->Event(temp + it->Report(1) + ".");
                             ship = static_cast<ssize_t>(it->type);
                         }

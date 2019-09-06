@@ -28,6 +28,9 @@
 #include <memory.h>
 #endif
 #include <cstring>
+#include <sstream>
+#include <iomanip>
+#include <ios>
 
 #include "game.h"
 #include "gamedata.h"
@@ -39,7 +42,7 @@
 #define FILL_SIZE 6
 #define TEMPLATE_MAX_LINES 13
 
-static void TrimWrite(Areport *f, char *buffer);
+static void TrimWrite(Areport& f, std::string& buffer);
 
 static char const *TemplateMap[] = {
  //12345678901234567890
@@ -298,22 +301,22 @@ static char const *ter_fill[] = {
 // NEW FUNCTION DK 2000.03.07,
 // converted WriteReport
 //
-void ARegion::WriteTemplateHeader(Areport *f,
+void ARegion::WriteTemplateHeader(Areport& f,
                                   const Faction& fac,
                                   const ARegionList& pRegs,
                                   const ValidValue<size_t>& month)
 {
 
-    f->PutStr("");
+    f.PutStr("");
 
-    f->PutStr("-------------------------------------------------"
+    f.PutStr("-------------------------------------------------"
             "----------", 1);
 
     // plain (X,Y) in Blah, contains Blah
-    f->PutStr(Print(pRegs), 1);
+    f.PutStr(Print(pRegs), 1);
 
-    char buffer[LINE_WIDTH+1];
-    char *data = buffer + MAP_WIDTH;
+    std::string buffer(LINE_WIDTH + 1, '\0');
+    std::string::iterator data = buffer.begin() + MAP_WIDTH;
     unsigned int line = 0;
 
     // ----------------------------------------------------------------
@@ -326,7 +329,7 @@ void ARegion::WriteTemplateHeader(Areport *f,
     if (Globals->WEATHER_EXISTS) {
         GetMapLine(buffer, line, pRegs);
 
-        char const * nextWeather = "";
+        std::string nextWeather = "Next ";
         size_t next_month;
         if(month.isValid())
         {
@@ -340,17 +343,18 @@ void ARegion::WriteTemplateHeader(Areport *f,
         Weather nxtweather = pRegs.GetWeather(*this, next_month % 12);
         if (nxtweather == Weather::Types::W_WINTER)
         {
-            nextWeather = "winter";
+            nextWeather += "winter";
         }
         else if (nxtweather == Weather::Types::W_MONSOON)
         {
-            nextWeather = "monsoon";
+            nextWeather += "monsoon";
         }
         else if (nxtweather == Weather::Types::W_NORMAL)
         {
-            nextWeather = "clear";
+            nextWeather += "clear";
         }
-        sprintf(data, "Next %s", nextWeather);
+
+        std::copy(nextWeather.begin(), nextWeather.end(), data);
 
         TrimWrite(f, buffer);
         line++;
@@ -358,7 +362,13 @@ void ARegion::WriteTemplateHeader(Areport *f,
 
     // ----------------------------------------------------------------
     GetMapLine(buffer, line, pRegs);
-    sprintf(data, "Tax  %5i", wealth);
+    std::stringstream ss;
+    const std::ios_base::fmtflags default_flags(ss.flags());
+    ss << "Tax  " << std::right << std::setw(5) << wealth;
+    std::istream_iterator<char> eos;
+    std::istream_iterator<char> it(ss);
+    std::copy(it, eos, data);
+    ss.flags(default_flags);
     TrimWrite(f, buffer);
     line++;
 
@@ -367,7 +377,10 @@ void ARegion::WriteTemplateHeader(Areport *f,
     if (!prod_w.expired()) {
         const auto prod = prod_w.lock();
         GetMapLine(buffer, line, pRegs);
-        sprintf(data, "Ente %5i", prod->amount);
+        ss << "Ente " << std::right << std::setw(5) << prod->amount;
+        it = std::istream_iterator<char>(ss);
+        std::copy(it, eos, data);
+        ss.flags(default_flags);
         TrimWrite(f, buffer);
         line++;
     }
@@ -377,7 +390,18 @@ void ARegion::WriteTemplateHeader(Areport *f,
     if (!prod_w.expired()) {
         const auto prod = prod_w.lock();
         GetMapLine(buffer, line, pRegs);
-        sprintf(data, "Wage %5i.%1i (max %i)", (prod->productivity/10), (prod->productivity%10), prod->amount);
+        ss << "Wage "
+           << std::right << std::setw(5)
+           << prod->productivity / 10
+           << std::setiosflags(default_flags)
+           << "."
+           << std::right << std::setw(1)
+           << prod->productivity % 10
+           << std::setiosflags(default_flags)
+           << " (max " << prod->amount << ")";
+        it = std::istream_iterator<char>(ss);
+        std::copy(it, eos, data);
+        ss.flags(default_flags);
         TrimWrite(f, buffer);
         line++;
     }
@@ -406,17 +430,33 @@ void ARegion::WriteTemplateHeader(Areport *f,
             GetMapLine(buffer, line, pRegs);
 
             if (m->amount == -1) {
-                sprintf(data, "%s unlim %4s @ %3i",
-                    (any ? "    " : "Want"),
-                    ItemDefs[m->item].abr,
-                    m->price);
+                ss << (any ? "    " : "Want")
+                   << " unlim "
+                   << std::right << std::setw(4)
+                   << ItemDefs[m->item].abr
+                   << std::setiosflags(default_flags)
+                   << " @ "
+                   << std::right << std::setw(3)
+                   << m->price;
             } else {
-                sprintf(data, "%s %5i %4s @ %3i",
-                    (any ? "    " : "Want"),
-                    m->amount,
-                    ItemDefs[m->item].abr,
-                    m->price);
+                ss << (any ? "    " : "Want")
+                   << " "
+                   << std::right << std::setw(5)
+                   << m->amount
+                   << std::setiosflags(default_flags)
+                   << " "
+                   << std::right << std::setw(4)
+                   << ItemDefs[m->item].abr
+                   << std::setiosflags(default_flags)
+                   << " @ "
+                   << std::right << std::setw(3)
+                   << m->price;
             }
+
+            it = std::istream_iterator<char>(ss);
+            std::copy(it, eos, data);
+            ss.flags(default_flags);
+
             TrimWrite(f, buffer);
             line++;
 
@@ -442,17 +482,32 @@ void ARegion::WriteTemplateHeader(Areport *f,
             GetMapLine(buffer, line, pRegs);
 
             if (m->amount == -1) {
-                sprintf(data, "%s unlim %4s @ %3i",
-                    (any ? "    " : "Sell"),
-                    ItemDefs[m->item].abr,
-                    m->price);
+                ss << (any ? "    " : "Sell")
+                   << " unlim "
+                   << std::right << std::setw(4)
+                   << ItemDefs[m->item].abr
+                   << std::setiosflags(default_flags)
+                   << " @ "
+                   << std::right << std::setw(3)
+                   << m->price;
             } else {
-                sprintf(data, "%s %5i %4s @ %3i",
-                    (any ? "    " : "Sell"),
-                    m->amount,
-                    ItemDefs[m->item].abr,
-                    m->price);
+                ss << (any ? "    " : "Sell")
+                   << " "
+                   << std::right << std::setw(5)
+                   << m->amount
+                   << std::setiosflags(default_flags)
+                   << " "
+                   << std::right << std::setw(4)
+                   << ItemDefs[m->item].abr
+                   << std::setiosflags(default_flags)
+                   << " @ "
+                   << std::right << std::setw(3)
+                   << m->price;
             }
+
+            it = std::istream_iterator<char>(ss);
+            std::copy(it, eos, data);
+            ss.flags(default_flags);
 
             TrimWrite(f, buffer);
             line++;
@@ -482,15 +537,24 @@ void ARegion::WriteTemplateHeader(Areport *f,
         GetMapLine(buffer, line, pRegs);
 
         if (p->amount == -1) {
-            sprintf(data, "%s unlim %4s",
-                (any ? "    " : "Prod"),
-                ItemDefs[p->itemtype].abr);
+            ss << (any ? "    " : "Prod")
+               << " unlim "
+               << std::right << std::setw(4)
+               << ItemDefs[p->itemtype].abr;
         } else {
-            sprintf(data, "%s %5i %4s",
-                (any ? "    " : "Prod"),
-                p->amount,
-                ItemDefs[p->itemtype].abr);
+            ss << (any ? "    " : "Prod")
+               << " "
+               << std::right << std::setw(5)
+               << p->amount
+               << std::setiosflags(default_flags)
+               << " "
+               << std::right << std::setw(4)
+               << ItemDefs[p->itemtype].abr;
         }
+
+        it = std::istream_iterator<char>(ss);
+        std::copy(it, eos, data);
+        ss.flags(default_flags);
 
         TrimWrite(f, buffer);
         line++;
@@ -509,7 +573,12 @@ void ARegion::WriteTemplateHeader(Areport *f,
                     line++;
 
                     GetMapLine(buffer, line, pRegs);
-                    sprintf(data, "Gate %4i", gate);
+
+                    ss << "Gate " << std::right << std::setw(4) << gate;
+                    it = std::istream_iterator<char>(ss);
+                    std::copy(it, eos, data);
+                    ss.flags(default_flags);
+
                     TrimWrite(f, buffer);
                     line++;
 
@@ -534,18 +603,16 @@ void ARegion::WriteTemplateHeader(Areport *f,
 void ARegion::GetMapLine(std::string& buffer, unsigned int line, const ARegionList&)
 {
 
-    for (int m=0; m<MAP_WIDTH; m++) {
-        buffer[m] = ' ';
-    }
-    buffer[MAP_WIDTH] = 0;
+    std::fill(buffer.begin(), buffer.begin() + MAP_WIDTH, ' ');
+    buffer[MAP_WIDTH] = '\0';
 
     if (line >= TEMPLATE_MAX_LINES)
     {
         return;
     }
 
-    char *dest = buffer+TMPL_MAP_OFS;
-    memcpy(dest, TemplateMap[line], TMPL_MAP_WIDTH);
+    const std::string::iterator dest = buffer.begin() + TMPL_MAP_OFS;
+    std::copy(TemplateMap[line], TemplateMap[line] + TMPL_MAP_OFS, dest);
 
     size_t t = (static_cast<size_t>(type) + 1) * 2;
     const char* name = (town ? town->name.Str() : nullptr);
@@ -560,14 +627,17 @@ void ARegion::GetMapLine(std::string& buffer, unsigned int line, const ARegionLi
             if (y == line) {
                 if (name) {
                     size_t len = strlen(name);
-                    if (len > FILL_SIZE) len = FILL_SIZE;
-                    memcpy(dest + x, name, len);
+                    if (len > FILL_SIZE)
+                    {
+                        len = FILL_SIZE;
+                    }
+                    std::copy(name, name + len, dest + x);
                 } else {
-                    memcpy(dest + x, ter_fill[t], FILL_SIZE);
+                    std::copy(ter_fill[t], ter_fill[t] + FILL_SIZE, dest + x);
                 }
             } else {
                 t++;
-                memcpy(dest + x, ter_fill[t], FILL_SIZE);
+                std::copy(ter_fill[t], ter_fill[t] + FILL_SIZE, dest + x);
             }
         }
 
@@ -583,24 +653,21 @@ void ARegion::GetMapLine(std::string& buffer, unsigned int line, const ARegionLi
             name = (r->town ? r->town->name.Str() : nullptr);
         } else {
             t = 0;
-            name = NULL;
+            name = nullptr;
         }
 
         ++i;
     }
 }
 
-static void TrimWrite(Areport *f, char *buffer) {
+static void TrimWrite(Areport &f, std::string& buffer)
+{
+    size_t pos = buffer.find_last_not_of(' ');
 
-    char *p = buffer + strlen(buffer) - 1;
-    while (p > buffer) {
-        if (*p == ' ') {
-            p--;
-        } else {
-            break;
-        }
+    if(pos != std::string::npos)
+    {
+        buffer = buffer.substr(0, pos + 1);
     }
-    p[1] = 0;
 
-    f->PutStr(buffer, 1);
+    f.PutStr(buffer, 1);
 }

@@ -50,42 +50,42 @@ Production::Production(const Items& it, int maxamt)
     skill = LookupSkill(skname);
 }
 
-void Production::Writeout(Aoutfile *f)
+void Production::Writeout(Aoutfile& f)
 {
     if (itemtype.isValid())
     {
-        f->PutStr(ItemDefs[itemtype].abr);
+        f.PutStr(ItemDefs[itemtype].abr);
     }
     else
     {
-        f->PutStr("NO_ITEM");
+        f.PutStr("NO_ITEM");
     }
-    f->PutInt(amount);
-    f->PutInt(baseamount);
+    f.PutInt(amount);
+    f.PutInt(baseamount);
     if (itemtype == Items::Types::I_SILVER) {
         if (skill.isValid())
         {
-            f->PutStr(SkillDefs[skill].abbr);
+            f.PutStr(SkillDefs[skill].abbr);
         }
         else
         {
-            f->PutStr("NO_SKILL");
+            f.PutStr("NO_SKILL");
         }
     }
-    f->PutInt(productivity);
+    f.PutInt(productivity);
 }
 
-void Production::Readin(Ainfile *f)
+void Production::Readin(Ainfile& f)
 {
-    AString temp = f->GetStr();
+    AString temp = f.GetStr();
     itemtype = LookupItem(temp);
 
-    amount = f->GetInt<int>();
-    baseamount = f->GetInt<int>();
+    amount = f.GetInt<int>();
+    baseamount = f.GetInt<int>();
 
     if (itemtype == Items::Types::I_SILVER)
     {
-        temp = f->GetStr();
+        temp = f.GetStr();
     }
     else
     {
@@ -93,7 +93,7 @@ void Production::Readin(Ainfile *f)
     }
     skill = LookupSkill(temp);
 
-    productivity = f->GetInt<int>();
+    productivity = f.GetInt<int>();
 }
 
 AString Production::WriteReport()
@@ -102,18 +102,18 @@ AString Production::WriteReport()
     return temp;
 }
 
-void ProductionList::Writeout(Aoutfile *f)
+void ProductionList::Writeout(Aoutfile& f)
 {
-    f->PutInt(products_.size());
+    f.PutInt(products_.size());
     for(const auto& p: products_)
     {
         p->Writeout(f);
     }
 }
 
-void ProductionList::Readin(Ainfile *f)
+void ProductionList::Readin(Ainfile& f)
 {
-    size_t n = f->GetInt<size_t>();
+    size_t n = f.GetInt<size_t>();
     for (size_t i = 0; i < n; ++i) {
         auto& p = products_.emplace_back(std::make_shared<Production>());
         p->Readin(f);

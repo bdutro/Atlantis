@@ -9,3 +9,5 @@ standard/standard
 arcadia/arcadia
 kingdoms/kingdoms
 havilah/havilah
+*.pyc
+smoketest/testing

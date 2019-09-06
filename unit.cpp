@@ -52,8 +52,8 @@ Unit::WeakHandle GetUnitList(const WeakPtrList<Unit>& list, const Unit::Handle& 
 
 Unit::Unit()
 {
-    name = 0;
-    describe = 0;
+    name.clear();
+    describe.clear();
     num = 0;
     type = U_NORMAL;
     alias = 0;
@@ -77,7 +77,7 @@ Unit::Unit(size_t seq, const Faction::Handle& f, int a)
 {
     num = seq;
     type = U_NORMAL;
-    describe = 0;
+    describe.clear();
     name = AString("Unit (") + num + ")";
     faction = f;
     formfaction = f;
@@ -114,78 +114,85 @@ void Unit::MakeWMon(char const *monname, const Items& mon, size_t num)
     SetMonFlags();
 }
 
-void Unit::Writeout(Aoutfile *s)
+void Unit::Writeout(Aoutfile& s)
 {
-    s->PutStr(name);
+    s.PutStr(name);
     if (describe.Len()) {
-        s->PutStr(describe);
+        s.PutStr(describe);
     } else {
-        s->PutStr("none");
+        s.PutStr("none");
     }
-    s->PutInt(num);
-    s->PutInt(type);
-    s->PutInt(faction.lock()->num);
-    s->PutInt(guard);
-    s->PutInt(reveal);
-    s->PutInt(free);
+    s.PutInt(num);
+    s.PutInt(type);
+    s.PutInt(faction.lock()->num);
+    s.PutInt(guard);
+    s.PutInt(reveal);
+    s.PutInt(free);
     if (readyItem.isValid())
     {
-        s->PutStr(ItemDefs[readyItem].abr);
+        s.PutStr(ItemDefs[readyItem].abr);
     }
     else
     {
-        s->PutStr("NO_ITEM");
+        s.PutStr("NO_ITEM");
     }
     for (size_t i = 0; i < MAX_READY; ++i) {
         if (readyWeapon[i].isValid())
         {
-            s->PutStr(ItemDefs[readyWeapon[i]].abr);
+            s.PutStr(ItemDefs[readyWeapon[i]].abr);
         }
         else
         {
-            s->PutStr("NO_ITEM");
+            s.PutStr("NO_ITEM");
         }
         if (readyArmor[i].isValid())
         {
-            s->PutStr(ItemDefs[readyArmor[i]].abr);
+            s.PutStr(ItemDefs[readyArmor[i]].abr);
         }
         else
         {
-            s->PutStr("NO_ITEM");
+            s.PutStr("NO_ITEM");
         }
     }
-    s->PutInt(flags);
+    s.PutInt(flags);
     items.Writeout(s);
     skills.Writeout(s);
     if (combat.isValid())
     {
-        s->PutStr(SkillDefs[combat].abbr);
+        s.PutStr(SkillDefs[combat].abbr);
     }
     else
     {
-        s->PutStr("NO_SKILL");
+        s.PutStr("NO_SKILL");
     }
-    s->PutInt(savedmovement);
-    s->PutInt(savedmovedir);
-    s->PutInt(visited.size());
+    s.PutInt(savedmovement);
+    if(!savedmovedir.isValid())
+    {
+        s.PutInt(-1);
+    }
+    else
+    {
+        s.PutInt(savedmovedir);
+    }
+    s.PutInt(visited.size());
     for (const auto& v: visited)
     {
-        s->PutStr(v.c_str());
+        s.PutStr(v.c_str());
     }
 }
 
-void Unit::Readin(Ainfile *s, const PtrList<Faction>& facs, ATL_VER)
+void Unit::Readin(Ainfile& s, const PtrList<Faction>& facs, ATL_VER)
 {
-    name = s->GetStr();
-    describe = s->GetStr();
+    name = s.GetStr();
+    describe = s.GetStr();
     if (describe == "none") {
         describe.clear();
     }
-    num = s->GetInt<size_t>();
-    type = s->GetInt<int>();
-    const size_t fac = s->GetInt<size_t>();
+    num = s.GetInt<size_t>();
+    type = s.GetInt<int>();
+    const size_t fac = s.GetInt<size_t>();
     faction = GetFaction(facs, fac);
-    guard = s->GetInt<int>();
+    guard = s.GetInt<int>();
     if (guard == GUARD_ADVANCE)
     {
         guard = GUARD_NONE;
@@ -194,7 +201,7 @@ void Unit::Readin(Ainfile *s, const PtrList<Faction>& facs, ATL_VER)
     {
         guard = GUARD_GUARD;
     }
-    reveal = s->GetInt<int>();
+    reveal = s.GetInt<int>();
 
     /* Handle the new 'ready item', ready weapons/armor, and free */
     free = 0;
@@ -204,26 +211,26 @@ void Unit::Readin(Ainfile *s, const PtrList<Faction>& facs, ATL_VER)
         readyArmor[i].invalidate();
     }
 
-    free = s->GetInt<size_t>();
-    AString temp = s->GetStr();
+    free = s.GetInt<size_t>();
+    AString temp = s.GetStr();
     readyItem = LookupItem(temp);
     for (size_t i = 0; i < MAX_READY; i++) {
-        temp = s->GetStr();
+        temp = s.GetStr();
         readyWeapon[i] = LookupItem(temp);
-        temp = s->GetStr();
+        temp = s.GetStr();
         readyArmor[i] = LookupItem(temp);
     }
-    flags = s->GetInt<int>();
+    flags = s.GetInt<int>();
 
     items.Readin(s);
     skills.Readin(s);
-    temp = s->GetStr();
+    temp = s.GetStr();
     combat = LookupSkill(temp);
-    savedmovement = s->GetInt<int>();
-    savedmovedir = s->GetInt<Directions>();
-    size_t num_visited = s->GetInt<size_t>();
+    savedmovement = s.GetInt<int>();
+    savedmovedir = s.GetInt<Directions>();
+    size_t num_visited = s.GetInt<size_t>();
     while (num_visited-- > 0) {
-        temp = s->GetStr();
+        temp = s.GetStr();
         visited.insert(temp.Str());
     }
 }
@@ -456,7 +463,7 @@ AString Unit::SpoilsReport() {
     return temp;
 }
 
-void Unit::WriteReport(Areport *f,
+void Unit::WriteReport(Areport& f,
                        size_t truesight,
                        bool detfac,
                        const Attitudes& attitude,
@@ -465,7 +472,7 @@ void Unit::WriteReport(Areport *f,
     WriteReport_(f, 2, truesight, detfac, attitude, showattitudes);
 }
 
-void Unit::WriteReport(Areport *f,
+void Unit::WriteReport(Areport& f,
                        unsigned int obs,
                        size_t truesight,
                        bool detfac,
@@ -502,7 +509,7 @@ void Unit::WriteReport(Areport *f,
     WriteReport_(f, obs, truesight, detfac, attitude, showattitudes);
 }
 
-void Unit::WriteReport_(Areport *f,
+void Unit::WriteReport_(Areport& f,
                        unsigned int obs,
                        size_t truesight,
                        bool detfac,
@@ -624,7 +631,7 @@ void Unit::WriteReport_(Areport *f,
         temp += AString("; ") + describe;
     }
     temp += ".";
-    f->PutStr(temp);
+    f.PutStr(temp);
 }
 
 AString Unit::TemplateReport()

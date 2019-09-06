@@ -16,6 +16,18 @@ class ValidEnum : public ValidValue<size_t>
     private:
         bool overflowed_ = false;
 
+        void checkOverflow_()
+        {
+            if(val_ > size())
+            {
+                overflowed_ = true;
+            }
+            else
+            {
+                overflowed_ = false;
+            }
+        }
+
     public:
         using Types = EnumType;
 
@@ -95,10 +107,7 @@ class ValidEnum : public ValidValue<size_t>
         ValidEnum(size_t type) :
             ValidValue<size_t>(type)
         {
-            if(type >= size())
-            {
-                overflowed_ = true;
-            }
+            checkOverflow_();
         }
         
         ValidEnum(const Types& type) :
@@ -127,6 +136,7 @@ class ValidEnum : public ValidValue<size_t>
         ValidEnum& operator=(const Types& rhs)
         {
             ValidValue<size_t>::operator=(static_cast<size_t>(rhs));
+            checkOverflow_();
             return *this;
         }
 
@@ -160,9 +170,19 @@ class ValidEnum : public ValidValue<size_t>
             return *this;
         }
 
+        bool operator==(const ValidEnum& rhs) const
+        {
+            return isValid() && rhs.isValid() && static_cast<size_t>(*this) == static_cast<size_t>(rhs);
+        }
+
         bool operator==(const Types& rhs) const
         {
             return *this == ValidEnum(rhs);
+        }
+
+        bool operator!=(const ValidEnum& rhs) const
+        {
+            return !(*this == rhs);
         }
 
         bool operator!=(const Types& rhs) const
@@ -208,6 +228,12 @@ class ValidEnum : public ValidValue<size_t>
         iterator asIter() const
         {
             return iterator(static_cast<size_t>(*this));
+        }
+
+        virtual void invalidate() override
+        {
+            ValidValue::invalidate();
+            overflowed_ = false;
         }
 
         friend std::istream& operator>><EnumType, EndType>(std::istream&, ValidEnum<EnumType, EndType>&);

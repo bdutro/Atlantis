@@ -84,6 +84,8 @@ public:
 
     AString & operator=(const AString &) = default;
     AString & operator=(const char *);
+    AString & operator=(char);
+    AString & operator=(int) = delete;
 
     const char* Str() const;
     size_t Len() const;

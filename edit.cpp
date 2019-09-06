@@ -548,7 +548,10 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                             prace.invalidate();
                         }
                     }
-                    if (prace != 0) pReg->race = prace;
+                    if (prace != *Items::begin())
+                    {
+                        pReg->race = prace;
+                    }
                     pReg->UpdateEditRegion();
                 }
                 else if (pToken == "dg") {
