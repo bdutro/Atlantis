@@ -854,7 +854,7 @@ AString::Handle ObjectDescription(const Objects& obj)
             buildable = false;
         }
     }
-    if (!o->item.isWoodOrStone() && (ItemDefs[o->item].flags & ItemType::DISABLED))
+    if (o->item.isValid() && !o->item.isWoodOrStone() && (ItemDefs[o->item].flags & ItemType::DISABLED))
     {
         buildable = false;
     }

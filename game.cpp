@@ -1088,7 +1088,14 @@ int Game::RunGame()
 
 void Game::PreProcessTurn()
 {
-    month++;
+    if(month.isValid())
+    {
+        month++;
+    }
+    else
+    {
+        month = 0;
+    }
     if (month>11) {
         month = 0;
         year++;

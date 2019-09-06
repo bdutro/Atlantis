@@ -49,11 +49,19 @@ AString & AString::operator=(const char *c)
 
 bool AString::operator==(char *s) const
 {
+    if(!s)
+    {
+        return str_.empty();
+    }
     return isEqual(s);
 }
 
 bool AString::operator==(const char *s) const
 {
+    if(!s)
+    {
+        return str_.empty();
+    }
     return isEqual(s);
 }
 
@@ -64,12 +72,12 @@ bool AString::operator==(const AString &s) const
 
 bool AString::operator!=(char *s) const
 {
-    return !isEqual(s);
+    return !operator==(s);
 }
 
 bool AString::operator!=(const char *s) const
 {
-    return !isEqual(s);
+    return !operator==(s);
 }
 
 bool AString::operator!=(const AString &s) const
@@ -388,15 +396,15 @@ AString AString::Trunc(size_t val, size_t back)
         return AString();
     }
 
-    size_t pos = str_.find_first_of("\r\n", 0, val);
-    if(pos != std::string::npos)
+    size_t pos = str_.find_first_of("\r\n");
+    if(pos != std::string::npos && pos < val)
     {
         std::string substr = str_.substr(pos + 1);
         str_.resize(pos);
         return AString(substr);
     }
 
-    pos = str_.find_last_of(" ", val - back + 1);
+    pos = str_.find_last_of(' ', val - back + 1);
     if(pos != std::string::npos)
     {
         std::string substr = str_.substr(pos + 1);

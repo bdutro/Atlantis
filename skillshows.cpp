@@ -1492,212 +1492,234 @@ AString ShowSkill::Report(Faction& f)
     const auto& sk1 = SkillDefs[skill];
     for (auto it = Items::rbegin(); it != Items::rend(); ++it) {
         const auto i = *it;
-        if (ITEM_DISABLED(i)) continue;
-        const auto& sk2 = FindSkill(ItemDefs[i].pSkill);
-        if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
-            int canmake = 1;
-            int resource = 1;
-            for (const auto& c: ItemDefs[i].pInput) {
-                if (!c.item.isValid())
-                {
-                    continue;
+        if (ITEM_DISABLED(i))
+        {
+            continue;
+        }
+        try
+        {
+            const auto& sk2 = FindSkill(ItemDefs[i].pSkill);
+            if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
+                int canmake = 1;
+                int resource = 1;
+                for (const auto& c: ItemDefs[i].pInput) {
+                    if (!c.item.isValid())
+                    {
+                        continue;
+                    }
+                    resource = 0;
+                    if (ITEM_DISABLED(c.item)) {
+                        canmake = 0;
+                    }
                 }
-                resource = 0;
-                if (ITEM_DISABLED(c.item)) {
-                    canmake = 0;
+                if (canmake && !last1.isValid()) {
+                    last1 = i;
                 }
-            }
-            if (canmake && !last1.isValid()) {
-                last1 = i;
-            }
-            if (resource && (ItemDefs[i].type & IT_ADVANCED) && !last.isValid()) {
-                last = i;
+                if (resource && (ItemDefs[i].type & IT_ADVANCED) && !last.isValid()) {
+                    last = i;
+                }
             }
         }
-
+        catch(const NoSuchItemException&)
+        {
+        }
     }
     for (auto it = Items::begin(); it != Items::end(); ++it) {
         const auto i = *it;
         if (ITEM_DISABLED(i)) continue;
         int illusion = (ItemDefs[i].type & IT_ILLUSION);
-        auto sk2 = FindSkill(ItemDefs[i].mSkill);
-        if (sk1 == sk2 && ItemDefs[i].mLevel == level) {
-            int canmagic = 1;
-            for (const auto& c: ItemDefs[i].mInput) {
-                if (!c.item.isValid())
-                {
-                    continue;
-                }
-                if (ITEM_DISABLED(c.item)) {
-                    canmagic = 0;
-                }
-            }
-            if (ItemDefs[i].mOut == 0)
-                canmagic = 0;
-            if (canmagic) {
-                temp2 += "A mage with this skill ";
-                if (ItemDefs[i].mOut < 100) {
-                    temp2 += "has a ";
-                    temp2 += ItemDefs[i].mOut;
-                    temp2 += " percent times their level chance to create a";
-                    if (illusion) {
-                        temp2 += "n illusory ";
-                    } else {
-                        switch (ItemDefs[i].name[0]) {
-                            case 'a':
-                            case 'e':
-                            case 'i':
-                            case 'o':
-                            case 'u':
-                            case 'A':
-                            case 'E':
-                            case 'I':
-                            case 'O':
-                            case 'U':
-                                temp2 += "n";
-                                break;
-                            default:
-                                break;
-                        }
-                        temp2 += " ";
-                    }
-                    temp2 += ItemDefs[i].name;
-                } else {
-                    temp2 += "may create ";
-                    if (ItemDefs[i].mOut > 100) {
-                        temp2 += ItemDefs[i].mOut / 100;
-                        temp2 += " times ";
-                    }
-                    temp2 += "their level in ";
-                    temp2 += AString(illusion?"illusory ":"") + ItemDefs[i].names;
-                }
-                temp2 += " [";
-                temp2 += ItemDefs[i].abr;
-                temp2 += "] via magic";
-                count = 0;
+        SkillType sk2;
+        try
+        {
+            sk2 = FindSkill(ItemDefs[i].mSkill);
+            if (sk1 == sk2 && ItemDefs[i].mLevel == level) {
+                int canmagic = 1;
                 for (const auto& c: ItemDefs[i].mInput) {
                     if (!c.item.isValid())
                     {
                         continue;
                     }
-                    count++;
+                    if (ITEM_DISABLED(c.item)) {
+                        canmagic = 0;
+                    }
                 }
-                if (count > 0) {
-                    temp2 += " at a cost of ";
-                    temp4 = "";
+                if (ItemDefs[i].mOut == 0)
+                    canmagic = 0;
+                if (canmagic) {
+                    temp2 += "A mage with this skill ";
+                    if (ItemDefs[i].mOut < 100) {
+                        temp2 += "has a ";
+                        temp2 += ItemDefs[i].mOut;
+                        temp2 += " percent times their level chance to create a";
+                        if (illusion) {
+                            temp2 += "n illusory ";
+                        } else {
+                            switch (ItemDefs[i].name[0]) {
+                                case 'a':
+                                case 'e':
+                                case 'i':
+                                case 'o':
+                                case 'u':
+                                case 'A':
+                                case 'E':
+                                case 'I':
+                                case 'O':
+                                case 'U':
+                                    temp2 += "n";
+                                    break;
+                                default:
+                                    break;
+                            }
+                            temp2 += " ";
+                        }
+                        temp2 += ItemDefs[i].name;
+                    } else {
+                        temp2 += "may create ";
+                        if (ItemDefs[i].mOut > 100) {
+                            temp2 += ItemDefs[i].mOut / 100;
+                            temp2 += " times ";
+                        }
+                        temp2 += "their level in ";
+                        temp2 += AString(illusion?"illusory ":"") + ItemDefs[i].names;
+                    }
+                    temp2 += " [";
+                    temp2 += ItemDefs[i].abr;
+                    temp2 += "] via magic";
                     count = 0;
                     for (const auto& c: ItemDefs[i].mInput) {
                         if (!c.item.isValid())
                         {
                             continue;
                         }
-                        if (!(temp4 == "")) {
-                            if (count > 0)
-                                temp2 += ", ";
-                            temp2 += temp4;
-                            count++;
-                        }
-                        temp4 = ItemString(c.item, c.amt);
+                        count++;
                     }
-                    if (count > 0)
-                        temp2 += " and ";
-                    temp2 += temp4;
-                }
-            }
-            //if (f) {
-            f.DiscoverItem(i, 1, 1);
-            //}
-        }
-        sk2 = FindSkill(ItemDefs[i].pSkill);
-        if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
-            int canmake = 1;
-            int resource = 1;
-            for (const auto& c: ItemDefs[i].pInput) {
-                if (!c.item.isValid())
-                {
-                    continue;
-                }
-                resource = 0;
-                if (ITEM_DISABLED(c.item)) {
-                    canmake = 0;
-                }
-            }
-            if (canmake) {
-                // IT_SHIP: switch to BUILD description
-                if ((ItemDefs[i].type & IT_SHIP) && (build == 0)) {
-                    temp1 = temp3;
-                    build = 1;
-                }
-                if (comma1) {
-                    if (last1 == i) {
-                        if (comma1 > 1) temp1 += ",";
-                        temp1 += " and ";
-                    } else {
-                        temp1 += ", ";
-                    }
-                }
-                comma1++;
-                if (ItemDefs[i].flags & ItemType::SKILLOUT) {
-                    temp1 += "a number of ";
-                }
-                temp1 += AString(illusion?"illusory ":"") + ItemDefs[i].names;
-                temp1 += " [";
-                temp1 += ItemDefs[i].abr;
-                temp1 += "]";
-                if (ItemDefs[i].flags & ItemType::SKILLOUT) {
-                    temp1 += " equal to their skill level";
-                }
-                if (!resource) {
-                    temp1 += " from ";
-                    if (ItemDefs[i].flags & ItemType::ORINPUTS)
-                        temp1 += "any of ";
-                    temp4 = "";
-                    count = 0;
-                    for (const auto& c: ItemDefs[i].pInput) {
-                        if (!c.item.isValid())
-                        {
-                            continue;
+                    if (count > 0) {
+                        temp2 += " at a cost of ";
+                        temp4 = "";
+                        count = 0;
+                        for (const auto& c: ItemDefs[i].mInput) {
+                            if (!c.item.isValid())
+                            {
+                                continue;
+                            }
+                            if (!(temp4 == "")) {
+                                if (count > 0)
+                                    temp2 += ", ";
+                                temp2 += temp4;
+                                count++;
+                            }
+                            temp4 = ItemString(c.item, c.amt);
                         }
-                        if (!(temp4 == "")) {
-                            if (count > 0)
-                                temp1 += ", ";
-                            temp1 += temp4;
-                            count++;
-                        }
-                        temp4 = ItemString(c.item,
-                            ItemDefs[i].type & IT_SHIP ? ItemDefs[i].pMonths : c.amt);
-                    }
-                    if (count > 0)
-                        temp1 += " and ";
-                    temp1 += temp4;
-                }
-                if (!build) {
-                    temp1 += " at a rate of ";
-                    temp1 += ItemDefs[i].pOut;
-                    temp1 += " per ";
-                    if (ItemDefs[i].pMonths == 1) {
-                        temp1 += "man-month";
-                    } else {
-                        temp1 += ItemDefs[i].pMonths;
-                        temp1 += " man-months";
+                        if (count > 0)
+                            temp2 += " and ";
+                        temp2 += temp4;
                     }
                 }
                 //if (f) {
                 f.DiscoverItem(i, 1, 1);
                 //}
             }
-            if (resource && (ItemDefs[i].type & IT_ADVANCED)) {
-                if (comma) {
-                    if (last == i) {
-                        if (comma > 1) temp += ",";
-                        temp += " and ";
-                    } else {
-                        temp += ", ";
+        }
+        catch(const NoSuchItemException&)
+        {
+        }
+
+        try
+        {
+            sk2 = FindSkill(ItemDefs[i].pSkill);
+            if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
+                int canmake = 1;
+                int resource = 1;
+                for (const auto& c: ItemDefs[i].pInput) {
+                    if (!c.item.isValid())
+                    {
+                        continue;
+                    }
+                    resource = 0;
+                    if (ITEM_DISABLED(c.item)) {
+                        canmake = 0;
                     }
                 }
-                comma++;
-                temp += AString(illusion?"illusory ":"") + ItemDefs[i].names;
+                if (canmake) {
+                    // IT_SHIP: switch to BUILD description
+                    if ((ItemDefs[i].type & IT_SHIP) && (build == 0)) {
+                        temp1 = temp3;
+                        build = 1;
+                    }
+                    if (comma1) {
+                        if (last1 == i) {
+                            if (comma1 > 1) temp1 += ",";
+                            temp1 += " and ";
+                        } else {
+                            temp1 += ", ";
+                        }
+                    }
+                    comma1++;
+                    if (ItemDefs[i].flags & ItemType::SKILLOUT) {
+                        temp1 += "a number of ";
+                    }
+                    temp1 += AString(illusion?"illusory ":"") + ItemDefs[i].names;
+                    temp1 += " [";
+                    temp1 += ItemDefs[i].abr;
+                    temp1 += "]";
+                    if (ItemDefs[i].flags & ItemType::SKILLOUT) {
+                        temp1 += " equal to their skill level";
+                    }
+                    if (!resource) {
+                        temp1 += " from ";
+                        if (ItemDefs[i].flags & ItemType::ORINPUTS)
+                            temp1 += "any of ";
+                        temp4 = "";
+                        count = 0;
+                        for (const auto& c: ItemDefs[i].pInput) {
+                            if (!c.item.isValid())
+                            {
+                                continue;
+                            }
+                            if (!(temp4 == "")) {
+                                if (count > 0)
+                                    temp1 += ", ";
+                                temp1 += temp4;
+                                count++;
+                            }
+                            temp4 = ItemString(c.item,
+                                ItemDefs[i].type & IT_SHIP ? ItemDefs[i].pMonths : c.amt);
+                        }
+                        if (count > 0)
+                            temp1 += " and ";
+                        temp1 += temp4;
+                    }
+                    if (!build) {
+                        temp1 += " at a rate of ";
+                        temp1 += ItemDefs[i].pOut;
+                        temp1 += " per ";
+                        if (ItemDefs[i].pMonths == 1) {
+                            temp1 += "man-month";
+                        } else {
+                            temp1 += ItemDefs[i].pMonths;
+                            temp1 += " man-months";
+                        }
+                    }
+                    //if (f) {
+                    f.DiscoverItem(i, 1, 1);
+                    //}
+                }
+                if (resource && (ItemDefs[i].type & IT_ADVANCED)) {
+                    if (comma) {
+                        if (last == i) {
+                            if (comma > 1) temp += ",";
+                            temp += " and ";
+                        } else {
+                            temp += ", ";
+                        }
+                    }
+                    comma++;
+                    temp += AString(illusion?"illusory ":"") + ItemDefs[i].names;
+                }
             }
+        }
+        catch(const NoSuchItemException&)
+        {
         }
     }
     if (comma1) {

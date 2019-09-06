@@ -60,7 +60,7 @@ void Game::RunMovementOrders()
                         continue;
                     }
                     const auto u = u_w.lock();
-                    if (!u->phase.isValid() || u->phase >= phase)
+                    if (u->phase.isValid() && u->phase >= phase)
                     {
                         continue;
                     }
@@ -104,8 +104,10 @@ void Game::RunMovementOrders()
         for(const auto& r: regions) {
             for(const auto& o: r->objects) {
                 for(const auto& u: o->units) {
-                    if (u->phase >= phase)
+                    if (u->phase.isValid() && u->phase >= phase)
+                    {
                         continue;
+                    }
                     u->phase = phase;
                     if (u && !u->nomove && u->monthorders &&
                             (u->monthorders->type == Orders::Types::O_MOVE ||
