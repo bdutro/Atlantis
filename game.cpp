@@ -404,7 +404,7 @@ int Game::OpenGame()
     int i = f.GetInt<int>();
 
     for (int j=0; j<i; j++) {
-        Faction::Handle& temp = factions.emplace_back(std::make_shared<Faction>());
+        Faction::Handle& temp = factions.emplace_back();
         temp->Readin(f, eVersion);
     }
 
@@ -928,7 +928,7 @@ bool Game::ReadPlayersLine(const AString& pToken, AString& pLine, const Faction:
                                     size_t lvl = u->GetRealSkill(sk);
                                     if (lvl > pFac->skills.GetDays(sk)) {
                                         pFac->skills.SetDays(sk, lvl);
-                                        pFac->shows.emplace_back(std::make_shared<ShowSkill>(sk,lvl));
+                                        pFac->shows.emplace_back(sk,lvl);
                                     }
                                     if (!u->gm_alias) {
                                         u->Event(AString("Is taught ") +
@@ -993,7 +993,7 @@ bool Game::ReadPlayersLine(const AString& pToken, AString& pLine, const Faction:
                                         "for faction "+pFac->num);
                             } else {
                                 if (getatsign) {
-                                    u->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                    u->oldorders.emplace_back(saveorder);
                                 }
                                 ProcessOrder(o, u, pLine, NULL);
                             }
@@ -1219,8 +1219,8 @@ void Game::WriteTemplates()
 
 void Game::DeleteDeadFactions()
 {
-    auto it = factions.begin();
-    while(it != factions.end()) {
+    for(auto it = factions.begin(); it != factions.end(); ++it)
+    {
         const auto& fac = *it;
         if (!fac->IsNPC() && !fac->exists)
         {
@@ -1228,10 +1228,8 @@ void Game::DeleteDeadFactions()
             {
                 fac2->RemoveAttitude(fac->num);
             }
-            it = factions.erase(it);
-            continue;
+            factions.erase(it);
         }
-        ++it;
     }
 }
 
@@ -1783,7 +1781,7 @@ char Game::GetRChar(const ARegion::Handle& r)
 void Game::CreateNPCFactions()
 {
     if (Globals->CITY_MONSTERS_EXIST) {
-        auto& f = factions.emplace_back(std::make_shared<Faction>(factionseq++));
+        auto& f = factions.emplace_back(factionseq++);
         guardfaction = f->num;
         f->SetName("The Guardsmen");
         f->SetNPC();
@@ -1793,7 +1791,7 @@ void Game::CreateNPCFactions()
     // Only create the monster faction if wandering monsters or lair
     // monsters exist.
     if (Globals->LAIR_MONSTERS_EXIST || Globals->WANDERING_MONSTERS_EXIST) {
-        auto& f = factions.emplace_back(std::make_shared<Faction>(factionseq++));
+        auto& f = factions.emplace_back(factionseq++);
         monfaction = f->num;
         f->SetName("Creatures");
         f->SetNPC();

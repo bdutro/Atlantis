@@ -2541,7 +2541,7 @@ void ARegion::MakeStartingCity()
     town->dev = TownDevelopment();
 
     float ratio;
-    markets.DeleteAll();
+    markets.clear();
     if (Globals->START_CITIES_START_UNLIMITED) {
         for (auto i = Items::begin(); i != Items::end(); ++i) {
             if ( ItemDefs[*i].flags & ItemType::DISABLED )
@@ -2553,55 +2553,55 @@ void ARegion::MakeStartingCity()
                 {
                     continue;
                 }
-                markets.Add(M_BUY,
-                            *i,
-                            static_cast<int>(ItemDefs[*i].baseprice*5/2),
-                            -1,
-                            5000,
-                            5000,
-                            -1,
-                            -1);
+                markets.emplace_back(M_BUY,
+                                     *i,
+                                     static_cast<int>(ItemDefs[*i].baseprice*5/2),
+                                     -1,
+                                     5000,
+                                     5000,
+                                     -1,
+                                     -1);
             }
         }
         ratio = static_cast<float>(ItemDefs[race].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
         // hack: include wage factor of 10 in float calculation above
-        markets.Add(M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
+        markets.emplace_back(M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
         if (Globals->LEADERS_EXIST) {
             ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
-            markets.Add(M_BUY,
-                        Items::Types::I_LEADERS,
-                        calculateWagesWithRatio(ratio),
-                        -1,
-                        5000,
-                        5000,
-                        -1,
-                        -1);
+            markets.emplace_back(M_BUY,
+                                 Items::Types::I_LEADERS,
+                                 calculateWagesWithRatio(ratio),
+                                 -1,
+                                 5000,
+                                 5000,
+                                 -1,
+                                 -1);
         }
     } else {
         SetupCityMarket();
         ratio = static_cast<float>(ItemDefs[race].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
         // hack: include wage factor of 10 in float calculation above
         /* Setup Recruiting */
-        markets.Add(M_BUY,
-                    race,
-                    calculateWagesWithRatio(ratio),
-                    Population() / 5,
-                    0,
-                    10000,
-                    0,
-                    2000);
+        markets.emplace_back(M_BUY,
+                             race,
+                             calculateWagesWithRatio(ratio),
+                             Population() / 5,
+                             0,
+                             10000,
+                             0,
+                             2000);
         if ( Globals->LEADERS_EXIST ) {
             ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
-            markets.Add(M_BUY,
-                        Items::Types::I_LEADERS,
-                        calculateWagesWithRatio(ratio),
-                        Population() / 25,
-                        0,
-                        10000,
-                        0,
-                        400);
+            markets.emplace_back(M_BUY,
+                                 Items::Types::I_LEADERS,
+                                 calculateWagesWithRatio(ratio),
+                                 Population() / 25,
+                                 0,
+                                 10000,
+                                 0,
+                                 400);
         }
     }
 }

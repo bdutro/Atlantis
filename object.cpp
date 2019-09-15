@@ -170,14 +170,17 @@ void Object::Readin(Ainfile& f, const PtrList<Faction>& facs, ATL_VER v)
     if (Globals->ALLOW_TRIVIAL_PORTAGE) prevdir.invalidate();
     int i = f.GetInt<int>();
     for (int j=0; j<i; j++) {
-        Unit::Handle temp = std::make_shared<Unit>();
-        temp->Readin(f, facs, v);
-        if (temp->faction.expired())
+        Unit::Handle utemp = std::make_shared<Unit>();
+        utemp->Readin(f, facs, v);
+        if (utemp->faction.expired())
         {
             continue;
         }
-        temp->MoveUnit(weak_from_this());
-        if (!(temp->faction.lock()->IsNPC())) region.lock()->visited = 1;
+        utemp->MoveUnit(weak_from_this());
+        if (!(utemp->faction.lock()->IsNPC()))
+        {
+            region.lock()->visited = 1;
+        }
     }
     mages = ObjectDefs[type].maxMages;
     ReadinFleet(f);
@@ -230,11 +233,11 @@ int Object::CanModify()
     return (ObjectDefs[type].flags & ObjectType::CANMODIFY);
 }
 
-Unit::WeakHandle Object::GetUnit(size_t num)
+Unit::WeakHandle Object::GetUnit(size_t unit_num)
 {
     for(const auto& u: units)
     {
-        if(u->num == num)
+        if(u->num == unit_num)
         {
             return u;
         }
@@ -430,15 +433,13 @@ void Object::SetPrevDir(const Directions& newdir)
 void Object::MoveObject(const ARegion::Handle& toreg)
 {
     auto& reg_objs = region.lock()->objects;
-    auto it = reg_objs.begin();
-    while(it != reg_objs.end())
+
+    for(auto it = reg_objs.begin(); it != reg_objs.end(); ++it)
     {
         if(it->get() == this)
         {
-            it = reg_objs.erase(it);
-            continue;
+            reg_objs.erase(it);
         }
-        ++it;
     }
     region = toreg;
     toreg->objects.push_back(shared_from_this());
@@ -485,11 +486,14 @@ void Object::ReadinFleet(Ainfile& f)
 /* Returns the number of component ships of a given
  * type.
  */
-size_t Object::GetNumShips(const Items& type)
+size_t Object::GetNumShips(const Items& item_type)
 {
-    if (CheckShip(type)) {
-        for(const auto& ship: ships) {
-            if (ship->type == type) {
+    if (CheckShip(item_type))
+    {
+        for(const auto& ship: ships)
+        {
+            if (ship->type == item_type)
+            {
                 return ship->num;
             }
         }
@@ -500,25 +504,33 @@ size_t Object::GetNumShips(const Items& type)
 /* Erases possible previous entries for ship type
  * and resets the number of ships.
  */
-void Object::SetNumShips(const Items& type, size_t num)
+void Object::SetNumShips(const Items& item_type, size_t item_num)
 {
-    if (CheckShip(type)) {
-        if (num > 0) {
-            for(const auto& ship: ships) {
-                if (ship->type == type) {
-                    ship->num = num;
+    if (CheckShip(item_type))
+    {
+        if (item_num > 0)
+        {
+            for(const auto& ship: ships)
+            {
+                if (ship->type == item_type)
+                {
+                    ship->num = item_num;
                     FleetCapacity();
                     return;
                 }
             }
-            auto& ship = ships.emplace_back(std::make_shared<Item>());
-            ship->type = type;
-            ship->num = num;
+            auto& ship = ships.emplace_back();
+            ship->type = item_type;
+            ship->num = item_num;
             FleetCapacity();
-        } else {
-            for(auto it = ships.begin(); it != ships.end(); ++it) {
+        }
+        else
+        {
+            for(auto it = ships.begin(); it != ships.end(); ++it)
+            {
                 const auto& ship = *it;
-                if (ship->type == type) {
+                if (ship->type == item_type)
+                {
                     ships.erase(it);
                     FleetCapacity();
                     return;
@@ -530,12 +542,15 @@ void Object::SetNumShips(const Items& type, size_t num)
 
 /* Adds one ship of the given type.
  */
-void Object::AddShip(const Items& type)
+void Object::AddShip(const Items& item_type)
 {    
-    if (!CheckShip(type)) return;
-    size_t num = GetNumShips(type);
-    num++;
-    SetNumShips(type, num);    
+    if (!CheckShip(item_type))
+    {
+        return;
+    }
+    size_t num_ships = GetNumShips(item_type);
+    num_ships++;
+    SetNumShips(item_type, num_ships);
 }
 
 /* Returns the String 'Fleet' for multi-ship fleets
@@ -545,17 +560,20 @@ AString Object::FleetDefinition()
 {
     AString fleet;
     Items shiptype;
-    size_t num = 0;
-    for (auto i = Items::begin(); i != Items::end(); ++i) {
-        if (ItemDefs[*i].type & IT_SHIP) {
+    size_t num_ships = 0;
+    for (auto i = Items::begin(); i != Items::end(); ++i)
+    {
+        if (ItemDefs[*i].type & IT_SHIP)
+        {
             size_t sn = GetNumShips(*i);
-            if (sn > 0) {
-                num += sn;
+            if (sn > 0)
+            {
+                num_ships += sn;
                 shiptype = *i;
             }
         }
     }
-    if (num == 1)
+    if (num_ships == 1)
     {
         fleet = ItemDefs[shiptype].name;
     }
@@ -564,12 +582,14 @@ AString Object::FleetDefinition()
         // report ships:
         for (auto i = Items::begin(); i != Items::end(); ++i) {
             const auto item = *i;
-            num = GetNumShips(item);
-            if (num > 0) {
-                if (num > 1) {
-                    fleet += AString(", ") + num + " " + ItemDefs[item].names;
+            num_ships = GetNumShips(item);
+            if (num_ships > 0)
+            {
+                if (num_ships > 1)
+                {
+                    fleet += AString(", ") + num_ships + " " + ItemDefs[item].names;
                 } else {
-                    fleet += AString(", ") + num + " " +ItemDefs[item].name;
+                    fleet += AString(", ") + num_ships + " " +ItemDefs[item].name;
                 }
             }
         }
@@ -584,24 +604,34 @@ size_t Object::FleetCapacity()
     capacity = 0;
     // Calculate the maximum number of mages while we're at it
     mages = 0;
-    if (!IsFleet()) return 0;
+    if (!IsFleet())
+    {
+        return 0;
+    }
     // Fleets are assumed to be flying, at least until we find any
     // non-flying vessels in them
     flying = 1;
     for (auto i= Items::begin(); i != Items::end(); ++i) {
         const auto item = *i;
-        size_t num = GetNumShips(item);
-        if (num < 1) continue;
-        if (ItemDefs[item].fly > 0) {
-            capacity += num * ItemDefs[item].fly;
-        } else {
-            capacity += num * ItemDefs[item].swim;
+        size_t num_ships = GetNumShips(item);
+        if (num_ships < 1)
+        {
+            continue;
+        }
+        if (ItemDefs[item].fly > 0)
+        {
+            capacity += num_ships * ItemDefs[item].fly;
+        }
+        else
+        {
+            capacity += num_ships * ItemDefs[item].swim;
             flying = 0;
         }
         AString oname = AString(ItemDefs[item].name);
         const auto ot = LookupObject(oname);
-        if (ot.isValid() && !ot.isDummy()) {
-            mages += num * ObjectDefs[ot].maxMages;
+        if (ot.isValid() && !ot.isDummy())
+        {
+            mages += num_ships * ObjectDefs[ot].maxMages;
         }
     }
     return capacity;
@@ -611,15 +641,17 @@ size_t Object::FleetCapacity()
  */
 int Object::FleetLoad()
 {
-    int load = -1;
-    if (IsFleet()) {
+    int fleet_load = -1;
+    if (IsFleet())
+    {
         size_t wgt = 0;
-        for(const auto& unit: units) {
+        for(const auto& unit: units)
+        {
             wgt += unit->Weight();
         }
-        load = static_cast<int>(wgt);
+        fleet_load = static_cast<int>(wgt);
     }
-    return load;
+    return fleet_load;
 }
 
 /* Returns the total skill level of all sailors.
@@ -648,14 +680,21 @@ int Object::FleetSailingSkill(int report)
  */
 size_t Object::GetFleetSize()
 {
-    if (!IsFleet()) return 0;
-    size_t inertia = 0;
-    for (auto i = Items::begin(); i != Items::end(); ++i) {
-        const auto item = *i;
-        size_t num = GetNumShips(item);
-        if (num > 0) inertia += num * ItemDefs[item].weight;
+    if (!IsFleet())
+    {
+        return 0;
     }
-    return (inertia / 50);
+    size_t inertia = 0;
+    for (auto i = Items::begin(); i != Items::end(); ++i)
+    {
+        const auto item = *i;
+        const size_t num_ships = GetNumShips(item);
+        if (num_ships > 0)
+        {
+            inertia += num_ships * ItemDefs[item].weight;
+        }
+    }
+    return inertia / 50;
 }
 
 /* Returns the fleet speed - theoretical if report
@@ -670,7 +709,7 @@ unsigned int Object::GetFleetSpeed(int report)
     int tskill = FleetSailingSkill(report);
     size_t speed = Globals->MAX_SPEED;
     size_t weight = 0;
-    size_t capacity = 0;
+    size_t fleet_capacity = 0;
     size_t bonus;
     size_t windbonus = 0;
 
@@ -678,13 +717,17 @@ unsigned int Object::GetFleetSpeed(int report)
 
     for (auto i = Items::begin(); i != Items::end(); ++i) {
         const auto item = *i;
-        size_t num = GetNumShips(item);
-        if (num > 0) {
-            weight += num * ItemDefs[item].weight;
-            if (ItemDefs[item].fly > 0) {
-                capacity += num * ItemDefs[item].fly;
-            } else {
-                capacity += num * ItemDefs[item].swim;
+        const size_t num_ships = GetNumShips(item);
+        if (num_ships > 0)
+        {
+            weight += num_ships * ItemDefs[item].weight;
+            if (ItemDefs[item].fly > 0)
+            {
+                fleet_capacity += num_ships * ItemDefs[item].fly;
+            }
+            else
+            {
+                fleet_capacity += num_ships * ItemDefs[item].swim;
                 flying = 0;
             }
             // Fleets travel as fast as their slowest ship
@@ -693,50 +736,72 @@ unsigned int Object::GetFleetSpeed(int report)
         }
     }
     // no ships no speed
-    if (weight < 1) return 0;
+    if (weight < 1)
+    {
+        return 0;
+    }
 
     // check for sufficient sailing skill!
-    if (tskill < static_cast<int>(weight / 50)) return 0;
+    if (tskill < static_cast<int>(weight / 50))
+    {
+        return 0;
+    }
     
     // count wind mages
-    for(const auto& unit: units) {
+    for(const auto& unit: units)
+    {
         unsigned int wb = unit->GetAttribute("wind");
-        if (wb > 0) {
+        if (wb > 0)
+        {
             windbonus += wb * 12 * Globals->FLEET_WIND_BOOST;
         }
     }
     // speed gain through wind:
     bonus = windbonus / (weight / 50);
     if (bonus > Globals->FLEET_WIND_BOOST)
+    {
         bonus = Globals->FLEET_WIND_BOOST;
+    }
     speed += bonus;
 
     // speed bonus due to more / better skilled sailors:
     bonus = 0;
-    while (tskill >= static_cast<int>(weight / 25)) {
+    while (tskill >= static_cast<int>(weight / 25))
+    {
         bonus++;
         tskill /= 2;
     }
     if (bonus > Globals->FLEET_CREW_BOOST)
+    {
         bonus = Globals->FLEET_CREW_BOOST;
+    }
     speed += bonus;
 
     // check for being overloaded
-    if (FleetLoad() > static_cast<int>(capacity)) return 0;
+    if (FleetLoad() > static_cast<int>(fleet_capacity))
+    {
+        return 0;
+    }
     
     // speed bonus due to low load:
-    int loadfactor = (static_cast<int>(capacity) / FleetLoad());
+    int loadfactor = (static_cast<int>(fleet_capacity) / FleetLoad());
     bonus = 0;
-    while (loadfactor >= 2) {
+    while (loadfactor >= 2)
+    {
         bonus++;
         loadfactor /= 2;
     }
     if (bonus > Globals->FLEET_LOAD_BOOST)
+    {
         bonus = Globals->FLEET_LOAD_BOOST;
+    }
     speed += bonus;
 
     // Cap everything at max speed
-    if (speed > Globals->MAX_SPEED) speed = Globals->MAX_SPEED;
+    if (speed > Globals->MAX_SPEED)
+    {
+        speed = Globals->MAX_SPEED;
+    }
 
     return static_cast<unsigned int>(speed);
 }

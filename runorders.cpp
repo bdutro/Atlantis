@@ -555,35 +555,43 @@ void Game::Do1Destroy(const ARegion::Handle& r,
 {
     if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN) {
         u->Error("DESTROY: Can't destroy a ship while at sea.");
-        for(const auto& u: o->units) {
-            u->destroy = 0;
+        for(const auto& ou: o->units)
+        {
+            ou->destroy = 0;
         }
         return;
     }
 
     if (!u->GetMen()) {
         u->Error("DESTROY: Empty units cannot destroy structures.");
-        for(const auto& u: o->units) {
-            u->destroy = 0;
+        for(const auto& ou: o->units)
+        {
+            ou->destroy = 0;
         }
         return;
     }
 
-    if (o->CanModify()) {
+    if (o->CanModify())
+    {
         u->Event(AString("Destroys ") + o->name + ".");
         const auto dest = r->GetDummy();
-        for(const auto& u: o->units) {
-            u->destroy = 0;
-            u->MoveUnit(dest);
+        for(const auto& ou: o->units)
+        {
+            ou->destroy = 0;
+            ou->MoveUnit(dest);
         }
-        if (quests.CheckQuestDemolishTarget(r, o->num, u)) {
+        if (quests.CheckQuestDemolishTarget(r, o->num, u))
+        {
             u->Event("You have completed a quest!");
         }
         r->RemoveObject(o);
-    } else {
+    }
+    else
+    {
         u->Error("DESTROY: Can't destroy that.");
-        for(const auto& u: o->units) {
-            u->destroy = 0;
+        for(const auto& ou: o->units)
+        {
+            ou->destroy = 0;
         }
     }
 }
@@ -638,11 +646,14 @@ int Game::FortTaxBonus(const Object::Handle& o, const Unit::Handle& u)
 {
     int protect = ObjectDefs[o->type].protect;
     int fortbonus = 0;
-    for(const auto& unit: o->units) {
+    for(const auto& unit: o->units)
+    {
         size_t men = unit->GetMen();
-        if (unit->num == u->num) {
-            if (unit->taxing == TAX_TAX) {
-                int fortbonus = static_cast<int>(men);
+        if (unit->num == u->num)
+        {
+            if (unit->taxing == TAX_TAX)
+            {
+                fortbonus = static_cast<int>(men);
                 const size_t maxtax = unit->Taxers(1);
                 if (fortbonus > protect)
                 {
@@ -657,7 +668,10 @@ int Game::FortTaxBonus(const Object::Handle& o, const Unit::Handle& u)
             }
         }
         protect -= static_cast<int>(men);
-        if (protect < 0) protect = 0;    
+        if (protect < 0)
+        {
+            protect = 0;
+        }
     }
     return fortbonus;
 }
@@ -1102,24 +1116,22 @@ void Game::Do1JoinOrder(const ARegion::Handle& r,
 void Game::RemoveEmptyObjects()
 {
     for(const auto& r: regions) {
-        auto it = r->objects.begin();
-        while(it != r->objects.end()) {
+        for(auto it = r->objects.begin(); it != r->objects.end(); ++it)
+        {
             const auto& o = *it;
             if ((o->IsFleet()) && 
                 (TerrainDefs[r->type].similar_type != Regions::Types::R_OCEAN))
             {
-                ++it;
                 continue;
             }
-            if (ObjectDefs[o->type].cost &&
-                    o->incomplete >= ObjectDefs[o->type].cost) {
-                for(const auto& u: o->units) {
+            if (ObjectDefs[o->type].cost && o->incomplete >= ObjectDefs[o->type].cost)
+            {
+                for(const auto& u: o->units)
+                {
                     u->MoveUnit(r->GetDummy());
                 }
-                it = r->objects.erase(it);
-                continue;
+                r->objects.erase(it);
             }
-            ++it;
         }
     }
 }
@@ -1515,8 +1527,8 @@ void Game::DoSell(const ARegion::Handle& r, const Market::Handle& m)
     int oldamount = m->amount;
     for(const auto& obj: r->objects) {
         for(const auto& u: obj->units) {
-            auto it = u->sellorders.begin();
-            while(it != u->sellorders.end()) {
+            for(auto it = u->sellorders.begin(); it != u->sellorders.end(); ++it)
+            {
                 const auto& o = *it;
                 if (o->item == m->item) {
                     int temp = 0;
@@ -1538,10 +1550,8 @@ void Game::DoSell(const ARegion::Handle& r, const Market::Handle& m)
                     u->SetMoney(u->GetMoney() + static_cast<unsigned int>(temp * m->price));
                     u->Event(AString("Sells ") + ItemString(o->item, temp)
                             + " at $" + m->price + " each.");
-                    it = u->sellorders.erase(it);
-                    continue;
+                    u->sellorders.erase(it);
                 }
-                ++it;
             }
         }
     }
@@ -1573,8 +1583,8 @@ int Game::GetBuyAmount(const ARegion::Handle& r, const Market::Handle& m)
     int num = 0;
     for(const auto& obj: r->objects) {
         for(const auto& u: obj->units) {
-            auto it = u->buyorders.begin();
-            while(it != u->buyorders.end()) {
+            for(auto it = u->buyorders.begin(); it != u->buyorders.end(); ++it)
+            {
                 const auto& o = *it;
                 if (o->item == m->item) {
                     if (ItemDefs[o->item].type & IT_MAN) {
@@ -1636,11 +1646,7 @@ int Game::GetBuyAmount(const ARegion::Handle& r, const Market::Handle& m)
                 }
                 if (o->num < 1 && o->num != -1)
                 {
-                    it = u->buyorders.erase(it);
-                }
-                else
-                {
-                    ++it;
+                    u->buyorders.erase(it);
                 }
             }
         }
@@ -1660,39 +1666,48 @@ void Game::DoBuy(const ARegion::Handle& r, const Market::Handle& m)
     int oldamount = m->amount;
     for(const auto& obj: r->objects) {
         for(const auto& u: obj->units) {
-            auto it = u->buyorders.begin();
-            while(it != u->buyorders.end()) {
+            for(auto it = u->buyorders.begin(); it != u->buyorders.end(); ++it)
+            {
                 const auto& o = *it;
-                if (o->item == m->item) {
+                if (o->item == m->item)
+                {
                     int temp = 0;
-                    if (m->amount == -1) {
+                    if (m->amount == -1)
+                    {
                         /* unlimited market */
                         temp = o->num;
-                    } else {
-                        if (attempted) {
+                    }
+                    else
+                    {
+                        if (attempted)
+                        {
                             temp = (m->amount * o->num +
                                     getrandom(attempted)) / attempted;
-                            if (temp < 0) temp = 0;
+                            if (temp < 0)
+                            {
+                                temp = 0;
+                            }
                         }
                         attempted -= o->num;
                         m->amount -= temp;
                         m->activity += temp;
                     }
-                    if (ItemDefs[o->item].type & IT_MAN) {
+                    if (ItemDefs[o->item].type & IT_MAN)
+                    {
                         /* recruiting; must dilute skills */
                         u->AdjustSkills();
                         /* Setup specialized skill experience */
                         if (Globals->REQUIRED_EXPERIENCE) {
                             const auto& mt = FindRace(ItemDefs[o->item].abr);
                             int exp = static_cast<int>(mt.speciallevel - mt.defaultlevel);
-                            if (exp > 0) {
+                            if (exp > 0)
+                            {
                                 const size_t exp2 = static_cast<size_t>(exp * temp) * GetDaysByLevel(1);
                                 for (const auto& sname: mt.skills)
                                 {
                                     const auto skill = LookupSkill(sname);
                                     if (!skill.isValid())
                                     {
-                                        ++it;
                                         continue;
                                     }
                                     const size_t curxp = u->skills.GetExp(skill);
@@ -1708,10 +1723,8 @@ void Game::DoBuy(const ARegion::Handle& r, const Market::Handle& m)
                     u->ConsumeSharedMoney(static_cast<size_t>(temp * m->price));
                     u->Event(AString("Buys ") + ItemString(o->item, temp)
                             + " at $" + m->price + " each.");
-                    it = u->buyorders.erase(it);
-                    continue;
+                    u->buyorders.erase(it);
                 }
-                ++it;
             }
         }
     }
@@ -2881,7 +2894,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
             const size_t oldlvl = u_fac->skills.GetDays(skill.type);
             if (newlvl > oldlvl) {
                 for (size_t i=oldlvl+1; i<=newlvl; i++) {
-                    u_fac->shows.emplace_back(std::make_shared<ShowSkill>(skill.type, i));
+                    u_fac->shows.emplace_back(skill.type, i);
                 }
                 u_fac->skills.SetDays(skill.type, newlvl);
             }

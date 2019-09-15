@@ -68,31 +68,12 @@ public:
     AString Report();
 };
 
-class MarketList {
-    private:
-        using list_type = PtrList<Market>;
-
+class MarketList : public PtrList<Market>
+{
     public:
-        using iterator = list_type::iterator;
-        using const_iterator = list_type::const_iterator;
-    
         void PostTurn(int,int);
         void Writeout(Aoutfile& f);
         void Readin(Ainfile& f);
-        void DeleteAll();
-        void Add(int, const Items&, int, int, int, int, int, int);
-        void Add(const Market::Handle&);
-        iterator begin() { return markets_.begin(); }
-        iterator end() { return markets_.end(); }
-        const_iterator cbegin() const { return markets_.cbegin(); }
-        const_iterator cend() const { return markets_.cend(); }
-        const_iterator begin() const { return markets_.begin(); }
-        const_iterator end() const { return markets_.end(); }
-        iterator erase(iterator pos) { return markets_.erase(pos); }
-        void clear() { markets_.clear(); }
-    
-    private:
-        list_type markets_;
 };
 
 #endif

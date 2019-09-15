@@ -273,7 +273,7 @@ void Faction::WriteReport(Areport& f, const Game& pGame)
             shows.clear();
             for (auto i = Skills::begin(); i != Skills::end(); ++i) {
                 for (unsigned int j = 1; j < 6; j++) {
-                    shows.emplace_back(std::make_shared<ShowSkill>(*i, j));
+                    shows.emplace_back(*i, j);
                 }
             }
             if (!shows.empty()) {
@@ -684,12 +684,12 @@ Attitudes Faction::GetAttitude(size_t n) const
     return defaultattitude;
 }
 
-void Faction::SetAttitude(size_t num, const Attitudes& att)
+void Faction::SetAttitude(size_t faction_num, const Attitudes& att)
 {
     for(auto it = attitudes.begin(); it != attitudes.end(); ++it)
     {
         const auto& a = *it;
-        if (a->factionnum == num)
+        if (a->factionnum == faction_num)
         {
             if (!att.isValid())
             {
@@ -705,8 +705,8 @@ void Faction::SetAttitude(size_t num, const Attitudes& att)
     }
     if (att.isValid())
     {
-        auto& a = attitudes.emplace_back(std::make_shared<Attitude>());
-        a->factionnum = num;
+        auto& a = attitudes.emplace_back();
+        a->factionnum = faction_num;
         a->attitude = att;
     }
 }
@@ -928,7 +928,7 @@ void Faction::DiscoverItem(const Items& item, int force, int full)
             for (size_t i = 1; i <= ItemDefs[item].maxGrant; i++) {
                 if (i > skills.GetDays(skill)) {
                     skills.SetDays(skill, i);
-                    shows.emplace_back(std::make_shared<ShowSkill>(skill, i));
+                    shows.emplace_back(skill, i);
                 }
             }
         }

@@ -383,15 +383,9 @@ class Item
         int checked; // flag whether item has been reported, counted etc.
 };
 
-class ItemList
+class ItemList : public PtrList<Item>
 {
-    private:
-        using list_type = PtrList<Item>;
-
     public:
-        using iterator = list_type::iterator;
-        using const_iterator = list_type::const_iterator;
-
         void Readin(Ainfile&);
         void Writeout(Aoutfile&);
 
@@ -407,20 +401,6 @@ class ItemList
         ssize_t CanSell(const Items&);
         void Selling(const Items&, size_t); /* type, number */
         void UncheckAll(); // re-set checked flag for all
-        
-        iterator begin() { return items_.begin(); }
-        iterator end() { return items_.end(); }
-        const_iterator begin() const { return items_.begin(); }
-        const_iterator end() const { return items_.end(); }
-        const_iterator cbegin() const { return items_.cbegin(); }
-        const_iterator cend() const { return items_.cend(); }
-        size_t size() const { return items_.size(); }
-        bool empty() const { return items_.empty(); }
-        iterator erase(iterator it) { return items_.erase(it); }
-        const_iterator erase(const_iterator it) { return items_.erase(it); }
-
-    private:
-        list_type items_;
 };
 
 extern AString ShowSpecial(char const *special, size_t level, int expandLevel, int fromItem);

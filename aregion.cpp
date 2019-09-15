@@ -228,7 +228,7 @@ void ARegion::LairCheck()
 
 Object::Handle& ARegion::AddObject()
 {
-    return objects.emplace_back(std::make_shared<Object>(weak_from_this()));
+    return objects.emplace_back(weak_from_this());
 }
 
 void ARegion::MakeLair(const Objects& t)
@@ -831,10 +831,14 @@ void ARegion::ClearHell()
     hell.clear();
 }
 
-Object::WeakHandle ARegion::GetObject(int num)
+Object::WeakHandle ARegion::GetObject(int num_to_find)
 {
-    for(const auto& o: objects) {
-        if (o->num == num) return o;
+    for(const auto& o: objects)
+    {
+        if (o->num == num_to_find)
+        {
+            return o;
+        }
     }
     return Object::WeakHandle();
 }
@@ -853,15 +857,17 @@ Object::WeakHandle ARegion::GetDummy()
  */
 void ARegion::CheckFleets()
 {
-    auto o_it = objects.begin();
-    while(o_it != objects.end())
-    {
-        const auto& o = *o_it;
-        if (o->IsFleet()) {
+    objects.remove_if([&](const auto& o){
+        if (o->IsFleet())
+        {
             bool bail = false;
-            if (o->FleetCapacity() < 1) bail = true;
+            if (o->FleetCapacity() < 1)
+            {
+                bail = true;
+            }
             bool alive = false;
-            for(const auto& unit: o->units) {
+            for(const auto& unit: o->units)
+            {
                 alive = unit->IsAlive();
                 if (bail)
                 {
@@ -870,21 +876,56 @@ void ARegion::CheckFleets()
             }
             // don't remove fleets when no living units are
             // aboard when they're not at sea.
-            if (TerrainDefs[type].similar_type != Regions::Types::R_OCEAN) alive = true;
-            if (!alive || bail) {
-                o_it = objects.erase(o_it);
-                continue;
+            if (TerrainDefs[type].similar_type != Regions::Types::R_OCEAN)
+            {
+                alive = true;
+            }
+            if (!alive || bail)
+            {
+                return true;
             }
         }
-        ++o_it;
-    }
+        return false;
+    });
+    /*for(auto o_it = objects.begin(); o_it != objects.end(); ++o_it)
+    {
+        const auto& o = *o_it;
+        if (o->IsFleet()) {
+            bool bail = false;
+            if (o->FleetCapacity() < 1)
+            {
+                bail = true;
+            }
+            bool alive = false;
+            for(const auto& unit: o->units)
+            {
+                alive = unit->IsAlive();
+                if (bail)
+                {
+                    unit->MoveUnit(GetDummy());
+                }
+            }
+            // don't remove fleets when no living units are
+            // aboard when they're not at sea.
+            if (TerrainDefs[type].similar_type != Regions::Types::R_OCEAN)
+            {
+                alive = true;
+            }
+            if (!alive || bail)
+            {
+                objects.erase(o_it);
+            }
+        }
+    }*/
 }
 
-Unit::WeakHandle ARegion::GetUnit(size_t num)
+Unit::WeakHandle ARegion::GetUnit(size_t num_to_find)
 {
-    for(const auto&obj: objects) {
-        const auto& u = obj->GetUnit(num);
-        if (!u.expired()) {
+    for(const auto&obj: objects)
+    {
+        const auto& u = obj->GetUnit(num_to_find);
+        if (!u.expired())
+        {
             return u;
         }
     }
@@ -935,7 +976,24 @@ Unit::WeakHandle ARegion::GetUnitId(const UnitId& id, size_t faction)
 void ARegion::DeduplicateUnitList(std::list<UnitId>& list, size_t faction)
 {
     std::set<UnitId> seen_ids;
-    auto it = list.begin();
+    list.remove_if([&](const auto& uid){
+        const auto& u = GetUnitId(uid, faction);
+        if(u.expired())
+        {
+            return false;
+        }
+        if(!seen_ids.count(uid))
+        {
+            seen_ids.insert(uid);
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    });
+
+    /*auto it = list.begin();
     while(it != list.end())
     {
         const auto& u = GetUnitId(*it, faction);
@@ -952,7 +1010,7 @@ void ARegion::DeduplicateUnitList(std::list<UnitId>& list, size_t faction)
         {
             it = list.erase(it);
         }
-    }
+    }*/
 
     /*forlist(list) {
         id = dynamic_cast<UnitId *>(elem);
@@ -1144,11 +1202,11 @@ void ARegion::Readin(Ainfile& f, const PtrList<Faction>& facs, ATL_VER v)
     int i = f.GetInt<int>();
     buildingseq = 1;
     for (int j=0; j<i; j++) {
-        Object::Handle& temp = AddObject();
-        temp->Readin(f, facs, v);
-        if (temp->num >= buildingseq)
+        Object::Handle& temp_obj = AddObject();
+        temp_obj->Readin(f, facs, v);
+        if (temp_obj->num >= buildingseq)
         {
-            buildingseq = temp->num + 1;
+            buildingseq = temp_obj->num + 1;
         }
     }
     fleetalias = 1;
@@ -1501,7 +1559,6 @@ void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_
             }
             if (sawgate) {
                 if (gateopen) {
-                    AString temp;
                     temp = "There is a Gate here (Gate ";
                     temp += gate;
                     if (!Globals->DISPERSE_GATE_NUMBERS) {
@@ -1935,18 +1992,28 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
 
     AString skname = spell;
     Skills sp = LookupSkill(skname);
-    for(const auto& o: objects) {
-        for(const auto& u: o->units) {
-            if (u->faction.lock() == caster->faction.lock()) continue;
-            if (u->GetSkill(sp)) {
-                if (!GetFaction(flist, u->faction.lock()->num)) {
-                    flist.emplace_back(u->faction);
+    const auto& caster_fac = caster->faction.lock();
+    for(const auto& o: objects)
+    {
+        for(const auto& u: o->units)
+        {
+            const auto& ufac = u->faction.lock();
+            if (ufac == caster_fac)
+            {
+                continue;
+            }
+            if (u->GetSkill(sp))
+            {
+                if (!GetFaction(flist, ufac->num))
+                {
+                    flist.push_back(ufac);
                 }
             }
         }
     }
 
-    for(const auto& fp: flist) {
+    for(const auto& fp: flist)
+    {
         fp->Event(caster->name + " uses " + SkillStrs(sp) + " in " + Print(pRegs) + ".");
     }
     return true;
@@ -1956,19 +2023,26 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
 // Procedure to notify all units in city about city name change
 void ARegion::NotifyCity(const Unit::Handle& caster, AString& oldname, AString& newname)
 {
-    WeakPtrList<Faction> flist;
+    PtrList<Faction> flist;
+
+    const auto& caster_fac = caster->faction.lock();
     for(const auto& o: objects) {
         for(const auto& u: o->units) {
-            if (u->faction.lock() == caster->faction.lock()) continue;
-            if (GetFaction2(flist, u->faction.lock()->num).expired()) {
-                flist.push_back(u->faction);
+            const auto& ufac = u->faction.lock();
+            if (ufac == caster_fac)
+            {
+                continue;
+            }
+            if (GetFaction(flist, ufac->num))
+            {
+                flist.push_back(ufac);
             }
         }
     }
+
+    for(const auto& fp: flist)
     {
-        for(const auto& fp: flist) {
-            fp.lock()->Event(caster->name + " renames " + oldname + " to " + newname + ".");
-        }
+        fp->Event(caster->name + " renames " + oldname + " to " + newname + ".");
     }
 }
 
@@ -2088,7 +2162,7 @@ ARegionList::ARegionList()
 
 void ARegionList::WriteRegions(Aoutfile& f)
 {
-    f.PutInt(regions_.size());
+    f.PutInt(size());
 
     f.PutInt(numLevels);
     for (const auto& pRegs: pRegionArrays) {
@@ -2103,23 +2177,24 @@ void ARegionList::WriteRegions(Aoutfile& f)
     }
 
     f.PutInt(numberofgates);
-    for(const auto& reg: regions_)
-    {
+    for_each([&](const auto& reg){
         reg->Writeout(f);
-    }
-    {
-        f.PutStr("Neighbors");
-        for(const auto& reg: regions_)
+    });
+
+    f.PutStr("Neighbors");
+    for_each([&](const auto& reg){
+        for (const auto& n: reg->neighbors)
         {
-            for (const auto& n: reg->neighbors) {
-                if (!n.expired()) {
-                    f.PutInt(n.lock()->num);
-                } else {
-                    f.PutInt(-1);
-                }
+            if (!n.expired())
+            {
+                f.PutInt(n.lock()->num);
+            }
+            else
+            {
+                f.PutInt(-1);
             }
         }
-    }
+    });
 }
 
 bool ARegionList::ReadRegions(Ainfile& f, const PtrList<Faction>& factions, ATL_VER v)
@@ -2151,7 +2226,7 @@ bool ARegionList::ReadRegions(Ainfile& f, const PtrList<Faction>& factions, ATL_
 
     Awrite("Reading the regions...");
     for (unsigned int i = 0; i < num; i++) {
-        auto& temp = regions_.emplace_back(std::make_shared<ARegion>());
+        auto& temp = emplace_back();
         temp->Readin(f, factions, v);
         fa.SetRegion(temp->num, temp);
 
@@ -2161,23 +2236,27 @@ bool ARegionList::ReadRegions(Ainfile& f, const PtrList<Faction>& factions, ATL_
     Awrite("Setting up the neighbors...");
     {
         f.GetStr();
-        for(const auto& reg: regions_) {
+        for_each([&](const auto& reg){
             for (auto& n: reg->neighbors) {
                 ssize_t j = f.GetInt<ssize_t>();
-                if (j != -1) {
+                if (j != -1)
+                {
                     n = fa.GetRegion(static_cast<size_t>(j));
-                } else {
+                }
+                else
+                {
                     n.reset();
                 }
             }
-        }
+        });
     }
     return true;
 }
 
 ARegion::WeakHandle ARegionList::GetRegion(size_t n)
 {
-    for(const auto& r: regions_) {
+    for(const auto& r: *this)
+    {
         if (r->num == n)
         {
             return r;
@@ -2201,7 +2280,7 @@ ARegion::WeakHandle ARegionList::GetRegion(unsigned int x, unsigned int y, unsig
 
 Location::Handle ARegionList::FindUnit(size_t i)
 {
-    for(const auto& reg: regions_) {
+    for(const auto& reg: *this) {
         for(const auto& obj: reg->objects) {
             for(const auto& u: obj->units) {
                 if (u->num == i) {
@@ -2437,10 +2516,9 @@ void ARegionList::CalcDensities()
     Awrite("Densities:");
     std::array<int, Regions::size()> arr = {0};
 
-    for(const auto& reg: regions_)
-    {
+    for_each([&](const auto& reg){
         arr[reg->type]++;
-    }
+    });
 
     for (size_t i=0; i < arr.size(); ++i)
     {
@@ -2458,9 +2536,11 @@ void ARegionList::TownStatistics()
     int villages = 0;
     int towns = 0;
     int cities = 0;
-    for(const auto& reg: regions_) {
-        if (reg->town) {
-            switch(reg->town->TownType()) {
+    for_each([&](const auto& reg){
+        if (reg->town)
+        {
+            switch(reg->town->TownType())
+            {
                 case TownTypeEnum::TOWN_VILLAGE:
                     villages++;
                     break;
@@ -2474,7 +2554,7 @@ void ARegionList::TownStatistics()
                     break;
             }    
         }
-    }
+    });
     int tot = villages + towns + cities;
     int perv = villages * 100 / tot;
     int pert = towns * 100 / tot;
@@ -2490,25 +2570,28 @@ ARegion::WeakHandle ARegionList::FindGate(int x)
 {
     if (x == -1)
     {
-        int count = 0;
-
-        for(const auto& r: regions_) {
-            if (r->gate)
-                count++;
-        }
+        ssize_t count = std::count_if(begin(), end(), [](const auto& r){ return r->gate; });
         count = getrandom(count);
-        for(const auto& r: regions_) {
-            if (r->gate) {
+        for(const auto& r: *this)
+        {
+            if (r->gate)
+            {
                 if (!count)
+                {
                     return r;
+                }
                 count--;
             }
         }
     }
     else
     {
-        for(const auto& r: regions_) {
-            if (r->gate == x) return r;
+        for(const auto& r: *this)
+        {
+            if (r->gate == x)
+            {
+                return r;
+            }
         }
     }
     return ARegion::WeakHandle();
@@ -2553,10 +2636,10 @@ ARegion::WeakHandle ARegionList::FindConnectedRegions(const ARegion::Handle& r, 
 
 ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle start, Directions& dir)
 {
-    for(const auto& r: regions_) {
+    for_each([](const auto& r){
         r->distance.invalidate();
         r->next.reset();
-    }
+    });
 
     start.lock()->distance = 0;
     ARegion::WeakHandle queue = start;
@@ -2671,11 +2754,11 @@ unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const AR
             return 10000000;
         }
 
-        for(const auto& r: regions_) {
+        for_each([](const auto& r){
             r->distance.invalidate();
             r->next.reset();
-        }
-        
+        });
+
         unsigned int zdist = absdiff(one->zloc, two->zloc);
 
         auto start_sp  = start.lock();
@@ -2821,13 +2904,5 @@ Regions ParseTerrain(const AString& token)
 
 void ARegion::RemoveObject(const Object::Handle& o)
 {
-    for(auto it = objects.begin(); it != objects.end(); ++it)
-    {
-        const auto& obj = *it;
-        if(obj == o)
-        {
-            objects.erase(it);
-            return;
-        }
-    }
+    objects.remove(o);
 }

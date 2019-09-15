@@ -57,34 +57,17 @@ public:
     int activity;
 };
 
-class ProductionList {
-private:
-    using list_type = PtrList<Production>;
-
+class ProductionList : public PtrList<Production>
+{
 public:
-    using iterator = list_type::iterator;
-    using const_iterator = list_type::const_iterator;
-
     Production::WeakHandle GetProd(const Items&, const Skills&); /* item type, skill */
     void AddProd(const Production::Handle&);
 
     void Writeout(Aoutfile&);
     void Readin(Ainfile&);
-    void Add(const Items& it, int maxamt);
-    void Add(const Production::Handle& p);
-
-    iterator begin() { return products_.begin(); }
-    iterator end() { return products_.end(); }
-    const_iterator cbegin() const { return products_.cbegin(); }
-    const_iterator cend() const { return products_.cend(); }
-    const_iterator begin() const { return products_.begin(); }
-    const_iterator end() const { return products_.end(); }
-    iterator erase(iterator pos) { return products_.erase(pos); }
-    void clear() { products_.clear(); }
 
 private:
     iterator GetProd_(const Items&, const Skills&); /* item type, skill */
-    list_type products_;
 };
 
 #endif

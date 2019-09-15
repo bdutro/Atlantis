@@ -104,13 +104,13 @@ void Unit::SetMonFlags()
     SetFlag(FLAG_HOLDING, 1);
 }
 
-void Unit::MakeWMon(char const *monname, const Items& mon, size_t num)
+void Unit::MakeWMon(char const *monname, const Items& mon, size_t monnum)
 {
     AString temp(monname);
     SetName(temp);
 
     type = U_WMON;
-    items.SetNum(mon, num);
+    items.SetNum(mon, monnum);
     SetMonFlags();
 }
 
@@ -377,8 +377,8 @@ bool Unit::CanGetSpoil(const Item::Handle& i)
         return false;
     }
 
-    size_t load = items.Weight();
-    
+    const size_t load = items.Weight();
+
     if (flags & FLAG_FLYSPOILS) {
         const auto capacity = ItemDefs[i->type].fly;
         if (FlyingCapacity() + capacity < load + weight)
@@ -427,8 +427,8 @@ bool Unit::CanGetSpoil(const Item::Handle& i)
         const auto object_s = object.lock();
         if(object_s->IsFleet())
         {
-            const int load = object_s->FleetLoad();
-            if (object_s->FleetCapacity() < static_cast<size_t>(load) + weight)
+            const size_t fleet_load = static_cast<size_t>(object_s->FleetLoad());
+            if (object_s->FleetCapacity() < fleet_load + weight)
             {
                 return false;
             }
@@ -842,7 +842,7 @@ void Unit::DefaultOrders(const Object::Handle& obj)
                     {
                         o->advancing = true;
                     }
-                    auto& d = o->dirs.emplace_back(std::make_shared<MoveDir>());
+                    auto& d = o->dirs.emplace_back();
                     d->dir = *i;
                     monthorders = o;
                 }
@@ -886,16 +886,13 @@ void Unit::PostTurn(const ARegion&)
 {
     if (type == U_WMON)
     {
-        auto it = items.begin();
-        while(it != items.end())
+        for(auto it = items.begin(); it != items.end(); ++it)
         {
             const auto& i = *it;
             if (!(ItemDefs[i->type].type & IT_MONSTER))
             {
-                it = items.erase(it);
-                continue;
+                items.erase(it);
             }
-            ++it;
         }
         if (free > 0)
         {
@@ -1403,7 +1400,7 @@ bool Unit::Study(const Skills& sk, int days)
     while (lvl > shown) {
         shown++;
         faction_s->skills.SetDays(sk, shown);
-        faction_s->shows.emplace_back(std::make_shared<ShowSkill>(sk, shown));
+        faction_s->shows.emplace_back(sk, shown);
     }
     return true;
 }
@@ -1571,10 +1568,13 @@ unsigned int Unit::Practice(const Skills& sk)
             }
             // don't raise exp above the maximum days for
             // that unit
-            const size_t max = men * GetDaysByLevel(GetSkillMax(sk));
+            const size_t max_exp = men * GetDaysByLevel(max);
             size_t exp = skills.GetExp(sk);
             exp += men * bonus;
-            if (exp > max) exp = max;
+            if (exp > max_exp)
+            {
+                exp = max_exp;
+            }
             skills.SetExp(sk, exp);
         }
         practiced = true;
@@ -1712,14 +1712,14 @@ size_t Unit::MaintCost()
     return retval;
 }
 
-void Unit::Short(int needed, int hunger)
+void Unit::Short(int needed_amt, int hunger_amt)
 {
     if (faction.lock()->IsNPC())
     {
         return; // Don't starve monsters and the city guard!
     }
 
-    if (needed < 1 && hunger < 1)
+    if (needed_amt < 1 && hunger_amt < 1)
     {
         return;
     }
@@ -1772,14 +1772,14 @@ void Unit::Short(int needed, int hunger)
                 {
                     cost = Globals->MAINTENANCE_COST;
                 }
-                needed -= static_cast<int>(cost);
+                needed_amt -= static_cast<int>(cost);
             }
             else
             {
-                needed -= static_cast<int>(Globals->MAINTENANCE_COST);
+                needed_amt -= static_cast<int>(Globals->MAINTENANCE_COST);
             }
-            hunger -= static_cast<int>(Globals->UPKEEP_MINIMUM_FOOD);
-            if (needed < 1 && hunger < 1)
+            hunger_amt -= static_cast<int>(Globals->UPKEEP_MINIMUM_FOOD);
+            if (needed_amt < 1 && hunger_amt < 1)
             {
                 if (n)
                 {
@@ -1820,14 +1820,14 @@ void Unit::Short(int needed, int hunger)
                 {
                     cost = Globals->LEADER_COST;
                 }
-                needed -= static_cast<int>(cost);
+                needed_amt -= static_cast<int>(cost);
             }
             else
             {
-                needed -= static_cast<int>(Globals->LEADER_COST);
+                needed_amt -= static_cast<int>(Globals->LEADER_COST);
             }
-            hunger -= static_cast<int>(Globals->UPKEEP_MINIMUM_FOOD);
-            if (needed < 1 && hunger < 1)
+            hunger_amt -= static_cast<int>(Globals->UPKEEP_MINIMUM_FOOD);
+            if (needed_amt < 1 && hunger_amt < 1)
             {
                 if (n)
                 {
@@ -2338,7 +2338,7 @@ size_t Unit::Taxers(unsigned int numtaxers)
         if (ItemDefs[pItem->type].type & IT_WEAPON)
         {
             const auto& pWep = FindWeapon(ItemDefs[pItem->type].abr);
-            size_t num = pItem->num;
+            const size_t item_num = pItem->num;
             size_t basesk = 0;
             AString skname = pWep.baseSkill;
             Skills sk = LookupSkill(skname);
@@ -2361,17 +2361,17 @@ size_t Unit::Taxers(unsigned int numtaxers)
             {
                 if (basesk)
                 {
-                    numUsableMelee += num;
+                    numUsableMelee += item_num;
                 }
-                numMelee += num;
+                numMelee += item_num;
             }
             else if (pWep.flags & WeaponType::NOFOOT)
             {
                 if (basesk)
                 {
-                    numUsableMounted += num;
+                    numUsableMounted += item_num;
                 }
-                numMounted += num;
+                numMounted += item_num;
             }
             else
             {
@@ -2379,17 +2379,17 @@ size_t Unit::Taxers(unsigned int numtaxers)
                 {
                     if (basesk)
                     {
-                        numUsableBows += num;
+                        numUsableBows += item_num;
                     }
-                    numBows += num;
+                    numBows += item_num;
                 }
                 else
                 {
                     if (basesk)
                     {
-                        numUsableMelee += num;
+                        numUsableMelee += item_num;
                     }
-                    numMelee += num;
+                    numMelee += item_num;
                 }
             }
         }
@@ -2711,8 +2711,8 @@ Items Unit::GetBattleItem(const AString &itm)
         return Items();
     }
 
-    size_t num = items.GetNum(item);
-    if (num < 1)
+    const size_t item_num = items.GetNum(item);
+    if (item_num < 1)
     {
         return Items();
     }
@@ -2726,7 +2726,7 @@ Items Unit::GetBattleItem(const AString &itm)
     {
         return Items();
     }
-    items.SetNum(item, num - 1);
+    items.SetNum(item, item_num - 1);
     return item;
 }
 
@@ -2743,8 +2743,8 @@ Items Unit::GetArmor(const AString &itm, bool ass)
             return Items();
         }
 
-        const size_t num = items.GetNum(item);
-        if (num < 1)
+        const size_t item_num = items.GetNum(item);
+        if (item_num < 1)
         {
             return Items();
         }
@@ -2753,7 +2753,7 @@ Items Unit::GetArmor(const AString &itm, bool ass)
         {
             return Items();
         }
-        items.SetNum(item, num - 1);
+        items.SetNum(item, item_num - 1);
         return item;
     }
     catch(const NoSuchItemException&)
@@ -2776,8 +2776,8 @@ Items Unit::GetMount(const AString& itm, bool canFly, bool canRide, unsigned int
 
     const MountType& pMnt = FindMount(itm.Str());
 
-    const size_t num = items.GetNum(item);
-    if (num < 1)
+    const size_t item_num = items.GetNum(item);
+    if (item_num < 1)
     {
         return Items();
     }
@@ -2833,7 +2833,7 @@ Items Unit::GetMount(const AString& itm, bool canFly, bool canRide, unsigned int
     }
 
     // Get the mount
-    items.SetNum(item, num - 1);
+    items.SetNum(item, item_num - 1);
     return item;
 }
 
@@ -2846,8 +2846,8 @@ Items Unit::GetWeapon(const AString& itm, const Items& riding, unsigned int ridi
     {
         const auto& pWep = FindWeapon(itm.Str());
 
-        const size_t num = items.GetNum(item);
-        if (num < 1)
+        const size_t item_num = items.GetNum(item);
+        if (item_num < 1)
         {
             return Items();
         }
@@ -2906,7 +2906,7 @@ Items Unit::GetWeapon(const AString& itm, const Items& riding, unsigned int ridi
         }
 
         // get the weapon
-        items.SetNum(item, num-1);
+        items.SetNum(item, item_num - 1);
         return item;
     }
     catch(const NoSuchItemException&)
@@ -2935,9 +2935,14 @@ void Unit::Detach()
 
 void Unit::MoveUnit(const std::weak_ptr<Object>& toobj)
 {
-    if (!object.expired())
+    const auto old_obj = object;
+    object = toobj;
+    if (!object.expired()) {
+        object.lock()->units.push_back(shared_from_this());
+    }
+    if (!old_obj.expired())
     {
-        auto& ulist = object.lock()->units;
+        auto& ulist = old_obj.lock()->units;
         for(auto it = ulist.begin(); it != ulist.end(); ++it)
         {
             const auto& u = *it;
@@ -2947,10 +2952,6 @@ void Unit::MoveUnit(const std::weak_ptr<Object>& toobj)
                 break;
             }
         }
-    }
-    object = toobj;
-    if (!object.expired()) {
-        object.lock()->units.push_back(shared_from_this());
     }
 }
 

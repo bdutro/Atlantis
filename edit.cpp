@@ -225,7 +225,7 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                     }
                     */
 
-                    const auto& o = pReg->objects.emplace_back(std::make_shared<Object>(pReg));
+                    const auto& o = pReg->objects.emplace_back(pReg);
                     o->type = objType;
                     o->incomplete = 0;
                     o->inner = -1;
@@ -631,14 +631,13 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     pReg->UpdateEditRegion();
                 }
                 else if (pToken == "p") {
-                    auto it = pReg->products.begin();
-                    while(it != pReg->products.end()) {
+                    for(auto it = pReg->products.begin(); it != pReg->products.end(); ++it)
+                    {
                         const auto& p = *it;
-                        if (p->itemtype!=Items::Types::I_SILVER) {
-                            it = pReg->products.erase(it);
-                            continue;
+                        if (p->itemtype!=Items::Types::I_SILVER)
+                        {
+                            pReg->products.erase(it);
                         }
-                        ++it;
                     }
                     pReg->SetupProds();
                 }
@@ -681,7 +680,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                     if (pReg->town) {
                         townname = pReg->town->name;
                         pReg->town.reset();
-                        pReg->markets.DeleteAll();
+                        pReg->markets.clear();
                     }
                     pReg->AddTown(townname);
 
@@ -690,7 +689,7 @@ void Game::EditGameRegionTerrain(const ARegion::Handle& pReg)
                 else if (pToken == "deltown") {
                     if (pReg->town) {
                         pReg->town.reset();
-                        pReg->markets.DeleteAll();
+                        pReg->markets.clear();
                         pReg->UpdateEditRegion();
                     }
                 }
@@ -768,7 +767,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
 
                 // regenerate markets
                 if (pToken == "g") {
-                    pReg->markets.DeleteAll();
+                    pReg->markets.clear();
                     pReg->SetupCityMarket();
                     pReg->UpdateEditRegion();
                 }
@@ -819,10 +818,11 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         }
                     }
 
-                    if (!done) {
+                    if (!done)
+                    {
                         int price = static_cast<int>((ItemDefs[mitem].baseprice * (100 + getrandom(50UL))) / 100);
     //                    m->PostTurn(pReg->Population(),pReg->Wages()); // updates amounts
-                        pReg->markets.Add(M_SELL, mitem, price, 0, minimum, maximum, 0, 0);
+                        pReg->markets.emplace_back(M_SELL, mitem, price, 0, minimum, maximum, 0, 0);
                     }
 
                 }
@@ -873,10 +873,11 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         }
                     }
 
-                    if (!done) {
+                    if (!done)
+                    {
                         int price = static_cast<int>((ItemDefs[mitem].baseprice * (100 + getrandom(50UL))) / 100);
                         int mamount = minimum + ( maximum * population / 5000 );
-                        pReg->markets.Add(M_SELL, mitem, price, mamount, 0, 5000, minimum, maximum);
+                        pReg->markets.emplace_back(M_SELL, mitem, price, mamount, 0, 5000, minimum, maximum);
                     }
 
                 }
@@ -913,10 +914,10 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         }
                     }
 
-                    if (!done) {
-                        Market::Handle m = std::make_shared<Market>(M_SELL, mitem, price, 0, 0, 5000, 0, 0);
+                    if (!done)
+                    {
+                        auto& m = pReg->markets.emplace_back(M_SELL, mitem, price, 0, 0, 5000, 0, 0);
                         m->baseprice = baseprice;
-                        pReg->markets.Add(m);
                     }
 
                 }
@@ -933,22 +934,26 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
 
                     bool done = false;
-                    auto it = pReg->markets.begin();
-                    while(it != pReg->markets.end()) {
+                    for(auto it = pReg->markets.begin(); it != pReg->markets.end(); ++it)
+                    {
                         const auto& m = *it;
                         if (m->item == mitem) {
-                            if (!done) {
+                            if (!done)
+                            {
                                 if (m->type == M_SELL) m->type = M_BUY;
                                 else m->type = M_SELL;
                                 done = true;
-                            } else {
-                                it = pReg->markets.erase(it);
-                                continue;
+                            }
+                            else
+                            {
+                                pReg->markets.erase(it);
                             }
                         }
-                        ++it;
                     }
-                    if (!done) Awrite("No such market");
+                    if (!done)
+                    {
+                        Awrite("No such market");
+                    }
                 }
                 else if (pToken == "d") {
                     pToken = pStr.gettoken();
@@ -963,17 +968,19 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     }
 
                     bool done = false;
-                    auto it = pReg->markets.begin();
-                    while(it != pReg->markets.end()) {
+                    for(auto it = pReg->markets.begin(); it != pReg->markets.end(); ++it)
+                    {
                         const auto& m = *it;
-                        if (m->item == mitem) {
-                            it = pReg->markets.erase(it);
+                        if (m->item == mitem)
+                        {
+                            pReg->markets.erase(it);
                             done = true;
-                            continue;
                         }
-                        ++it;
                     }
-                    if (!done) Awrite("No such market");
+                    if (!done)
+                    {
+                        Awrite("No such market");
+                    }
                 }
             }
             while( 0 );

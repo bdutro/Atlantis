@@ -142,47 +142,20 @@ AString Market::Report()
 
 void MarketList::PostTurn(int population, int wages)
 {
-    for(const auto& elem: markets_) {
-        elem->PostTurn(population, wages);
-    }
+    for_each([&](const auto& elem){elem->PostTurn(population, wages);});
 }
 
 void MarketList::Writeout(Aoutfile& f)
 {
-    f.PutInt(markets_.size());
-    for(const auto& elem: markets_)
-    {
-        elem->Writeout(f);
-    }
+    f.PutInt(size());
+    for_each([&](const auto& elem){elem->Writeout(f);});
 }
 
 void MarketList::Readin(Ainfile& f)
 {
     size_t n = f.GetInt<size_t>();
     for (size_t i = 0; i < n; ++i) {
-        auto& m = markets_.emplace_back(std::make_shared<Market>());
+        auto& m = emplace_back();
         m->Readin(f);
     }
-}
-
-void MarketList::DeleteAll()
-{
-    markets_.clear();
-}
-
-void MarketList::Add(const Market::Handle& m)
-{
-    markets_.push_back(m);
-}
-
-void MarketList::Add(int type, const Items& item, int price, int amount, int minpop, int maxpop, int minamt, int maxamt)
-{
-    markets_.emplace_back(std::make_shared<Market>(type,
-                                                   item,
-                                                   price,
-                                                   amount,
-                                                   minpop,
-                                                   maxpop,
-                                                   minamt,
-                                                   maxamt));
 }

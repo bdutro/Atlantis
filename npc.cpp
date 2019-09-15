@@ -440,11 +440,15 @@ Unit::Handle Game::MakeManUnit(const Faction::Handle& fac, const Items& mantype,
     const AString ws1(WeaponDefs[weapon].baseSkill);
     const AString ws2(WeaponDefs[weapon].orSkill);
     if ((LookupSkill(ws1) != sk) && (LookupSkill(ws2) != sk))
+    {
         sk = LookupSkill(ws1);
+    }
     unsigned int maxskill = men.defaultlevel;
     bool special = false;
-    for (const auto& s: men.skills) {
-        if (FindSkill(s) == FindSkill(SkillDefs[sk].abbr)) {
+    for (const auto& ms: men.skills)
+    {
+        if (FindSkill(ms) == FindSkill(SkillDefs[sk].abbr))
+        {
             special = true;
         }        
     }

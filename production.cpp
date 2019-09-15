@@ -104,18 +104,18 @@ AString Production::WriteReport()
 
 void ProductionList::Writeout(Aoutfile& f)
 {
-    f.PutInt(products_.size());
-    for(const auto& p: products_)
-    {
+    f.PutInt(size());
+    for_each([&](const auto& p){
         p->Writeout(f);
-    }
+    });
 }
 
 void ProductionList::Readin(Ainfile& f)
 {
     size_t n = f.GetInt<size_t>();
-    for (size_t i = 0; i < n; ++i) {
-        auto& p = products_.emplace_back(std::make_shared<Production>());
+    for (size_t i = 0; i < n; ++i)
+    {
+        auto& p = emplace_back();
         p->Readin(f);
     }
 }
@@ -124,7 +124,7 @@ Production::WeakHandle ProductionList::GetProd(const Items& t, const Skills& s)
 {
     Production::WeakHandle p;
     auto it = GetProd_(t, s);
-    if(it != products_.end())
+    if(it != end())
     {
         p = *it;
     }
@@ -134,9 +134,9 @@ Production::WeakHandle ProductionList::GetProd(const Items& t, const Skills& s)
 
 ProductionList::iterator ProductionList::GetProd_(const Items& t, const Skills& s)
 {
-    ProductionList::iterator found_it = products_.end();
+    ProductionList::iterator found_it = end();
 
-    for(auto it = products_.begin(); it != products_.end(); ++it)
+    for(auto it = begin(); it != end(); ++it)
     {
         const auto& p = *it;
         if(p->itemtype == t && p->skill == s)
@@ -152,19 +152,10 @@ ProductionList::iterator ProductionList::GetProd_(const Items& t, const Skills& 
 void ProductionList::AddProd(const Production::Handle& p)
 {
     iterator it = GetProd_(p->itemtype, p->skill);
-    if (it != end()) {
-        products_.erase(it);
+    if (it != end())
+    {
+        erase(it);
     }
     
-    products_.push_back(p);
-}
-
-void ProductionList::Add(const Items& it, int maxamt)
-{
-    products_.emplace_back(std::make_shared<Production>(it, maxamt));
-}
-
-void ProductionList::Add(const Production::Handle& p)
-{
-    products_.push_back(p);
+    push_back(p);
 }

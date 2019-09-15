@@ -615,27 +615,34 @@ void ARegion::GetMapLine(std::string& buffer, unsigned int line, const ARegionLi
     std::copy(TemplateMap[line], TemplateMap[line] + TMPL_MAP_OFS, dest);
 
     size_t t = (static_cast<size_t>(type) + 1) * 2;
-    const char* name = (town ? town->name.Str() : nullptr);
+    const char* town_name = (town ? town->name.Str() : nullptr);
 
     auto i = Directions::begin();
-    for (;;) {
-
+    for (;;)
+    {
         unsigned int x = dircrd[*i*2];
         unsigned int y = dircrd[*i*2+1];
 
-        if (y == line || y+1 == line) {
-            if (y == line) {
-                if (name) {
-                    size_t len = strlen(name);
+        if (y == line || y+1 == line)
+        {
+            if (y == line)
+            {
+                if (town_name)
+                {
+                    size_t len = strlen(town_name);
                     if (len > FILL_SIZE)
                     {
                         len = FILL_SIZE;
                     }
-                    std::copy(name, name + len, dest + x);
-                } else {
+                    std::copy(town_name, town_name + len, dest + x);
+                }
+                else
+                {
                     std::copy(ter_fill[t], ter_fill[t] + FILL_SIZE, dest + x);
                 }
-            } else {
+            }
+            else
+            {
                 t++;
                 std::copy(ter_fill[t], ter_fill[t] + FILL_SIZE, dest + x);
             }
@@ -647,13 +654,16 @@ void ARegion::GetMapLine(std::string& buffer, unsigned int line, const ARegionLi
         }
 
         const auto& r_w = neighbors[*i];
-        if (!r_w.expired()) {
+        if (!r_w.expired())
+        {
             const auto r = r_w.lock();
             t = (r->type + 1) * 2;
-            name = (r->town ? r->town->name.Str() : nullptr);
-        } else {
+            town_name = (r->town ? r->town->name.Str() : nullptr);
+        }
+        else
+        {
             t = 0;
-            name = nullptr;
+            town_name = nullptr;
         }
 
         ++i;

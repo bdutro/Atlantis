@@ -241,20 +241,32 @@ void ARegion::SetupPop()
         e->amount += wbonus / Globals->ENTERTAIN_FRACTION;
         e->baseamount += wbonus / Globals->ENTERTAIN_FRACTION;
     }
-    products.Add(w);
-    products.Add(e);
+    products.push_back(w);
+    products.push_back(e);
 
     float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float assignment above
     // Setup Recruiting
-    markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                Population()/25, 0, 10000, 0, 2000);
+    markets.emplace_back(M_BUY,
+                         race,
+                         calculateWagesWithRatio(ratio),
+                         Population() / 25,
+                         0,
+                         10000,
+                         0,
+                         2000);
 
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
-        markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                    Population()/125, 0, 10000, 0, 400);
+        markets.emplace_back(M_BUY,
+                             Items::Types::I_LEADERS,
+                             calculateWagesWithRatio(ratio),
+                             Population() / 125,
+                             0,
+                             10000,
+                             0,
+                             400);
     }
 }
 
@@ -263,7 +275,10 @@ void ARegion::SetupPop()
 void ARegion::SetIncome()
 {
     /* do nothing in unpopulated regions */
-    if (basepopulation == 0) return;
+    if (basepopulation == 0)
+    {
+        return;
+    }
 
     maxwages = Wages();
     
@@ -279,23 +294,23 @@ void ARegion::SetIncome()
         float wpfactor = (120 / (61 - static_cast<float>(pp) / 50));
         pp += static_cast<int>((wpfactor * static_cast<float>(pp) + 3000)/(wpfactor + 1));
     }
-    int maxwages = static_cast<int>(static_cast<float>(pp * (Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST))) / 50);
-    if (maxwages < 0) maxwages = 0;
+    int prod_maxwages = static_cast<int>(static_cast<float>(pp * (Wages() - static_cast<int>(10 * Globals->MAINTENANCE_COST))) / 50);
+    if (prod_maxwages < 0) prod_maxwages = 0;
     Production::WeakHandle w_weak = products.GetProd(Items::Types::I_SILVER,-1);
     Production::Handle w;
     // In some cases (ie. after products.DeleteAll() in EditGameRegionTerrain)
     // Items::Types::I_SILVER is not in ProductionList
-    if( w_weak.expired() ) {
-      w = std::make_shared<Production>();
-      products.Add(w);
+    if( w_weak.expired() )
+    {
+        w = products.emplace_back();
     }
     else
     {
         w = w_weak.lock();
     }
     w->itemtype = Items::Types::I_SILVER;
-    w->amount = maxwages / Globals->WORK_FRACTION;
-    w->baseamount = maxwages / Globals->WORK_FRACTION;
+    w->amount = prod_maxwages / Globals->WORK_FRACTION;
+    w->baseamount = prod_maxwages / Globals->WORK_FRACTION;
     w->skill.invalidate();
     w->productivity = wages;
 
@@ -313,9 +328,9 @@ void ARegion::SetIncome()
                                                   Skills::Types::S_ENTERTAINMENT);
     // In some cases (ie. after products.DeleteAll() in EditGameRegionTerrain)
     // Items::Types::I_SILVER is not in ProductionList
-    if( e_w.expired() ) {
-      e = std::make_shared<Production>();
-      products.Add(e);
+    if( e_w.expired() )
+    {
+        e = products.emplace_back();
     }
     else
     {
@@ -337,7 +352,7 @@ void ARegion::SetIncome()
         w->baseamount += wbonus / Globals->WORK_FRACTION;
         e->amount += wbonus / Globals->ENTERTAIN_FRACTION;
         e->baseamount += wbonus / Globals->ENTERTAIN_FRACTION;
-    }    
+    }
 }
 
 void ARegion::DisbandInRegion(const Items& item, int amt)
@@ -471,7 +486,14 @@ void ARegion::SetupCityMarket()
 
                 cap = (citymax * 3/4) - 5000;
                 if (cap < 0) cap = citymax/2;
-                markets.Add(M_SELL, i, static_cast<int>(price), amt, population, population + cap, amt, 2*amt);
+                markets.emplace_back(M_SELL,
+                                     i,
+                                     static_cast<int>(price),
+                                     amt,
+                                     population,
+                                     population + cap,
+                                     amt,
+                                     2 * amt);
             } else if (it == Items::Types::I_FOOD) {
                 // Add foodstuffs directly to market
                 int amt = Globals->CITY_MARKET_NORMAL_AMT;
@@ -485,7 +507,14 @@ void ARegion::SetupCityMarket()
 
                 cap = (citymax * 3/4) - 5000;
                 if (cap < 0) cap = citymax/2;
-                markets.Add(M_BUY, i, price, amt, population, population+2*cap, amt, amt*5);
+                markets.emplace_back(M_BUY,
+                                     i,
+                                     price,
+                                     amt,
+                                     population,
+                                     population + 2 * cap,
+                                     amt,
+                                     5 * amt);
             } else if (!ItemDefs[i].pInput[0].item.isValid()) {
                 // Basic resource
                 // Add to supply?
@@ -550,8 +579,14 @@ void ARegion::SetupCityMarket()
             if (cap < citymax/2) cap = citymax / 2;
             offset = citymax / 8;
             if (cap+offset < citymax) {
-                markets.Add(M_SELL, i, price, amt/6, population+cap+offset,
-                    population+citymax, 0, amt);
+                markets.emplace_back(M_SELL,
+                                     i,
+                                     price,
+                                     amt / 6,
+                                     population + cap + offset,
+                                     population + citymax,
+                                     0,
+                                     amt);
             }
         }
     }
@@ -583,15 +618,21 @@ void ARegion::SetupCityMarket()
             cap = (citymax *3/4) - 5000;
             if (cap < citymax/2) cap = citymax / 2;
             offset = (citymax/20) + ((citymax/5) * 2);
-            markets.Add(M_SELL, i, price, amt/6, population+cap,
-                    population+citymax, 0, amt);
+            markets.emplace_back(M_SELL,
+                                 i,
+                                 price,
+                                 amt / 6,
+                                 population + cap,
+                                 population + citymax,
+                                 0,
+                                 amt);
         }
     }
     
     /* Add demand (normal) items */
-    int num = 4;
+    int num_items = 4;
     int sum = 1;
-    while((num > 0) && (sum > 0)) {
+    while((num_items > 0) && (sum > 0)) {
         int dm = 0;
         for (size_t i = 0; i < Items::size(); i++)
         {
@@ -618,17 +659,23 @@ void ARegion::SetupCityMarket()
         }
                             
         cap = (citymax/4);
-        offset = - (citymax/20) + ((5-num) * citymax * 3/40);
-        markets.Add(M_SELL, i, price, amt/6,
-            population+cap+offset, population+citymax, 0, amt);
+        offset = - (citymax/20) + ((5-num_items) * citymax * 3/40);
+        markets.emplace_back(M_SELL,
+                             i,
+                             price,
+                             amt / 6,
+                             population + cap + offset,
+                             population + citymax,
+                             0,
+                             amt);
         demand[i] = 0;
-        num--;    
+        num_items--;    
     }
     
     /* Add supply (normal) items */
-    num = 2;
+    num_items = 2;
     sum = 1;
-    while((num > 0) && (sum > 0)) {
+    while((num_items > 0) && (sum > 0)) {
         int su = 0;
         for (size_t i = 0; i < Items::size(); i++)
         {
@@ -655,13 +702,18 @@ void ARegion::SetupCityMarket()
         }
                             
         cap = (citymax/4);
-        offset = ((3-num) * citymax * 3 / 40);
+        offset = ((3-num_items) * citymax * 3 / 40);
         if (supply[i] < 4) offset += citymax / 20;
-        markets.Add(M_BUY, i, price, 0,
-            population+cap+offset, population+citymax,
-            0, amt);
+        markets.emplace_back(M_BUY,
+                             i,
+                             price,
+                             0,
+                             population + cap + offset,
+                             population + citymax,
+                             0,
+                             amt);
         supply[i] = 0;
-        num--;
+        num_items--;
     }
     /* Set up the trade items */
     int buy1 = getrandom(numtrade);
@@ -718,8 +770,14 @@ void ARegion::SetupCityMarket()
                 tradesell++;
                 offset = - (citymax/20) + tradesell * (tradesell * tradesell * citymax/40);
                 if (cap + offset < citymax) {
-                    markets.Add(M_SELL, i, price, amt/5, cap+population+offset,
-                        citymax+population, 0, amt);
+                    markets.emplace_back(M_SELL,
+                                         i,
+                                         price,
+                                         amt / 5,
+                                         cap + population + offset,
+                                         citymax + population,
+                                         0,
+                                         amt);
                 }
             }
 
@@ -741,8 +799,14 @@ void ARegion::SetupCityMarket()
                 cap = (citymax/2);
                 offset = tradebuy++ * (citymax/6);
                 if (cap+offset < citymax) {
-                    markets.Add(M_BUY, i, price, amt/6, cap+population+offset,
-                        citymax+population, 0, amt);
+                    markets.emplace_back(M_BUY,
+                                         i,
+                                         price,
+                                         amt / 6,
+                                         cap + population + offset,
+                                         citymax + population,
+                                         0,
+                                         amt);
                 }
             }
         }
@@ -761,15 +825,21 @@ void ARegion::SetupProds()
             switch (foodchoice) {
                 case 0:
                     if (!(ItemDefs[Items::Types::I_GRAIN].flags & ItemType::DISABLED))
-                        products.Add(Items::Types::I_GRAIN, static_cast<int>(typer.economy));
+                    {
+                        products.emplace_back(Items::Types::I_GRAIN, static_cast<int>(typer.economy));
+                    }
                     break;
                 case 1:
                     if (!(ItemDefs[Items::Types::I_LIVESTOCK].flags & ItemType::DISABLED))
-                        products.Add(Items::Types::I_LIVESTOCK, static_cast<int>(typer.economy));
+                    {
+                        products.emplace_back(Items::Types::I_LIVESTOCK, static_cast<int>(typer.economy));
+                    }
                     break;
                 case 2:
                     if (!(ItemDefs[Items::Types::I_FISH].flags & ItemType::DISABLED))
-                        products.Add(Items::Types::I_FISH, static_cast<int>(typer.economy));
+                    {
+                        products.emplace_back(Items::Types::I_FISH, static_cast<int>(typer.economy));
+                    }
                     break;
             }
         }
@@ -781,9 +851,9 @@ void ARegion::SetupProds()
         int chance = prod.chance;
         int amt = prod.amount;
         if (item.isValid()) {
-            if (!(ItemDefs[item].flags & ItemType::DISABLED) &&
-                    (getrandom(100) < chance)) {
-                products.Add(item, amt);
+            if (!(ItemDefs[item].flags & ItemType::DISABLED) && (getrandom(100) < chance))
+            {
+                products.emplace_back(item, amt);
             }
         }
     }
@@ -814,27 +884,26 @@ void ARegion::AddTown(TownTypeEnum size)
 /* Create a town of specific type with name
  * All other town creation functions call this one
  * in the last instance. */
-void ARegion::AddTown(TownTypeEnum size, const AString& name)
+void ARegion::AddTown(TownTypeEnum size, const AString& town_name)
 {
     town = std::make_shared<TownInfo>();
-    town->name = name;
+    town->name = town_name;
     SetTownType(size);
     SetupCityMarket();
     /* remove all lairs */
-    auto it = objects.begin();
-    while(it != objects.end()) {
-        const auto& obj = *it;
+
+    objects.remove_if([](auto& obj){
         if (obj->type != Objects::Types::O_DUMMY)
         {
-            if ((ObjectDefs[obj->type].monster.isValid())
-                && (!(ObjectDefs[obj->type].flags & ObjectType::CANENTER))) {
+            if ((ObjectDefs[obj->type].monster.isValid()) &&
+                (!(ObjectDefs[obj->type].flags & ObjectType::CANENTER)))
+            {
                     obj->units.clear();
-                    it = objects.erase(it);
-                    continue;
+                    return true;
             }
         }
-        ++it;
-    }
+        return false;
+    });
 }
 
 // Used at start to set initial town's size
@@ -853,7 +922,7 @@ TownTypeEnum ARegion::DetermineTownSize()
 }
 
 // Set an existing town to a specific town type
-void ARegion::SetTownType(TownTypeEnum type)
+void ARegion::SetTownType(TownTypeEnum town_type)
 {
     if (!town) return;
     // set some basics
@@ -862,9 +931,9 @@ void ARegion::SetTownType(TownTypeEnum type)
     town->dev = TownDevelopment();
     
     // Sanity check
-    if ((type < TownTypeEnum::TOWN_VILLAGE) || (type > TownTypeEnum::TOWN_CITY)) return;
+    if ((town_type < TownTypeEnum::TOWN_VILLAGE) || (town_type > TownTypeEnum::TOWN_CITY)) return;
 
-    int level = static_cast<int>(type);
+    int level = static_cast<int>(town_type);
     // increment values
     int poptown = getrandom((level -1) * (level -1) * Globals->CITY_POP/12) + level * level * Globals->CITY_POP/12;
     town->hab += poptown;
@@ -873,9 +942,9 @@ void ARegion::SetTownType(TownTypeEnum type)
     town->dev = TownDevelopment();
 
     // now increment until we reach the right size
-    while(town->TownType() != type) {
+    while(town->TownType() != town_type) {
         // Increase?
-        if (type > town->TownType()) {
+        if (town_type > town->TownType()) {
             development += static_cast<int>(getrandom(Globals->TOWN_DEVELOPMENT / 10 + 5));
             int poplus = getrandom(Globals->CITY_POP/3) + getrandom(Globals->CITY_POP/3);
             // don't overgrow!
@@ -908,26 +977,45 @@ void ARegion::UpdateEditRegion()
     markets.PostTurn(Population(), Wages());
     
     //Replace man selling
-    auto it = markets.begin();
-    while(it != markets.end()) {
-        const auto& m = *it;
-        if (ItemDefs[m->item].type & IT_MAN) {
-            it = markets.erase(it);
-            continue;
+    markets.remove_if([](const auto& m){
+        if (ItemDefs[m->item].type & IT_MAN)
+        {
+            return true;
         }
-        ++it;
-    }
+
+        return false;
+    });
+    /*for(auto it = markets.begin(); it != markets.end(); ++it)
+    {
+        const auto& m = *it;
+        if (ItemDefs[m->item].type & IT_MAN)
+        {
+            markets.erase(it);
+        }
+    }*/
 
     float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float calculation above
-    markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                            Population()/25, 0, 10000, 0, 2000);
+    markets.emplace_back(M_BUY,
+                         race,
+                         calculateWagesWithRatio(ratio),
+                         Population() / 25,
+                         0,
+                         10000,
+                         0,
+                         2000);
 
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float calculation above
-        markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                        Population()/125, 0, 10000, 0, 400);
+        markets.emplace_back(M_BUY,
+                             Items::Types::I_LEADERS,
+                             calculateWagesWithRatio(ratio),
+                             Population() / 125,
+                             0,
+                             10000,
+                             0,
+                             400);
     }    
 }
 
@@ -1042,14 +1130,26 @@ void ARegion::SetupEditRegion()
     float ratio = static_cast<float>(ItemDefs[race].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
     // hack: include wage factor of 10 in float assignment above
     // Setup Recruiting
-    markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                            Population()/25, 0, 10000, 0, 2000);
+    markets.emplace_back(M_BUY,
+                         race,
+                         calculateWagesWithRatio(ratio),
+                         Population() / 25,
+                         0,
+                         10000,
+                         0,
+                         2000);
 
     if (Globals->LEADERS_EXIST) {
         ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) / static_cast<float>(Globals->BASE_MAN_COST * 10);
         // hack: include wage factor of 10 in float assignment above
-        markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                        Population()/125, 0, 10000, 0, 400);
+        markets.emplace_back(M_BUY,
+                             Items::Types::I_LEADERS,
+                             calculateWagesWithRatio(ratio),
+                             Population() / 125,
+                             0,
+                             10000,
+                             0,
+                             400);
     }
 }
 
@@ -1599,18 +1699,30 @@ void ARegion::PostTurn(const ARegionList& pRegs)
             }
         }
         if (!done) {
-            markets.DeleteAll();
+            markets.clear();
             SetupCityMarket();
             float ratio = static_cast<float>(ItemDefs[race].baseprice) /
                           static_cast<float>(Globals->BASE_MAN_COST * 10);
             // Setup Recruiting
-            markets.Add(M_BUY, race, calculateWagesWithRatio(ratio),
-                    Population()/25, 0, 10000, 0, 2000);
+            markets.emplace_back(M_BUY,
+                                 race,
+                                 calculateWagesWithRatio(ratio),
+                                 Population() / 25,
+                                 0,
+                                 10000,
+                                 0,
+                                 2000);
             if (Globals->LEADERS_EXIST) {
                 ratio = static_cast<float>(ItemDefs[Items::Types::I_LEADERS].baseprice) /
                         static_cast<float>(Globals->BASE_MAN_COST);
-                markets.Add(M_BUY, Items::Types::I_LEADERS, calculateWagesWithRatio(ratio),
-                        Population()/125, 0, 10000, 0, 400);
+                markets.emplace_back(M_BUY,
+                                     Items::Types::I_LEADERS,
+                                     calculateWagesWithRatio(ratio),
+                                     Population() / 125,
+                                     0,
+                                     10000,
+                                     0,
+                                     400);
             }
         }
     }

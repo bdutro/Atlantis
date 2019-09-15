@@ -159,7 +159,7 @@ void Game::RunMovementOrders()
                         (u->monthorders->type == Orders::Types::O_MOVE ||
                         u->monthorders->type == Orders::Types::O_ADVANCE)) {
                     if (!mo->dirs.empty()) {
-                        auto& tOrder = u->oldorders.emplace_front(std::make_shared<AString>());
+                        auto& tOrder = u->oldorders.emplace_front();
                         if (mo->advancing)
                             *tOrder = "ADVANCE";
                         else
@@ -203,7 +203,7 @@ void Game::RunMovementOrders()
                     if (!so->dirs.empty()) {
                         u->Event("SAIL: Can't sail that far;"
                             " remaining moves queued.");
-                        auto& tOrder = u->oldorders.emplace_front(std::make_shared<AString>("SAIL"));
+                        auto& tOrder = u->oldorders.emplace_front("SAIL");
                         for(const auto& d: so->dirs) {
                             *tOrder += " ";
                             if (d->dir.isMovePause())
@@ -399,7 +399,7 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
                         }
                     }
                     // And mark the hex being entered
-                    auto& f = newreg->passers.emplace_back(std::make_shared<Farsight>());
+                    auto& f = newreg->passers.emplace_back();
                     f->faction = unit->faction;
                     f->level = 0;
                     f->unit = unit;
@@ -878,7 +878,7 @@ void Game::CreateShip(const ARegion::Handle& r, const Unit::Handle& u, const Ite
     }
     if (newfleet) {
         // create a new fleet
-        auto& fleet = obj->region.lock()->objects.emplace_back(std::make_shared<Object>(r));
+        auto& fleet = obj->region.lock()->objects.emplace_back(r);
         fleet->type = Objects::Types::O_FLEET;
         fleet->num = shipseq++;
         fleet->name = AString("Ship [") + fleet->num + "]";
@@ -1052,8 +1052,8 @@ void Game::RunUnitProduce(const ARegion::Handle& r, const Unit::Handle& u)
         return;
     }
 
-    const auto& input = ItemDefs[o->item].pInput[0].item;
-    if (!input.isValid()) {
+    if (!ItemDefs[o->item].pInput.front().item.isValid())
+    {
         u->Error("PRODUCE: Can't produce that.");
         u->monthorders.reset();
         return;
@@ -1163,14 +1163,14 @@ void Game::RunUnitProduce(const ARegion::Handle& r, const Unit::Handle& u)
     u->Practice(o->skill);
     o->target -= static_cast<int>(output);
     if (o->target > 0) {
-        auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
+        auto& tOrder = u->turnorders.emplace_front();
         AString order;
         tOrder->repeating = 0;
         order = "PRODUCE ";
         order += o->target;
         order += " ";
         order += ItemDefs[o->item].abr;
-        tOrder->turnOrders.emplace_back(std::make_shared<AString>(order));
+        tOrder->turnOrders.emplace_back(order);
     }
     u->monthorders.reset();
 }
@@ -1298,8 +1298,8 @@ void Game::RunAProduction(const ARegion::Handle& r, const Production::Handle& p)
             p->activity += ubucks;
             po->target -= ubucks;
             if (po->target > 0) {
-                auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
-                auto& order = *(tOrder->turnOrders.emplace_back(std::make_shared<AString>()));
+                auto& tOrder = u->turnorders.emplace_front();
+                auto& order = *(tOrder->turnOrders.emplace_back());
                 tOrder->repeating = 0;
                 order = "PRODUCE ";
                 order += po->target;
@@ -1566,8 +1566,8 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
         // study to level order
         if (o->level.isValid()) {
             if (u->GetSkill(sk) < o->level) {
-                auto& tOrder = u->turnorders.emplace_front(std::make_shared<TurnOrder>());
-                auto& order = *(tOrder->turnOrders.emplace_back(std::make_shared<AString>()));
+                auto& tOrder = u->turnorders.emplace_front();
+                auto& order = *(tOrder->turnOrders.emplace_back());
                 tOrder->repeating = 0;
                 order = AString("STUDY ") + SkillDefs[sk].abbr + " " + static_cast<int>(o->level);
             } else {
@@ -1675,23 +1675,23 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
     }
 }
 
-Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
+Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
                                     const ARegion::Handle& region,
                                     const Object::Handle& obj)
 {
-    const auto o = std::dynamic_pointer_cast<MoveOrder>(unit->monthorders);
+    const auto order = std::dynamic_pointer_cast<MoveOrder>(unit->monthorders);
     AString road, temp;
 
-    if (o->dirs.empty()) {
+    if (order->dirs.empty()) {
         unit->monthorders.reset();
         return nullptr;
     }
 
-    const auto& x = o->dirs.front();
+    const auto& first_dir = order->dirs.front()->dir;
 
     ARegion::Handle newreg;
 
-    if (x->dir.isMoveIn()) {
+    if (first_dir.isMoveIn()) {
         if (obj->inner == -1) {
             unit->Error("MOVE: Can't move IN there.");
             unit->monthorders.reset();
@@ -1837,10 +1837,10 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
                     }
             }
         }
-    } else if (x->dir.isMovePause()) {
+    } else if (first_dir.isMovePause()) {
         newreg = region;
     } else {
-        newreg = region->neighbors[x->dir].lock();
+        newreg = region->neighbors[first_dir].lock();
     }
 
     if (!newreg) {
@@ -1854,8 +1854,8 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     road = "";
     int startmove = 0;
     int movetype = unit->MoveType(region);
-    unsigned int cost = newreg->MoveCost(movetype, *region, x->dir, road);
-    if (x->dir.isMovePause())
+    unsigned int cost = newreg->MoveCost(movetype, *region, first_dir, road);
+    if (first_dir.isMovePause())
     {
         cost = 1;
     }
@@ -1893,7 +1893,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
     if (!unit->moved &&
             unit->movepoints >= Globals->MAX_SPEED &&
             unit->movepoints < cost * Globals->MAX_SPEED &&
-            x->dir == unit->savedmovedir) {
+            first_dir == unit->savedmovedir) {
         while (unit->savedmovement > 0 &&
                 unit->movepoints < cost * Globals->MAX_SPEED) {
             unit->movepoints += Globals->MAX_SPEED;
@@ -1908,11 +1908,11 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
         return nullptr;
     }
 
-    if (x->dir.isMovePause()) {
+    if (first_dir.isMovePause()) {
         unit->Event(AString("Pauses to admire the scenery in ") + region->ShortPrint(regions) + ".");
         unit->movepoints -= cost * Globals->MAX_SPEED;
         unit->moved += cost;
-        o->dirs.pop_front();
+        order->dirs.pop_front();
         return nullptr;
     }
 
@@ -1942,7 +1942,7 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
         }
     }
 
-    if (o->advancing) unit->guard = GUARD_ADVANCE;
+    if (order->advancing) unit->guard = GUARD_ADVANCE;
 
     const auto forbid_w = newreg->Forbidden(unit);
     if (!forbid_w.expired() && !startmove && unit->guard != GUARD_ADVANCE) {
@@ -1999,22 +1999,22 @@ Location::Handle Game::DoAMoveOrder(const Unit::Handle& unit,
         for(const auto& f: region->passers) {
             if (f->unit.lock() == unit) {
                 // We moved into here this turn
-                if (!x->dir.isMoveInOutOrEnter()) {
-                    f->exits_used[x->dir] = true;
+                if (!first_dir.isMoveInOutOrEnter()) {
+                    f->exits_used[first_dir] = true;
                 }
             }
         }
         // And mark the hex being entered
-        auto& f= newreg->passers.emplace_back(std::make_shared<Farsight>());
+        auto& f= newreg->passers.emplace_back();
         f->faction = unit->faction;
         f->level = 0;
         f->unit = unit;
-        if (!x->dir.isMoveInOutOrEnter()) {
-            f->exits_used[region->GetRealDirComp(x->dir)] = true;
+        if (!first_dir.isMoveInOutOrEnter()) {
+            f->exits_used[region->GetRealDirComp(first_dir)] = true;
         }
     }
 
-    o->dirs.pop_front();
+    order->dirs.pop_front();
 
     auto loc = std::make_shared<Location>();
     loc->unit = unit;

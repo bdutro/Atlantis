@@ -553,7 +553,6 @@ static AString WeapType(int flags, int wclass)
 
 AString::Handle ItemDescription(const Items& item, int full)
 {
-    int i;
     AString skname;
 
     if (ItemDefs[item].flags & ItemType::DISABLED)
@@ -906,7 +905,7 @@ AString::Handle ItemDescription(const Items& item, int full)
         *temp += " This is a type of armor.";
         const auto& pA = FindArmor(ItemDefs[item].abr);
         *temp += " This armor will protect its wearer ";
-        for (i = 0; i < NUM_WEAPON_CLASSES; i++) {
+        for (int i = 0; i < NUM_WEAPON_CLASSES; i++) {
             if (i == NUM_WEAPON_CLASSES - 1) {
                 *temp += ", and ";
             } else if (i > 0) {
@@ -1374,7 +1373,7 @@ void ItemList::Readin(Ainfile& f)
         temp->Readin(f);
         if (!(!temp->type.isValid() || temp->num < 1 || ItemDefs[temp->type].flags & ItemType::DISABLED))
         {
-            items_.push_back(temp);
+            push_back(temp);
         }
     }
 }
@@ -1574,19 +1573,27 @@ AString ItemList::ReportByType(int type, unsigned int obs, bool seeillusions, bo
 void ItemList::SetNum(const Items& t, size_t n)
 {
     // sanity check: does this item type exist?
-    if (!t.isValid()) return;
-    if (n) {
-        for(const auto& i: *this) {
-            if (i->type == t) {
+    if (!t.isValid())
+    {
+        return;
+    }
+    if (n)
+    {
+        for(const auto& i: *this)
+        {
+            if (i->type == t)
+            {
                 i->num = n;
                 return;
             }
         }
-        auto& i = items_.emplace_back(std::make_shared<Item>());
+        auto& i = emplace_back();
         i->type = t;
         i->num = n;
-    } else {
-        items_.remove_if([t](const Item::Handle& i){ return i->type == t; });
+    }
+    else
+    {
+        remove_if([t](const Item::Handle& i){ return i->type == t; });
     }
 }
 

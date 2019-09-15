@@ -188,14 +188,17 @@ void QuestList::WriteQuests(Aoutfile& f)
 
 bool QuestList::CheckQuestKillTarget(const Unit::Handle& u, ItemList& reward)
 {
-    for(auto it = begin(); it != end(); ++it) {
+    for(auto it = begin(); it != end(); ++it)
+    {
         const auto& q = *it;
-        if (q->type == Quests::Types::SLAY && q->target == static_cast<int>(u->num)) {
+        if (q->type == Quests::Types::SLAY && q->target == static_cast<int>(u->num))
+        {
             // This dead thing was the target of a quest!
-            for(const auto& i: q->rewards) {
+            for(const auto& i: q->rewards)
+            {
                 reward.SetNum(i->type, reward.GetNum(i->type) + i->num);
             }
-            quests_.erase(it);
+            erase(it);
             return true;
         }
     }
@@ -220,7 +223,7 @@ bool QuestList::CheckQuestHarvestTarget(const ARegion::Handle& r,
                     u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
                     u_fac->DiscoverItem(i->type, 0, 1);
                 }
-                quests_.erase(it);
+                erase(it);
                 return true;
             }
         }
@@ -241,7 +244,7 @@ bool QuestList::CheckQuestBuildTarget(const ARegion::Handle& r, const Objects& b
                 u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
                 u_fac->DiscoverItem(i->type, 0, 1);
             }
-            quests_.erase(it);
+            erase(it);
             return true;
         }
     }
@@ -252,7 +255,6 @@ bool QuestList::CheckQuestBuildTarget(const ARegion::Handle& r, const Objects& b
 bool QuestList::CheckQuestVisitTarget(const ARegion::Handle& r, const Unit::Handle& u)
 {
     std::set<std::string> intersection;
-    std::set<std::string>::iterator it;
 
     for(auto it = begin(); it != end(); ++it) {
         const auto& q = *it;
@@ -264,13 +266,12 @@ bool QuestList::CheckQuestVisitTarget(const ARegion::Handle& r, const Unit::Hand
             if (o->type == q->building) {
                 u->visited.insert(r->name.Str());
                 intersection.clear();
-                set_intersection(
+                std::set_intersection(
                     q->destinations.begin(),
                     q->destinations.end(),
                     u->visited.begin(),
                     u->visited.end(),
-                    inserter(intersection,
-                        intersection.begin()),
+                    std::inserter(intersection, intersection.begin()),
                     std::less<std::string>()
                 );
                 if (intersection.size() == q->destinations.size()) {
@@ -282,7 +283,7 @@ bool QuestList::CheckQuestVisitTarget(const ARegion::Handle& r, const Unit::Hand
                         u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
                         u_fac->DiscoverItem(i->type, 0, 1);
                     }
-                    quests_.erase(it);
+                    erase(it);
                     return true;
                 }
             }
@@ -304,7 +305,7 @@ bool QuestList::CheckQuestDemolishTarget(const ARegion::Handle& r, const Objects
                 u->items.SetNum(i->type, u->items.GetNum(i->type) + i->num);
                 u_fac->DiscoverItem(i->type, 0, 1);
             }
-            quests_.erase(it);
+            erase(it);
             return true;
         }
     }

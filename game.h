@@ -580,7 +580,7 @@ private:
     // Month long orders
     //
     void RunMoveOrders();
-    Location::Handle DoAMoveOrder(const Unit::Handle&, const ARegion::Handle&, const Object::Handle&);
+    Location::Handle DoAMoveOrder(Unit::Handle, const ARegion::Handle&, const Object::Handle&);
     void DoMoveEnter(const Unit::Handle&, const ARegion::Handle&, Object::Handle&);
     void RunMonthOrders();
     void RunStudyOrders(const ARegion::Handle&);

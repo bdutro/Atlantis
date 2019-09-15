@@ -3171,7 +3171,6 @@ int Game::GenRules(const AString &rules, const AString &css,
             else if (Globals->WHO_CAN_TAX &
                     (GameDefs::TAX_MELEE_WEAPON_AND_MATCHING_SKILL |
                      GameDefs::TAX_BOW_SKILL_AND_MATCHING_WEAPON)) {
-                AString temp3;
                 int prev2 = 0, hold2 = 0;
                 if (Globals->WHO_CAN_TAX &
                         GameDefs::TAX_MELEE_WEAPON_AND_MATCHING_SKILL) {
@@ -3230,7 +3229,6 @@ int Game::GenRules(const AString &rules, const AString &css,
                     temp2 += "who knows a combat spell";
             } else {
                 int hold2 = 0, prev2 = 0;
-                AString temp3;
                 if (Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_COMBAT_SPELL)
                     temp2 += "whose combat spell ";
                 else

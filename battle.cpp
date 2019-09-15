@@ -409,8 +409,9 @@ void Battle::Report(Areport& f, const Faction& fac) {
     }
 }
 
-void Battle::AddLine(const AString & s) {
-    text.emplace_back(std::make_unique<AString>(s));
+void Battle::AddLine(const AString & s)
+{
+    text.emplace_back(s);
 }
 
 void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, WeakPtrList<Faction>& facs)
@@ -508,7 +509,7 @@ void Game::GetAFacs(const ARegion::Handle& r,
                     const auto ufac = u->faction.lock();
                     const size_t ufac_num = ufac->num;
                     if (GetFaction2(dfacs, ufac_num).expired()) {
-                        auto& l = atts.emplace_back(std::make_shared<Location>());
+                        auto& l = atts.emplace_back();
                         l->unit = u;
                         l->obj = obj;
                         l->region = r;
@@ -639,12 +640,12 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
             }
 
             if (add == ADD_ATTACK) {
-                auto& l = atts.emplace_back(std::make_shared<Location>());
+                auto& l = atts.emplace_back();
                 l->unit = u;
                 l->obj = o;
                 l->region = r2;
             } else if (add == ADD_DEFENSE) {
-                auto& l = defs.emplace_back(std::make_shared<Location>());
+                auto& l = defs.emplace_back();
                 l->unit = u;
                 l->obj = o;
                 l->region = r2;
@@ -687,14 +688,14 @@ void Game::GetSides(const ARegion::Handle& r,
     if (ass) {
         /* Assassination attempt */
         {
-            auto& l = atts.emplace_back(std::make_shared<Location>());
+            auto& l = atts.emplace_back();
             l->unit = att;
             l->obj = r->GetDummy();
             l->region = r;
         }
 
         {
-            auto& l = defs.emplace_back(std::make_shared<Location>());
+            auto& l = defs.emplace_back();
             l->unit = tar;
             l->obj = r->GetDummy();
             l->region = r;
@@ -840,7 +841,7 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
         return BATTLE_IMPOSSIBLE;
     }
 
-    auto& b = battles.emplace_back(std::make_shared<Battle>());
+    auto& b = battles.emplace_back();
     b->WriteSides(r, attacker, target, atts, defs, ass, regions);
 
     for(const auto& f: factions) {

@@ -1545,7 +1545,7 @@ void Game::ModifyRangeLevelPenalty(char const *range, int pen)
     }
 }
 
-void Game::ModifyAttribMod(char const *mod, int index, int flags, char const *ident,
+void Game::ModifyAttribMod(char const *mod_str, int index, int flags, char const *ident,
         int type, unsigned int val)
 {
     if (!ident)
@@ -1562,7 +1562,7 @@ void Game::ModifyAttribMod(char const *mod, int index, int flags, char const *id
     }
     try
     {
-        auto& mp = FindAttrib_(mod);
+        auto& mp = FindAttrib_(mod_str);
         const size_t index_u = static_cast<size_t>(index);
         if (index_u >= mp.mods.size())
         {

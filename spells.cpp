@@ -1369,7 +1369,7 @@ bool Game::RunBirdLore(const ARegion::Handle& r, const Unit::Handle& u)
         }
 
         const auto tar = tar_w.lock();
-        auto& f = tar->farsees.emplace_back(std::make_shared<Farsight>());
+        auto& f = tar->farsees.emplace_back();
         f->faction = u->faction;
         f->level = u->GetSkill(Skills::Types::S_BIRD_LORE);
         u->Event(AString("Sends birds to spy on ") +
@@ -1699,7 +1699,7 @@ bool Game::RunFarsight(const ARegion::Handle& r, const Unit::Handle& u)
         return false;
     }
 
-    auto&f = tar->farsees.emplace_back(std::make_shared<Farsight>());
+    auto&f = tar->farsees.emplace_back();
     f->faction = u->faction;
     f->level = u->GetSkill(Skills::Types::S_FARSIGHT);
     f->unit = u;
@@ -2152,7 +2152,7 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
         }
         if (i < 100)
         {
-            tower = r->objects.emplace_back(std::make_shared<Object>(r));
+            tower = r->objects.emplace_back(r);
             tower->type = Objects::Types::O_BKEEP;
             tower->incomplete = ObjectDefs[tower->type].cost;
             tower->num = i;
@@ -2288,11 +2288,15 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
 
     // If the player chooses to go down the dark path,
     // then erase any progress they may have made down the light path
-    for(const auto& r: regions) {
-        for(const auto& o: r->objects) {
-            for(auto it = o->units.begin(); it != o->units.end(); ++it) {
+    for(const auto& reg: regions)
+    {
+        for(const auto& o: reg->objects)
+        {
+            for(auto it = o->units.begin(); it != o->units.end(); ++it)
+            {
                 u = *it;
-                if (u->faction.lock()->num == mage_fac_num) {
+                if (u->faction.lock()->num == mage_fac_num)
+                {
                     u->items.SetNum(Items::Types::I_RELICOFGRACE, 0);
                 }
             }

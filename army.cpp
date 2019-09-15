@@ -695,25 +695,34 @@ void Army::GetMonSpoils(ItemList& spoils, const Items& monitem, size_t free)
 
     if (thespoil == IT_NORMAL && getrandom(2)) thespoil = IT_TRADE;
 
-    int count = 0;
-    for (auto i = Items::begin(); i != Items::end(); ++i) {
+    unsigned int item_count = 0;
+    for (auto i = Items::begin(); i != Items::end(); ++i)
+    {
         if ((ItemDefs[*i].type & thespoil) &&
                 !(ItemDefs[*i].type & IT_SPECIAL) &&
                 !(ItemDefs[*i].type & IT_SHIP) &&
-                !(ItemDefs[*i].flags & ItemType::DISABLED)) {
-            count ++;
+                !(ItemDefs[*i].flags & ItemType::DISABLED))
+        {
+            item_count ++;
         }
     }
-    if (count == 0) return;
-    count = getrandom(count) + 1;
+    if (item_count == 0)
+    {
+        return;
+    }
 
-    for (auto i = Items::begin(); i != Items::end(); ++i) {
+    item_count = getrandom(item_count) + 1;
+
+    for (auto i = Items::begin(); i != Items::end(); ++i)
+    {
         if ((ItemDefs[*i].type & thespoil) &&
                 !(ItemDefs[*i].type & IT_SPECIAL) &&
                 !(ItemDefs[*i].type & IT_SHIP) &&
-                !(ItemDefs[*i].flags & ItemType::DISABLED)) {
-            count--;
-            if (count == 0) {
+                !(ItemDefs[*i].flags & ItemType::DISABLED))
+        {
+            item_count--;
+            if (item_count == 0)
+            {
                 thespoil = static_cast<int>(*i);
                 break;
             }
@@ -926,8 +935,22 @@ void Army::Win(Battle& b, const ItemList& spoils)
                     if (!ItemDefs[i->type].weight) {
                         chunk = i->num / ns;
                     }
-                    auto it = units.begin();
-                    while(it != units.end())
+                    units.remove_if([&](const auto& up_w){
+                        const auto& up = up_w.lock();
+                        if (up->CanGetSpoil(i))
+                        {
+                            up->items.SetNum(i->type, up->items.GetNum(i->type) + chunk);
+                            up->faction.lock()->DiscoverItem(i->type, 0, 1);
+                            i->num -= chunk;
+                        }
+                        else
+                        {
+                            ns--;
+                            return true;
+                        }
+                        return false;
+                    });
+                    /*for(auto it = units.begin(); it != units.end(); ++it)
                     {
                         const auto& up = it->lock();
                         if (up->CanGetSpoil(i)) {
@@ -935,27 +958,29 @@ void Army::Win(Battle& b, const ItemList& spoils)
                                              up->items.GetNum(i->type) + chunk);
                             up->faction.lock()->DiscoverItem(i->type, 0, 1);
                             i->num -= chunk;
-                            ++it;
                         } else {
-                            it = units.erase(it);
+                            units.erase(it);
                             ns--;
                         }
-                    }
+                    }*/
                 }
-                while (ns > 0 && i->num > 0) {
+                while (ns > 0 && i->num > 0)
+                {
                     size_t t = getrandom(ns);
                     auto it = std::next(units.begin(), static_cast<ssize_t>(t));
                     const auto& up_w = *it;
                     if (!up_w.expired())
                     {
                         const auto up = up_w.lock();
-                        if(up->CanGetSpoil(i)) {
-                            up->items.SetNum(i->type,
-                                             up->items.GetNum(i->type) + 1);
+                        if(up->CanGetSpoil(i))
+                        {
+                            up->items.SetNum(i->type, up->items.GetNum(i->type) + 1);
                             up->faction.lock()->DiscoverItem(i->type, 0, 1);
                             i->num--;
                         }
-                    } else {
+                    }
+                    else
+                    {
                         units.erase(it);
                         ns--;
                     }
@@ -983,12 +1008,16 @@ bool Army::Broken()
 size_t Army::NumSpoilers()
 {
     size_t na = NumAlive();
-    size_t count = 0;
-    for (size_t x=0; x < na; x++) {
+    size_t spoil_count = 0;
+    for (size_t x=0; x < na; x++)
+    {
         const auto u = soldiers[x]->unit.lock();
-        if (!(u->flags & FLAG_NOSPOILS)) count++;
+        if (!(u->flags & FLAG_NOSPOILS))
+        {
+            spoil_count++;
+        }
     }
-    return count;
+    return spoil_count;
 }
 
 size_t Army::NumAlive()
@@ -1205,34 +1234,38 @@ int Army::DoAnAttack(char const *special, int numAttacks, int attackType,
 {
     /* 1. Check against Global effects (not sure how yet) */
     /* 2. Attack shield */
-    int combat = 0;
-    int canShield = 0;
+    bool combat = false;
+    bool canShield = false;
     switch(attackType) {
         case ATTACK_RANGED:
-            canShield = 1;
+            canShield = true;
             // fall through
         case ATTACK_COMBAT:
         case ATTACK_RIDING:
-            combat = 1;
+            combat = true;
             break;
         case ATTACK_ENERGY:
         case ATTACK_WEATHER:
         case ATTACK_SPIRIT:
-            canShield = 1;
+            canShield = true;
             break;
     }
 
-    if (canShield) {
+    if (canShield)
+    {
         int shieldType = attackType;
 
         const auto hi = shields.GetHighShield(shieldType);
-        if (hi != shields.end()) {
+        if (hi != shields.end())
+        {
             /* Check if we get through shield */
-            if (!Hits(static_cast<size_t>(attackLevel), hi->shieldskill)) {
+            if (!Hits(static_cast<size_t>(attackLevel), hi->shieldskill))
+            {
                 return -1;
             }
 
-            if (effect != nullptr && !combat) {
+            if (effect != nullptr && !combat)
+            {
                 /* We got through shield... if killing spell, destroy shield */
                 shields.erase(hi);
             }

@@ -87,7 +87,7 @@ void ARegionList::CreateAbyssLevel(unsigned int level, char const *name)
     } while(lair.expired() || lair.lock() == reg.lock());
 
     const auto lair_sp = lair.lock();
-    auto& o = lair_sp->objects.emplace_back(std::make_shared<Object>(lair));
+    auto& o = lair_sp->objects.emplace_back(lair);
     o->num = lair_sp->buildingseq++;
     o->name = AString(AString(ObjectDefs[Objects::Types::O_BKEEP].name) + " ["+o->num+"]");
     o->type = Objects::Types::O_BKEEP;
@@ -255,7 +255,7 @@ void ARegionList::MakeRegions(unsigned int level, unsigned int xSize, unsigned i
     for (unsigned int y = 0; y < ySize; y++) {
         for (unsigned int x = 0; x < xSize; x++) {
             if (!((x + y) % 2)) {
-                auto& reg = regions_.emplace_back(std::make_shared<ARegion>());
+                auto& reg = emplace_back();
                 reg->SetLoc(x, y, level);
                 reg->num = size() - 1;
 
@@ -346,7 +346,7 @@ void ARegionList::MakeIcosahedralRegions(unsigned int level, unsigned int xSize,
                         continue;
                 }
 
-                auto& reg = regions_.emplace_back(std::make_shared<ARegion>());
+                auto& reg = emplace_back();
                 reg->SetLoc(x, y, level);
                 reg->num = size() - 1;
 
@@ -517,9 +517,9 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                 {
                     break;
                 }
-                const auto newreg = newreg_w.lock();
+                const auto newreg_s = newreg_w.lock();
                 bool polecheck = false;
-                for (const auto& creg: newreg->neighbors) {
+                for (const auto& creg: newreg_s->neighbors) {
                     if (creg.expired())
                     {
                         polecheck = true;
@@ -529,7 +529,7 @@ void ARegionList::MakeLand(const ARegionArray::Handle& pRegs, unsigned int perce
                 {
                     break;
                 }
-                reg = newreg;
+                reg = newreg_s;
                 if (!reg->type.isValid()) {
                     reg->type = Regions::Types::R_NUM;
                     ocean--;
@@ -1275,7 +1275,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
     }
 
     {
-        auto& o = reg->objects.emplace_back(std::make_shared<Object>(reg));
+        auto& o = reg->objects.emplace_back(reg);
         o->num = reg->buildingseq++;
         o->name = AString(AString("Shaft [") + o->num + "]");
         o->type = Objects::Types::O_SHAFT;
@@ -1283,7 +1283,7 @@ void ARegionList::MakeShaft(const ARegion::Handle& reg, const ARegionArray::Hand
         o->inner = static_cast<ssize_t>(temp->num);
     }
     {
-        auto& o = temp->objects.emplace_back(std::make_shared<Object>(reg));
+        auto& o = temp->objects.emplace_back(reg);
         o->num = temp->buildingseq++;
         o->name = AString(AString("Shaft [") + o->num + "]");
         o->type = Objects::Types::O_SHAFT;
@@ -1365,7 +1365,7 @@ void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, un
                             const auto reg = reg_w.lock();
                             if (reg->type == *type) {
                                 found = true;
-                                auto& o = AC->objects.emplace_back(std::make_shared<Object>(AC));
+                                auto& o = AC->objects.emplace_back(AC);
                                 o->num = AC->buildingseq++;
                                 o->name = AString(AString("Gateway to ") +
                                     TerrainDefs[*type].name + " [" + o->num + "]");

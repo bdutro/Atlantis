@@ -410,7 +410,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                         unit = ProcessFormOrder(unit, order, pCheck, getatsign);
                                         if (!pCheck && unit && unit->former && unit->former->format)
                                         {
-                                            unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                            unit->former->oldorders.emplace_back(saveorder);
                                         }
                                         if (!pCheck) {
                                             if (unit) unit->ClearOrders();
@@ -433,7 +433,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                     }
                                     if (!pCheck && unit->former && unit->former->format)
                                     {
-                                        unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                        unit->former->oldorders.emplace_back(saveorder);
                                     }
                                     unit = former;
                                 } else {
@@ -451,7 +451,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                 if (faction != 0) {
                                     if (!pCheck && unit->former && unit->former->format)
                                     {
-                                        unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                        unit->former->oldorders.emplace_back(saveorder);
                                     }
                                     AString retval = ProcessTurnOrder(unit, f, pCheck, getatsign);
                                     if (retval.Len()) {
@@ -476,7 +476,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                 unit->inTurnBlock = 0;
                                 if (!pCheck && unit->former && unit->former->format)
                                 {
-                                    unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                    unit->former->oldorders.emplace_back(saveorder);
                                 }
                             } else
                                 ParseError(pCheck, unit, fac, "ENDTURN: without TURN.");
@@ -486,11 +486,11 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                 if (unit) {
                                     if (!pCheck && getatsign)
                                     {
-                                        unit->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                        unit->oldorders.emplace_back(saveorder);
                                     }
                                     if (!pCheck && unit->former && unit->former->format)
                                     {
-                                        unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                                        unit->former->oldorders.emplace_back(saveorder);
                                     }
 
                                     ProcessOrder(code, unit, order, pCheck);
@@ -506,7 +506,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                 if (!pCheck) {
                     if (getatsign && fac && unit)
                     {
-                        unit->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                        unit->oldorders.emplace_back(saveorder);
                     }
                 }
             }
@@ -911,7 +911,7 @@ void Game::ProcessReshowOrder(const Unit::Handle& u, AString& o, const OrdersChe
                 return;
             }
 
-            u_fac->shows.emplace_back(std::make_shared<ShowSkill>(sk, lvl));
+            u_fac->shows.emplace_back(sk, lvl);
         }
         return;
     }
@@ -1008,7 +1008,7 @@ void Game::ProcessForgetOrder(const Unit::Handle& u, AString& o, const OrdersChe
     }
 
     if (!pCheck) {
-        auto& ord = u->forgetorders.emplace_back(std::make_shared<ForgetOrder>());
+        auto& ord = u->forgetorders.emplace_back();
         ord->skill = sk;
     }
 }
@@ -1466,7 +1466,7 @@ void Game::ProcessFindOrder(const Unit::Handle& u, AString& o, const OrdersCheck
     }
     if (!pCheck)
     {
-        auto& f = u->findorders.emplace_back(std::make_shared<FindOrder>());
+        auto& f = u->findorders.emplace_back();
         f->find = n;
     }
 }
@@ -1689,7 +1689,7 @@ void Game::ProcessBuildOrder(const Unit::Handle& unit, AString& o, const OrdersC
                         }
                     }
                     if (i < 100) {
-                        auto& obj = reg->objects.emplace_back(std::make_shared<Object>(reg));
+                        auto& obj = reg->objects.emplace_back(reg);
                         obj->type = ot2;
                         obj->incomplete = ObjectDefs[obj->type].cost;
                         obj->num = i;
@@ -1789,7 +1789,7 @@ void Game::ProcessSellOrder(const Unit::Handle& u, AString& o, const OrdersCheck
     const Items it = ParseGiveableItem(token);
 
     if (!pCheck) {
-        auto& s = u->sellorders.emplace_back(std::make_shared<SellOrder>());
+        auto& s = u->sellorders.emplace_back();
         s->item = it;
         s->num = num;
     }
@@ -1837,7 +1837,7 @@ void Game::ProcessBuyOrder(const Unit::Handle& u, AString& o, const OrdersCheck:
     }
 
     if (!pCheck) {
-        auto& b = u->buyorders.emplace_back(std::make_shared<BuyOrder>());
+        auto& b = u->buyorders.emplace_back();
         b->item = it;
         b->num = num;
     }
@@ -2073,7 +2073,7 @@ void Game::ProcessWithdrawOrder(const Unit::Handle& unit, AString& o, const Orde
     }
 
     if (!pCheck) {
-        auto& order = unit->withdraworders.emplace_back(std::make_shared<WithdrawOrder>());
+        auto& order = unit->withdraworders.emplace_back();
         order->item = item;
         order->amount = amt;
     }
@@ -2112,7 +2112,7 @@ AString Game::ProcessTurnOrder(const Unit::Handle& unit, Aorders& f, const Order
                         break;
                     }
                     turnDepth++;
-                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
+                    tOrder->turnOrders.emplace_back(saveorder);
                     turnLast = 1;
                     break;
                 case Orders::Types::O_FORM:
@@ -2122,7 +2122,7 @@ AString Game::ProcessTurnOrder(const Unit::Handle& unit, Aorders& f, const Order
                     }
                     turnLast = 0;
                     formDepth++;
-                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
+                    tOrder->turnOrders.emplace_back(saveorder);
                     break;
                 case Orders::Types::O_ENDFORM:
                     if (turnLast) {
@@ -2138,7 +2138,7 @@ AString Game::ProcessTurnOrder(const Unit::Handle& unit, Aorders& f, const Order
                         }
                     }
                     formDepth--;
-                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
+                    tOrder->turnOrders.emplace_back(saveorder);
                     turnLast = 1;
                     break;
                 case Orders::Types::O_UNIT:
@@ -2159,18 +2159,18 @@ AString Game::ProcessTurnOrder(const Unit::Handle& unit, Aorders& f, const Order
                     } else {
                         if (--turnDepth)
                         {
-                            tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
+                            tOrder->turnOrders.emplace_back(saveorder);
                         }
                         turnLast = 0;
                     }
                     break;
                 default:
-                    tOrder->turnOrders.emplace_back(std::make_shared<AString>(saveorder));
+                    tOrder->turnOrders.emplace_back(saveorder);
                     break;
             }
             if (!pCheck && unit->former && unit->former->format)
             {
-                unit->former->oldorders.emplace_back(std::make_shared<AString>(saveorder));
+                unit->former->oldorders.emplace_back(saveorder);
             }
         }
     }
@@ -2248,7 +2248,7 @@ void Game::ProcessExchangeOrder(const Unit::Handle& unit, AString& o, const Orde
     }
 
     if (!pCheck) {
-        auto& order = unit->exchangeorders.emplace_back(std::make_shared<ExchangeOrder>());
+        auto& order = unit->exchangeorders.emplace_back();
         order->giveItem = itemGive;
         order->giveAmount = amtGive;
         order->expectAmount = amtExpected;
@@ -2425,7 +2425,7 @@ void Game::ProcessGiveOrder(const Orders& order,
     }
 
     if (!pCheck) {
-        auto& go = unit->giveorders.emplace_back(std::make_shared<GiveOrder>());
+        auto& go = unit->giveorders.emplace_back();
         go->type = order;
         go->item = item_s;
         go->target = *t;
@@ -2960,7 +2960,7 @@ void Game::ProcessAdvanceOrder(const Unit::Handle& u, AString& o, const OrdersCh
         const Directions d = ParseDir(t);
         if (d.isValid()) {
             if (!pCheck) {
-                auto& x = m->dirs.emplace_back(std::make_shared<MoveDir>());
+                auto& x = m->dirs.emplace_back();
                 x->dir = d;
             }
         } else {
@@ -2997,7 +2997,7 @@ void Game::ProcessMoveOrder(const Unit::Handle& u, AString& o, const OrdersCheck
         const Directions d = ParseDir(t);
         if (d.isValid()) {
             if (!pCheck) {
-                auto& x = m->dirs.emplace_back(std::make_shared<MoveDir>());
+                auto& x = m->dirs.emplace_back();
                 x->dir = d;
             }
         } else {
@@ -3038,7 +3038,7 @@ void Game::ProcessSailOrder(const Unit::Handle& u, AString& o, const OrdersCheck
         } else {
             if (d.isRegularDirection() || d.isMovePause()) {
                 if (!pCheck) {
-                    auto& x = m->dirs.emplace_back(std::make_shared<MoveDir>());
+                    auto& x = m->dirs.emplace_back();
                     x->dir = d;
                 }
             } else {
@@ -3126,7 +3126,7 @@ void Game::ProcessTransportOrder(const Unit::Handle& u, AString& o, const Orders
     }
 
     if (!pCheck) {
-        auto& order = u->transportorders.emplace_back(std::make_shared<TransportOrder>());
+        auto& order = u->transportorders.emplace_back();
         order->item = item;
         order->target = *tar;
         order->amount = amt;
@@ -3184,7 +3184,7 @@ void Game::ProcessDistributeOrder(const Unit::Handle& u, AString& o, const Order
     }
 
     if (!pCheck) {
-        auto& order = u->transportorders.emplace_back(std::make_shared<TransportOrder>());
+        auto& order = u->transportorders.emplace_back();
         order->type = Orders::Types::O_DISTRIBUTE;
         order->item = item;
         order->target = *tar;

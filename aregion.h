@@ -489,11 +489,8 @@ class GeoMap
         
 };
 
-class ARegionList
+class ARegionList : public PtrList<ARegion>
 {
-    private:
-        using list_type = PtrList<ARegion>;
-
     public:
         ARegionList();
         ~ARegionList() = default;
@@ -513,19 +510,6 @@ class ARegionList
         Weather GetWeather(const ARegion& pReg, size_t month) const;
 
         const ARegionArray::Handle& GetRegionArray(size_t level);
-
-        using iterator = list_type::iterator;
-        using const_iterator = list_type::const_iterator;
-        const ARegion::Handle& front() const { return regions_.front(); }
-        iterator begin() { return regions_.begin(); }
-        iterator end() { return regions_.end(); }
-        const_iterator begin() const { return regions_.begin(); }
-        const_iterator end() const { return regions_.end(); }
-        const_iterator cbegin() const { return regions_.cbegin(); }
-        const_iterator cend() const { return regions_.cend(); }
-        size_t size() const { return regions_.size(); }
-        bool empty() const { return regions_.empty(); }
-
 
         unsigned int numberofgates;
         unsigned int numLevels;
@@ -601,7 +585,6 @@ class ARegionList
         //
         Regions GetRegType(const ARegion::Handle& pReg);
         int CheckRegionExit(const ARegion::Handle& pFrom, const ARegion::Handle& pTo);
-        list_type regions_;
 };
 
 template<typename T>
