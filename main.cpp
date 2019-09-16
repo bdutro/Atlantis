@@ -49,7 +49,11 @@ void usage()
 
 int main(int argc, char *argv[])
 {
+#ifdef GAME_SPELLS
+    SpellsGame<Game> game;
+#else
     Game game;
+#endif
     int retval = 1;
 
     initIO();

@@ -39,25 +39,12 @@ class Game;
 #include "faction.h"
 #include "production.h"
 #include "object.h"
+#include "orderscheck.h"
+#include "spells.h"
+
+#define GAME_SPELLS
 
 #define CURRENT_ATL_VER MAKE_ATL_VER(5, 1, 0)
-
-class OrdersCheck
-{
-public:
-    using Handle = std::shared_ptr<OrdersCheck>;
-
-    OrdersCheck();
-
-    Aoutfile::Handle pCheckFile;
-    Unit::Handle dummyUnit;
-    Faction::Handle dummyFaction;
-    Order dummyOrder;
-    int numshows;
-    int numerrors;
-
-    void Error(const AString &error);
-};
 
 /// The main game class
 /** Currently this doc is here to switch on the class so that
@@ -127,7 +114,7 @@ public:
     // Functions to allow enabling/disabling parts of the data tables
     void ModifyTablesPerRuleset(void);
 
-private:
+protected:
     //
     // Game editing functions.
     //
@@ -373,7 +360,10 @@ private:
     void ProcessPrepareOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);
     void ProcessWeaponOrder(const Unit::Handle& u, AString& o, const OrdersCheck::Handle& pCheck);
     void ProcessArmorOrder(const Unit::Handle& u, AString& o, const OrdersCheck::Handle& pCheck);
-    void ProcessCastOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);
+    virtual void ProcessCastOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle&)
+    {
+    }
+
     void ProcessEntertainOrder(const Unit::Handle&, const OrdersCheck::Handle& pCheck);
     void ProcessForgetOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);
     void ProcessReshowOrder(const Unit::Handle&, AString&, const OrdersCheck::Handle& pCheck);
@@ -608,15 +598,13 @@ private:
     Location::Handle Do1SailOrder(ARegion::Handle, const Object::Handle&, const Unit::Handle&);
     void ClearCastEffects();
     void RunCastOrders();
-    void RunACastOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&);
-    void RunTeleportOrders();
+    virtual void RunACastOrder(const ARegion::Handle&, const Object::Handle&, const Unit::Handle&)
+    {
+    }
 
-    //
-    // include spells.h for spell function declarations
-    //
-#define GAME_SPELLS
-#include "spells.h"
-#undef GAME_SPELLS
+    virtual void RunTeleportOrders()
+    {
+    }
 
     //
     // Battle function

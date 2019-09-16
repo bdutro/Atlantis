@@ -25,148 +25,8 @@
 #include "game.h"
 #include "gamedata.h"
 
-template<typename T>
-inline T square(T a)
-{
-    return a * a;
-}
-
-static int RandomiseSummonAmount(int num)
-{
-    int retval, i;
-
-    retval = 0;
-
-    for (i = 0; i < 2 * num; i++)
-    {
-        if (getrandom(2))
-            retval++;
-    }
-    if (retval < 1 && num > 0)
-        retval = 1;
-
-    return retval;
-}
-
-void Game::ProcessCastOrder(const Unit::Handle& u,
-                            AString& o,
-                            const OrdersCheck::Handle& pCheck )
-{
-    AString token = o.gettoken();
-    if (!token.Len()) {
-        ParseError( pCheck, u, 0, "CAST: No skill given.");
-        return;
-    }
-
-    Skills sk = ParseSkill(token);
-    if (!sk.isValid()) {
-        ParseError( pCheck, u, 0, "CAST: Invalid skill.");
-        return;
-    }
-
-    if ( !( SkillDefs[sk].flags & SkillType::MAGIC )) {
-        ParseError( pCheck, u, 0, "CAST: That is not a magic skill.");
-        return;
-    }
-    if ( !( SkillDefs[sk].flags & SkillType::CAST )) {
-        ParseError( pCheck, u, 0, "CAST: That skill cannot be CAST.");
-        return;
-    }
-
-    if ( !pCheck ) {
-        //
-        // XXX -- should be error checking spells
-        //
-        switch(sk.asEnum()) {
-            case Skills::Types::S_MIND_READING:
-                ProcessMindReading(u,o, pCheck );
-                break;
-            case Skills::Types::S_CONSTRUCT_PORTAL:
-            case Skills::Types::S_ENCHANT_SWORDS:
-            case Skills::Types::S_ENCHANT_ARMOR:
-            case Skills::Types::S_ENCHANT_SHIELDS:
-            case Skills::Types::S_CONSTRUCT_GATE:
-            case Skills::Types::S_ENGRAVE_RUNES_OF_WARDING:
-            case Skills::Types::S_SUMMON_IMPS:
-            case Skills::Types::S_SUMMON_DEMON:
-            case Skills::Types::S_SUMMON_BALROG:
-            case Skills::Types::S_SUMMON_SKELETONS:
-            case Skills::Types::S_RAISE_UNDEAD:
-            case Skills::Types::S_SUMMON_LICH:
-            case Skills::Types::S_DRAGON_LORE:
-            case Skills::Types::S_WOLF_LORE:
-            case Skills::Types::S_EARTH_LORE:
-            case Skills::Types::S_SUMMON_WIND:
-            case Skills::Types::S_CREATE_RING_OF_INVISIBILITY:
-            case Skills::Types::S_CREATE_CLOAK_OF_INVULNERABILITY:
-            case Skills::Types::S_CREATE_STAFF_OF_FIRE:
-            case Skills::Types::S_CREATE_STAFF_OF_LIGHTNING:
-            case Skills::Types::S_CREATE_AMULET_OF_TRUE_SEEING:
-            case Skills::Types::S_CREATE_AMULET_OF_PROTECTION:
-            case Skills::Types::S_CREATE_RUNESWORD:
-            case Skills::Types::S_CREATE_SHIELDSTONE:
-            case Skills::Types::S_CREATE_MAGIC_CARPET:
-            case Skills::Types::S_CREATE_FLAMING_SWORD:
-            case Skills::Types::S_CREATE_FOOD:
-            case Skills::Types::S_CREATE_AEGIS:
-            case Skills::Types::S_CREATE_WINDCHIME:
-            case Skills::Types::S_CREATE_GATE_CRYSTAL:
-            case Skills::Types::S_CREATE_STAFF_OF_HEALING:
-            case Skills::Types::S_CREATE_SCRYING_ORB:
-            case Skills::Types::S_CREATE_CORNUCOPIA:
-            case Skills::Types::S_CREATE_BOOK_OF_EXORCISM:
-            case Skills::Types::S_CREATE_HOLY_SYMBOL:
-            case Skills::Types::S_CREATE_CENSER:
-            case Skills::Types::S_BLASPHEMOUS_RITUAL:
-                ProcessGenericSpell(u,sk, pCheck );
-                break;
-            case Skills::Types::S_CLEAR_SKIES:
-                try
-                {
-                    FindRange(SkillDefs[sk].range);
-                    ProcessRegionSpell(u, o, sk, pCheck);
-                }
-                catch(const NoSuchItemException&)
-                {
-                    ProcessGenericSpell(u, sk, pCheck);
-                }
-                break;
-            case Skills::Types::S_FARSIGHT:
-            case Skills::Types::S_TELEPORTATION:
-            case Skills::Types::S_WEATHER_LORE:
-                ProcessRegionSpell(u, o, sk, pCheck);
-                break;
-            case Skills::Types::S_BIRD_LORE:
-                ProcessBirdLore(u,o, pCheck );
-                break;
-            case Skills::Types::S_INVISIBILITY:
-                ProcessInvisibility(u,o, pCheck );
-                break;
-            case Skills::Types::S_GATE_LORE:
-                ProcessCastGateLore(u,o, pCheck );
-                break;
-            case Skills::Types::S_PORTAL_LORE:
-                ProcessCastPortalLore(u,o, pCheck );
-                break;
-            case Skills::Types::S_CREATE_PHANTASMAL_BEASTS:
-                ProcessPhanBeasts(u,o, pCheck );
-                break;
-            case Skills::Types::S_CREATE_PHANTASMAL_UNDEAD:
-                ProcessPhanUndead(u,o, pCheck );
-                break;
-            case Skills::Types::S_CREATE_PHANTASMAL_DEMONS:
-                ProcessPhanDemons(u,o, pCheck );
-                break;
-            case Skills::Types::S_TRANSMUTATION:
-                ProcessTransmutation(u, o, pCheck);
-                break;
-            default:
-                break;
-        }
-    }
-}
-
-void Game::ProcessMindReading(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessMindReading(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const auto id = ParseUnit(o);
 
@@ -184,7 +44,8 @@ void Game::ProcessMindReading(const Unit::Handle& u, AString& o, const OrdersChe
     u->castorders = order;
 }
 
-void Game::ProcessBirdLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessBirdLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     AString token = o.gettoken();
 
@@ -229,7 +90,8 @@ void Game::ProcessBirdLore(const Unit::Handle& u, AString& o, const OrdersCheck:
     u->Error("CAST: Invalid arguments.");
 }
 
-void Game::ProcessInvisibility(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessInvisibility(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     AString token = o.gettoken();
 
@@ -258,7 +120,8 @@ void Game::ProcessInvisibility(const Unit::Handle& u, AString& o, const OrdersCh
     }
 }
 
-void Game::ProcessPhanDemons(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessPhanDemons(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
     order->spell = Skills::Types::S_CREATE_PHANTASMAL_DEMONS;
@@ -301,7 +164,8 @@ void Game::ProcessPhanDemons(const Unit::Handle& u, AString& o, const OrdersChec
     u->castorders = order;
 }
 
-void Game::ProcessPhanUndead(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessPhanUndead(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
     order->spell = Skills::Types::S_CREATE_PHANTASMAL_UNDEAD;
@@ -344,7 +208,8 @@ void Game::ProcessPhanUndead(const Unit::Handle& u, AString& o, const OrdersChec
     u->castorders = order;
 }
 
-void Game::ProcessPhanBeasts(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessPhanBeasts(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     const CastIntOrder::Handle order = std::make_shared<CastIntOrder>();
     order->spell = Skills::Types::S_CREATE_PHANTASMAL_BEASTS;
@@ -382,7 +247,8 @@ void Game::ProcessPhanBeasts(const Unit::Handle& u, AString& o, const OrdersChec
     u->castorders = order;
 }
 
-void Game::ProcessGenericSpell(const Unit::Handle& u,  const Skills& spell, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessGenericSpell(const Unit::Handle& u,  const Skills& spell, const OrdersCheck::Handle&)
 {
     const CastOrder::Handle orders = std::make_shared<CastOrder>();
     orders->spell = spell;
@@ -391,7 +257,8 @@ void Game::ProcessGenericSpell(const Unit::Handle& u,  const Skills& spell, cons
     u->castorders = orders;
 }
 
-void Game::ProcessRegionSpell(const Unit::Handle& u, AString& o, const Skills& spell, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessRegionSpell(const Unit::Handle& u, AString& o, const Skills& spell, const OrdersCheck::Handle&)
 {
     AString token = o.gettoken();
     ValidValue<unsigned int> x;
@@ -482,7 +349,8 @@ void Game::ProcessRegionSpell(const Unit::Handle& u, AString& o, const Skills& s
     }
 }
 
-void Game::ProcessCastPortalLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessCastPortalLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     AString token = o.gettoken();
     if (!token.Len()) {
@@ -523,7 +391,8 @@ void Game::ProcessCastPortalLore(const Unit::Handle& u, AString& o, const Orders
     }
 }
 
-void Game::ProcessCastGateLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessCastGateLore(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     AString token = o.gettoken();
 
@@ -632,7 +501,8 @@ void Game::ProcessCastGateLore(const Unit::Handle& u, AString& o, const OrdersCh
     u->Error("CAST: Invalid argument.");
 }
 
-void Game::ProcessTransmutation(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
+template<>
+void SpellsGame<Game>::ProcessTransmutation(const Unit::Handle& u, AString& o, const OrdersCheck::Handle&)
 {
     CastTransmuteOrder::Handle order = std::make_shared<CastTransmuteOrder>();
     order->spell = Skills::Types::S_TRANSMUTATION;
@@ -686,181 +556,8 @@ void Game::ProcessTransmutation(const Unit::Handle& u, AString& o, const OrdersC
     return;
 }
 
-void Game::RunACastOrder(const ARegion::Handle& r, const Object::Handle& o, const Unit::Handle& u)
-{
-    int val = 0;
-    if (u->type != U_MAGE && u->type != U_APPRENTICE) {
-        u->Error("CAST: Unit is not a mage.");
-        return;
-    }
-
-    if (u->castorders->level == 0) {
-        u->castorders->level = u->GetSkill(u->castorders->spell);
-    }
-
-    if (u->GetSkill(u->castorders->spell) < u->castorders->level ||
-            u->castorders->level == 0) {
-        u->Error("CAST: Skill level isn't that high.");
-        return;
-    }
-
-    const Skills sk = u->castorders->spell;
-    switch (sk.asEnum()) {
-        case Skills::Types::S_MIND_READING:
-            val = RunMindReading(r,u);
-            break;
-        case Skills::Types::S_ENCHANT_ARMOR:
-            val = RunEnchant(r, u, sk, Items::Types::I_MPLATE);
-            break;
-        case Skills::Types::S_ENCHANT_SWORDS:
-            val = RunEnchant(r, u, sk, Items::Types::I_MSWORD);
-            break;
-        case Skills::Types::S_ENCHANT_SHIELDS:
-            val = RunEnchant(r, u, sk, Items::Types::I_MSHIELD);
-            break;
-        case Skills::Types::S_CONSTRUCT_GATE:
-            val = RunConstructGate(r,u,sk);
-            break;
-        case Skills::Types::S_ENGRAVE_RUNES_OF_WARDING:
-            val = RunEngraveRunes(r,o,u);
-            break;
-        case Skills::Types::S_CONSTRUCT_PORTAL:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_PORTAL);
-            break;
-        case Skills::Types::S_CREATE_RING_OF_INVISIBILITY:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_RINGOFI);
-            break;
-        case Skills::Types::S_CREATE_CLOAK_OF_INVULNERABILITY:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_CLOAKOFI);
-            break;
-        case Skills::Types::S_CREATE_STAFF_OF_FIRE:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_STAFFOFF);
-            break;
-        case Skills::Types::S_CREATE_STAFF_OF_LIGHTNING:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_STAFFOFL);
-            break;
-        case Skills::Types::S_CREATE_AMULET_OF_TRUE_SEEING:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_AMULETOFTS);
-            break;
-        case Skills::Types::S_CREATE_AMULET_OF_PROTECTION:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_AMULETOFP);
-            break;
-        case Skills::Types::S_CREATE_RUNESWORD:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_RUNESWORD);
-            break;
-        case Skills::Types::S_CREATE_SHIELDSTONE:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_SHIELDSTONE);
-            break;
-        case Skills::Types::S_CREATE_MAGIC_CARPET:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_MCARPET);
-            break;
-        case Skills::Types::S_CREATE_FLAMING_SWORD:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_FSWORD);
-            break;
-        case Skills::Types::S_SUMMON_IMPS:
-            val = RunSummonImps(r,u);
-            break;
-        case Skills::Types::S_SUMMON_DEMON:
-            val = RunSummonDemon(r,u);
-            break;
-        case Skills::Types::S_SUMMON_BALROG:
-            val = RunSummonBalrog(r,u);
-            break;
-        case Skills::Types::S_SUMMON_LICH:
-            val = RunSummonLich(r,u);
-            break;
-        case Skills::Types::S_RAISE_UNDEAD:
-            val = RunRaiseUndead(r,u);
-            break;
-        case Skills::Types::S_SUMMON_SKELETONS:
-            val = RunSummonSkeletons(r,u);
-            break;
-        case Skills::Types::S_DRAGON_LORE:
-            val = RunDragonLore(r,u);
-            break;
-        case Skills::Types::S_BIRD_LORE:
-            val = RunBirdLore(r,u);
-            break;
-        case Skills::Types::S_WOLF_LORE:
-            val = RunWolfLore(r,u);
-            break;
-        case Skills::Types::S_INVISIBILITY:
-            val = RunInvisibility(r,u);
-            break;
-        case Skills::Types::S_CREATE_PHANTASMAL_DEMONS:
-            val = RunPhanDemons(r,u);
-            break;
-        case Skills::Types::S_CREATE_PHANTASMAL_UNDEAD:
-            val = RunPhanUndead(r,u);
-            break;
-        case Skills::Types::S_CREATE_PHANTASMAL_BEASTS:
-            val = RunPhanBeasts(r,u);
-            break;
-        case Skills::Types::S_GATE_LORE:
-            val = RunDetectGates(r,o,u);
-            break;
-        case Skills::Types::S_FARSIGHT:
-            val = RunFarsight(r,u);
-            break;
-        case Skills::Types::S_EARTH_LORE:
-            val = RunEarthLore(r,u);
-            break;
-        case Skills::Types::S_WEATHER_LORE:
-            val = RunWeatherLore(r, u);
-            break;
-        case Skills::Types::S_CLEAR_SKIES:
-            val = RunClearSkies(r,u);
-            break;
-        case Skills::Types::S_SUMMON_WIND:
-            val = RunCreateArtifact(r, u, sk, Items::Types::I_CLOUDSHIP);
-            break;
-        case Skills::Types::S_CREATE_FOOD:
-            val = RunCreateArtifact(r, u, sk, Items::Types::I_FOOD);
-            break;
-        case Skills::Types::S_CREATE_AEGIS:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_AEGIS);
-            break;
-        case Skills::Types::S_CREATE_WINDCHIME:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_WINDCHIME);
-            break;
-        case Skills::Types::S_CREATE_GATE_CRYSTAL:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_GATE_CRYSTAL);
-            break;
-        case Skills::Types::S_CREATE_STAFF_OF_HEALING:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_STAFFOFH);
-            break;
-        case Skills::Types::S_CREATE_SCRYING_ORB:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_SCRYINGORB);
-            break;
-        case Skills::Types::S_CREATE_CORNUCOPIA:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_CORNUCOPIA);
-            break;
-        case Skills::Types::S_CREATE_BOOK_OF_EXORCISM:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_BOOKOFEXORCISM);
-            break;
-        case Skills::Types::S_CREATE_HOLY_SYMBOL:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_HOLYSYMBOL);
-            break;
-        case Skills::Types::S_CREATE_CENSER:
-            val = RunCreateArtifact(r,u,sk,Items::Types::I_CENSER);
-            break;
-        case Skills::Types::S_TRANSMUTATION:
-            val = RunTransmutation(r, u);
-            break;
-        case Skills::Types::S_BLASPHEMOUS_RITUAL:
-            val = RunBlasphemousRitual(r, u);
-            break;
-        default:
-            val = 0;
-            break;
-    }
-    if (val) {
-        u->Practice(sk);
-        r->NotifySpell(u, SkillDefs[sk].abbr, regions);
-    }
-}
-
-bool Game::GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar, const Unit::Handle& u,  const Skills& spell)
+template<>
+bool SpellsGame<Game>::GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar, const Unit::Handle& u,  const Skills& spell)
 {
     const size_t level = u->GetSkill(spell);
     if (!level) {
@@ -933,7 +630,8 @@ bool Game::GetRegionInRange(const ARegion::Handle& r, const ARegion::Handle& tar
     }
 }
 
-bool Game::RunMindReading(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunMindReading(const ARegion::Handle& r, const Unit::Handle& u)
 {
     const CastMindOrder::Handle order = std::dynamic_pointer_cast<CastMindOrder>(u->castorders);
     const size_t level = u->GetSkill(Skills::Types::S_MIND_READING);
@@ -959,7 +657,8 @@ bool Game::RunMindReading(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunEnchant(const ARegion::Handle&, const Unit::Handle& u, const Skills& skill, const Items& item)
+template<>
+bool SpellsGame<Game>::RunEnchant(const ARegion::Handle&, const Unit::Handle& u, const Skills& skill, const Items& item)
 {
     const size_t level = u->GetSkill(skill);
     const size_t max = static_cast<size_t>(ItemDefs[item].mOut) * level / 100;
@@ -999,7 +698,8 @@ bool Game::RunEnchant(const ARegion::Handle&, const Unit::Handle& u, const Skill
     return true;
 }
 
-bool Game::RunConstructGate(const ARegion::Handle& r, const Unit::Handle& u, const Skills& spell)
+template<>
+bool SpellsGame<Game>::RunConstructGate(const ARegion::Handle& r, const Unit::Handle& u, const Skills& spell)
 {
     if (TerrainDefs[r->type].similar_type == Regions::Types::R_OCEAN) {
         u->Error("Gates may not be constructed at sea.");
@@ -1067,7 +767,8 @@ bool Game::RunConstructGate(const ARegion::Handle& r, const Unit::Handle& u, con
     return true;
 }
 
-bool Game::RunEngraveRunes(const ARegion::Handle&, const Object::Handle& o, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunEngraveRunes(const ARegion::Handle&, const Object::Handle& o, const Unit::Handle& u)
 {
     if (o->IsFleet() || !o->IsBuilding()) {
         u->Error("Runes of Warding may only be engraved on a building.");
@@ -1128,7 +829,8 @@ bool Game::RunEngraveRunes(const ARegion::Handle&, const Object::Handle& o, cons
     return true;
 }
 
-bool Game::RunSummonBalrog(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunSummonBalrog(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1154,7 +856,8 @@ bool Game::RunSummonBalrog(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunSummonDemon(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunSummonDemon(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1173,7 +876,8 @@ bool Game::RunSummonDemon(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunSummonImps(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunSummonImps(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1189,7 +893,8 @@ bool Game::RunSummonImps(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunCreateArtifact(const ARegion::Handle& r, const Unit::Handle& u, const Skills& skill, const Items& item)
+template<>
+bool SpellsGame<Game>::RunCreateArtifact(const ARegion::Handle& r, const Unit::Handle& u, const Skills& skill, const Items& item)
 {
     const size_t level = u->GetSkill(skill);
     if (level < ItemDefs[item].mLevel) {
@@ -1235,7 +940,8 @@ bool Game::RunCreateArtifact(const ARegion::Handle& r, const Unit::Handle& u, co
     return true;
 }
 
-bool Game::RunSummonLich(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunSummonLich(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1260,7 +966,8 @@ bool Game::RunSummonLich(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunRaiseUndead(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunRaiseUndead(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1286,7 +993,8 @@ bool Game::RunRaiseUndead(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunSummonSkeletons(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunSummonSkeletons(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1312,7 +1020,8 @@ bool Game::RunSummonSkeletons(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunDragonLore(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunDragonLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (r->type == Regions::Types::R_NEXUS) {
         u->Error("Can't summon creatures in the nexus.");
@@ -1347,7 +1056,8 @@ bool Game::RunDragonLore(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunBirdLore(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunBirdLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
     int type = regions.GetRegionArray(r->zloc)->levelType;
@@ -1407,7 +1117,8 @@ bool Game::RunBirdLore(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunWolfLore(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunWolfLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     if (TerrainDefs[r->type].similar_type != Regions::Types::R_MOUNTAIN &&
         TerrainDefs[r->type].similar_type != Regions::Types::R_FOREST) {
@@ -1437,7 +1148,8 @@ bool Game::RunWolfLore(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastUnitsOrder::Handle order = std::dynamic_pointer_cast<CastUnitsOrder>(u->castorders);
     const size_t max = square(u->GetSkill(Skills::Types::S_INVISIBILITY));
@@ -1489,7 +1201,8 @@ bool Game::RunInvisibility(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunPhanDemons(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunPhanDemons(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
     const int level = static_cast<int>(u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_DEMONS));
@@ -1524,7 +1237,8 @@ bool Game::RunPhanDemons(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunPhanUndead(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunPhanUndead(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
     const int level = static_cast<int>(u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_UNDEAD));
@@ -1560,7 +1274,8 @@ bool Game::RunPhanUndead(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunPhanBeasts(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunPhanBeasts(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
     const int level = static_cast<int>(u->GetSkill(Skills::Types::S_CREATE_PHANTASMAL_BEASTS));
@@ -1595,7 +1310,8 @@ bool Game::RunPhanBeasts(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunEarthLore(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunEarthLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     const size_t level = u->GetSkill(Skills::Types::S_EARTH_LORE);
 
@@ -1610,7 +1326,8 @@ bool Game::RunEarthLore(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunClearSkies(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunClearSkies(const ARegion::Handle& r, const Unit::Handle& u)
 {
     ARegion::Handle tar = r;
     AString temp = "Casts Clear Skies";
@@ -1642,7 +1359,8 @@ bool Game::RunClearSkies(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->castorders);
 
@@ -1689,7 +1407,8 @@ bool Game::RunWeatherLore(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunFarsight(const ARegion::Handle& r, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunFarsight(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->castorders);
 
@@ -1711,7 +1430,8 @@ bool Game::RunFarsight(const ARegion::Handle& r, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunDetectGates(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunDetectGates(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
     const size_t level = u->GetSkill(Skills::Types::S_GATE_LORE);
 
@@ -1749,7 +1469,8 @@ bool Game::RunDetectGates(const ARegion::Handle& r, const Object::Handle&, const
     return true;
 }
 
-bool Game::RunTeleport(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunTeleport(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
     CastRegionOrder::Handle order = std::dynamic_pointer_cast<CastRegionOrder>(u->teleportorders);
 
@@ -1779,7 +1500,8 @@ bool Game::RunTeleport(const ARegion::Handle& r, const Object::Handle&, const Un
     return true;
 }
 
-bool Game::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
     int level = static_cast<int>(u->GetSkill(Skills::Types::S_GATE_LORE));
     int nexgate = 0;
@@ -1934,7 +1656,8 @@ bool Game::RunGateJump(const ARegion::Handle& r, const Object::Handle&, const Un
     return true;
 }
 
-bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const Unit::Handle& u)
 {
     const size_t level = u->GetSkill(Skills::Types::S_PORTAL_LORE);
     const auto& order = u->teleportorders;
@@ -2020,7 +1743,8 @@ bool Game::RunPortalLore(const ARegion::Handle& r, const Object::Handle&, const 
     return true;
 }
 
-bool Game::RunTransmutation(const ARegion::Handle&, const Unit::Handle& u)
+template<>
+bool SpellsGame<Game>::RunTransmutation(const ARegion::Handle&, const Unit::Handle& u)
 {
     CastTransmuteOrder::Handle order = std::dynamic_pointer_cast<CastTransmuteOrder>(u->castorders);
     const size_t level = u->GetSkill(Skills::Types::S_TRANSMUTATION);
@@ -2079,7 +1803,8 @@ bool Game::RunTransmutation(const ARegion::Handle&, const Unit::Handle& u)
     return true;
 }
 
-bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& mage)
+template<>
+bool SpellsGame<Game>::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& mage)
 {
     /*int level, num, sactype, sacrifices, i, sac, max;
     Object *o, *tower;
@@ -2306,7 +2031,8 @@ bool Game::RunBlasphemousRitual(const ARegion::Handle& r, const Unit::Handle& ma
     return true;
 }
 
-void Game::RunTeleportOrders()
+template<>
+void SpellsGame<Game>::RunTeleportOrders()
 {
     bool val = true;
     for(const auto& r: regions) {
@@ -2340,5 +2066,299 @@ void Game::RunTeleportOrders()
                 }
             }
         }
+    }
+}
+
+template<>
+void SpellsGame<Game>::ProcessCastOrder(const Unit::Handle& u,
+                            AString& o,
+                            const OrdersCheck::Handle& pCheck )
+{
+    AString token = o.gettoken();
+    if (!token.Len()) {
+        ParseError( pCheck, u, 0, "CAST: No skill given.");
+        return;
+    }
+
+    Skills sk = ParseSkill(token);
+    if (!sk.isValid()) {
+        ParseError( pCheck, u, 0, "CAST: Invalid skill.");
+        return;
+    }
+
+    if ( !( SkillDefs[sk].flags & SkillType::MAGIC )) {
+        ParseError( pCheck, u, 0, "CAST: That is not a magic skill.");
+        return;
+    }
+    if ( !( SkillDefs[sk].flags & SkillType::CAST )) {
+        ParseError( pCheck, u, 0, "CAST: That skill cannot be CAST.");
+        return;
+    }
+
+    if ( !pCheck ) {
+        //
+        // XXX -- should be error checking spells
+        //
+        switch(sk.asEnum()) {
+            case Skills::Types::S_MIND_READING:
+                ProcessMindReading(u,o, pCheck );
+                break;
+            case Skills::Types::S_CONSTRUCT_PORTAL:
+            case Skills::Types::S_ENCHANT_SWORDS:
+            case Skills::Types::S_ENCHANT_ARMOR:
+            case Skills::Types::S_ENCHANT_SHIELDS:
+            case Skills::Types::S_CONSTRUCT_GATE:
+            case Skills::Types::S_ENGRAVE_RUNES_OF_WARDING:
+            case Skills::Types::S_SUMMON_IMPS:
+            case Skills::Types::S_SUMMON_DEMON:
+            case Skills::Types::S_SUMMON_BALROG:
+            case Skills::Types::S_SUMMON_SKELETONS:
+            case Skills::Types::S_RAISE_UNDEAD:
+            case Skills::Types::S_SUMMON_LICH:
+            case Skills::Types::S_DRAGON_LORE:
+            case Skills::Types::S_WOLF_LORE:
+            case Skills::Types::S_EARTH_LORE:
+            case Skills::Types::S_SUMMON_WIND:
+            case Skills::Types::S_CREATE_RING_OF_INVISIBILITY:
+            case Skills::Types::S_CREATE_CLOAK_OF_INVULNERABILITY:
+            case Skills::Types::S_CREATE_STAFF_OF_FIRE:
+            case Skills::Types::S_CREATE_STAFF_OF_LIGHTNING:
+            case Skills::Types::S_CREATE_AMULET_OF_TRUE_SEEING:
+            case Skills::Types::S_CREATE_AMULET_OF_PROTECTION:
+            case Skills::Types::S_CREATE_RUNESWORD:
+            case Skills::Types::S_CREATE_SHIELDSTONE:
+            case Skills::Types::S_CREATE_MAGIC_CARPET:
+            case Skills::Types::S_CREATE_FLAMING_SWORD:
+            case Skills::Types::S_CREATE_FOOD:
+            case Skills::Types::S_CREATE_AEGIS:
+            case Skills::Types::S_CREATE_WINDCHIME:
+            case Skills::Types::S_CREATE_GATE_CRYSTAL:
+            case Skills::Types::S_CREATE_STAFF_OF_HEALING:
+            case Skills::Types::S_CREATE_SCRYING_ORB:
+            case Skills::Types::S_CREATE_CORNUCOPIA:
+            case Skills::Types::S_CREATE_BOOK_OF_EXORCISM:
+            case Skills::Types::S_CREATE_HOLY_SYMBOL:
+            case Skills::Types::S_CREATE_CENSER:
+            case Skills::Types::S_BLASPHEMOUS_RITUAL:
+                ProcessGenericSpell(u,sk, pCheck );
+                break;
+            case Skills::Types::S_CLEAR_SKIES:
+                try
+                {
+                    FindRange(SkillDefs[sk].range);
+                    ProcessRegionSpell(u, o, sk, pCheck);
+                }
+                catch(const NoSuchItemException&)
+                {
+                    ProcessGenericSpell(u, sk, pCheck);
+                }
+                break;
+            case Skills::Types::S_FARSIGHT:
+            case Skills::Types::S_TELEPORTATION:
+            case Skills::Types::S_WEATHER_LORE:
+                ProcessRegionSpell(u, o, sk, pCheck);
+                break;
+            case Skills::Types::S_BIRD_LORE:
+                ProcessBirdLore(u,o, pCheck );
+                break;
+            case Skills::Types::S_INVISIBILITY:
+                ProcessInvisibility(u,o, pCheck );
+                break;
+            case Skills::Types::S_GATE_LORE:
+                ProcessCastGateLore(u,o, pCheck );
+                break;
+            case Skills::Types::S_PORTAL_LORE:
+                ProcessCastPortalLore(u,o, pCheck );
+                break;
+            case Skills::Types::S_CREATE_PHANTASMAL_BEASTS:
+                ProcessPhanBeasts(u,o, pCheck );
+                break;
+            case Skills::Types::S_CREATE_PHANTASMAL_UNDEAD:
+                ProcessPhanUndead(u,o, pCheck );
+                break;
+            case Skills::Types::S_CREATE_PHANTASMAL_DEMONS:
+                ProcessPhanDemons(u,o, pCheck );
+                break;
+            case Skills::Types::S_TRANSMUTATION:
+                ProcessTransmutation(u, o, pCheck);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+template<>
+void SpellsGame<Game>::RunACastOrder(const ARegion::Handle& r, const Object::Handle& o, const Unit::Handle& u)
+{
+    int val = 0;
+    if (u->type != U_MAGE && u->type != U_APPRENTICE) {
+        u->Error("CAST: Unit is not a mage.");
+        return;
+    }
+
+    if (u->castorders->level == 0) {
+        u->castorders->level = u->GetSkill(u->castorders->spell);
+    }
+
+    if (u->GetSkill(u->castorders->spell) < u->castorders->level ||
+            u->castorders->level == 0) {
+        u->Error("CAST: Skill level isn't that high.");
+        return;
+    }
+
+    const Skills sk = u->castorders->spell;
+    switch (sk.asEnum()) {
+        case Skills::Types::S_MIND_READING:
+            val = RunMindReading(r,u);
+            break;
+        case Skills::Types::S_ENCHANT_ARMOR:
+            val = RunEnchant(r, u, sk, Items::Types::I_MPLATE);
+            break;
+        case Skills::Types::S_ENCHANT_SWORDS:
+            val = RunEnchant(r, u, sk, Items::Types::I_MSWORD);
+            break;
+        case Skills::Types::S_ENCHANT_SHIELDS:
+            val = RunEnchant(r, u, sk, Items::Types::I_MSHIELD);
+            break;
+        case Skills::Types::S_CONSTRUCT_GATE:
+            val = RunConstructGate(r,u,sk);
+            break;
+        case Skills::Types::S_ENGRAVE_RUNES_OF_WARDING:
+            val = RunEngraveRunes(r,o,u);
+            break;
+        case Skills::Types::S_CONSTRUCT_PORTAL:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_PORTAL);
+            break;
+        case Skills::Types::S_CREATE_RING_OF_INVISIBILITY:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_RINGOFI);
+            break;
+        case Skills::Types::S_CREATE_CLOAK_OF_INVULNERABILITY:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_CLOAKOFI);
+            break;
+        case Skills::Types::S_CREATE_STAFF_OF_FIRE:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_STAFFOFF);
+            break;
+        case Skills::Types::S_CREATE_STAFF_OF_LIGHTNING:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_STAFFOFL);
+            break;
+        case Skills::Types::S_CREATE_AMULET_OF_TRUE_SEEING:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_AMULETOFTS);
+            break;
+        case Skills::Types::S_CREATE_AMULET_OF_PROTECTION:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_AMULETOFP);
+            break;
+        case Skills::Types::S_CREATE_RUNESWORD:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_RUNESWORD);
+            break;
+        case Skills::Types::S_CREATE_SHIELDSTONE:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_SHIELDSTONE);
+            break;
+        case Skills::Types::S_CREATE_MAGIC_CARPET:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_MCARPET);
+            break;
+        case Skills::Types::S_CREATE_FLAMING_SWORD:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_FSWORD);
+            break;
+        case Skills::Types::S_SUMMON_IMPS:
+            val = RunSummonImps(r,u);
+            break;
+        case Skills::Types::S_SUMMON_DEMON:
+            val = RunSummonDemon(r,u);
+            break;
+        case Skills::Types::S_SUMMON_BALROG:
+            val = RunSummonBalrog(r,u);
+            break;
+        case Skills::Types::S_SUMMON_LICH:
+            val = RunSummonLich(r,u);
+            break;
+        case Skills::Types::S_RAISE_UNDEAD:
+            val = RunRaiseUndead(r,u);
+            break;
+        case Skills::Types::S_SUMMON_SKELETONS:
+            val = RunSummonSkeletons(r,u);
+            break;
+        case Skills::Types::S_DRAGON_LORE:
+            val = RunDragonLore(r,u);
+            break;
+        case Skills::Types::S_BIRD_LORE:
+            val = RunBirdLore(r,u);
+            break;
+        case Skills::Types::S_WOLF_LORE:
+            val = RunWolfLore(r,u);
+            break;
+        case Skills::Types::S_INVISIBILITY:
+            val = RunInvisibility(r,u);
+            break;
+        case Skills::Types::S_CREATE_PHANTASMAL_DEMONS:
+            val = RunPhanDemons(r,u);
+            break;
+        case Skills::Types::S_CREATE_PHANTASMAL_UNDEAD:
+            val = RunPhanUndead(r,u);
+            break;
+        case Skills::Types::S_CREATE_PHANTASMAL_BEASTS:
+            val = RunPhanBeasts(r,u);
+            break;
+        case Skills::Types::S_GATE_LORE:
+            val = RunDetectGates(r,o,u);
+            break;
+        case Skills::Types::S_FARSIGHT:
+            val = RunFarsight(r,u);
+            break;
+        case Skills::Types::S_EARTH_LORE:
+            val = RunEarthLore(r,u);
+            break;
+        case Skills::Types::S_WEATHER_LORE:
+            val = RunWeatherLore(r, u);
+            break;
+        case Skills::Types::S_CLEAR_SKIES:
+            val = RunClearSkies(r,u);
+            break;
+        case Skills::Types::S_SUMMON_WIND:
+            val = RunCreateArtifact(r, u, sk, Items::Types::I_CLOUDSHIP);
+            break;
+        case Skills::Types::S_CREATE_FOOD:
+            val = RunCreateArtifact(r, u, sk, Items::Types::I_FOOD);
+            break;
+        case Skills::Types::S_CREATE_AEGIS:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_AEGIS);
+            break;
+        case Skills::Types::S_CREATE_WINDCHIME:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_WINDCHIME);
+            break;
+        case Skills::Types::S_CREATE_GATE_CRYSTAL:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_GATE_CRYSTAL);
+            break;
+        case Skills::Types::S_CREATE_STAFF_OF_HEALING:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_STAFFOFH);
+            break;
+        case Skills::Types::S_CREATE_SCRYING_ORB:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_SCRYINGORB);
+            break;
+        case Skills::Types::S_CREATE_CORNUCOPIA:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_CORNUCOPIA);
+            break;
+        case Skills::Types::S_CREATE_BOOK_OF_EXORCISM:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_BOOKOFEXORCISM);
+            break;
+        case Skills::Types::S_CREATE_HOLY_SYMBOL:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_HOLYSYMBOL);
+            break;
+        case Skills::Types::S_CREATE_CENSER:
+            val = RunCreateArtifact(r,u,sk,Items::Types::I_CENSER);
+            break;
+        case Skills::Types::S_TRANSMUTATION:
+            val = RunTransmutation(r, u);
+            break;
+        case Skills::Types::S_BLASPHEMOUS_RITUAL:
+            val = RunBlasphemousRitual(r, u);
+            break;
+        default:
+            val = 0;
+            break;
+    }
+    if (val) {
+        u->Practice(sk);
+        r->NotifySpell(u, SkillDefs[sk].abbr, regions);
     }
 }
