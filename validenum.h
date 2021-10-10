@@ -1,6 +1,7 @@
 #ifndef VALID_ENUM_H
 #define VALID_ENUM_H
 
+#include <istream>
 #include <iterator>
 
 #include "validvalue.h"

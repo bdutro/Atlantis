@@ -25,6 +25,7 @@
 #ifndef SHIELD_CLASS
 #define SHIELD_CLASS
 
+#include <cstddef>
 #include <list>
 
 class Shield {
