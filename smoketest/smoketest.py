@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 
 # This is a simple script to smoke test a new Atlantis build.
 
@@ -34,16 +34,16 @@ args = sys.argv
 
 if len(args) == 1 or "--help" in args:
     # print usage message and quit
-    print "You need to feed smoketest some arguments to tell it what to do:"
-    print "  --turns=...      The number of turns that you want to run"
-    print "  --players=...    The number of test players in the game"
-    print "  --cvs            Download up-to-date sources from the CVS"
-    print "  --make           Make a new version of the code"
-    print "  --test           Test the code"
-    print "  --continue       Continue from a previous run"
-    print "  --game=<name>    Make a particular version of the game"
-    print "                   (Standard is the default)"
-    print "  --all            A combination of the cvs, make and test options"
+    print("You need to feed smoketest some arguments to tell it what to do:")
+    print("  --turns=...      The number of turns that you want to run")
+    print("  --players=...    The number of test players in the game")
+    print("  --cvs            Download up-to-date sources from the CVS")
+    print("  --make           Make a new version of the code")
+    print("  --test           Test the code")
+    print("  --continue       Continue from a previous run")
+    print("  --game=<name>    Make a particular version of the game")
+    print("                   (Standard is the default)")
+    print("  --all            A combination of the cvs, make and test options")
     sys.exit(0)
 
 # Get the game name, number of turns and number of players if they exist
@@ -56,19 +56,19 @@ for item in args:
         gamename = item[7:]
     if item.startswith('--turns='):
         numturns = int(item[8:])
-        print numturns
+        print(numturns)
     if item.startswith('--players='):
         numplayers = int(item[10:])
-        print numplayers
+        print(numplayers)
 
 if gamename == None:
-    print "Game name defaulted to standard"
+    print("Game name defaulted to standard")
     gamename = 'standard'
 if numturns == None:
-    print "Number of turns defaulted to 10"
+    print("Number of turns defaulted to 10")
     numturns = 10
 if numplayers == None:
-    print "Number of players defaulted to 10"
+    print("Number of players defaulted to 10")
     numplayers = 10
 
 
@@ -82,20 +82,20 @@ if "--cvs" in args or "--all" in args:
 if "--make" in args or "--all" in args:
     # we can do a make to redo the code
     os.chdir("..")
-    print "now entering directory"
+    print("now entering directory")
     os.system('pwd')
     os.system('gmake GAME='+gamename)
     if os.access(gamename+'/'+gamename, os.F_OK) != 1:
-        print "There was some problem with building the game source"
+        print("There was some problem with building the game source")
         sys.exit(2)
     # Try and build the html too, but if we can't, don't halt
     os.system('gmake GAME='+gamename+' rules')
     if os.access(gamename+'/html/'+gamename+'.html', os.F_OK) != 1:
-        print "There was some problem with building the game rules into HTML"
+        print("There was some problem with building the game rules into HTML")
     os.chdir("smoketest")
 
 if not ("--test" in args or "--continue" in args or "--all" in args):
-    print "Skipping testing ... like a real man"
+    print("Skipping testing ... like a real man")
     sys.exit(0)
 
 # Now, we test
@@ -110,14 +110,14 @@ if "--continue" not in args:
     os.system('cp ../../'+gamename+'/html/'+gamename+'.html .')
     
     # now run some tests...
-    print "You'll need to feed in the values for the size of the game map"
+    print("You'll need to feed in the values for the size of the game map")
     os.system('./'+gamename+' new')
     
     if os.access('game.out', os.F_OK) != 1:
-        print "There was some problem with writing the game.out file"
+        print("There was some problem with writing the game.out file")
         sys.exit(3)
     if os.access('players.out', os.F_OK) != 1:
-        print "There was some problem with writing the players.out file"
+        print("There was some problem with writing the players.out file")
         sys.exit(3)
 
     os.rename('game.out','game.in')
@@ -127,7 +127,7 @@ if "--continue" not in args:
     # 7. add players into the players.in file
     players = []
     for index in range(numplayers):
-        players.append('Player '+str(index+1))
+        players.append(f'Player {index+1}')
     
     playersfile = open('players.in','a+')
     for player in players:
@@ -139,7 +139,7 @@ else:
     os.chdir("testing")
 
 # Now we can start looping and running turns.
-print "Running "+str(numturns)+" turns.."
+print(f"Running {numturns} turns..")
 
 if "--continue" in args:
     # get the current turn from players.in
@@ -153,53 +153,53 @@ else:
     thisturn = 0
 
 while thisturn <= numturns:
-    print "Turn",thisturn,"of",numturns
+    print(f'Turn {thisturn} of {numturns}')
     
     # Move turn reports and templates
     if os.access(str(thisturn), os.F_OK) == 1:
-        os.system('rm -r '+str(thisturn))
-    os.system('mkdir '+str(thisturn))
-    os.system('mv report.* '+str(thisturn))
-    os.system('mv template.* '+str(thisturn))
+        os.system(f'rm -r {thisturn}')
+    os.system(f'mkdir {thisturn}')
+    os.system(f'mv report.* {thisturn}')
+    os.system(f'mv template.* {thisturn}')
     
     # run a turn
     os.system('./'+gamename+' run') # > /dev/null')
     
     # 9. move the old order files into a directory
-    os.system('mv orders.* '+str(thisturn))
+    os.system(f'mv orders.* {thisturn}')
     
     # 11. create new orders
     for index in range(numplayers):
-        print "Player "+str(index+1)+":"
+        print(f"Player {index+1}:")
         
-        if (os.access('report.'+str(index+3), os.F_OK) != 1 or 
-           os.access('template.'+str(index+3), os.F_OK) != 1):
-            print "The player has been eliminated!"
+        if (os.access(f'report.{index+3}', os.F_OK) != 1 or 
+           os.access(f'template.{index+3}', os.F_OK) != 1):
+            print("The player has been eliminated!")
             continue
 
         # update the players.in file so that the players don't time out.
         # ie, Set the LastOrders field
-        setplayerinfo(index+3, 'lastorders', str(thisturn))
+        setplayerinfo(index+3, 'lastorders', thisturn)
         
-        #print "opening template for player",index+1,": template."+str(index+3)
-        templatefile = open('template.'+str(index+3), 'r') # readonly
+        #print("opening template for player",index+1,": template."+str(index+3))
+        templatefile = open(f'template.{index+3}', 'r') # readonly
         template = templatefile.readlines()
         
-        #print "opening report for player",index+1,": report."+str(index+3)
-        reportfile = open('report.'+str(index+3), 'r') # readonly
+        #print("opening report for player",index+1,": report."+str(index+3))
+        reportfile = open(f'report.{index+3}', 'r') # readonly
         report = reportfile.readlines()
         
         orders = generateturn(report, template)
         
-        #print "writing orders for player",index+1,": orders."+str(index+3)
-        orderfile = open('orders.'+str(index+3), 'w+') # overwrite
+        #print("writing orders for player",index+1,": orders."+str(index+3))
+        orderfile = open(f'orders.{index+3}', 'w+') # overwrite
         orderfile.write(orders)
         orderfile.close()
     
     # 13. move old reports
-    os.system('mv game.in '+str(thisturn))
+    os.system(f'mv game.in {thisturn}')
     os.system('mv game.out game.in')
-    os.system('mv players.in '+str(thisturn))
+    os.system(f'mv players.in {thisturn}')
     os.system('mv players.out players.in')
     
     thisturn += 1

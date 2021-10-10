@@ -47,14 +47,14 @@ def setplayerinfo(factionnumber, attribute, value):
                     'ready':'Ready: ',
                     'timesreward':'RewardTimes: '}
     
-    if attribute not in startstring.keys():
+    if attribute not in startstring:
         return 'invalid'
     
     if factionnumber == 1 or factionnumber == 2:
         return 'invalid'
         
     playersfile = open('players.out', 'r')
-    searchstring = 'Faction: '+str(factionnumber)
+    searchstring = f'Faction: {factionnumber}'
     
     output = ''
     #Now read through the players.in file
@@ -75,7 +75,7 @@ def setplayerinfo(factionnumber, attribute, value):
     while 1:    
         tempstring = playersfile.readline()
         if tempstring[:len(lookingfor)] == lookingfor:
-            output = output + startstring[attribute] + str(value) + '\n'
+            output = output + startstring[attribute] + f'{value}\n'
             foundit = 'yes'
             #Since we haven't read in all of the rest, we can safely break here.
             break
@@ -92,7 +92,7 @@ def setplayerinfo(factionnumber, attribute, value):
     if foundit == 'no':
         # if we haven't found the string, it must not be in here
         # so we have to create it ourselves
-        output = output + startstring[attribute] + str(value) + '\n'
+        output = output + startstring[attribute] + f'{value}\n'
         # And we'll still have 'Faction: ' in the tempstring...
         output = output + tempstring
     

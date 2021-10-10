@@ -28,7 +28,7 @@ def generateturn(report, template):
     
     #print
     #for line in report:
-    #    print line
+    #    print(line)
     #print
     
     # Here we parse the report and template lists to get out relevant info.
@@ -105,17 +105,17 @@ def generateturn(report, template):
         lineindex = report.index(line)
         if lineindex+1 < len(report) and report[lineindex+1].startswith('---'):
             #the current line must be the start of a region
-            #print "Found a region:",report[lineindex]
+            #print("Found a region:",report[lineindex])
             
             #wibble = regionpattern.search(report[lineindex][:-1])
             #if wibble != None:
-                #print line
-                #print "Found a co-ordinate in this line!"
+                #print(line)
+                #print("Found a co-ordinate in this line!")
 
             wibble = regionpattern.search(report[lineindex][:-1])
             if wibble != None:
-                #print line
-                #print "***MATCH***: ",wibble.groups()
+                #print(line)
+                #print("***MATCH***: ",wibble.groups())
                 
                 thisregion = {}
                 thisregion['terrain']=wibble.groups()[0]
@@ -132,8 +132,8 @@ def generateturn(report, template):
             if wibble == None:
                 wibble = citypattern.search(report[lineindex][:-1])
                 if wibble != None:
-                    #print line
-                    #print "***MATCH***: ",wibble2.groups()
+                    #print(line)
+                    #print("***MATCH***: ",wibble2.groups())
                     
                     thisregion = {}
                     thisregion['type']=wibble.groups()[0]
@@ -149,20 +149,20 @@ def generateturn(report, template):
             if wibble == None:
                 continue
             #Weather
-            #print report[lineindex+2][:-1].split(';', 1)
+            #print(report[lineindex+2][:-1].split(';', 1))
             weather = report[lineindex+2][:-1].split(';', 1)
             if weather[0] == '  The weather was clear last month':
                 thisregion['lastweather'] = 'clear'
-                #print "Clear last month!"
+                #print("Clear last month!")
             else:
                 thisregion['lastweather'] = 'not clear'
-                #print "Not clear last month!"
+                #print("Not clear last month!")
             if weather[1] == ' it will be clear next month.':
                 thisregion['weather'] = 'clear'
-                #print "Clear this month!"
+                #print("Clear this month!")
             else:
                 thisregion['weather'] = 'not clear'
-                #print "Not clear this month!"
+                #print("Not clear this month!")
             
             #Wages
             if report[lineindex+3][:-1] != ' Wages: $0.':
@@ -170,10 +170,10 @@ def generateturn(report, template):
                 if wages != None:
                     thisregion['wages'] = int(wages.groups()[0])
                     thisregion['wagesmax'] = int(wages.groups()[1])
-                    #print "Wages are $"+str(thisregion['wages'])
-                    #print "Wage max is $"+str(thisregion['wagesmax'])
+                    #print("Wages are $"+str(thisregion['wages']))
+                    #print("Wage max is $"+str(thisregion['wagesmax']))
             else:
-                #print "No Wages!"
+                #print("No Wages!")
                 thisregion['wages'] = 0
                 thisregion['wagesmax'] = 0
                 
@@ -185,13 +185,13 @@ def generateturn(report, template):
             ente = re.search('\$(\d+)\.', report[lineindex+6])
             if ente != None:
                 thisregion['entertain'] = int(ente.groups()[0])
-                #print "Entertainment: ", thisregion['entertain']
+                #print("Entertainment: ", thisregion['entertain'])
             #thisregion['entertain'] = report[lineindex+6]
             
             #Products
             ignored,stuff = report[lineindex+7].split(': ', 1)
             itemlist = stuff.split(', ')
-            #print itemlist
+            #print(itemlist)
             thisregion['products'] = itemlist
             
             #Exits
@@ -202,9 +202,9 @@ def generateturn(report, template):
                 try:
                     temp,rest = report[counter].split(' : ', 1)
                     temp = temp.strip()
-                    #print ">"+temp+"<   >"+rest+"<"
-                    if temp in directiondict.keys():
-                        #print "Found an exit!", temp
+                    #print(">"+temp+"<   >"+rest+"<")
+                    if temp in directiondict:
+                        #print("Found an exit!", temp)
                         # NB: this assumes that terrain is one word...
                         terrain, coord, ignored, regionname = rest.split(' ', 3)
                         hexdirections[temp]=[coord, terrain, regionname]
@@ -241,12 +241,12 @@ def generateturn(report, template):
             # we know we've split a line at the wrong point
             lineindex = report.index(line)+1
             while lineindex<len(report) and report[lineindex].startswith(' '):
-                #print "joined up some lines"
+                #print("joined up some lines")
                 line += report[lineindex]
                 lineindex += 1
                 
-            #print "***MATCH***: found a unit:"
-            #print line
+            #print("***MATCH***: found a unit:")
+            #print(line)
             
             # what about comments? split the comment off first,
             # since we might have ., in the comment
@@ -258,20 +258,20 @@ def generateturn(report, template):
             if len(temp)==5:  # Normal unit
                 unit['main'], unit['weight'], unit['capacity'], unit['skillbit'], ignored = line.split('.')
                 unit['combatspell']=unit['spells']=None
-                #print "Found a normal unit!"
+                #print("Found a normal unit!")
             elif len(temp)==2:  #Not one of our units
                 unit['main'], ignored = line.split('.')
                 unit['combatspell']=unit['spells']=unit['weight']=unit['capacity']=unit['skillbit']=None
-                #print "Found another faction's unit!"
+                #print("Found another faction's unit!")
             elif len(temp)==6:  # Mage unit with no combat spell
                 unit['main'], unit['weight'], unit['capacity'], unit['skillbit'], unit['spells'], ignored = line.split('.')
                 unit['combatspell'] = None
-                #print "Found a mage unit! (no combat spell)"
+                #print("Found a mage unit! (no combat spell)")
             elif len(temp)==7:  # Mage unit
                 unit['main'], unit['weight'], unit['capacity'], unit['skillbit'], unit['combatspell'], unit['spells'], ignored = line.split('.')
-                #print "Found a mage unit!"
+                #print("Found a mage unit!")
             else:
-                #print "Found a wacky unit, with "+str(len(temp))+" parts:",line
+                #print("Found a wacky unit, with "+str(len(temp))+" parts:",line)
                 unit['main'], ignored = line.split('.')
                 unit['combatspell']=unit['spells']=unit['weight']=unit['capacity']=unit['skillbit']=None
                 continue
@@ -281,7 +281,7 @@ def generateturn(report, template):
             if wibble != None and len(wibble.groups()) == 2:
                 unit['faction'] = int(wibble.groups()[1])
                 unit['unitnum'] = int(wibble.groups()[0])
-                #print "Found numbers: FN ==",unit['faction'],"and UN ==",unit['unitnum']
+                #print("Found numbers: FN ==",unit['faction'],"and UN ==",unit['unitnum'])
                 if unit['faction'] > maxfactionfound:
                     maxfactionfound = unit['faction']
             
@@ -290,25 +290,25 @@ def generateturn(report, template):
                 if wibble != None and len(wibble.groups()) == 1:
                     unit['unitnum'] = int(wibble.groups()[0])
                     unit['faction'] = 0
-                    #print "Found non-revealing unit: UN ==",unit['unitnum']
+                    #print("Found non-revealing unit: UN ==",unit['unitnum'])
             
             
             itemlist=unit['main'].split(',')
-            #print itemlist
+            #print(itemlist)
             for thingo in itemlist:
                 if '[' in thingo:
-                    #print thingo, "is an item!"
+                    #print(thingo, "is an item!")
                     unit['items'].append(thingo)
             
             if unit['skillbit'] != None:
                 itemlist=unit['skillbit'].split(',')
-                #print itemlist
+                #print(itemlist)
                 for thingo in itemlist:
                     thingo = thingo.strip()
                     if thingo.startswith('Skills:'):
                         thingo = thingo[8:]
                     if '[' in thingo:
-                        #print thingo, "is a skill!"
+                        #print(thingo, "is a skill!")
                         unit['skills'].append(thingo)
                         
             # Add the unit to unitbynum
@@ -316,17 +316,17 @@ def generateturn(report, template):
             
             # Need the region dictstring at this point... should be ok
             if dictstring==None: #we're in the nexus
-                if 'nexus' not in units.keys():
+                if 'nexus' not in units:
                     units['nexus']=[]
                 units['nexus'].append(unit)
             else:
                 units[dictstring].append(unit)
                 
-    #print region
+    #print(region)
     #print
-    #print units
+    #print(units)
     
-    #print unitbynum.keys()
+    #print(unitbynum.keys())
     
     # Read each line of the template.
     firstunit = 'no'
@@ -341,7 +341,7 @@ def generateturn(report, template):
             orders += "; Found a unit!\n"
             ignored, unitnumber = line.split(' ',1)
             unitnumber = int(unitnumber.strip())
-            print ">>>", unitnumber
+            print(f'>>>{unitnumber}')
             
             if firstunit == 'no':
                 orders += "option template map\n"
@@ -372,24 +372,24 @@ def generateturn(report, template):
                 orders += "move "+directions[temp]+" "+directions[temp2]+"\n"
             #elif random.random() >= 0.6:
             #    orders += "work\n"
-                #print "Moving..."
+                #print("Moving...")
             else:
-                #print unitbynum[unitnumber]['items']
-                #print unitbynum[unitnumber]['skills']
+                #print(unitbynum[unitnumber]['items'])
+                #print(unitbynum[unitnumber]['skills'])
                 combat = -1
                 for item in unitbynum[unitnumber]['skills']:
                     if item.strip().startswith('combat'):
-                        #print "Found combat skill..."
+                        #print("Found combat skill...")
                         combskill = re.search(r'\((\d+)\)', item)
                         if combskill != None:
-                            #print "Found combat skill: ",combskill.group(0)[1:-1]
+                            #print("Found combat skill: ",combskill.group(0)[1:-1])
                             combat = int(combskill.group(0)[1:-1])
-                            #print "Found combat skill: ",combat
-                #print "Combat skill is ", combat
+                            #print("Found combat skill: ",combat)
+                #print("Combat skill is ", combat)
                 if combat == -1:
                     orders += ";I don't have a combat skill!\n"
                 else:
-                    orders += ";my combat skill is "+str(combat)+"\n"
+                    orders += f";my combat skill is {combat}\n"
                 if combat < 60:
                     orders += "study combat\n"
                 else:
@@ -404,7 +404,7 @@ def generateturn(report, template):
             if random.random() >= 0.8:
                 unitnum = int(random.random()*1000)+1
                 #orders += "give new "+str(unitnum)+" 100 silv"
-                formstring = "form "+str(unitnum)+"\n"
+                formstring = f"form {unitnum}\n"
                 formstring += '  name unit "Captain Random"\n  claim 100\n  buy 1 peas\n'
                 formstring += '  study combat\nend\n\n'
                 orders += formstring
