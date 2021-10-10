@@ -11,3 +11,4 @@ kingdoms/kingdoms
 havilah/havilah
 *.pyc
 smoketest/testing
+compile_commands.json
