@@ -720,7 +720,7 @@ AString Unit::BattleReport(unsigned int obs)
     temp += items.BattleReport();
 
     for(const auto& s: skills) {
-        if (SkillDefs[s.type].flags & SkillType::BATTLEREP) {
+        if (SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::BATTLEREP)) {
             const size_t lvl = GetAvailSkill(s.type);
             if (lvl) {
                 temp += ", ";
@@ -789,7 +789,7 @@ void Unit::DefaultOrders(const Object::Handle& obj)
                 if (TerrainDefs[n->type].similar_type == Regions::Types::R_OCEAN &&
                         !CanReallySwim() &&
                         !(CanFly(weight) &&
-                            Globals->FLIGHT_OVER_WATER == GameDefs::WFLIGHT_UNLIMITED))
+                            Globals->FLIGHT_OVER_WATER == GameDefs::FlightOverWater::WFLIGHT_UNLIMITED))
                 {
                     continue;
                 }
@@ -816,7 +816,7 @@ void Unit::DefaultOrders(const Object::Handle& obj)
                 if (TerrainDefs[n->type].similar_type == Regions::Types::R_OCEAN &&
                         !CanReallySwim() &&
                         !(CanFly(weight) &&
-                            Globals->FLIGHT_OVER_WATER == GameDefs::WFLIGHT_UNLIMITED))
+                            Globals->FLIGHT_OVER_WATER == GameDefs::FlightOverWater::WFLIGHT_UNLIMITED))
                 {
                     continue;
                 }
@@ -1204,7 +1204,7 @@ size_t Unit::GetAvailSkill(const Skills& sk)
         {
             continue;
         }
-        if ((SkillDefs[sk].flags & SkillType::MAGIC)
+        if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)
                 && type != U_MAGE
                 && type != U_APPRENTICE
                 && type != U_GUARDMAGE)
@@ -1270,7 +1270,7 @@ void Unit::ForgetSkill(const Skills& sk)
     skills.SetDays(sk, 0);
     if (type == U_MAGE) {
         for(const auto& s: skills) {
-            if (SkillDefs[s.type].flags & SkillType::MAGIC)
+            if (SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::MAGIC))
             {
                 return;
             }
@@ -1279,7 +1279,7 @@ void Unit::ForgetSkill(const Skills& sk)
     }
     if (type == U_APPRENTICE) {
         for(const auto& s: skills) {
-            if (SkillDefs[s.type].flags & SkillType::APPRENTICE)
+            if (SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::APPRENTICE))
             {
                 return;
             }
@@ -1320,7 +1320,7 @@ bool Unit::CanStudy(const Skills& sk)
         skills.GetDays(sk) < 1 &&
         !skills.empty())
     {
-        if (!Globals->MAGE_NONLEADERS || !(SkillDefs[sk].flags & SkillType::MAGIC))
+        if (!Globals->MAGE_NONLEADERS || !SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC))
         {
             return false;
         }
@@ -1328,7 +1328,7 @@ bool Unit::CanStudy(const Skills& sk)
     
     size_t curlev = GetRealSkill(sk);
 
-    if (SkillDefs[sk].flags & SkillType::DISABLED)
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::DISABLED))
     {
         return false;
     }
@@ -1340,8 +1340,7 @@ bool Unit::CanStudy(const Skills& sk)
         }
         try
         {
-            const SkillType& pS = FindSkill(dep.skill);
-            if (pS.flags & SkillType::DISABLED)
+            if (FindSkill(dep.skill).flags.isSet(SkillType::SkillFlags::DISABLED))
             {
                 continue;
             }
@@ -1360,9 +1359,9 @@ bool Unit::CanStudy(const Skills& sk)
 bool Unit::Study(const Skills& sk, int days)
 {
     if (Globals->SKILL_LIMIT_NONLEADERS && !IsLeader()) {
-        if (SkillDefs[sk].flags & SkillType::MAGIC) {
+        if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)) {
             for(const auto& s: skills) {
-                if (!(SkillDefs[s.type].flags & SkillType::MAGIC)) {
+                if (!SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::MAGIC)) {
                     Error("STUDY: Non-leader mages cannot possess non-magical skills.");
                     return false;
                 }
@@ -1409,7 +1408,7 @@ unsigned int Unit::GetSkillMax(const Skills& sk)
 {
     unsigned int max = 0;
 
-    if (SkillDefs[sk].flags & SkillType::DISABLED)
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::DISABLED))
     {
         return 0;
     }
@@ -1468,7 +1467,7 @@ unsigned int Unit::Practice(const Skills& sk)
             {
                 continue;
             }
-            if ((SkillDefs[sk].flags & SkillType::MAGIC)
+            if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)
                     && type != U_MAGE
                     && type != U_APPRENTICE
                     && type != U_GUARDMAGE)
@@ -1526,11 +1525,11 @@ unsigned int Unit::Practice(const Skills& sk)
         {
             break;
         }
-        if (SkillDefs[reqsk].flags & SkillType::DISABLED)
+        if (SkillDefs[reqsk].flags.isSet(SkillType::SkillFlags::DISABLED))
         {
             continue;
         }
-        if (SkillDefs[reqsk].flags & SkillType::NOEXP)
+        if (SkillDefs[reqsk].flags.isSet(SkillType::SkillFlags::NOEXP))
         {
             continue;
         }
@@ -1631,8 +1630,8 @@ void Unit::AdjustSkills()
                 {
                     // Allow multiple skills if they're all
                     // magical ones
-                    if ((SkillDefs[maxskill->type].flags & SkillType::MAGIC) &&
-                            (SkillDefs[it->type].flags & SkillType::MAGIC) )
+                    if (SkillDefs[maxskill->type].flags.isSet(SkillType::SkillFlags::MAGIC) &&
+                        SkillDefs[it->type].flags.isSet(SkillType::SkillFlags::MAGIC))
                     {
                         ++it;
                         continue;
@@ -1678,7 +1677,7 @@ size_t Unit::MaintCost()
     // the case where it's not being used (mages, leaders, all)
 
     size_t i;
-    if (Globals->MULTIPLIER_USE != GameDefs::MULT_NONE)
+    if (Globals->MULTIPLIER_USE != GameDefs::Multiplier::MULT_NONE)
     {
         i = leaders * SkillLevels() * Globals->MAINTENANCE_MULTIPLIER;
         if (i < (leaders * Globals->LEADER_COST))
@@ -1695,7 +1694,7 @@ size_t Unit::MaintCost()
     // Handle non-leaders
     // Non leaders are counted at maintenance_multiplier * skills only if
     // all characters pay that way.
-    if (Globals->MULTIPLIER_USE == GameDefs::MULT_ALL)
+    if (Globals->MULTIPLIER_USE == GameDefs::Multiplier::MULT_ALL)
     {
         i = nonleaders * SkillLevels() * Globals->MAINTENANCE_MULTIPLIER;
         if (i < (nonleaders * Globals->MAINTENANCE_COST))
@@ -1726,19 +1725,21 @@ void Unit::Short(int needed_amt, int hunger_amt)
 
     switch(Globals->SKILL_STARVATION)
     {
-        case GameDefs::STARVE_MAGES:
+        case GameDefs::Starve::STARVE_NONE:
+            break;
+        case GameDefs::Starve::STARVE_MAGES:
             if (type == U_MAGE)
             {
                 SkillStarvation();
             }
             return;
-        case GameDefs::STARVE_LEADERS:
+        case GameDefs::Starve::STARVE_LEADERS:
             if (GetLeaders())
             {
                 SkillStarvation();
             }
             return;
-        case GameDefs::STARVE_ALL:
+        case GameDefs::Starve::STARVE_ALL:
             SkillStarvation();
             return;
     }
@@ -1764,7 +1765,7 @@ void Unit::Short(int needed_amt, int hunger_amt)
                 SetMen(*i, GetMen(*i) - 1);
                 n++;
             }
-            if (Globals->MULTIPLIER_USE == GameDefs::MULT_ALL)
+            if (Globals->MULTIPLIER_USE == GameDefs::Multiplier::MULT_ALL)
             {
                 size_t levels = SkillLevels();
                 size_t cost = levels * Globals->MAINTENANCE_MULTIPLIER;
@@ -1812,7 +1813,7 @@ void Unit::Short(int needed_amt, int hunger_amt)
                 SetMen(*i, GetMen(*i) - 1);
                 n++;
             }
-            if (Globals->MULTIPLIER_USE != GameDefs::MULT_NONE)
+            if (Globals->MULTIPLIER_USE != GameDefs::Multiplier::MULT_NONE)
             {
                 size_t levels = SkillLevels();
                 size_t cost = levels * Globals->MAINTENANCE_MULTIPLIER;
@@ -1932,7 +1933,7 @@ bool Unit::CanSwim()
     {
         return true;
     }
-    if ((Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE) && CanFly())
+    if ((Globals->FLIGHT_OVER_WATER != GameDefs::FlightOverWater::WFLIGHT_NONE) && CanFly())
     {
         return true;
     }
@@ -2315,15 +2316,15 @@ size_t Unit::Taxers(unsigned int numtaxers)
                 if(pBat.flags & BattleItemType::SPECIAL)
                 {
                     // Only consider offensive items
-                    if ((Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_BATTLE_ITEM) &&
-                    (!(pBat.flags & BattleItemType::MAGEONLY) ||
-                     type == U_MAGE || type == U_APPRENTICE))
+                    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_USABLE_BATTLE_ITEM) &&
+                        (!(pBat.flags & BattleItemType::MAGEONLY) ||
+                         type == U_MAGE || type == U_APPRENTICE))
                     {
                         numUsableBattle += pItem->num;
                         numBattle += pItem->num;
                         continue; // Don't count this as a weapon as well!
                     }
-                    if (Globals->WHO_CAN_TAX & GameDefs::TAX_BATTLE_ITEM)
+                    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_BATTLE_ITEM))
                     {
                         numBattle += pItem->num;
                         continue; // Don't count this as a weapon as well!
@@ -2432,24 +2433,24 @@ size_t Unit::Taxers(unsigned int numtaxers)
 
 
     // Ok, now process the counts!
-    if ((Globals->WHO_CAN_TAX & GameDefs::TAX_ANYONE) ||
-        ((Globals->WHO_CAN_TAX & GameDefs::TAX_COMBAT_SKILL) &&
+    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_ANYONE) ||
+        (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_COMBAT_SKILL) &&
          GetSkill(Skills::Types::S_COMBAT)) ||
-        ((Globals->WHO_CAN_TAX & GameDefs::TAX_BOW_SKILL) &&
+        (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_BOW_SKILL) &&
          (GetSkill(Skills::Types::S_CROSSBOW) || GetSkill(Skills::Types::S_LONGBOW))) ||
-        ((Globals->WHO_CAN_TAX & GameDefs::TAX_RIDING_SKILL) &&
+        (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_RIDING_SKILL) &&
          GetSkill(Skills::Types::S_RIDING)) ||
-        ((Globals->WHO_CAN_TAX & GameDefs::TAX_STEALTH_SKILL) &&
+        (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_STEALTH_SKILL) &&
          GetSkill(Skills::Types::S_STEALTH)))
     {
         basetax = totalMen;
         taxers = totalMen;
         
         // Weapon tax bonus
-        if ((Globals->WHO_CAN_TAX & GameDefs::TAX_ANYONE) ||
-        ((Globals->WHO_CAN_TAX & GameDefs::TAX_COMBAT_SKILL) &&
+        if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_ANYONE) ||
+        (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_COMBAT_SKILL) &&
          GetSkill(Skills::Types::S_COMBAT)) ||
-        ((Globals->WHO_CAN_TAX & GameDefs::TAX_STEALTH_SKILL) &&
+        (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_STEALTH_SKILL) &&
          GetSkill(Skills::Types::S_STEALTH)))
         {
              if (numUsableMounted > numUsableMounts)
@@ -2463,12 +2464,12 @@ size_t Unit::Taxers(unsigned int numtaxers)
              weapontax += numMelee;
          }
          
-        if (((Globals->WHO_CAN_TAX & GameDefs::TAX_BOW_SKILL) &&
+        if ((Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_BOW_SKILL) &&
          (GetSkill(Skills::Types::S_CROSSBOW) || GetSkill(Skills::Types::S_LONGBOW))))
         {
              weapontax += numUsableBows;
         }
-        if ((Globals->WHO_CAN_TAX & GameDefs::TAX_RIDING_SKILL) &&
+        if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_RIDING_SKILL) &&
          GetSkill(Skills::Types::S_RIDING))
         {
              if (weapontax < numUsableMounts)
@@ -2480,7 +2481,7 @@ size_t Unit::Taxers(unsigned int numtaxers)
     }
     else
     {
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_WEAPON)
+        if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_USABLE_WEAPON))
         {
             if (numUsableMounted > numUsableMounts)
             {
@@ -2499,15 +2500,14 @@ size_t Unit::Taxers(unsigned int numtaxers)
             weapontax += numMelee + numUsableBows;
             taxers += numMelee + numUsableBows;
         }
-        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_ANY_WEAPON)
+        else if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_ANY_WEAPON))
         {
             weapontax = numMelee + numBows + numMounted;
             taxers = numMelee + numBows + numMounted;
         }
         else
         {
-            if (Globals->WHO_CAN_TAX &
-                    GameDefs::TAX_MELEE_WEAPON_AND_MATCHING_SKILL)
+            if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MELEE_WEAPON_AND_MATCHING_SKILL))
             {
                 if (numUsableMounted > numUsableMounts)
                 {
@@ -2526,31 +2526,30 @@ size_t Unit::Taxers(unsigned int numtaxers)
                 weapontax += numUsableMelee;
                 taxers += numUsableMelee;
             }
-            if (Globals->WHO_CAN_TAX &
-                    GameDefs::TAX_BOW_SKILL_AND_MATCHING_WEAPON)
+            if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_BOW_SKILL_AND_MATCHING_WEAPON))
             {
                 weapontax += numUsableBows;
                 taxers += numUsableBows;
             }
         }
 
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_HORSE)
+        if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_HORSE))
         {
             weapontax += numMounts;
             taxers += numMounts;
         }
-        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_HORSE_AND_RIDING_SKILL)
+        else if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_HORSE_AND_RIDING_SKILL))
         {
             weapontax += numMounts;
             taxers += numUsableMounts;
         }
 
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_BATTLE_ITEM)
+        if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_BATTLE_ITEM))
         {
             weapontax += numBattle;
             taxers += numBattle;
         }
-        else if (Globals->WHO_CAN_TAX & GameDefs::TAX_USABLE_BATTLE_ITEM)
+        else if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_USABLE_BATTLE_ITEM))
         {
             weapontax += numUsableBattle;
             taxers += numUsableBattle;
@@ -2561,31 +2560,31 @@ size_t Unit::Taxers(unsigned int numtaxers)
     // Ok, all the items categories done - check for mages taxing
     if (type == U_MAGE)
     {
-        if (Globals->WHO_CAN_TAX & GameDefs::TAX_ANY_MAGE)
+        if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_ANY_MAGE))
         {
             basetax = totalMen;
             taxers = totalMen;
         }
         else
         {
-            if (Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_COMBAT_SPELL)
+            if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_COMBAT_SPELL))
             {
-                if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_DAMAGE) &&
-                        SkillDefs[combat].flags & SkillType::DAMAGE)
+                if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_DAMAGE) &&
+                    SkillDefs[combat].flags.isSet(SkillType::SkillFlags::DAMAGE))
                 {
                     basetax = totalMen;
                     taxers = totalMen;
                 }
 
-                if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_FEAR) &&
-                        SkillDefs[combat].flags & SkillType::FEAR)
+                if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_FEAR) &&
+                    SkillDefs[combat].flags.isSet(SkillType::SkillFlags::FEAR))
                 {
                     basetax = totalMen;
                     taxers = totalMen;
                 }
 
-                if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_OTHER) &&
-                        SkillDefs[combat].flags & SkillType::MAGEOTHER)
+                if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_OTHER) &&
+                    SkillDefs[combat].flags.isSet(SkillType::SkillFlags::MAGEOTHER))
                 {
                     basetax = totalMen;
                     taxers = totalMen;
@@ -2595,22 +2594,22 @@ size_t Unit::Taxers(unsigned int numtaxers)
             {
                 for(const auto& s: skills)
                 {
-                    if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_DAMAGE) &&
-                            SkillDefs[s.type].flags & SkillType::DAMAGE)
+                    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_DAMAGE) &&
+                        SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::DAMAGE))
                     {
                         basetax = totalMen;
                         taxers = totalMen;
                         break;
                     }
-                    if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_FEAR) &&
-                            SkillDefs[s.type].flags & SkillType::FEAR)
+                    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_FEAR) &&
+                        SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::FEAR))
                     {
                         basetax = totalMen;
                         taxers = totalMen;
                         break;
                     }
-                    if ((Globals->WHO_CAN_TAX & GameDefs::TAX_MAGE_OTHER) &&
-                            SkillDefs[s.type].flags & SkillType::MAGEOTHER)
+                    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_MAGE_OTHER) &&
+                        SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::MAGEOTHER))
                     {
                         basetax = totalMen;
                         taxers = totalMen;
@@ -2646,12 +2645,12 @@ size_t Unit::Taxers(unsigned int numtaxers)
     }
 
     // And finally for creatures
-    if (Globals->WHO_CAN_TAX & GameDefs::TAX_CREATURES)
+    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_CREATURES))
     {
         basetax += creatures;
         taxers += creatures;
     }
-    if (Globals->WHO_CAN_TAX & GameDefs::TAX_ILLUSIONS)
+    if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_ILLUSIONS))
     {
         basetax += illusions;
         taxers += illusions;
@@ -3270,7 +3269,7 @@ void Unit::SkillStarvation()
     int count = 0;
     for (auto i = Skills::begin(); i != Skills::end(); ++i)
     {
-        if (SkillDefs[*i].flags & SkillType::DISABLED)
+        if (SkillDefs[*i].flags.isSet(SkillType::SkillFlags::DISABLED))
         {
             can_forget[*i] = false;
             continue;
@@ -3294,7 +3293,7 @@ void Unit::SkillStarvation()
         }
         const Skill& si = GetSkillObject(*i);
         for (auto j = Skills::begin(); j  != Skills::end(); ++j) {
-            if (SkillDefs[*j].flags & SkillType::DISABLED)
+            if (SkillDefs[*j].flags.isSet(SkillType::SkillFlags::DISABLED))
             {
                 continue;
             }

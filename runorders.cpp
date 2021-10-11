@@ -95,7 +95,7 @@ void Game::RunOrders()
     Awrite("Running Month-long Orders...");
     RunMonthOrders();
     RunTeleportOrders();
-    if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
+    if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
         Awrite("Running Transport Orders...");
         CheckTransportOrders();
         RunTransportOrders();
@@ -160,7 +160,7 @@ int Game::CountMages(Faction *pFac)
 
 bool Game::TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac)
 {
-    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
+    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
         const int allowed_taxes = AllowedTaxes(*pFac);
         if (allowed_taxes == -1) {
             //
@@ -200,7 +200,7 @@ bool Game::TaxCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac)
 
 bool Game::TradeCheck(const ARegion::Handle& pReg, const Faction::Handle& pFac)
 {
-    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
+    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
         const int allowed_trades = AllowedTrades(*pFac);
         if (allowed_trades == -1) {
             //
@@ -460,13 +460,13 @@ void Game::DrownUnits()
                 for(const auto& u: o->units) {
                     int drown = 0;
                     switch(Globals->FLIGHT_OVER_WATER) {
-                        case GameDefs::WFLIGHT_UNLIMITED:
+                        case GameDefs::FlightOverWater::WFLIGHT_UNLIMITED:
                             drown = !(u->CanSwim());
                             break;
-                        case GameDefs::WFLIGHT_MUST_LAND:
+                        case GameDefs::FlightOverWater::WFLIGHT_MUST_LAND:
                             drown = !u->CanReallySwim();
                             break;
-                        case GameDefs::WFLIGHT_NONE:
+                        case GameDefs::FlightOverWater::WFLIGHT_NONE:
                             drown = !(u->CanReallySwim());
                             break;
                         default: // Should never happen
@@ -821,6 +821,9 @@ void Game::RunPillageRegion(const ARegion::Handle& reg)
     /* First, count up pillagers */
     int pillagers = CountPillagers(reg);
 
+    if(pillagers == 0) {
+        return;
+    }
     if (pillagers * 2 * static_cast<int>(Globals->TAX_BASE_INCOME) < reg->wealth) {
         ClearPillagers(reg);
         return;
@@ -833,7 +836,7 @@ void Game::RunPillageRegion(const ARegion::Handle& reg)
             if (u->taxing == TAX_PILLAGE) {
                 u->taxing = TAX_NONE;
                 int num = static_cast<int>(u->Taxers(1));
-                int temp = (amt * num)/pillagers;
+                int temp = (amt * num) / pillagers;
                 amt -= temp;
                 pillagers -= num;
                 u->SetMoney(u->GetMoney() + static_cast<size_t>(temp));
@@ -2832,7 +2835,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
     if (amt == -1) {
         /* Give unit */
         if (u->type == U_MAGE) {
-            if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_UNLIMITED) {
+            if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_UNLIMITED) {
                 if (CountMages(t_fac) >= AllowedMages(*t_fac)) {
                     u->Error("GIVE: Faction has too many mages.");
                     return 0;
@@ -2840,7 +2843,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
             }
         }
         if (u->type == U_APPRENTICE) {
-            if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_UNLIMITED) {
+            if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_UNLIMITED) {
                 if (CountApprentices(t_fac) >= AllowedApprentices(*t_fac)) {
                     temp = "GIVE: Faction has too many ";
                     temp += Globals->APPRENTICE_NAME;
@@ -2852,8 +2855,8 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
         }
 
         if (u->GetSkill(Skills::Types::S_QUARTERMASTER)) {
-            if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
-                if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
+            if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
+                if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
                     if (CountQuarterMasters(t_fac) >= AllowedQuarterMasters(*t_fac)) {
                         u->Error("GIVE: Faction has too many quartermasters.");
                         return 0;
@@ -2863,7 +2866,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
         }
 
         if (u->GetSkill(Skills::Types::S_TACTICS) == 5) {
-            if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
+            if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
                 if (Globals->TACTICS_NEEDS_WAR) {
                     if (CountTacticians(t_fac) >= AllowedTacticians(*t_fac)) {
                         u->Error("GIVE: Faction has too many tacticians.");
@@ -3037,8 +3040,9 @@ void Game::DeleteEmptyInRegion(const ARegion::Handle& region)
 
 void Game::CheckTransportOrders()
 {
-    if (!(Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT))
+    if (!Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
         return;
+    }
 
     for(const auto& r: regions) {
         for(const auto& obj: r->objects) {
@@ -3110,7 +3114,7 @@ void Game::CheckTransportOrders()
                     {
                         maxdist = Globals->NONLOCAL_TRANSPORT;
                         if (maxdist > 0 &&
-                            Globals->TRANSPORT & GameDefs::QM_AFFECT_DIST) {
+                            Globals->TRANSPORT.isSet(GameDefs::TransportOptions::QM_AFFECT_DIST)) {
                             const int level = static_cast<int>(u->GetSkill(Skills::Types::S_QUARTERMASTER));
                             maxdist += ((level + 1)/3);
                         }
@@ -3199,8 +3203,7 @@ void Game::CheckTransportOrders()
 
 void Game::RunTransportOrders()
 {
-    if (!(Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT))
-    {
+    if (!Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
         return;
     }
     for(const auto& r: regions) {
@@ -3275,7 +3278,7 @@ void Game::RunTransportOrders()
                     size_t cost = 0;
                     if (dist > static_cast<int>(Globals->LOCAL_TRANSPORT)) {
                         cost = Globals->SHIPPING_COST * weight;
-                        if (Globals->TRANSPORT & GameDefs::QM_AFFECT_COST)
+                        if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::QM_AFFECT_COST))
                             cost *= (4 - ((u->GetSkill(Skills::Types::S_QUARTERMASTER)+1)/2));
                     }
 

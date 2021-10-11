@@ -26,27 +26,27 @@
 #include "gamedata.h"
 #include "game.h"
 
-const EnumArray<const char *, Attitudes::size()> AttitudeStrs = {
+const EnumArray<const char *, Attitudes::size()> AttitudeStrs = {{
     "Hostile",
     "Unfriendly",
     "Neutral",
     "Friendly",
     "Ally"
-};
+}};
 
-const EnumArray<const char *, Factions::size()> FactionStrs = {
+const EnumArray<const char *, Factions::size()> FactionStrs = {{
     "War",
     "Trade",
     "Magic"
-};
+}};
 
 // LLS - fix up the template strings
-const EnumArray<const char*, Templates::size()> TemplateStrs = {
+const EnumArray<const char*, Templates::size()> TemplateStrs = {{
     "off",
     "short",
     "long",
     "map"
-};
+}};
 
 Templates ParseTemplate(const AString& token)
 {
@@ -244,11 +244,11 @@ AString Faction::FactionTypeStr()
     AString temp;
     if (IsNPC()) return AString("NPC");
 
-    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_UNLIMITED) {
+    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_UNLIMITED) {
         return (AString("Unlimited"));
-    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_MAGE_COUNT) {
+    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_MAGE_COUNT) {
         return(AString("Normal"));
-    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
+    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
         int comma = 0;
         for (auto i = Factions::begin(); i != Factions::end(); ++i) {
             if (type[*i]) {
@@ -343,11 +343,11 @@ void Faction::WriteReport(Areport& f, const Game& pGame)
     }
 
     f.PutStr("Atlantis Report For:");
-    if ((Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_MAGE_COUNT) ||
-            (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_UNLIMITED))
+    if ((Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_MAGE_COUNT) ||
+            (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_UNLIMITED))
     {
         f.PutStr(name);
-    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES)
+    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES)
     {
         f.PutStr(name + " (" + FactionTypeStr() + ")");
     }
@@ -403,7 +403,7 @@ void Faction::WriteReport(Areport& f, const Game& pGame)
     }
 
     f.PutStr("Faction Status:");
-    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_MAGE_COUNT) {
+    if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_MAGE_COUNT) {
         f.PutStr(AString("Mages: ") + nummages + " (" +
                 pGame.AllowedMages(*this) + ")");
         if (Globals->APPRENTICES_EXIST) {
@@ -417,12 +417,12 @@ void Faction::WriteReport(Areport& f, const Game& pGame)
             temp += ")";
             f.PutStr(temp);
         }
-    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
+    } else if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
         f.PutStr(AString("Tax Regions: ") + war_regions.size() + " (" +
                 pGame.AllowedTaxes(*this) + ")");
         f.PutStr(AString("Trade Regions: ") + trade_regions.size() + " (" +
                 pGame.AllowedTrades(*this) + ")");
-        if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
+        if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
             f.PutStr(AString("Quartermasters: ") + numqms + " (" +
                     pGame.AllowedQuarterMasters(*this) + ")");
         }
@@ -924,7 +924,7 @@ void Faction::DiscoverItem(const Items& item, int force, int full)
         // before)
         skname = ItemDefs[item].grantSkill;
         skill = LookupSkill(skname);
-        if (skill.isValid() && !(SkillDefs[skill].flags & SkillType::DISABLED)) {
+        if (skill.isValid() && !SkillDefs[skill].flags.isSet(SkillType::SkillFlags::DISABLED)) {
             for (size_t i = 1; i <= ItemDefs[item].maxGrant; i++) {
                 if (i > skills.GetDays(skill)) {
                     skills.SetDays(skill, i);

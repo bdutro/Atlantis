@@ -380,9 +380,9 @@ int Game::OpenGame()
             Awrite("Unable to upgrade!  Aborting!");
             return(0);
         }
-        gVersion = MAKE_ATL_VER(ATL_VER_MAJOR(gVersion),
-                ATL_VER_MINOR(gVersion),
-                ATL_VER_PATCH(Globals->RULESET_VERSION));
+        //gVersion = MAKE_ATL_VER(ATL_VER_MAJOR(gVersion),
+        //        ATL_VER_MINOR(gVersion),
+        //        ATL_VER_PATCH(Globals->RULESET_VERSION));
     }
 
     year = f.GetInt<size_t>();
@@ -649,8 +649,6 @@ int Game::ReadPlayers()
                         }
                         if (pToken.Len()) {
                             x = pToken.value<int>();
-                            y = -1;
-                            z = -1;
                             pToken = pLine.gettoken();
                             if (pToken.Len()) {
                                 y = pToken.value<int>();
@@ -940,15 +938,12 @@ bool Game::ReadPlayersLine(const AString& pToken, AString& pLine, const Faction:
                                      * This is NOT quite the same, but the gods
                                      * are more powerful than mere mortals
                                      */
-                                    int mage = (SkillDefs[sk].flags &
-                                            SkillType::MAGIC);
-                                    int app = (SkillDefs[sk].flags &
-                                            SkillType::APPRENTICE);
-                                    if (mage) {
-                                        u->type = U_MAGE;
-                                    }
-                                    if (app && u->type == U_NORMAL) {
+                                    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE) && 
+                                        (u->type == U_NORMAL)) {
                                         u->type = U_APPRENTICE;
+                                    }
+                                    else if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)) {
+                                        u->type = U_MAGE;
                                     }
                                 }
                             }
@@ -1941,7 +1936,7 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     size_t men;
     int IV = 0;
     Items mantype;
-    size_t maxmen;
+    size_t maxmen = Globals->AMT_START_CITY_GUARDS;
     Items weapon;
     size_t maxweapon = 0;
     Items armor;
@@ -1974,25 +1969,30 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     if (r->type == Regions::Types::R_NEXUS || r->IsStartingCity()) {
         towntype = TownTypeEnum::TOWN_CITY;
         AC = 1;
-        if (Globals->SAFE_START_CITIES || (r->type == Regions::Types::R_NEXUS))
+        if (Globals->SAFE_START_CITIES || (r->type == Regions::Types::R_NEXUS)) {
             IV = 1;
+        }
         if (u->type == U_GUARDMAGE) {
             men = 1;
         } else {
-            maxmen = Globals->AMT_START_CITY_GUARDS;
-            if ((!Globals->LEADERS_EXIST) && (r->type != Regions::Types::R_NEXUS))
+            if ((!Globals->LEADERS_EXIST) && (r->type != Regions::Types::R_NEXUS)) {
                 maxmen = 3 * maxmen / 4;
+            }
             men = u->GetMen() + (Globals->AMT_START_CITY_GUARDS/10);
-            if (men > maxmen)
+            if (men > maxmen) {
                 men = maxmen;
+            }
         }
     } else {
         towntype = r->town->TownType();
         maxmen = Globals->CITY_GUARD * (static_cast<size_t>(towntype)+1);
-        if (!Globals->LEADERS_EXIST) maxmen = 3 * maxmen / 4;
+        if (!Globals->LEADERS_EXIST) {
+            maxmen = 3 * maxmen / 4;
+        }
         men = u->GetMen() + (maxmen/10);
-        if (men > maxmen)
+        if (men > maxmen) {
             men = maxmen;
+        }
     }
 
     u->SetMen(mantype,men);

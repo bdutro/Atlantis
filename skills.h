@@ -45,6 +45,7 @@ class SkillList;
 #include "itemtype.h"
 #include "objecttype.h"
 #include "skilltype.h"
+#include "field_enum.h"
 
 /* For dependencies:
   A value of depend == -1 indicates no more dependencies.
@@ -81,7 +82,8 @@ class SkillType
         char const * abbr;
         unsigned int cost;
 
-        enum {
+        enum class SkillFlags {
+            NONE = 0,
             MAGIC = 0x1,
             COMBAT = 0x2,
             CAST = 0x4,
@@ -98,7 +100,7 @@ class SkillType
             NOTEACH=0x2000,
             NOEXP=0x4000,
         };
-        int flags;
+        FieldEnum<SkillFlags> flags;
 
         //
         // special for combat spells only

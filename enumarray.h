@@ -2,6 +2,7 @@
 #define ENUM_ARRAY_H
 
 #include <array>
+#include <cstddef>
 
 template<typename T, size_t N>
 class EnumArray : public std::array<T, N>

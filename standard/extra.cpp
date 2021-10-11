@@ -214,7 +214,7 @@ void Game::ModifyTablesPerRuleset(void)
         ModifyRangeFlags("rng_weather", RangeType::RNG_CROSS_LEVELS);
     }
 
-    if (Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) {
+    if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
         EnableSkill(Skills::Types::S_QUARTERMASTER);
         EnableObject(Objects::Types::O_CARAVANSERAI);
     }

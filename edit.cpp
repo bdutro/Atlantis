@@ -1102,7 +1102,7 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                     Awrite("No such skill.");
                     break;
                 }
-                if (SkillDefs[skillNum].flags & SkillType::DISABLED) {
+                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::DISABLED)) {
                     Awrite("No such skill.");
                     break;
                 }
@@ -1115,12 +1115,10 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                     days = pToken.value<size_t>();
                 }
 
-                if ((SkillDefs[skillNum].flags & SkillType::MAGIC) &&
-                        (pUnit->type != U_MAGE)) {
+                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::MAGIC) && (pUnit->type != U_MAGE)) {
                     pUnit->type = U_MAGE;
                 }
-                if ((SkillDefs[skillNum].flags & SkillType::APPRENTICE) &&
-                        (pUnit->type == U_NORMAL)) {
+                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::APPRENTICE) && (pUnit->type == U_NORMAL)) {
                     pUnit->type = U_APPRENTICE;
                 }
                 pUnit->skills.SetDays(skillNum, days * pUnit->GetMen());

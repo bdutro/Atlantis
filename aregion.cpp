@@ -1230,8 +1230,8 @@ bool ARegion::CanMakeAdv(const Faction& fac, const Items& item)
         }
     }
 
-    if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
-            (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_RESOURCES)) {
+    if (Globals->TRANSIT_REPORT.allSet(GameDefs::TransitReportOptions::REPORT_USE_UNIT_SKILLS,
+                                       GameDefs::TransitReportOptions::REPORT_SHOW_RESOURCES)) {
         for(const auto& f: passers)
         {
             if (f && f->faction.lock().get() == &fac && !f->unit.expired()) {
@@ -1275,8 +1275,8 @@ void ARegion::WriteProducts(Areport& f, const Faction& fac, bool present)
         } else {
             if (p->itemtype == Items::Types::I_SILVER) {
                 if (p->skill == Skills::Types::S_ENTERTAINMENT) {
-                    if ((Globals->TRANSIT_REPORT &
-                            GameDefs::REPORT_SHOW_ENTERTAINMENT) || present) {
+                    if (present ||
+                        Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_ENTERTAINMENT)) {
                         f.PutStr(AString("Entertainment available: $") +
                                 p->amount + ".");
                     } else {
@@ -1285,9 +1285,9 @@ void ARegion::WriteProducts(Areport& f, const Faction& fac, bool present)
                 }
             } else {
                 if (!present &&
-                        !(Globals->TRANSIT_REPORT &
-                        GameDefs::REPORT_SHOW_RESOURCES))
+                    !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_RESOURCES)) {
                     continue;
+                }
                 if (has) {
                     temp += AString(", ") + p->WriteReport();
                 } else {
@@ -1331,8 +1331,9 @@ void ARegion::WriteMarkets(Areport& f, const Faction& fac, bool present)
     for(const auto& m: markets) {
         if (!m->amount) continue;
         if (!present &&
-                !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_MARKETS))
+            !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_MARKETS)) {
             continue;
+        }
         if (m->type == M_SELL) {
             if (ItemDefs[m->item].type & IT_ADVANCED) {
                 if (!Globals->MARKETS_SHOW_ADVANCED_ITEMS) {
@@ -1362,8 +1363,9 @@ void ARegion::WriteMarkets(Areport& f, const Faction& fac, bool present)
         for(const auto& m: markets) {
             if (!m->amount) continue;
             if (!present &&
-                    !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_MARKETS))
+                !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_MARKETS)) {
                 continue;
+            }
             if (m->type == M_BUY) {
                 if (has) {
                     temp += ", ";
@@ -1386,7 +1388,7 @@ void ARegion::WriteEconomy(Areport& f, const Faction& fac, bool present)
 {
     f.AddTab();
 
-    if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_WAGES) || present) {
+    if (present || Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_WAGES)) {
         f.PutStr(AString("Wages: ") + WagesForReport() + ".");
     } else {
         f.PutStr(AString("Wages: $0."));
@@ -1435,13 +1437,13 @@ void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_
         AString temp = Print(pRegions);
         if (Population() &&
             (present || has_farsight ||
-             (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_PEASANTS))) {
+             Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_PEASANTS))) {
             temp += AString(", ") + Population() + " peasants";
             if (Globals->RACES_EXIST) {
                 temp += AString(" (") + ItemDefs[race].names + ")";
             }
             if (present || has_farsight ||
-                    Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_REGION_MONEY) {
+                    Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_REGION_MONEY)) {
                 temp += AString(", $") + wealth;
             } else {
                 temp += AString(", $0");
@@ -1504,7 +1506,9 @@ void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_
         WriteEconomy(f, fac, present || has_farsight);
 
         ExitArray exits_seen;
-        if (present || has_farsight || (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_ALL_EXITS)) {
+        if (present ||
+            has_farsight ||
+            Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_ALL_EXITS)) {
             std::fill(exits_seen.begin(), exits_seen.end(), true);
         } else {
             // This is just a transit report and we're not showing all
@@ -1513,7 +1517,7 @@ void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_
             // Show none by default.
             std::fill(exits_seen.begin(), exits_seen.end(), false);
             // Now, if we should, show the ones actually used.
-            if (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_USED_EXITS) {
+            if (Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_USED_EXITS)) {
                 for(const auto& p: passers) {
                     if (p->faction.lock().get() == &fac) {
                         for (size_t i = 0; i < exits_seen.size(); ++i) {
@@ -1539,7 +1543,7 @@ void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_
                     }
                 }
             }
-            if (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) {
+            if (Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_USE_UNIT_SKILLS)) {
                 for(const auto& watcher: passers) {
                     if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
                         if (watcher->unit.lock()->GetSkill(Skills::Types::S_GATE_LORE)) {
@@ -1605,8 +1609,8 @@ void ARegion::WriteReport(Areport& f, const Faction& fac, const ValidValue<size_
             }
         }
 
-        if ((Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
-                (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
+        if (Globals->TRANSIT_REPORT.allSet(GameDefs::TransitReportOptions::REPORT_USE_UNIT_SKILLS,
+                                           GameDefs::TransitReportOptions::REPORT_SHOW_UNITS)) {
             for(const auto& watcher: passers) {
                 if (watcher && watcher->faction.lock().get() == &fac && !watcher->unit.expired()) {
                     if (watcher->unit.lock()->GetSkill(Skills::Types::S_MIND_READING) > 2) {
@@ -1779,8 +1783,8 @@ size_t ARegion::GetTrueSight(const Faction& f, bool usepassers)
     }
 
     if (usepassers &&
-            (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
-            (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
+        Globals->TRANSIT_REPORT.allSet(GameDefs::TransitReportOptions::REPORT_USE_UNIT_SKILLS,
+                                       GameDefs::TransitReportOptions::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
                 size_t t = farsight->unit.lock()->GetSkill(Skills::Types::S_TRUE_SEEING);
@@ -1817,8 +1821,8 @@ unsigned int ARegion::GetObservation(const Faction& f, bool usepassers)
     }
 
     if (usepassers &&
-            (Globals->TRANSIT_REPORT & GameDefs::REPORT_USE_UNIT_SKILLS) &&
-            (Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_UNITS)) {
+        Globals->TRANSIT_REPORT.allSet(GameDefs::TransitReportOptions::REPORT_USE_UNIT_SKILLS,
+                                       GameDefs::TransitReportOptions::REPORT_SHOW_UNITS)) {
         for(const auto& farsight: passers) {
             if (farsight && farsight->faction.lock().get() == &f && !farsight->unit.expired()) {
                 unsigned int o = farsight->observation;
@@ -1974,7 +1978,7 @@ bool ARegion::NotifySpell(const Unit::Handle& caster, char const *spell, const A
 
     const auto& pS = FindSkill(spell);
 
-    if (!(pS.flags & SkillType::NOTIFY)) {
+    if (!pS.flags.isSet(SkillType::SkillFlags::NOTIFY)) {
         // Okay, we aren't notifyable, check our prerequisites
         for(const auto& d: pS.depends)
         {

@@ -45,7 +45,7 @@ const std::vector<unsigned int> allowedQuartermasters = { 0, 2, 4, 8, 12, 20 };
 
 const std::vector<unsigned int> allowedTacticians = { 0, 1, 2, 4, 6, 10 };
 
-static GameDefs g = {
+static GameDefs g {
     "Wyreth",                // RULESET_NAME
     MAKE_ATL_VER( 2, 0, 0 ), // RULESET_VERSION
 
@@ -61,10 +61,10 @@ static GameDefs g = {
     20, /* LEADER_COST */
 
     0,  /* MAINTAINENCE_MULTIPLIER */
-    GameDefs::MULT_NONE, /* MULTIPLIER_USE */
+    GameDefs::Multiplier::MULT_NONE, /* MULTIPLIER_USE */
 
     33, /* STARVE_PERCENT */
-    GameDefs::STARVE_NONE, /* SKILL_STARVATION */
+    GameDefs::Starve::STARVE_NONE, /* SKILL_STARVATION */
 
     5020, /* START_MONEY */
     3, /* WORK_FRACTION */
@@ -75,7 +75,7 @@ static GameDefs g = {
      0, /* TAX_BONUS_WEAPON */
      0, /* TAX_BONUS_ARMOR */
      0, /* TAX_BONUS_FORT */
-    GameDefs::TAX_NORMAL, // WHO_CAN_TAX
+    GameDefs::Taxation::TAX_NORMAL, // WHO_CAN_TAX
     0,    // TAX_PILLAGE_MONTH_LONG
 
     5, /* HEALS_PER_MAN */
@@ -125,9 +125,9 @@ static GameDefs g = {
 
     1, // DEFAULT_WORK_ORDER
 
-    GameDefs::FACLIM_FACTION_TYPES, // FACTION_LIMIT_TYPE
+    GameDefs::FactionLimits::FACLIM_FACTION_TYPES, // FACTION_LIMIT_TYPE
 
-    GameDefs::WFLIGHT_MUST_LAND,    // FLIGHT_OVER_WATER
+    GameDefs::FlightOverWater::WFLIGHT_MUST_LAND,    // FLIGHT_OVER_WATER
 
     1,   // START_CITIES_EXIST
     0,   // SAFE_START_CITIES
@@ -161,16 +161,16 @@ static GameDefs g = {
     16,    // ARCHIPELAGO
     30, // SEVER_LAND_BRIDGES
     6, // SEA_LIMIT    
-    GameDefs::NO_EFFECT, // LAKE_WAGE_EFFECT
+    GameDefs::LakeEffect::NO_EFFECT, // LAKE_WAGE_EFFECT
     0,    // LAKESIDE_IS_COASTAL
     0,    // ODD_TERRAIN
     0,    // IMPROVED_FARSIGHT
     1,    // GM_REPORT
     0,    // DECAY
     0,    // LIMITED_MAGES_PER_BUILDING
-    GameDefs::REPORT_NOTHING, // TRANSIT_REPORT
+    FieldEnum(GameDefs::TransitReportOptions::REPORT_NOTHING), // TRANSIT_REPORT
     0,  // MARKETS_SHOW_ADVANCED_ITEMS
-    GameDefs::PREPARE_NONE,    // USE_PREPARE_COMMAND
+    GameDefs::Prepare::PREPARE_NONE,    // USE_PREPARE_COMMAND
     15,    // MONSTER_ADVANCE_MIN_PERCENT
     0,    // MONSTER_ADVANCE_HOSTILE_PERCENT
     1,    // HAVE_EMAIL_SPECIAL_COMMANDS
@@ -183,7 +183,7 @@ static GameDefs g = {
     0,  // RELEASE_MONSTERS
     0,  // CHECK_MONSTER_CONTROL_MID_TURN
     0,  // DETECT_GATE_NUMBERS
-    GameDefs::ARMY_ROUT_FIGURES,  // ARMY_ROUT
+    GameDefs::ArmyRoutOptions::ARMY_ROUT_FIGURES,  // ARMY_ROUT
     0,  // ONLY_ROUT_ONCE
     0,  // ADVANCED_FORTS
     0,    // FULL_TRUESEEING_BONUS
@@ -200,7 +200,7 @@ static GameDefs g = {
     0,  // GATES_NOT_PERENNIAL
     0,  // START_GATES_OPEN
     0,  // SHOW_CLOSED_GATES
-    0,    // TRANSPORT
+    FieldEnum(GameDefs::TransportOptions::NO_TRANSPORT),    // TRANSPORT
     1,    // LOCAL_TRANSPORT
     3,    // NONLOCAL_TRANSPORT
     5,    // SHIPPING_COST

@@ -35,8 +35,8 @@
 
 #define ITEM_ENABLED(X) (!(ItemDefs[(X)].flags & ItemType::DISABLED))
 #define ITEM_DISABLED(X) (ItemDefs[(X)].flags & ItemType::DISABLED)
-#define SKILL_ENABLED(X) (!(SkillDefs[(X)].flags & SkillType::DISABLED))
-#define SKILL_DISABLED(X) (SkillDefs[(X)].flags & SkillType::DISABLED)
+#define SKILL_ENABLED(X) (!SkillDefs[(X)].flags.isSet(SkillType::SkillFlags::DISABLED))
+#define SKILL_DISABLED(X) (SkillDefs[(X)].flags.isSet(SkillType::SkillFlags::DISABLED))
 #define OBJECT_ENABLED(X) (!(ObjectDefs[(X)].flags & ObjectType::DISABLED))
 #define OBJECT_DISABLED(X) (ObjectDefs[(X)].flags & ObjectType::DISABLED)
 
@@ -102,7 +102,7 @@ static void DescribeEscapeParameters(AString& desc, const Items& item)
 
 AString ShowSkill::Report(Faction& f)
 {
-    if (SkillDefs[skill].flags & SkillType::DISABLED)
+    if (SkillDefs[skill].flags.isSet(SkillType::SkillFlags::DISABLED))
     {
         return AString();
     }
@@ -151,16 +151,19 @@ AString ShowSkill::Report(Faction& f)
                 "may also be found elsewhere.";
             break;
         case Skills::Types::S_QUARTERMASTER:
-            if (level > 1) break;
-            if (!(Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT))
+            if (level > 1) {
                 break;
+            }
+            if (!Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT)) {
+                break;
+            }
             str += "This skill deals with transporting and "
                 "distributing goods between non-local units "
                 "and transport structures.";
             if (Globals->SHIPPING_COST > 0) {
                 str += " The cost of shipping one weight unit from one "
                     "transport structure to another transport structure is ";
-                if (Globals->TRANSPORT & GameDefs::QM_AFFECT_COST)
+                if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::QM_AFFECT_COST))
                     str += AString("4-((level+1)/2) * ");
                 str += AString(Globals->SHIPPING_COST) + " silver.";
                 if (Globals->FRACTIONAL_WEIGHT) {
@@ -175,7 +178,7 @@ AString ShowSkill::Report(Faction& f)
                 str += " Items may be shipped between two transport "
                     "structures which are up to ";
                 str += Globals->NONLOCAL_TRANSPORT;
-                if (Globals->TRANSPORT & GameDefs::QM_AFFECT_DIST)
+                if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::QM_AFFECT_DIST))
                     str += " plus (level+1)/3 ";
                 str += (Globals->NONLOCAL_TRANSPORT != 1) ? "hexes" : "hex";
                 str += " distant from each other.";
@@ -731,7 +734,7 @@ AString ShowSkill::Report(Faction& f)
         case Skills::Types::S_CLEAR_SKIES:
             /* XXX -- this range stuff needs cleaning up */
             if (level > 1) break;
-            if (SkillDefs[skill].flags & SkillType::CAST) {
+            if (SkillDefs[skill].flags.isSet(SkillType::SkillFlags::CAST)) {
                 str += "When cast using the CAST order, it causes the "
                     "region to have good weather for the entire month; "
                     "movement is at the normal rate (even if it is winter) "
@@ -1474,7 +1477,7 @@ AString ShowSkill::Report(Faction& f)
     int build = 0;
 
     // If this is a combat spell, note it.
-    if (level == 1 && (SkillDefs[skill].flags & SkillType::COMBAT)) {
+    if (level == 1 && SkillDefs[skill].flags.isSet(SkillType::SkillFlags::COMBAT)) {
         str += AString(" A mage with this skill can cast ") +
             ShowSpecial(SkillDefs[skill].special, level, 0, 0);
         str += " In order to use this spell in combat, the mage should use "
@@ -1528,10 +1531,9 @@ AString ShowSkill::Report(Faction& f)
         const auto i = *it;
         if (ITEM_DISABLED(i)) continue;
         int illusion = (ItemDefs[i].type & IT_ILLUSION);
-        SkillType sk2;
         try
         {
-            sk2 = FindSkill(ItemDefs[i].mSkill);
+            const auto& sk2 = FindSkill(ItemDefs[i].mSkill);
             if (sk1 == sk2 && ItemDefs[i].mLevel == level) {
                 int canmagic = 1;
                 for (const auto& c: ItemDefs[i].mInput) {
@@ -1626,7 +1628,7 @@ AString ShowSkill::Report(Faction& f)
 
         try
         {
-            sk2 = FindSkill(ItemDefs[i].pSkill);
+            const auto& sk2 = FindSkill(ItemDefs[i].pSkill);
             if (sk1 == sk2 && ItemDefs[i].pLevel == level) {
                 int canmake = 1;
                 int resource = 1;
@@ -1845,7 +1847,7 @@ AString ShowSkill::Report(Faction& f)
             try
             {
                 const auto& pS = FindSkill(c.skill);
-                if (pS.flags & SkillType::DISABLED)
+                if (pS.flags.isSet(SkillType::SkillFlags::DISABLED))
                 {
                     continue;
                 }
@@ -1884,23 +1886,22 @@ AString ShowSkill::Report(Faction& f)
             str += AString("This skill costs ") + SkillDefs[skill].cost +
                 " silver per month of study.";
         }
-        if (SkillDefs[skill].flags & SkillType::SLOWSTUDY) {
+        if (SkillDefs[skill].flags.isSet(SkillType::SkillFlags::SLOWSTUDY)) {
             if (!(str == "")) str += " ";
             str += "This skill is studied at one half the normal speed.";
         }
     }
 
     // Tell whether this skill can be taught, studied, or gained through exp
-    if (SkillDefs[skill].flags & SkillType::NOSTUDY) {
+    if (SkillDefs[skill].flags.isSet(SkillType::SkillFlags::NOSTUDY)) {
         if (!(str == "")) str += " ";
         str += "This skill cannot be studied via normal means.";
     }
-    if (SkillDefs[skill].flags & SkillType::NOTEACH) {
+    if (SkillDefs[skill].flags.isSet(SkillType::SkillFlags::NOTEACH)) {
         if (!(str == "")) str += " ";
         str += "This skill cannot be taught to other units.";
     }
-    if ((Globals->SKILL_PRACTICE_AMOUNT > 0) && 
-            (SkillDefs[skill].flags & SkillType::NOEXP)) {
+    if ((Globals->SKILL_PRACTICE_AMOUNT > 0) && SkillDefs[skill].flags.isSet(SkillType::SkillFlags::NOEXP)) {
         if (!(str == "")) str += " ";
         str += "This skill cannot be increased through experience.";
     }

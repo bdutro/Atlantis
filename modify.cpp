@@ -106,7 +106,7 @@ void Game::EnableSkill(const Skills& sk)
     {
         return;
     }
-    SkillDefs[sk].flags &= ~SkillType::DISABLED;
+    SkillDefs[sk].flags.clear(SkillType::SkillFlags::DISABLED);
 }
 
 void Game::DisableSkill(const Skills& sk)
@@ -115,7 +115,7 @@ void Game::DisableSkill(const Skills& sk)
     {
         return;
     }
-    SkillDefs[sk].flags |= SkillType::DISABLED;
+    SkillDefs[sk].flags.set(SkillType::SkillFlags::DISABLED);
 }
 
 void Game::ModifySkillDependancy(const Skills& sk, int i, char const *dep, int lev)
@@ -148,14 +148,6 @@ void Game::ModifySkillDependancy(const Skills& sk, int i, char const *dep, int l
     catch(const NoSuchItemException&)
     {
     }
-}
-void Game::ModifySkillFlags(const Skills& sk, int flags)
-{
-    if (!sk.isValid())
-    {
-        return;
-    }
-    SkillDefs[sk].flags = flags;
 }
 
 void Game::ModifySkillCost(const Skills& sk, int cost)

@@ -36,17 +36,19 @@ extern randctx isaac_ctx;
 
 /* Get a random number from 0 to (int-1) */
 template<typename I>
-I getrandom(I range)
-{
+I getrandom(I range) {
+    if (range == 0) {
+        return I(0);
+    }
+
     const bool neg = std::is_signed<I>::value && (range < 0);
-    if (!range) return I(0);
-    I ret = I(0);
-    if (neg) range = -range;
-    unsigned long i = isaac_rand( &isaac_ctx );
-    i = i % static_cast<unsigned long>(range);
-    if (neg) ret = static_cast<I>(-i);
-    else ret = static_cast<I>(i);
-    return ret;
+
+    if (neg) {
+        range = -range;
+    }
+
+    const unsigned long i = isaac_rand( &isaac_ctx ) % static_cast<unsigned long>(range);
+    return static_cast<I>(neg ? -i : i);
 }
 
 /* Seed the random number generator */

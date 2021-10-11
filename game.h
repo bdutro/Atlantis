@@ -181,7 +181,16 @@ protected:
     void EnableSkill(const Skills& sk); // Enabled a disabled skill
     void DisableSkill(const Skills& sk);  // Prevents skill being studied or used
     void ModifySkillDependancy(const Skills& sk, int i, char const *dep, int lev);
-    void ModifySkillFlags(const Skills& sk, int flags);
+
+    template<typename ... E>
+    inline typename std::enable_if<type_utils::are_same<SkillType::SkillFlags, E...>::value>::type
+    ModifySkillFlags(const Skills& sk, const E ... flags) {
+        if (!sk.isValid()) {
+            return;
+        }
+        SkillDefs[sk].flags.set(flags...);
+    }
+
     void ModifySkillCost(const Skills& sk, int cost);
     void ModifySkillSpecial(const Skills& sk, char const *special);
     void ModifySkillRange(const Skills& sk, char const *range);

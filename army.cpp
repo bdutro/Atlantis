@@ -276,7 +276,7 @@ void Soldier::SetupSpell()
         }
 
         const auto& pST = SkillDefs[static_cast<size_t>(unit_sp->combat)];
-        if (!(pST.flags & SkillType::COMBAT)) {
+        if (!pST.flags.isSet(SkillType::SkillFlags::COMBAT)) {
             //
             // This isn't a combat spell!
             //
@@ -305,11 +305,10 @@ void Soldier::SetupCombatItems()
         // If we are using the ready command, skip this item unless
         // it's the right one, or unless it is a shield which doesn't
         // need preparing.
-        if (!Globals->USE_PREPARE_COMMAND ||
-                (!unit_sp->readyItem.isValid() &&
-                 (Globals->USE_PREPARE_COMMAND == GameDefs::PREPARE_NORMAL)) ||
-                (item == unit_sp->readyItem) ||
-                (pBat.flags & BattleItemType::SHIELD)) {
+        if ((Globals->USE_PREPARE_COMMAND == GameDefs::Prepare::PREPARE_NONE) ||
+            (!unit_sp->readyItem.isValid() && (Globals->USE_PREPARE_COMMAND == GameDefs::Prepare::PREPARE_NORMAL)) ||
+            (item == unit_sp->readyItem) ||
+            (pBat.flags & BattleItemType::SHIELD)) {
             if ((pBat.flags & BattleItemType::SPECIAL) && special != nullptr) {
                 // This unit already has a special attack so give the item
                 // back to the unit as they aren't going to use it.
@@ -835,7 +834,7 @@ void Army::DoHealLevel(Battle& b, size_t type, int useItems)
         int n = 0;
         if (!CanBeHealed()) break;
         if (s->healtype <= 0) continue;
-        size_t s_healtype = static_cast<size_t>(s_healtype);
+        size_t s_healtype = static_cast<size_t>(s->healtype);
         // This should be here.. Use the best healing first
         if (s_healtype != type) continue;
         if (!s->healing) continue;
@@ -997,7 +996,7 @@ void Army::Win(Battle& b, const ItemList& spoils)
 
 bool Army::Broken()
 {
-    if (Globals->ARMY_ROUT == GameDefs::ARMY_ROUT_FIGURES) {
+    if (Globals->ARMY_ROUT == GameDefs::ArmyRoutOptions::ARMY_ROUT_FIGURES) {
         if ((NumAlive() << 1) < count) return true;
     } else {
         if ((hitsalive << 1) < hitstotal) return true;
@@ -1373,13 +1372,13 @@ void Army::Kill(size_t killed)
 
     if (temp->amuletofi) return;
 
-    if (Globals->ARMY_ROUT == GameDefs::ARMY_ROUT_HITS_INDIVIDUAL)
+    if (Globals->ARMY_ROUT == GameDefs::ArmyRoutOptions::ARMY_ROUT_HITS_INDIVIDUAL)
         hitsalive--;
     temp->hits--;
     temp->damage++;
     if (temp->hits > 0) return;
     temp->unit.lock()->losses++;
-    if (Globals->ARMY_ROUT == GameDefs::ARMY_ROUT_HITS_FIGURE) {
+    if (Globals->ARMY_ROUT == GameDefs::ArmyRoutOptions::ARMY_ROUT_HITS_FIGURE) {
         if (ItemDefs[temp->race].type & IT_MONSTER) {
             const auto& mp = FindMonster(ItemDefs[temp->race].abr, ItemDefs[temp->race].type & IT_ILLUSION);
             hitsalive -= mp.hits;

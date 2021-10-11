@@ -903,10 +903,9 @@ void Game::ProcessReshowOrder(const Unit::Handle& u, AString& o, const OrdersChe
 
         if (!pCheck) {
             if (!sk.isValid() ||
-                    SkillDefs[sk].flags & SkillType::DISABLED ||
-                    (SkillDefs[sk].flags & SkillType::APPRENTICE &&
-                                                     !Globals->APPRENTICES_EXIST) ||
-                    lvl > u_fac->skills.GetDays(sk)) {
+                SkillDefs[sk].flags.isSet(SkillType::SkillFlags::DISABLED) ||
+                (!Globals->APPRENTICES_EXIST && SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE)) ||
+                lvl > u_fac->skills.GetDays(sk)) {
                 u->Error("SHOW: Faction doesn't have that skill.");
                 return;
             }
@@ -1051,13 +1050,12 @@ void Game::ProcessCombatOrder(const Unit::Handle& u, AString& o, const OrdersChe
             ParseError(pCheck, u, 0, "COMBAT: Invalid skill.");
             return;
         }
-        if (!(SkillDefs[sk].flags & SkillType::MAGIC)) {
+        if (!SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)) {
             ParseError(pCheck, u, 0, "COMBAT: That is not a magic skill.");
             return;
         }
-        if (!(SkillDefs[sk].flags & SkillType::COMBAT)) {
-            ParseError(pCheck, u, 0,
-                    "COMBAT: That skill cannot be used in combat.");
+        if (!SkillDefs[sk].flags.isSet(SkillType::SkillFlags::COMBAT)) {
+            ParseError(pCheck, u, 0, "COMBAT: That skill cannot be used in combat.");
             return;
         }
 
@@ -1072,7 +1070,7 @@ void Game::ProcessCombatOrder(const Unit::Handle& u, AString& o, const OrdersChe
 
         u->combat = sk;
         AString temp = AString("Combat spell set to ") + SkillDefs[sk].name;
-        if (Globals->USE_PREPARE_COMMAND) {
+        if (Globals->USE_PREPARE_COMMAND != GameDefs::Prepare::PREPARE_NONE) {
             u->readyItem.invalidate();
             temp += " and prepared item set to none";
         }
@@ -1085,7 +1083,7 @@ void Game::ProcessCombatOrder(const Unit::Handle& u, AString& o, const OrdersChe
 // Lacandon's prepare command
 void Game::ProcessPrepareOrder(const Unit::Handle& u, AString& o, const OrdersCheck::Handle& pCheck)
 {
-    if (!(Globals->USE_PREPARE_COMMAND)) {
+    if (Globals->USE_PREPARE_COMMAND == GameDefs::Prepare::PREPARE_NONE) {
         ParseError(pCheck, u, 0, "PREPARE is not a valid order.");
         return;
     }
@@ -1284,7 +1282,7 @@ void Game::ProcessClaimOrder(const Unit::Handle& u, AString& o, const OrdersChec
 
 void Game::ProcessFactionOrder(const Unit::Handle& u, AString& o, const OrdersCheck::Handle& pCheck)
 {
-    if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_FACTION_TYPES) {
+    if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
         ParseError(pCheck, u, 0,
                 "FACTION: Invalid order, no faction types in this game.");
         return;
@@ -1328,9 +1326,9 @@ void Game::ProcessFactionOrder(const Unit::Handle& u, AString& o, const OrdersCh
             return;
         }
 
-        if (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES) {
+        if (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES) {
             const size_t q = CountQuarterMasters(u_fac);
-            if ((Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) &&
+            if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT) &&
                     (q > AllowedQuarterMasters(*u_fac))) {
                 u->Error(AString("FACTION: Too many quartermasters to "
                             "change to that faction type."));
@@ -2784,7 +2782,7 @@ void Game::ProcessNocrossOrder(const Unit::Handle& u, AString& o, const OrdersCh
 {
     bool move_over_water = false;
 
-    if (Globals->FLIGHT_OVER_WATER != GameDefs::WFLIGHT_NONE)
+    if (Globals->FLIGHT_OVER_WATER != GameDefs::FlightOverWater::WFLIGHT_NONE)
     {
         move_over_water = true;
     }

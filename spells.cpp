@@ -2086,11 +2086,11 @@ void SpellsGame<Game>::ProcessCastOrder(const Unit::Handle& u,
         return;
     }
 
-    if ( !( SkillDefs[sk].flags & SkillType::MAGIC )) {
+    if (!SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)) {
         ParseError( pCheck, u, 0, "CAST: That is not a magic skill.");
         return;
     }
-    if ( !( SkillDefs[sk].flags & SkillType::CAST )) {
+    if (!SkillDefs[sk].flags.isSet(SkillType::SkillFlags::CAST)) {
         ParseError( pCheck, u, 0, "CAST: That skill cannot be CAST.");
         return;
     }

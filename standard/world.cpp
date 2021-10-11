@@ -2159,7 +2159,7 @@ void Game::CreateWorld()
     }
     unsigned int yy = 0;
     valid_value = false;
-    while (yy <= 0) {
+    while (!valid_value) {
         Awrite("How tall should the map be? ");
         valid_value = getAndValidateInt(yy);
         if(!valid_value)

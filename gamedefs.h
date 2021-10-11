@@ -32,6 +32,7 @@
 #include "objecttype.h"
 #include "validenum.h"
 #include "helper.h"
+#include "field_enum.h"
 
 /* Directions */
 enum class _Directions : size_t {
@@ -56,7 +57,7 @@ class Directions : public _DirectionsVE
                 static constexpr size_t _MOVE_IN = 98;
                 static constexpr size_t _MOVE_OUT = 99;
                 static constexpr size_t _MOVE_ENTER = 100;
-        
+
                 static_assert(_MOVE_PAUSE > Directions::size());
                 static_assert(_MOVE_IN > Directions::size());
                 static_assert(_MOVE_OUT > Directions::size());
@@ -266,17 +267,17 @@ public:
     // multiplier use
     unsigned int MAINTENANCE_MULTIPLIER;
 
-    enum {
+    enum class Multiplier {
         MULT_NONE,
         MULT_MAGES,
         MULT_LEADERS,
         MULT_ALL,
     };
-    int MULTIPLIER_USE;
+    Multiplier MULTIPLIER_USE;
 
     int STARVE_PERCENT;
 
-    enum {
+    enum class Starve {
         STARVE_NONE,
         STARVE_MAGES,
         STARVE_LEADERS,
@@ -286,7 +287,7 @@ public:
     // Instead of dying, lose skill levels, but only for the types of
     // units listed below.   Any unit which should lose a skill level and
     // is unable to will die, period.
-    int SKILL_STARVATION;
+    Starve SKILL_STARVATION;
 
     size_t START_MONEY; // standard is 5020
     int WORK_FRACTION; // standard is 3
@@ -304,7 +305,7 @@ public:
     unsigned int TAX_BONUS_FORT;
     
     // Options to control who is able to tax
-    enum {
+    enum class Taxation {
         TAX_ANYONE = 0x00001,
         TAX_COMBAT_SKILL = 0x00002,
         TAX_BOW_SKILL = 0x00004,
@@ -340,7 +341,7 @@ public:
         // Abbreviation for "the usual"
         TAX_NORMAL = TAX_COMBAT_SKILL | TAX_USABLE_WEAPON,
     };
-    int WHO_CAN_TAX;
+    FieldEnum<Taxation> WHO_CAN_TAX;
     // Are taxing and pillaging month-long actions?
     int TAX_PILLAGE_MONTH_LONG;
 
@@ -417,22 +418,22 @@ public:
     //
     // The type of faction limits that are in effect in this game.
     //
-    enum {
+    enum class FactionLimits {
         FACLIM_MAGE_COUNT,
         FACLIM_FACTION_TYPES,
         FACLIM_UNLIMITED,
     };
-    int FACTION_LIMIT_TYPE;
+    FactionLimits FACTION_LIMIT_TYPE;
 
     //
     // The type of flight over water that is available.
     //
-    enum {
+    enum class FlightOverWater {
         WFLIGHT_NONE,
         WFLIGHT_MUST_LAND,
         WFLIGHT_UNLIMITED,
     };
-    int FLIGHT_OVER_WATER;
+    FlightOverWater FLIGHT_OVER_WATER;
 
     // Do starting cities exist?
     bool START_CITIES_EXIST;
@@ -564,7 +565,7 @@ public:
 
     // Lake Effect on Wages Options
     // Lakes will add one to adjacent regions wages if set
-    enum {
+    enum class LakeEffect {
         NO_EFFECT = 0x00,
         ALL = 0x01,
         TOWNS = 0x02,
@@ -574,7 +575,7 @@ public:
     };
 
     // LAKE_WAGE_EFFECT: effect on surrounding wages
-    int LAKE_WAGE_EFFECT;
+    LakeEffect LAKE_WAGE_EFFECT;
 
     // LAKESIDE_IS_COASTAL: lakeside regions count as
     // coastal for all purposes - races and such
@@ -599,7 +600,7 @@ public:
     int LIMITED_MAGES_PER_BUILDING;
 
     // Transit report options
-    enum {
+    enum class TransitReportOptions {
         REPORT_NOTHING = 0x0000,
         // Various things which can be shown
         REPORT_SHOW_PEASANTS = 0x0001,
@@ -646,7 +647,7 @@ public:
 
     // What sort of information should be shown to a unit just passing
     // through a hex?
-    int TRANSIT_REPORT;
+    FieldEnum<TransitReportOptions> TRANSIT_REPORT;
 
     // Should advanced items be shown in markets at all times.
     int MARKETS_SHOW_ADVANCED_ITEMS;
@@ -654,12 +655,12 @@ public:
     // Do we require the 'ready' command to set up battle items
     // If prepare is strict, then the READY command MUST be used
     // and there will be no automatic selection of battle items.
-    enum {
+    enum class Prepare {
         PREPARE_NONE = 0,
         PREPARE_NORMAL = 1,
         PREPARE_STRICT = 2,
     };
-    int USE_PREPARE_COMMAND;
+    Prepare USE_PREPARE_COMMAND;
 
     // Monsters have the option of advancing occasionally instead of just
     // using move.
@@ -722,7 +723,7 @@ public:
 
     // Should army routes be basd on the number of hits lost rather than the
     // number of figures lost.
-    enum {
+    enum class ArmyRoutOptions {
         // Default -- rout if half of the total figures die.  All figures are
         // treated equally.
         ARMY_ROUT_FIGURES = 0,
@@ -735,7 +736,7 @@ public:
         ARMY_ROUT_HITS_FIGURE,
     };
 
-    int ARMY_ROUT;
+    ArmyRoutOptions ARMY_ROUT;
     int ONLY_ROUT_ONCE;
     
     // How are fortification bonuses handled?
@@ -812,7 +813,8 @@ public:
     int SHOW_CLOSED_GATES;
 
     // Transport and related settings
-    enum {
+    enum class TransportOptions {
+        NO_TRANSPORT = 0,
         ALLOW_TRANSPORT = 0x01, // Do we allow transport/distribute?
         // actual cost will be * (4 - (level+1)/2), which means that 
         // the cost will be from *1 (at level 5) to *3 (at level 1)
@@ -820,7 +822,7 @@ public:
         // actual distance will be NONLOCAL_TRANSPORT + ((level + 1)/3)
         QM_AFFECT_DIST = 0x04, // QM level affect longrange dist?
     };
-    int TRANSPORT;
+    FieldEnum<TransportOptions> TRANSPORT;
 
     // Base hexes for local transport and distribute (0 to disable)
     unsigned int LOCAL_TRANSPORT;

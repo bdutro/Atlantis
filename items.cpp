@@ -706,7 +706,9 @@ AString::Handle ItemDescription(const Items& item, int full)
                     last = "all magical skills";
                     continue;
                 }
-                if (pS.flags & SkillType::DISABLED) continue;
+                if (pS.flags.isSet(SkillType::SkillFlags::DISABLED)) {
+                    continue;
+                }
                 if (!(last == "")) {
                     if (found)
                         *temp += ", ";
@@ -998,8 +1000,7 @@ AString::Handle ItemDescription(const Items& item, int full)
             try
             {
                 const auto& pS = FindSkill(pM.skill);
-                if (pS.flags & SkillType::DISABLED)
-                {
+                if (pS.flags.isSet(SkillType::SkillFlags::DISABLED)) {
                     throw NoSuchItemException();
                 }
                 else {
@@ -1033,7 +1034,7 @@ AString::Handle ItemDescription(const Items& item, int full)
         try
         {
             const auto& pS = FindSkill(ItemDefs[item].pSkill);
-            if (!(pS.flags & SkillType::DISABLED)) {
+            if (!pS.flags.isSet(SkillType::SkillFlags::DISABLED)) {
                 bool found = false;
 
                 for (const auto& input: ItemDefs[item].pInput)
@@ -1177,7 +1178,7 @@ AString::Handle ItemDescription(const Items& item, int full)
     try
     {
         const auto& pS = FindSkill(ItemDefs[item].grantSkill);
-        if (pS.flags & SkillType::CAST) {
+        if (pS.flags.isSet(SkillType::SkillFlags::CAST)) {
             *temp += " This item allows its possessor to CAST the ";
             *temp += pS.name;
             *temp += " spell as if their skill in ";
@@ -1190,7 +1191,7 @@ AString::Handle ItemDescription(const Items& item, int full)
                     try
                     {
                         const auto& pS2 = FindSkill(skill);
-                        if (!(pS2.flags & SkillType::DISABLED))
+                        if (!pS2.flags.isSet(SkillType::SkillFlags::DISABLED))
                         {
                             count++;
                         }
@@ -1209,7 +1210,7 @@ AString::Handle ItemDescription(const Items& item, int full)
                     try
                     {
                         const auto& pS2 = FindSkill(skill);
-                        if (pS2.flags & SkillType::DISABLED)
+                        if (pS2.flags.isSet(SkillType::SkillFlags::DISABLED))
                         {
                             continue;
                         }

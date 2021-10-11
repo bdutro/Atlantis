@@ -111,7 +111,7 @@ Skills ParseSkill(const AString& token)
         }
     }
     if (r.isValid()) {
-        if (SkillDefs[r].flags & SkillType::DISABLED)
+        if (SkillDefs[r].flags.isSet(SkillType::SkillFlags::DISABLED))
         {
             r.invalidate();
         }
@@ -143,7 +143,7 @@ unsigned int SkillMax(char const *skill, const Items& race)
 
         const SkillType& pS = FindSkill(skill);
         if (!Globals->MAGE_NONLEADERS) {
-            if (pS.flags & SkillType::MAGIC) {
+            if (pS.flags.isSet(SkillType::SkillFlags::MAGIC)) {
                 if (!(ItemDefs[race].type & IT_LEADER))
                 {
                     return 0;
@@ -159,7 +159,7 @@ unsigned int SkillMax(char const *skill, const Items& race)
                 return mt.speciallevel;
             }
             // Allow MANI to act as a placeholder for all magical skills
-            if ((pS.flags & SkillType::MAGIC) && mani == c)
+            if (pS.flags.isSet(SkillType::SkillFlags::MAGIC) && mani == c)
             {
                 return mt.speciallevel;
             }

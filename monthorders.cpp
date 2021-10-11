@@ -385,8 +385,8 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
                         AString("."));
                 }
             }
-            if (Globals->TRANSIT_REPORT != GameDefs::REPORT_NOTHING &&
-                    !x->dir.isMovePause()) {
+            if (!Globals->TRANSIT_REPORT.allSet(GameDefs::TransitReportOptions::REPORT_NOTHING) &&
+                !x->dir.isMovePause()) {
                 if (!(cap->faction.lock()->IsNPC())) newreg->visited = 1;
                 for(const auto& unit: fleet->units) {
                     // Everyone onboard gets to see the sights
@@ -501,7 +501,7 @@ void Game::Do1TeachOrder(const ARegion::Handle& reg, const Unit::Handle& unit)
                         continue;
                     } else {
                         // Check whether it's a valid skill to teach
-                        if (SkillDefs[sk].flags & SkillType::NOTEACH) {
+                        if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::NOTEACH)) {
                             unit->Error(AString("TEACH: ") + 
                                     AString(SkillDefs[sk].name) + 
                                     " cannot be taught.");
@@ -1382,15 +1382,15 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
 
     reset_man = -1;
     const Skills& sk = o->skill;
-    if (!sk.isValid() || SkillDefs[sk].flags & SkillType::DISABLED ||
-            (SkillDefs[sk].flags & SkillType::APPRENTICE &&
-                !Globals->APPRENTICES_EXIST)) {
+    if (!sk.isValid() ||
+        SkillDefs[sk].flags.isSet(SkillType::SkillFlags::DISABLED) ||
+        (!Globals->APPRENTICES_EXIST && SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE))) {
         u->Error("STUDY: Can't study that.");
         return;
     }
 
     // Check that the skill can be studied
-    if (SkillDefs[sk].flags & SkillType::NOSTUDY) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::NOSTUDY)) {
         u->Error( AString("STUDY: ") + AString(SkillDefs[sk].name) + " cannot be studied.");
         return;
     }
@@ -1435,14 +1435,14 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
     }
 
     const auto u_fac = u->faction.lock();
-    if ((SkillDefs[sk].flags & SkillType::MAGIC) && u->type != U_MAGE) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC) && (u->type != U_MAGE)) {
         if (u->type == U_APPRENTICE) {
             u->Error(AString("STUDY: An ") +
                 Globals->APPRENTICE_NAME +
                 " cannot be made into a mage.");
             return;
         }
-        if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_UNLIMITED) {
+        if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_UNLIMITED) {
             if (CountMages(u_fac) >= AllowedMages(*u_fac)) {
                 u->Error("STUDY: Can't have another magician.");
                 return;
@@ -1462,15 +1462,14 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
         u->type = U_MAGE;
     }
 
-    if ((SkillDefs[sk].flags&SkillType::APPRENTICE) &&
-            u->type != U_APPRENTICE) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE) && (u->type != U_APPRENTICE)) {
         if (u->type == U_MAGE) {
             u->Error(AString("STUDY: A mage cannot be made into an ") +
                 Globals->APPRENTICE_NAME + ".");
             return;
         }
 
-        if (Globals->FACTION_LIMIT_TYPE != GameDefs::FACLIM_UNLIMITED) {
+        if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_UNLIMITED) {
             if (CountApprentices(u_fac) >= AllowedApprentices(*u_fac)) {
                 u->Error(AString("STUDY: Can't have another ") +                    Globals->APPRENTICE_NAME + ".");
                 return;
@@ -1492,9 +1491,10 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
         u->type = U_APPRENTICE;
     }
 
-    if ((Globals->TRANSPORT & GameDefs::ALLOW_TRANSPORT) &&
-            (sk == Skills::Types::S_QUARTERMASTER) && (u->GetSkill(Skills::Types::S_QUARTERMASTER) == 0) &&
-            (Globals->FACTION_LIMIT_TYPE == GameDefs::FACLIM_FACTION_TYPES)) {
+    if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT) &&
+            (sk == Skills::Types::S_QUARTERMASTER) &&
+            (u->GetSkill(Skills::Types::S_QUARTERMASTER) == 0) &&
+            (Globals->FACTION_LIMIT_TYPE == GameDefs::FactionLimits::FACLIM_FACTION_TYPES)) {
         if (CountQuarterMasters(u_fac) >= AllowedQuarterMasters(*u_fac)) {
             u->Error("STUDY: Can't have another quartermaster.");
             return;
@@ -1526,7 +1526,7 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
 
     days = static_cast<int>(u->skills.GetStudyRate(sk, u->GetMen()) * u->GetMen() + static_cast<size_t>(taughtdays));
 
-    if ((SkillDefs[sk].flags & SkillType::MAGIC) && u->GetSkill(sk) >= 2) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC) && u->GetSkill(sk) >= 2) {
         if (obj->incomplete > 0 || obj->type == Objects::Types::O_DUMMY) {
             u->Error("Warning: Magic study rate outside of a building "
                     "cut in half above level 2.");
@@ -1547,7 +1547,7 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
         }
     }
 
-    if (SkillDefs[sk].flags & SkillType::SLOWSTUDY) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::SLOWSTUDY)) {
         days /= 2;
     }
 
@@ -1993,7 +1993,7 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
     }
 
     // TODO: Should we get a transit report on the starting region?
-    if (Globals->TRANSIT_REPORT != GameDefs::REPORT_NOTHING) {
+    if (!Globals->TRANSIT_REPORT.allSet(GameDefs::TransitReportOptions::REPORT_NOTHING)) {
         if (!(unit->faction.lock()->IsNPC())) newreg->visited = 1;
         // Update our visit record in the region we are leaving.
         for(const auto& f: region->passers) {

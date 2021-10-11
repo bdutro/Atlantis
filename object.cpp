@@ -215,16 +215,23 @@ void Object::SetDescribe(const AString& s)
 
 bool Object::IsFleet()
 {
-    if (type == Objects::Types::O_FLEET) return true;
-    if (ObjectDefs[type].sailors > 0) return true;
-    if (!ships.empty()) return true;
+    if (type == Objects::Types::O_FLEET) {
+        return true;
+    }
+    if (ObjectDefs[type].sailors > 0) {
+        return true;
+    }
+    if (!ships.empty()) {
+        return true;
+    }
     return false;
 }
 
 int Object::IsBuilding()
 {
-    if (ObjectDefs[type].protect)
+    if (ObjectDefs[type].protect) {
         return 1;
+    }
     return 0;
 }
 
@@ -318,18 +325,15 @@ void Object::Report(Areport& f, const Faction& fac, unsigned int obs, size_t tru
     const auto& ob = ObjectDefs[type];
 
     if ((type != Objects::Types::O_DUMMY) && !present) {
-        if (IsFleet() &&
-                !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_SHIPS)) {
+        if (IsFleet() && !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_SHIPS)) {
             // This is a ship and we don't see ships in transit
             return;
         }
-        if (IsBuilding() &&
-                !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_BUILDINGS)) {
+        if (IsBuilding() && !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_BUILDINGS)) {
             // This is a building and we don't see buildings in transit
             return;
         }
-        if (IsRoad() &&
-                !(Globals->TRANSIT_REPORT & GameDefs::REPORT_SHOW_ROADS)) {
+        if (IsRoad() && !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_ROADS)) {
             // This is a road and we don't see roads in transit
             return;
         }
@@ -405,14 +409,11 @@ void Object::Report(Areport& f, const Faction& fac, unsigned int obs, size_t tru
                 u->WriteReport(f, obs, truesight, detfac, type != Objects::Types::O_DUMMY, attitude, fac.showunitattitudes);
             } else {
                 if (((type == Objects::Types::O_DUMMY) &&
-                    (Globals->TRANSIT_REPORT &
-                     GameDefs::REPORT_SHOW_OUTDOOR_UNITS)) ||
+                     Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_OUTDOOR_UNITS)) ||
                     ((type != Objects::Types::O_DUMMY) &&
-                        (Globals->TRANSIT_REPORT &
-                         GameDefs::REPORT_SHOW_INDOOR_UNITS)) ||
+                     Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_INDOOR_UNITS)) ||
                     ((u->guard == GUARD_GUARD) &&
-                        (Globals->TRANSIT_REPORT &
-                         GameDefs::REPORT_SHOW_GUARDS))) {
+                     Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_GUARDS))) {
                     u->WriteReport(f, passobs, passtrue, passdetfac,
                             type != Objects::Types::O_DUMMY, attitude, fac.showunitattitudes);
                 }
@@ -651,6 +652,11 @@ int Object::FleetLoad()
         }
         fleet_load = static_cast<int>(wgt);
     }
+
+    if(fleet_load == 0) {
+        throw std::runtime_error("Fleet should have at least 1 unit");
+    }
+
     return fleet_load;
 }
 
@@ -777,14 +783,16 @@ unsigned int Object::GetFleetSpeed(int report)
     }
     speed += bonus;
 
+    const auto fleet_load = std::max(1, FleetLoad());
+
     // check for being overloaded
-    if (FleetLoad() > static_cast<int>(fleet_capacity))
+    if (fleet_load > static_cast<int>(fleet_capacity))
     {
         return 0;
     }
-    
+
     // speed bonus due to low load:
-    int loadfactor = (static_cast<int>(fleet_capacity) / FleetLoad());
+    int loadfactor = (static_cast<int>(fleet_capacity) / fleet_load);
     bonus = 0;
     while (loadfactor >= 2)
     {
@@ -900,22 +908,17 @@ AString::Handle ObjectDescription(const Objects& obj)
         *temp += " to study above level 2.";
     }
     bool buildable = true;
-    if (!o->item.isValid() || o->skill == NULL)
-    {
+    if (!o->item.isValid() || o->skill == NULL) {
         buildable = false;
     }
-    if (o->skill != NULL)
-    {
-        try
-        {
+    if (o->skill != NULL) {
+        try {
             const auto& pS = FindSkill(o->skill);
-            if (pS.flags & SkillType::DISABLED)
-            {
+            if (pS.flags.isSet(SkillType::SkillFlags::DISABLED)) {
                 buildable = false;
             }
         }
-        catch(const NoSuchItemException&)
-        {
+        catch(const NoSuchItemException&) {
             buildable = false;
         }
     }
@@ -925,8 +928,7 @@ AString::Handle ObjectDescription(const Objects& obj)
     }
     if (o->item.isWoodOrStone() &&
             (ItemDefs[Items::Types::I_WOOD].flags & ItemType::DISABLED) &&
-            (ItemDefs[Items::Types::I_STONE].flags & ItemType::DISABLED))
-    {
+            (ItemDefs[Items::Types::I_STONE].flags & ItemType::DISABLED)) {
         buildable = false;
     }
     if (!buildable && !(ObjectDefs[obj].flags & ObjectType::GROUP)) {
