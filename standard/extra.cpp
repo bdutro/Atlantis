@@ -41,9 +41,9 @@ int Game::SetupFaction( const Faction::Handle& pFac )
     Unit::Handle temp2 = GetNewUnit( pFac );
     temp2->SetMen(Items::Types::I_LEADERS, 1);
     pFac->DiscoverItem(Items::Types::I_LEADERS, 0, 1);
-    temp2->reveal = REVEAL_FACTION;
+    temp2->reveal = UnitReveal::REVEAL_FACTION;
 
-    temp2->type = U_MAGE;
+    temp2->type = UnitType::U_MAGE;
     temp2->Study(Skills::Types::S_PATTERN, 30);
     temp2->Study(Skills::Types::S_SPIRIT, 30);
     temp2->Study(Skills::Types::S_GATE_LORE, 30);
@@ -108,7 +108,7 @@ Faction::WeakHandle Game::CheckVictory()
             // Now see find the first faction guarding the region
             for(const auto& o: region->objects) {
                 for(const auto& u: o->units) {
-                    if (u->guard == GUARD_GUARD){
+                    if (u->guard == UnitGuard::GUARD_GUARD){
                         return u->faction;
                     }
                 }

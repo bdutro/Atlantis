@@ -322,7 +322,7 @@ AString ShowSpecial(char const *special, size_t level, int expandLevel, int from
         auto last = spd.buildings.end();
         for (auto i = spd.buildings.begin(); i != spd.buildings.end(); ++i) {
             if (!i->isValid()) continue;
-            if (ObjectDefs[*i].flags & ObjectType::DISABLED)
+            if (ObjectDefs[*i].flags.isSet(ObjectType::ObjectFlags::DISABLED))
                 continue;
             if (last == spd.buildings.end()) {
                 last = i;

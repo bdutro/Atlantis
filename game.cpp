@@ -65,11 +65,11 @@ void Game::DefaultWorkOrder()
             for(const auto& u: o->units) {
                 if (u->monthorders || u->faction.lock()->IsNPC() ||
                         (Globals->TAX_PILLAGE_MONTH_LONG &&
-                         u->taxing != TAX_NONE))
+                         u->taxing != UnitTax::TAX_NONE))
                     continue;
                 if (u->GetFlag(FLAG_AUTOTAX) &&
                         (Globals->TAX_PILLAGE_MONTH_LONG && u->Taxers(1))) {
-                    u->taxing = TAX_AUTO;
+                    u->taxing = UnitTax::TAX_AUTO;
                 } else if (Globals->DEFAULT_WORK_ORDER) {
                     ProcessWorkOrder(u, 1, 0);
                 }
@@ -94,7 +94,7 @@ AString Game::GetXtraMap(const ARegion::Handle& reg,int type)
             return (i ? AString(i) : AString(" "));
         case 2:
             for(const auto& o: reg->objects) {
-                if (!(ObjectDefs[o->type].flags & ObjectType::CANENTER)) {
+                if (!ObjectDefs[o->type].flags.isSet(ObjectType::ObjectFlags::CANENTER)) {
                     if (!o->units.empty()) {
                         return "*";
                     } else {
@@ -939,11 +939,11 @@ bool Game::ReadPlayersLine(const AString& pToken, AString& pLine, const Faction:
                                      * are more powerful than mere mortals
                                      */
                                     if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE) && 
-                                        (u->type == U_NORMAL)) {
-                                        u->type = U_APPRENTICE;
+                                        (u->type == UnitType::U_NORMAL)) {
+                                        u->type = UnitType::U_APPRENTICE;
                                     }
                                     else if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)) {
-                                        u->type = U_MAGE;
+                                        u->type = UnitType::U_MAGE;
                                     }
                                 }
                             }
@@ -1365,7 +1365,7 @@ void Game::CountAllSpecialists()
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
                 const auto fac = u->faction.lock();
-                if (u->type == U_MAGE)
+                if (u->type == UnitType::U_MAGE)
                 {
                     fac->nummages++;
                 }
@@ -1377,7 +1377,7 @@ void Game::CountAllSpecialists()
                 {
                     fac->numtacts++;
                 }
-                if (u->type == U_APPRENTICE)
+                if (u->type == UnitType::U_APPRENTICE)
                 {
                     fac->numapprentices++;
                 }
@@ -1441,7 +1441,7 @@ void Game::CountAllApprentices()
                 Object *o = (Object *)elem;
                 forlist(&o->units) {
                     Unit *u = (Unit *)elem;
-                    if (u->type == U_APPRENTICE)
+                    if (u->type == UnitType::U_APPRENTICE)
                         u->faction->numapprentices++;
                 }
             }
@@ -1456,7 +1456,7 @@ size_t Game::CountMages(const Faction::Handle& pFac)
     for(const auto& r: regions) {
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
-                if (u->faction.lock() == pFac && u->type == U_MAGE) i++;
+                if (u->faction.lock() == pFac && u->type == UnitType::U_MAGE) i++;
             }
         }
     }
@@ -1495,7 +1495,7 @@ size_t Game::CountApprentices(const Faction::Handle& pFac)
     for(const auto& r: regions) {
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
-                if (u->faction.lock() == pFac && u->type == U_APPRENTICE)
+                if (u->faction.lock() == pFac && u->type == UnitType::U_APPRENTICE)
                 {
                     i++;
                 }
@@ -1573,7 +1573,7 @@ void Game::MonsterCheck(const ARegion::Handle& r, const Unit::Handle& u)
     using MapType = std::map<int, size_t>;
     MapType chances;
 
-    if (u->type != U_WMON) {
+    if (u->type != UnitType::U_WMON) {
 
         for (const auto& i: u->items) {
             if (!i->num) continue;
@@ -1834,9 +1834,9 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         u->SetMoney(num * Globals->GUARD_MONEY);
         u->SetSkill(Skills::Types::S_COMBAT, skilllevel);
         u->SetName("City Guard");
-        u->type = U_GUARD;
-        u->guard = GUARD_GUARD;
-        u->reveal = REVEAL_FACTION;
+        u->type = UnitType::U_GUARD;
+        u->guard = UnitGuard::GUARD_GUARD;
+        u->reveal = UnitReveal::REVEAL_FACTION;
     } else {
         /* non-leader guards */
         size_t n = 3 * num / 4;
@@ -1846,16 +1846,16 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
         if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,num);
         u->SetMoney(num * Globals->GUARD_MONEY / 2);
         u->SetName("City Guard");
-        u->type = U_GUARD;
-        u->guard = GUARD_GUARD;
-        u->reveal = REVEAL_FACTION;
+        u->type = UnitType::U_GUARD;
+        u->guard = UnitGuard::GUARD_GUARD;
+        u->reveal = UnitReveal::REVEAL_FACTION;
         u2 = MakeManUnit(pFac, pReg->race, n, skilllevel, 1, plate, 1);
         if (IV) u2->items.SetNum(Items::Types::I_AMULETOFI,num);
         u2->SetMoney(num * Globals->GUARD_MONEY / 2);
         u2->SetName("City Guard");
-        u2->type = U_GUARD;
-        u2->guard = GUARD_GUARD;
-        u2->reveal = REVEAL_FACTION;
+        u2->type = UnitType::U_GUARD;
+        u2->guard = UnitGuard::GUARD_GUARD;
+        u2->reveal = UnitReveal::REVEAL_FACTION;
     }            
     
     if (AC) {
@@ -1889,8 +1889,8 @@ void Game::CreateCityMon(const ARegion::Handle& pReg, size_t percent, int needma
     if (AC && Globals->START_CITY_MAGES && needmage) {
         u = GetNewUnit(pFac);
         u->SetName("City Mage");
-        u->type = U_GUARDMAGE;
-        u->reveal = REVEAL_FACTION;
+        u->type = UnitType::U_GUARDMAGE;
+        u->reveal = UnitReveal::REVEAL_FACTION;
         u->SetMen(Items::Types::I_LEADERS, 1);
         if (IV) u->items.SetNum(Items::Types::I_AMULETOFI, 1);
         u->SetMoney(Globals->GUARD_MONEY);
@@ -1913,14 +1913,14 @@ void Game::AdjustCityMons(const ARegion::Handle& r)
     int needmage = 1;
     for(const auto& o: r->objects) {
         for(const auto& u: o->units) {
-            if (u->type == U_GUARD || u->type == U_GUARDMAGE) {
+            if (u->type == UnitType::U_GUARD || u->type == UnitType::U_GUARDMAGE) {
                 AdjustCityMon(r, u);
                 /* Don't create new city guards if we have some */
                 needguard = 0;
-                if (u->type == U_GUARDMAGE)
+                if (u->type == UnitType::U_GUARDMAGE)
                     needmage = 0;
             }
-            if (u->guard == GUARD_GUARD) needguard = 0;
+            if (u->guard == UnitGuard::GUARD_GUARD) needguard = 0;
         }
     }
 
@@ -1972,7 +1972,7 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
         if (Globals->SAFE_START_CITIES || (r->type == Regions::Types::R_NEXUS)) {
             IV = 1;
         }
-        if (u->type == U_GUARDMAGE) {
+        if (u->type == UnitType::U_GUARDMAGE) {
             men = 1;
         } else {
             if ((!Globals->LEADERS_EXIST) && (r->type != Regions::Types::R_NEXUS)) {
@@ -1998,7 +1998,7 @@ void Game::AdjustCityMon(const ARegion::Handle& r, const Unit::Handle& u)
     u->SetMen(mantype,men);
     if (IV) u->items.SetNum(Items::Types::I_AMULETOFI,men);
 
-    if (u->type == U_GUARDMAGE) {
+    if (u->type == UnitType::U_GUARDMAGE) {
         if (Globals->START_CITY_TACTICS)
             u->SetSkill(Skills::Types::S_TACTICS, Globals->START_CITY_TACTICS);
         u->SetSkill(Skills::Types::S_FORCE, Globals->START_CITY_MAGES);

@@ -443,7 +443,7 @@ void Game::GetDFacs(const ARegion::Handle& r, const Unit::Handle& t, WeakPtrList
             if (u->IsAlive()) {
                 if (u->faction.lock() == t->faction.lock() ||
                     (AlliesIncluded == 1 && 
-                     u->guard != GUARD_AVOID &&
+                     u->guard != UnitGuard::GUARD_AVOID &&
                      u->GetAttitude(*r, t) == Attitudes::Types::A_ALLY) ) {
 
                     const auto ufac = u->faction.lock();
@@ -469,13 +469,13 @@ void Game::GetAFacs(const ARegion::Handle& r,
             if (u->canattack && u->IsAlive()) {
                 bool add = false;
                 if ((u->faction.lock() == att->faction.lock() || u->GetAttitude(*r,tar) == Attitudes::Types::A_HOSTILE) &&
-                    (u->guard != GUARD_AVOID || u == att))
+                    (u->guard != UnitGuard::GUARD_AVOID || u == att))
                 {
                     add = true;
                 }
                 else
                 {
-                    if (u->guard == GUARD_ADVANCE && u->GetAttitude(*r,tar) != Attitudes::Types::A_ALLY)
+                    if (u->guard == UnitGuard::GUARD_ADVANCE && u->GetAttitude(*r,tar) != Attitudes::Types::A_ALLY)
                     {
                         add = true;
                     }
@@ -580,7 +580,7 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
                      */
                     if (first || (!noaida)) {
                         if (u->canattack &&
-                                (u->guard != GUARD_AVOID || u==att) &&
+                                (u->guard != UnitGuard::GUARD_AVOID || u==att) &&
                                 u->CanMoveTo(*r2, *r) &&
                                 !::GetUnit(atts, u->num).expired()) {
                             add = ADD_ATTACK;
@@ -594,13 +594,13 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
                      * defensive side
                      */
                     if (!(!first && noaidd)) {
-                        if (u->type == U_GUARD) {
+                        if (u->type == UnitType::U_GUARD) {
                             /* The unit is a city guardsman */
                             if (first && !adv)
                             {
                                 add = ADD_DEFENSE;
                             }
-                        } else if (u->type == U_GUARDMAGE) {
+                        } else if (u->type == UnitType::U_GUARDMAGE) {
                             /* the unit is a city guard support mage */
                             if (first && !adv)
                             {
@@ -612,7 +612,7 @@ void Game::GetSidesForRegion_(const ARegion::Handle& r,
                              * the unit is on the defensive side
                              */
                             if (!GetFaction2(dfacs, ufac_num).expired()) {
-                                if (u->guard == GUARD_AVOID) {
+                                if (u->guard == UnitGuard::GUARD_AVOID) {
                                     /*
                                      * The unit is avoiding, and doesn't
                                      * want to be in the battle if he can

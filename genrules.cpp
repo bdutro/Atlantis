@@ -122,10 +122,10 @@ int Game::GenRules(const AString &rules, const AString &css,
     if (qm_exist) {
         /* Make there is an enabled building with transport set */
         for (const auto& obj_def: ObjectDefs) {
-            if (obj_def.flags & ObjectType::DISABLED) {
+            if (obj_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 continue;
             }
-            if (obj_def.flags & ObjectType::TRANSPORT) {
+            if (obj_def.flags.isSet(ObjectType::ObjectFlags::TRANSPORT)) {
                 found = true;
                 break;
             }
@@ -226,7 +226,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     }
     f.TagText("li", f.Link("#economy_buildings",
                 "Buildings and Trade Structures"));
-    if (!(ObjectDefs[Objects::Types::O_ROADN].flags & ObjectType::DISABLED)) {
+    if (!ObjectDefs[Objects::Types::O_ROADN].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
         f.TagText("li", f.Link("#economy_roads", "Roads"));
     }
     if (Globals->DECAY) {
@@ -484,7 +484,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.TagText("li", f.Link("#tablebuildings", "Table of Buildings"));
     f.TagText("li", f.Link("#tabletradestructures",
                 "Table of Trade Structures"));
-    if (!(ObjectDefs[Objects::Types::O_ROADN].flags & ObjectType::DISABLED)) {
+    if (!ObjectDefs[Objects::Types::O_ROADN].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
         f.TagText("li", f.Link("#tableroadstructures",
                     "Table of Road Structures"));
     }
@@ -1709,7 +1709,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         }                    
         for (auto i = Objects::begin(); i != Objects::end(); ++i) {
             const auto& obj_def = ObjectDefs[*i];
-            if (obj_def.flags & ObjectType::DISABLED) {
+            if (obj_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 continue;
             }
             if (!ObjectIsShip(*i)) {
@@ -2856,7 +2856,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.Enclose(0, "tr");
     for (auto i = Objects::begin(); i != Objects::end(); ++i) {
         const auto& object_def = ObjectDefs[*i];
-        if (object_def.flags & ObjectType::DISABLED) {
+        if (object_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
             continue;
         }
         if (!object_def.protect) {
@@ -2936,14 +2936,14 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.Paragraph(temp);
     temp = "There are other structures that increase the maximum production "
         "of certain items in regions";
-    if (!(ObjectDefs[Objects::Types::O_MINE].flags & ObjectType::DISABLED)) {
+    if (!ObjectDefs[Objects::Types::O_MINE].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
         temp += "; for example, a Mine will increase the amount of iron "
             "that is available to be mined in a region";
     }
     temp += ".  To construct these structures requires a high skill level in "
         "the production skill related to the item that the structure will "
         "help produce. ";
-    if (!(ObjectDefs[Objects::Types::O_INN].flags & ObjectType::DISABLED)) {
+    if (!ObjectDefs[Objects::Types::O_INN].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
         temp += "(Inns are an exception to this rule, requiring the Building "
             "skill, not the Entertainment skill.) ";
     }
@@ -2969,7 +2969,7 @@ int Game::GenRules(const AString &rules, const AString &css,
     f.Enclose(0, "tr");
     for (auto i = Objects::begin(); i != Objects::end(); ++i) {
         const auto& object_def = ObjectDefs[*i];
-        if (object_def.flags & ObjectType::DISABLED) {
+        if (object_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
             continue;
         }
         if (object_def.protect) {
@@ -3064,7 +3064,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         "description for a skill will always note if new structures may "
         "be built based on knowing that skill.";
     f.Paragraph(temp);
-    if (!(ObjectDefs[Objects::Types::O_ROADN].flags & ObjectType::DISABLED)) {
+    if (!ObjectDefs[Objects::Types::O_ROADN].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
         f.LinkRef("economy_roads");
         f.TagText("h3", "Roads:");
         temp = "There is a another type of structure called roads.  They do "
@@ -3098,7 +3098,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.Enclose(0, "tr");
         for (auto i = Objects::begin(); i != Objects::end(); ++i) {
             const auto& object_def = ObjectDefs[*i];
-            if (object_def.flags & ObjectType::DISABLED) {
+            if (object_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 continue;
             }
             if (object_def.productionAided.isValid()) {
@@ -3265,7 +3265,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         }                    
         for (auto i = Objects::begin(); i != Objects::end(); ++i) {
             const auto& object_def = ObjectDefs[*i];
-            if (object_def.flags & ObjectType::DISABLED) {
+            if (object_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 continue;
             }
             if (!ObjectIsShip(*i)) {
@@ -3686,7 +3686,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         int j = 0;
         auto last_it = ObjectDefs.end();
         for (auto i = ObjectDefs.begin(); i != ObjectDefs.end(); ++i) {
-            if (!(i->flags & ObjectType::TRANSPORT)) {
+            if (!i->flags.isSet(ObjectType::ObjectFlags::TRANSPORT)) {
                 continue;
             }
             j++;
@@ -4102,7 +4102,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         "protection from it, then those units who have been in the building "
         "longest will gain protection.  (Note that these units appear first "
         "on the turn report.)";
-    if (!(ObjectDefs[Objects::Types::O_FORT].flags & ObjectType::DISABLED)) {
+    if (!ObjectDefs[Objects::Types::O_FORT].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
         temp += " If a unit of 200 men is inside a Fort (capacity ";
         temp += ObjectDefs[Objects::Types::O_FORT].protect;
         temp += "), then the first ";
@@ -4464,7 +4464,7 @@ int Game::GenRules(const AString &rules, const AString &css,
         f.TagText("th", "Mages");
         f.Enclose(0, "tr");
         for (const auto& object_def: ObjectDefs) {
-            if (object_def.flags & ObjectType::DISABLED) {
+            if (object_def.flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 continue;
             }
             if (!object_def.maxMages) {

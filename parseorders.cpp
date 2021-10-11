@@ -463,7 +463,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                     unit->presentMonthOrders = unit->monthorders;
                                     unit->monthorders = nullptr;
                                     unit->presentTaxing = unit->taxing;
-                                    unit->taxing = 0;
+                                    unit->taxing = UnitTax::TAX_NONE;
                                 }
                             }
                             break;
@@ -472,7 +472,7 @@ void Game::ParseOrders(size_t faction, Aorders& f, const OrdersCheck::Handle& pC
                                 unit->monthorders = unit->presentMonthOrders;
                                 unit->presentMonthOrders = nullptr;
                                 unit->taxing = unit->presentTaxing;
-                                unit->presentTaxing = 0;
+                                unit->presentTaxing = UnitTax::TAX_NONE;
                                 unit->inTurnBlock = 0;
                                 if (!pCheck && unit->former && unit->former->format)
                                 {
@@ -928,8 +928,8 @@ void Game::ProcessReshowOrder(const Unit::Handle& u, AString& o, const OrdersChe
         if (!pCheck && obj >= -1) {
             const Objects obj2 = Objects(obj);
             if (obj == -1 ||
-                    obj2 == Objects::Types::O_DUMMY ||
-                    (ObjectDefs[obj2].flags & ObjectType::DISABLED)) {
+                obj2 == Objects::Types::O_DUMMY ||
+                ObjectDefs[obj2].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 u->Error("SHOW: No such object.");
                 return;
             }
@@ -1015,9 +1015,8 @@ void Game::ProcessForgetOrder(const Unit::Handle& u, AString& o, const OrdersChe
 void Game::ProcessEntertainOrder(const Unit::Handle& unit, const OrdersCheck::Handle& pCheck)
 {
     if (unit->monthorders ||
-            (Globals->TAX_PILLAGE_MONTH_LONG &&
-                ((unit->taxing == TAX_TAX) ||
-                    (unit->taxing == TAX_PILLAGE)))) {
+        (Globals->TAX_PILLAGE_MONTH_LONG &&
+         ((unit->taxing == UnitTax::TAX_TAX) || (unit->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "ENTERTAIN: Overwriting previous ";
         if (unit->inTurnBlock)
         {
@@ -1059,7 +1058,7 @@ void Game::ProcessCombatOrder(const Unit::Handle& u, AString& o, const OrdersChe
             return;
         }
 
-        if (u->type != U_MAGE) {
+        if (u->type != UnitType::U_MAGE) {
             u->Error("COMBAT: That unit is not a mage.");
             return;
         }
@@ -1115,8 +1114,8 @@ void Game::ProcessPrepareOrder(const Unit::Handle& u, AString& o, const OrdersCh
             }
 
             if ((bt.flags & BattleItemType::MAGEONLY) &&
-                !((u->type == U_MAGE) || (u->type == U_APPRENTICE) ||
-                    (u->type == U_GUARDMAGE))) {
+                !((u->type == UnitType::U_MAGE) || (u->type == UnitType::U_APPRENTICE) ||
+                    (u->type == UnitType::U_GUARDMAGE))) {
                 temp = "PREPARE: Only a mage";
                 if (Globals->APPRENTICES_EXIST) {
                     temp += " or ";
@@ -1511,26 +1510,26 @@ void Game::ProcessRevealOrder(const Unit::Handle& u, AString& o, const OrdersChe
     AString token = o.gettoken();
     if (token.Len()) {
         if (token == "unit") {
-            u->reveal = REVEAL_UNIT;
+            u->reveal = UnitReveal::REVEAL_UNIT;
             return;
         }
         if (token == "faction") {
-            u->reveal = REVEAL_FACTION;
+            u->reveal = UnitReveal::REVEAL_FACTION;
             return;
         }
         if (token == "none") {
-            u->reveal = REVEAL_NONE;
+            u->reveal = UnitReveal::REVEAL_NONE;
             return;
         }
         ParseError(pCheck, u, 0, "REVEAL: Invalid value.");
     } else {
-        u->reveal = REVEAL_NONE;
+        u->reveal = UnitReveal::REVEAL_NONE;
     }
 }
 
 void Game::ProcessTaxOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCheck)
 {
-    if (u->taxing == TAX_PILLAGE) {
+    if (u->taxing == UnitTax::TAX_PILLAGE) {
         ParseError(pCheck, u, 0, "TAX: The unit is already pillaging.");
         return;
     }
@@ -1542,12 +1541,12 @@ void Game::ProcessTaxOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCh
         ParseError(pCheck, u, 0, err);
     }
 
-    u->taxing = TAX_TAX;
+    u->taxing = UnitTax::TAX_TAX;
 }
 
 void Game::ProcessPillageOrder(const Unit::Handle& u, const OrdersCheck::Handle& pCheck)
 {
-    if (u->taxing == TAX_TAX) {
+    if (u->taxing == UnitTax::TAX_TAX) {
         ParseError(pCheck, u, 0, "PILLAGE: The unit is already taxing.");
         return;
     }
@@ -1559,7 +1558,7 @@ void Game::ProcessPillageOrder(const Unit::Handle& u, const OrdersCheck::Handle&
         ParseError(pCheck, u, 0, err);
     }
 
-    u->taxing = TAX_PILLAGE;
+    u->taxing = UnitTax::TAX_PILLAGE;
 }
 
 void Game::ProcessPromoteOrder(const Unit::Handle& u, AString& o, const OrdersCheck::Handle& pCheck)
@@ -1665,11 +1664,11 @@ void Game::ProcessBuildOrder(const Unit::Handle& unit, AString& o, const OrdersC
                 } else {
                     const size_t ot2 = static_cast<size_t>(ot);
                     /* build standard OBJECT */
-                    if (ObjectDefs[ot2].flags & ObjectType::DISABLED) {
+                    if (ObjectDefs[ot2].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                         ParseError(pCheck, unit, 0, "BUILD: Not a valid object name.");
                         return;
                     }
-                    if (!(ObjectDefs[ot2].flags & ObjectType::CANENTER)) {
+                    if (!ObjectDefs[ot2].flags.isSet(ObjectType::ObjectFlags::CANENTER)) {
                         ParseError(pCheck, unit, 0, "BUILD: Can't build that.");
                         return;
                     }
@@ -1734,8 +1733,8 @@ void Game::ProcessBuildOrder(const Unit::Handle& unit, AString& o, const OrdersC
     // Check that the unit isn't doing anything else important
     if (unit->monthorders ||
             (Globals->TAX_PILLAGE_MONTH_LONG &&
-                ((unit->taxing == TAX_TAX) || 
-                    (unit->taxing == TAX_PILLAGE)))) {
+                ((unit->taxing == UnitTax::TAX_TAX) || 
+                    (unit->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "BUILD: Overwriting previous ";
         if (unit->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
@@ -1743,7 +1742,7 @@ void Game::ProcessBuildOrder(const Unit::Handle& unit, AString& o, const OrdersC
     }
     
     // reset their taxation status if taxing is a month-long order
-    if (Globals->TAX_PILLAGE_MONTH_LONG) unit->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) unit->taxing = UnitTax::TAX_NONE;
     unit->monthorders = order;
 }
 
@@ -1872,13 +1871,13 @@ void Game::ProcessProduceOrder(const Unit::Handle& u, AString& o, const OrdersCh
     p->target = target;
     if (u->monthorders ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "PRODUCE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     u->monthorders = p;
 }
 
@@ -1894,13 +1893,13 @@ void Game::ProcessWorkOrder(const Unit::Handle& u, bool quiet, const OrdersCheck
     }
     if (u->monthorders ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "WORK: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     u->monthorders = order;
 }
 
@@ -1931,13 +1930,13 @@ void Game::ProcessTeachOrder(const Unit::Handle& u, AString& o, const OrdersChec
 
     if ((u->monthorders && u->monthorders->type != Orders::Types::O_TEACH) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "TEACH: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     u->monthorders = order;
 }
 
@@ -1966,13 +1965,13 @@ void Game::ProcessStudyOrder(const Unit::Handle& u, AString& o, const OrdersChec
     
     if (u->monthorders ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "STUDY: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     u->monthorders = order;
 }
 
@@ -2652,11 +2651,11 @@ void Game::ProcessGuardOrder(const Unit::Handle& u, AString& o, const OrdersChec
     }
     if (!pCheck) {
         if (val==0) {
-            if (u->guard != GUARD_AVOID)
-                u->guard = GUARD_NONE;
+            if (u->guard != UnitGuard::GUARD_AVOID)
+                u->guard = UnitGuard::GUARD_NONE;
         } else {
-            if (u->guard != GUARD_GUARD)
-                u->guard = GUARD_SET;
+            if (u->guard != UnitGuard::GUARD_GUARD)
+                u->guard = UnitGuard::GUARD_SET;
         }
     }
 }
@@ -2870,10 +2869,10 @@ void Game::ProcessAvoidOrder(const Unit::Handle& u, AString& o, const OrdersChec
     }
     if (!pCheck) {
         if (val==1) {
-            u->guard = GUARD_AVOID;
+            u->guard = UnitGuard::GUARD_AVOID;
         } else {
-            if (u->guard == GUARD_AVOID) {
-                u->guard = GUARD_NONE;
+            if (u->guard == UnitGuard::GUARD_AVOID) {
+                u->guard = UnitGuard::GUARD_NONE;
             }
         }
     }
@@ -2933,14 +2932,14 @@ void Game::ProcessAdvanceOrder(const Unit::Handle& u, AString& o, const OrdersCh
 {
     if ((u->monthorders && u->monthorders->type != Orders::Types::O_ADVANCE) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "ADVANCE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long orders";
         ParseError(pCheck, u, 0, err);
         u->monthorders.reset();
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     if (!u->monthorders) {
         u->monthorders = std::make_shared<MoveOrder>();
         u->monthorders->type = Orders::Types::O_ADVANCE;
@@ -2972,14 +2971,14 @@ void Game::ProcessMoveOrder(const Unit::Handle& u, AString& o, const OrdersCheck
 {
     if ((u->monthorders && u->monthorders->type != Orders::Types::O_MOVE) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "MOVE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
         u->monthorders.reset();
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     if (!u->monthorders) {
         u->monthorders = std::make_shared<MoveOrder>();
     }
@@ -3009,14 +3008,14 @@ void Game::ProcessSailOrder(const Unit::Handle& u, AString& o, const OrdersCheck
 {
     if ((u->monthorders && u->monthorders->type != Orders::Types::O_SAIL) ||
         (Globals->TAX_PILLAGE_MONTH_LONG &&
-         ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+         ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "SAIL: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
         u->monthorders.reset();
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     if (!u->monthorders) {
         u->monthorders = std::make_shared<SailOrder>();
     }
@@ -3065,13 +3064,13 @@ void Game::ProcessEvictOrder(const Unit::Handle& u, AString& o, const OrdersChec
 void Game::ProcessIdleOrder(const Unit::Handle& u, AString&, const OrdersCheck::Handle& pCheck)
 {
     if (u->monthorders || (Globals->TAX_PILLAGE_MONTH_LONG &&
-        ((u->taxing == TAX_TAX) || (u->taxing == TAX_PILLAGE)))) {
+        ((u->taxing == UnitTax::TAX_TAX) || (u->taxing == UnitTax::TAX_PILLAGE)))) {
         AString err = "IDLE: Overwriting previous ";
         if (u->inTurnBlock) err += "DELAYED ";
         err += "month-long order.";
         ParseError(pCheck, u, 0, err);
     }
-    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = TAX_NONE;
+    if (Globals->TAX_PILLAGE_MONTH_LONG) u->taxing = UnitTax::TAX_NONE;
     u->monthorders = std::make_shared<IdleOrder>();
 }
 

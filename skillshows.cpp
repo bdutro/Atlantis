@@ -37,8 +37,8 @@
 #define ITEM_DISABLED(X) (ItemDefs[(X)].flags & ItemType::DISABLED)
 #define SKILL_ENABLED(X) (!SkillDefs[(X)].flags.isSet(SkillType::SkillFlags::DISABLED))
 #define SKILL_DISABLED(X) (SkillDefs[(X)].flags.isSet(SkillType::SkillFlags::DISABLED))
-#define OBJECT_ENABLED(X) (!(ObjectDefs[(X)].flags & ObjectType::DISABLED))
-#define OBJECT_DISABLED(X) (ObjectDefs[(X)].flags & ObjectType::DISABLED)
+#define OBJECT_ENABLED(X) (!ObjectDefs[(X)].flags.isSet(ObjectType::ObjectFlags::DISABLED))
+#define OBJECT_DISABLED(X) (ObjectDefs[(X)].flags.isSet(ObjectType::ObjectFlags::DISABLED))
 
 static void DescribeEscapeParameters(AString& desc, const Items& item)
 {

@@ -199,7 +199,7 @@ void ARegion::LairCheck()
     for(const auto& l: tt.lairs)
     {
         if (l.isValid()) {
-            if (!(ObjectDefs[l].flags & ObjectType::DISABLED)) {
+            if (!ObjectDefs[l].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 count++;
             }
         }
@@ -210,7 +210,7 @@ void ARegion::LairCheck()
     for(const auto& l: tt.lairs)
     {
         if (l.isValid()) {
-            if (!(ObjectDefs[l].flags & ObjectType::DISABLED)) {
+            if (!ObjectDefs[l].flags.isSet(ObjectType::ObjectFlags::DISABLED)) {
                 if (!count) {
                     lair = l;
                     break;
@@ -342,7 +342,7 @@ void ARegion::DoDecayCheck(const ARegionList& pRegs)
 {
     for(const auto& o: objects)
     {
-        if (!(ObjectDefs[o->type].flags & ObjectType::NEVERDECAY)) {
+        if (!ObjectDefs[o->type].flags.isSet(ObjectType::ObjectFlags::NEVERDECAY)) {
             DoDecayClicks(o, pRegs);
         }
     }
@@ -351,7 +351,9 @@ void ARegion::DoDecayCheck(const ARegionList& pRegs)
 // AS
 void ARegion::DoDecayClicks(const Object::Handle& o, const ARegionList& pRegs)
 {
-    if (ObjectDefs[o->type].flags & ObjectType::NEVERDECAY) return;
+    if (ObjectDefs[o->type].flags.isSet(ObjectType::ObjectFlags::NEVERDECAY)) {
+        return;
+    }
 
     int clicks = getrandom(GetMaxClicks());
     clicks += PillageCheck();
@@ -1963,8 +1965,8 @@ bool ARegion::HasCityGuard()
 {
     for(const auto& obj: objects) {
         for(const auto& u: obj->units) {
-            if (u->type == U_GUARD && u->GetSoldiers() &&
-                u->guard == GUARD_GUARD) {
+            if (u->type == UnitType::U_GUARD && u->GetSoldiers() &&
+                u->guard == UnitGuard::GUARD_GUARD) {
                 return true;
             }
         }
@@ -2056,7 +2058,7 @@ bool ARegion::CanTax(const Unit::Handle& u)
     {
         for(const auto& u2: obj->units)
         {
-            if (u2->guard == GUARD_GUARD && u2->IsAlive())
+            if (u2->guard == UnitGuard::GUARD_GUARD && u2->IsAlive())
             {
                 if (u2->GetAttitude(*this, u).isNotFriendly())
                 {
@@ -2072,7 +2074,7 @@ bool ARegion::CanPillage(const Unit::Handle& u)
 {
     for(const auto& obj: objects) {
         for(const auto& u2: obj->units) {
-            if (u2->guard == GUARD_GUARD && u2->IsAlive() &&
+            if (u2->guard == UnitGuard::GUARD_GUARD && u2->IsAlive() &&
                     u2->faction.lock() != u->faction.lock())
                 return false;
         }
@@ -2116,7 +2118,7 @@ bool ARegion::IsGuarded()
     {
         for(const auto& u: o->units)
         {
-            if (u->guard == GUARD_GUARD)
+            if (u->guard == UnitGuard::GUARD_GUARD)
             {
                 return true;
             }
@@ -2130,7 +2132,7 @@ int ARegion::CountWMons()
     int count = 0;
     for(const auto& o: objects) {
         for(const auto& u: o->units) {
-            if (u->type == U_WMON) {
+            if (u->type == UnitType::U_WMON) {
                 count ++;
             }
         }

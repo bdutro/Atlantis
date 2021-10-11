@@ -34,6 +34,12 @@ class FieldEnum {
             val_ |= (rhs | ...);
         }
 
+        template<typename ... I>
+        inline typename std::enable_if<type_utils::are_same<int_t, I...>::value>::type
+        assign_(const I... rhs) {
+            val_ = (rhs | ...);
+        }
+
         explicit FieldEnum(const int_t val) :
             val_(val)
         {
@@ -77,6 +83,12 @@ class FieldEnum {
         inline typename std::enable_if<type_utils::are_same<EnumType, E...>::value>::type
         set(const E... flags) {
             set_(static_cast<int_t>(flags)...);
+        }
+
+        template<typename ... E>
+        inline typename std::enable_if<type_utils::are_same<EnumType, E...>::value>::type
+        assign(const E... flags) {
+            assign_(static_cast<int_t>(flags)...);
         }
 
         inline void clear(const EnumType rhs) {

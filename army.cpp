@@ -107,7 +107,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
     /* Is this a monster? */
     if (ItemDefs[r].type & IT_MONSTER) {
         const auto& mp = FindMonster(ItemDefs[r].abr, ItemDefs[r].type & IT_ILLUSION);
-        if (u->type == U_WMON)
+        if (u->type == UnitType::U_WMON)
             name = AString(mp.name) + " in " + u->name;
         else
             name = AString(mp.name) + " controlled by " + u->name;
@@ -256,7 +256,7 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
 void Soldier::SetupSpell()
 {
     const auto unit_sp = unit.lock();
-    if (unit_sp->type != U_MAGE && unit_sp->type != U_GUARDMAGE) return;
+    if (unit_sp->type != UnitType::U_MAGE && unit_sp->type != UnitType::U_GUARDMAGE) return;
 
     if (unit_sp->combat.isValid()) {
         slevel = unit_sp->GetSkill(unit_sp->combat);
@@ -309,8 +309,8 @@ void Soldier::SetupCombatItems()
                 continue;
             }
             if (pBat.flags & BattleItemType::MAGEONLY &&
-                    unit_sp->type != U_MAGE && unit_sp->type != U_GUARDMAGE &&
-                    unit_sp->type != U_APPRENTICE) {
+                    unit_sp->type != UnitType::U_MAGE && unit_sp->type != UnitType::U_GUARDMAGE &&
+                    unit_sp->type != UnitType::U_APPRENTICE) {
                 // Only mages/apprentices can use this item so give the
                 // item back to the unit as they aren't going to use it.
                 unit_sp->items.SetNum(item, unit_sp->items.GetNum(item)+1);
@@ -508,8 +508,8 @@ void Soldier::Alive_(const BattleResult state)
         unit_sp->routed = 1;
         /* Guards with amuletofi will not go off guard */
         if (!amuletofi &&
-            (unit_sp->guard == GUARD_GUARD || unit_sp->guard == GUARD_SET)) {
-            unit_sp->guard = GUARD_NONE;
+            (unit_sp->guard == UnitGuard::GUARD_GUARD || unit_sp->guard == UnitGuard::GUARD_SET)) {
+            unit_sp->guard = UnitGuard::GUARD_NONE;
         }
     } else {
         unit_sp->advancefrom.reset();
@@ -775,7 +775,7 @@ void Army::Lose(Battle& b, ItemList& spoils)
             s->Alive_(Soldier::BattleResult::LOSS);
         } else {
             const auto& up = s->unit.lock();
-            if ((up->type==U_WMON) && (ItemDefs[s->race].type&IT_MONSTER))
+            if ((up->type==UnitType::U_WMON) && (ItemDefs[s->race].type&IT_MONSTER))
                 GetMonSpoils(spoils, s->race, up->free);
             s->Dead();
         }

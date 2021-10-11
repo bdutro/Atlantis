@@ -56,7 +56,7 @@ class Object;
 #include "skilltype.h"
 #include "attitudetype.h"
 
-enum {
+enum class UnitGuard {
     GUARD_NONE,
     GUARD_GUARD,
     GUARD_AVOID,
@@ -64,20 +64,20 @@ enum {
     GUARD_ADVANCE
 };
 
-enum {
-    TAX_NONE,
+enum class UnitTax {
+    TAX_NONE = 0,
     TAX_TAX,
     TAX_PILLAGE,
     TAX_AUTO,
 };
 
-enum {
+enum class UnitReveal {
     REVEAL_NONE,
     REVEAL_UNIT,
     REVEAL_FACTION
 };
 
-enum {
+enum class UnitType {
     U_NORMAL,
     U_MAGE,
     U_GUARD,
@@ -234,15 +234,15 @@ class Unit : public std::enable_shared_from_this<Unit>
         std::weak_ptr<Object> object;
         AString name;
         AString describe;
-        size_t num;
-        int type;
-        int alias;
+        size_t num = 0;
+        UnitType type = UnitType::U_NORMAL;
+        int alias = 0;
         int gm_alias; /* used for gm manual creation of new units */
-        int guard; /* Also, avoid- see enum above */
-        int reveal;
-        int flags;
-        int taxing;
-        unsigned int movepoints;
+        UnitGuard guard = UnitGuard::GUARD_NONE; /* Also, avoid- see enum above */
+        UnitReveal reveal = UnitReveal::REVEAL_NONE;
+        int flags = FLAG_NOCROSS_WATER;
+        UnitTax taxing;
+        unsigned int movepoints = Globals->PHASED_MOVE_OFFSET % Globals->MAX_SPEED;
         int canattack;
         int nomove;
         int routed;
@@ -257,11 +257,11 @@ class Unit : public std::enable_shared_from_this<Unit>
         int hunger;
         int stomach_space;
         size_t losses;
-        size_t free;
-        bool practiced; // Has this unit practiced a skill this turn
-        unsigned int moved;
+        size_t free = 0;
+        bool practiced = false; // Has this unit practiced a skill this turn
+        unsigned int moved = 0;
         ValidValue<size_t> phase;
-        int savedmovement;
+        int savedmovement = 0;
         Directions savedmovedir;
 
         /* Orders */
@@ -286,17 +286,17 @@ class Unit : public std::enable_shared_from_this<Unit>
 
         PtrList<ExchangeOrder> exchangeorders;
         PtrList<TurnOrder> turnorders;
-        int inTurnBlock;
+        int inTurnBlock = 0;
         std::shared_ptr<Order> presentMonthOrders;
-        int presentTaxing;
+        UnitTax presentTaxing = UnitTax::TAX_NONE;
         PtrList<TransportOrder> transportorders;
         std::shared_ptr<Order> joinorders;
         Unit::Handle former;
-        int format;
+        int format = 0;
 
         // Used for tracking VISIT quests
         std::set<std::string> visited;
-        size_t raised;
+        size_t raised = 0;
 };
 
 Unit::WeakHandle GetUnitList(const WeakPtrList<Unit>&, const Unit::Handle&);

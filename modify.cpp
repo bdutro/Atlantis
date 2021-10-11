@@ -827,7 +827,7 @@ void Game::EnableObject(const Objects& obj)
     {
         return;
     }
-    ObjectDefs[obj].flags &= ~ObjectType::DISABLED;
+    ObjectDefs[obj].flags.clear(ObjectType::ObjectFlags::DISABLED);
 }
 
 void Game::DisableObject(const Objects& obj)
@@ -836,16 +836,7 @@ void Game::DisableObject(const Objects& obj)
     {
         return;
     }
-    ObjectDefs[obj].flags |= ObjectType::DISABLED;
-}
-
-void Game::ModifyObjectFlags(const Objects& ob, int flags)
-{
-    if (!ob.isValid())
-    {
-        return;
-    }
-    ObjectDefs[ob].flags = flags;
+    ObjectDefs[obj].flags.set(ObjectType::ObjectFlags::DISABLED);
 }
 
 void Game::ModifyObjectDecay(const Objects& ob, int maxMaint, int maxMonthDecay, int mFact)

@@ -202,7 +202,7 @@ void Game::EditGameRegionObjects(const ARegion::Handle& pReg )
                     }
 
                     Objects objType = ParseObject(pToken);
-                    if ( !objType.isValid() || (ObjectDefs[objType].flags & ObjectType::DISABLED) ) {
+                    if ( !objType.isValid() || ObjectDefs[objType].flags.isSet(ObjectType::ObjectFlags::DISABLED) ) {
                         Awrite( "No such object." );
                         break;
                     }
@@ -1115,11 +1115,11 @@ void Game::EditGameUnitSkills(const Unit::Handle& pUnit)
                     days = pToken.value<size_t>();
                 }
 
-                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::MAGIC) && (pUnit->type != U_MAGE)) {
-                    pUnit->type = U_MAGE;
+                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::MAGIC) && (pUnit->type != UnitType::U_MAGE)) {
+                    pUnit->type = UnitType::U_MAGE;
                 }
-                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::APPRENTICE) && (pUnit->type == U_NORMAL)) {
-                    pUnit->type = U_APPRENTICE;
+                if (SkillDefs[skillNum].flags.isSet(SkillType::SkillFlags::APPRENTICE) && (pUnit->type == UnitType::U_NORMAL)) {
+                    pUnit->type = UnitType::U_APPRENTICE;
                 }
                 pUnit->skills.SetDays(skillNum, days * pUnit->GetMen());
                 size_t lvl = pUnit->GetRealSkill(skillNum);
@@ -1154,24 +1154,26 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
         Awrite(AString("Unit faction: ") + pUnit->faction.lock()->name);
         AString temp = " (";
         switch(pUnit->type) {
-            case U_NORMAL:
+            case UnitType::U_NORMAL:
                 temp += "normal";
                 break;
-            case U_MAGE:
+            case UnitType::U_MAGE:
                 temp += "mage";
                 break;
-            case U_GUARD:
+            case UnitType::U_GUARD:
                 temp += "guard";
                 break;
-            case U_WMON:
+            case UnitType::U_WMON:
                 temp += "monster";
                 break;
-            case U_GUARDMAGE:
+            case UnitType::U_GUARDMAGE:
                 temp += "guardmage";
                 break;
-            case U_APPRENTICE:
+            case UnitType::U_APPRENTICE:
                 temp += Globals->APPRENTICE_NAME;
                 break;
+            case UnitType::NUNITTYPES:
+                throw std::runtime_error("Invalid unit type");
         }
         temp += ")";
         Awrite(AString("Unit type: ") + pUnit->type + temp);
@@ -1215,8 +1217,22 @@ void Game::EditGameUnitDetails(const Unit::Handle& pUnit)
                         Awrite( "Try again." );
                         break;
                     }
-                    int newtype = pToken.value<int>();
-                    if (newtype<0 || newtype>NUNITTYPES-1) {
+
+                    const auto newtype = pToken.value<UnitType>();
+                    bool valid_unit = false;
+                    switch(newtype) {
+                        case UnitType::U_NORMAL:
+                        case UnitType::U_MAGE:
+                        case UnitType::U_GUARD:
+                        case UnitType::U_WMON:
+                        case UnitType::U_GUARDMAGE:
+                        case UnitType::U_APPRENTICE:
+                            valid_unit = true;
+                            break;
+                        case UnitType::NUNITTYPES:
+                            break;
+                    }
+                    if(!valid_unit) {
                         Awrite("Invalid Type");
                         break;
                     }
@@ -1237,7 +1253,7 @@ void Game::EditGameCreateUnit()
     Faction::Handle fac = GetFaction(factions, 1);
     Unit::Handle newunit = GetNewUnit(fac);
     newunit->SetMen(Items::Types::I_LEADERS, 1);
-    newunit->reveal = REVEAL_FACTION;
+    newunit->reveal = UnitReveal::REVEAL_FACTION;
     newunit->MoveUnit(regions.front()->GetDummy());
 
     EditGameUnit(newunit);

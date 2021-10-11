@@ -50,10 +50,18 @@ public:
     }
 
     template<typename T>
-    AString(T l, typename std::enable_if<std::is_integral<T>::value>::type* = 0)
+    AString(const T l, typename std::enable_if<std::is_integral<T>::value>::type* = 0)
     {
         std::stringstream ss;
         ss << l;
+        str_ = ss.str();
+    }
+
+    template<typename T>
+    AString(const T l, typename std::enable_if<std::is_enum<T>::value>::type* = 0)
+    {
+        std::stringstream ss;
+        ss << static_cast<std::underlying_type_t<T>>(l);
         str_ = ss.str();
     }
 
@@ -96,8 +104,7 @@ public:
     AString Trunc(size_t, size_t back=30);
 
     template<typename T>
-    typename std::enable_if<!std::is_signed<T>::value, T>::type value() const
-    {
+    typename std::enable_if<!std::is_enum<T>::value && !std::is_signed<T>::value, T>::type value() const {
         T ret = 0;
         T last_ret;
 
@@ -113,23 +120,10 @@ public:
             ret += static_cast<T>(*(it++) - '0');
         }
         return ret;
-
-    #if 0
-        int place = 0;
-        int ret = 0;
-        while ((str[place] >= '0') && (str[place] <= '9')) {
-            ret *= 10;
-            // Fix bug where int could be overflowed.
-            if (ret < 0) return 0;
-            ret += (str[place++] - '0');
-        }
-        return ret;
-    #endif
     }
 
     template<typename T>
-    typename std::enable_if<std::is_signed<T>::value, T>::type value() const
-    {
+    typename std::enable_if<!std::is_enum<T>::value && std::is_signed<T>::value, T>::type value() const {
         T ret = 0;
         auto it = str_.begin();
         while(it != str_.end() && *it >= '0' && *it <= '9')
@@ -142,18 +136,11 @@ public:
             ret += *(it++) - '0';
         }
         return ret;
+    }
 
-    #if 0
-        int place = 0;
-        int ret = 0;
-        while ((str[place] >= '0') && (str[place] <= '9')) {
-            ret *= 10;
-            // Fix bug where int could be overflowed.
-            if (ret < 0) return 0;
-            ret += (str[place++] - '0');
-        }
-        return ret;
-    #endif
+    template<typename T>
+    typename std::enable_if<std::is_enum<T>::value, T>::type value() const {
+        return static_cast<T>(value<std::underlying_type_t<T>>());
     }
 
     AString StripWhite() const;

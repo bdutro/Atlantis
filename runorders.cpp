@@ -150,7 +150,7 @@ int Game::CountMages(Faction *pFac)
             Object *o = (Object *) elem;
             forlist(&o->units) {
                 Unit *u = (Unit *) elem;
-                if (u->faction == pFac && u->type == U_MAGE) i++;
+                if (u->faction == pFac && u->type == UnitType::U_MAGE) i++;
             }
         }
     }
@@ -294,8 +294,8 @@ void Game::Do1Assassinate(const ARegion::Handle& r, const Object::Handle&, const
         return;
     }
 
-    if (tar->type == U_GUARD || tar->type == U_WMON ||
-            tar->type == U_GUARDMAGE) {
+    if (tar->type == UnitType::U_GUARD || tar->type == UnitType::U_WMON ||
+            tar->type == UnitType::U_GUARDMAGE) {
         u->Error("ASSASSINATE: Can only assassinate other player's "
                 "units.");
         return;
@@ -370,8 +370,8 @@ void Game::Do1Steal(const ARegion::Handle& r, const Object::Handle&, const Unit:
         return;
     }
 
-    if (tar->type == U_GUARD || tar->type == U_WMON ||
-            tar->type == U_GUARDMAGE) {
+    if (tar->type == UnitType::U_GUARD || tar->type == UnitType::U_WMON ||
+            tar->type == UnitType::U_GUARDMAGE) {
         u->Error("STEAL: Can only steal from other player's "
                 "units.");
         return;
@@ -652,7 +652,7 @@ int Game::FortTaxBonus(const Object::Handle& o, const Unit::Handle& u)
         size_t men = unit->GetMen();
         if (unit->num == u->num)
         {
-            if (unit->taxing == TAX_TAX)
+            if (unit->taxing == UnitTax::TAX_TAX)
             {
                 fortbonus = static_cast<int>(men);
                 const size_t maxtax = unit->Taxers(1);
@@ -685,19 +685,19 @@ int Game::CountTaxes(const ARegion::Handle& reg)
         for(const auto& u: o->units) {
             if (u->GetFlag(FLAG_AUTOTAX) && !Globals->TAX_PILLAGE_MONTH_LONG)
             {
-                u->taxing = TAX_TAX;
+                u->taxing = UnitTax::TAX_TAX;
             }
-            if (u->taxing == TAX_AUTO)
+            if (u->taxing == UnitTax::TAX_AUTO)
             {
-                u->taxing = TAX_TAX;
+                u->taxing = UnitTax::TAX_TAX;
             }
-            if (u->taxing == TAX_TAX) {
+            if (u->taxing == UnitTax::TAX_TAX) {
                 if (reg->Population() < 1) {
                     u->Error("TAX: No population to tax.");
-                    u->taxing = TAX_NONE;
+                    u->taxing = UnitTax::TAX_NONE;
                 } else if (!reg->CanTax(u)) {
                     u->Error("TAX: A unit is on guard.");
-                    u->taxing = TAX_NONE;
+                    u->taxing = UnitTax::TAX_NONE;
                 } else {
                     const size_t men = u->Taxers(0);
                     int u_men = static_cast<int>(u->GetMen());
@@ -715,13 +715,13 @@ int Game::CountTaxes(const ARegion::Handle& reg)
                         if (!TaxCheck(reg, u->faction.lock())) {
                             u->Error("TAX: Faction can't tax that many "
                                     "regions.");
-                            u->taxing = TAX_NONE;
+                            u->taxing = UnitTax::TAX_NONE;
                         } else {
                             t += static_cast<int>(men) + fortbonus * static_cast<int>(Globals->TAX_BONUS_FORT);
                         }
                     } else {
                         u->Error("TAX: Unit cannot tax.");
-                        u->taxing = TAX_NONE;
+                        u->taxing = UnitTax::TAX_NONE;
                         u->SetFlag(FLAG_AUTOTAX, 0);
                     }
                 }
@@ -738,7 +738,7 @@ void Game::RunTaxRegion(const ARegion::Handle& reg)
 
     for(const auto& o: reg->objects) {
         for(const auto& u: o->units) {
-            if (u->taxing == TAX_TAX) {
+            if (u->taxing == UnitTax::TAX_TAX) {
                 int t = static_cast<int>(u->Taxers(0));
                 t += FortTaxBonus(o, u);
                 double fAmt = static_cast<double>(t) *
@@ -749,7 +749,7 @@ void Game::RunTaxRegion(const ARegion::Handle& reg)
                 u->SetMoney(u->GetMoney() + static_cast<size_t>(amt));
                 u->Event(AString("Collects $") + amt + " in taxes in " +
                         reg->ShortPrint(regions) + ".");
-                u->taxing = TAX_NONE;
+                u->taxing = UnitTax::TAX_NONE;
             }
         }
     }
@@ -767,23 +767,23 @@ int Game::CountPillagers(const ARegion::Handle& reg)
     int p = 0;
     for(const auto& o: reg->objects) {
         for(const auto& u: o->units) {
-            if (u->taxing == TAX_PILLAGE) {
+            if (u->taxing == UnitTax::TAX_PILLAGE) {
                 if (!reg->CanPillage(u)) {
                     u->Error("PILLAGE: A unit is on guard.");
-                    u->taxing = TAX_NONE;
+                    u->taxing = UnitTax::TAX_NONE;
                 } else {
                     int men = static_cast<int>(u->Taxers(1));
                     if (men) {
                         if (!TaxCheck(reg, u->faction.lock())) {
                             u->Error("PILLAGE: Faction can't tax that many "
                                     "regions.");
-                            u->taxing = TAX_NONE;
+                            u->taxing = UnitTax::TAX_NONE;
                         } else {
                             p += men;
                         }
                     } else {
                         u->Error("PILLAGE: Not a combat ready unit.");
-                        u->taxing = TAX_NONE;
+                        u->taxing = UnitTax::TAX_NONE;
                     }
                 }
             }
@@ -796,9 +796,9 @@ void Game::ClearPillagers(const ARegion::Handle& reg)
 {
     for(const auto& o: reg->objects) {
         for(const auto& u: o->units) {
-            if (u->taxing == TAX_PILLAGE) {
+            if (u->taxing == UnitTax::TAX_PILLAGE) {
                 u->Error("PILLAGE: Not enough men to pillage.");
-                u->taxing = TAX_NONE;
+                u->taxing = UnitTax::TAX_NONE;
             }
         }
     }
@@ -834,8 +834,8 @@ void Game::RunPillageRegion(const ARegion::Handle& reg)
     int amt = reg->wealth * 2;
     for(const auto& o: reg->objects) {
         for(const auto& u: o->units) {
-            if (u->taxing == TAX_PILLAGE) {
-                u->taxing = TAX_NONE;
+            if (u->taxing == UnitTax::TAX_PILLAGE) {
+                u->taxing = UnitTax::TAX_NONE;
                 int num = static_cast<int>(u->Taxers(1));
                 int temp = (amt * num) / pillagers;
                 amt -= temp;
@@ -1292,17 +1292,17 @@ void Game::DoMovementAttack(const ARegion::Handle& r, const Unit::Handle& u)
     if (u->canattack && u->IsAlive()) {
         DoAutoAttack(r, u);
         if (!u->canattack || !u->IsAlive()) {
-            u->guard = GUARD_NONE;
+            u->guard = UnitGuard::GUARD_NONE;
         }
     }
-    if (u->canattack && u->guard == GUARD_ADVANCE && u->IsAlive()) {
+    if (u->canattack && u->guard == UnitGuard::GUARD_ADVANCE && u->IsAlive()) {
         DoAdvanceAttack(r, u);
-        u->guard = GUARD_NONE;
+        u->guard = UnitGuard::GUARD_NONE;
     }
     if (u->IsAlive()) {
         DoAutoAttackOn(r, u);
         if (!u->canattack || !u->IsAlive()) {
-            u->guard = GUARD_NONE;
+            u->guard = UnitGuard::GUARD_NONE;
         }
     }
 }
@@ -1311,7 +1311,7 @@ void Game::DoAutoAttackOn(const ARegion::Handle& r, const Unit::Handle& t)
 {
     for(const auto& o: r->objects) {
         for(const auto& u: o->units) {
-            if (u->guard != GUARD_AVOID &&
+            if (u->guard != UnitGuard::GUARD_AVOID &&
                     (u->GetAttitude(*r, t) == Attitudes::Types::A_HOSTILE) && u->IsAlive() &&
                     u->canattack)
             {
@@ -1335,7 +1335,7 @@ void Game::DoAdvanceAttack(const ARegion::Handle& r, const Unit::Handle& u) {
 }
 
 void Game::DoAutoAttack(const ARegion::Handle& r, const Unit::Handle& u) {
-    if (u->guard == GUARD_AVOID)
+    if (u->guard == UnitGuard::GUARD_AVOID)
         return;
     for(const auto& o: r->objects) {
         for(const auto& t: o->units) {
@@ -1352,8 +1352,8 @@ size_t Game::CountWMonTars(const ARegion::Handle& r, const Unit::Handle& mon) {
     size_t retval = 0;
     for(const auto& o: r->objects) {
         for(const auto& u: o->units) {
-            if (u->type == U_NORMAL || u->type == U_MAGE ||
-                    u->type == U_APPRENTICE) {
+            if (u->type == UnitType::U_NORMAL || u->type == UnitType::U_MAGE ||
+                    u->type == UnitType::U_APPRENTICE) {
                 if (mon->CanSee(*r, u) && mon->CanCatch(*r, u)) {
                     retval += u->GetMen();
                 }
@@ -1368,8 +1368,8 @@ Unit::WeakHandle Game::GetWMonTar(const ARegion::Handle& r,
                                   const Unit::Handle& mon) {
     for(const auto& o: r->objects) {
         for(const auto& u: o->units) {
-            if (u->type == U_NORMAL || u->type == U_MAGE ||
-                    u->type == U_APPRENTICE) {
+            if (u->type == UnitType::U_NORMAL || u->type == UnitType::U_MAGE ||
+                    u->type == UnitType::U_APPRENTICE) {
                 if (mon->CanSee(*r, u) && mon->CanCatch(*r, u)) {
                     size_t num = u->GetMen();
                     if (num && tarnum < static_cast<int>(num)) return u;
@@ -1410,7 +1410,7 @@ void Game::DoAttackOrders()
     for(const auto& r: regions) {
         for(const auto& o: r->objects) {
             for(const auto& u: o->units) {
-                if (u->type == U_WMON) {
+                if (u->type == UnitType::U_WMON) {
                     if (u->canattack && u->IsAlive()) {
                         CheckWMonAttack(r, u);
                     }
@@ -1592,11 +1592,11 @@ int Game::GetBuyAmount(const ARegion::Handle& r, const Market::Handle& m)
                 const auto& o = *it;
                 if (o->item == m->item) {
                     if (ItemDefs[o->item].type & IT_MAN) {
-                        if (u->type == U_MAGE) {
+                        if (u->type == UnitType::U_MAGE) {
                             u->Error("BUY: Mages can't recruit more men.");
                             o->num = 0;
                         }
-                        if (u->type == U_APPRENTICE) {
+                        if (u->type == UnitType::U_APPRENTICE) {
                             AString temp = "BUY: ";
                             temp += static_cast<char>(toupper(Globals->APPRENTICE_NAME[0]));
                             temp += Globals->APPRENTICE_NAME + 1;
@@ -2835,7 +2835,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
 
     if (amt == -1) {
         /* Give unit */
-        if (u->type == U_MAGE) {
+        if (u->type == UnitType::U_MAGE) {
             if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_UNLIMITED) {
                 if (CountMages(t_fac) >= AllowedMages(*t_fac)) {
                     u->Error("GIVE: Faction has too many mages.");
@@ -2843,7 +2843,7 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
                 }
             }
         }
-        if (u->type == U_APPRENTICE) {
+        if (u->type == UnitType::U_APPRENTICE) {
             if (Globals->FACTION_LIMIT_TYPE != GameDefs::FactionLimits::FACLIM_UNLIMITED) {
                 if (CountApprentices(t_fac) >= AllowedApprentices(*t_fac)) {
                     temp = "GIVE: Faction has too many ";
@@ -2915,8 +2915,8 @@ int Game::DoGiveOrder(const ARegion::Handle& r,
 
     /* If the item to be given is a man, combine skills */
     if (ItemDefs[o_item].type & IT_MAN) {
-        if (s->type == U_MAGE || s->type == U_APPRENTICE ||
-                t->type == U_MAGE || t->type == U_APPRENTICE) {
+        if (s->type == UnitType::U_MAGE || s->type == UnitType::U_APPRENTICE ||
+                t->type == UnitType::U_MAGE || t->type == UnitType::U_APPRENTICE) {
             u->Error(ord + ": Magicians can't transfer men.");
             return 0;
         }
@@ -2995,19 +2995,19 @@ void Game::DoGuard1Orders()
     for(const auto& r: regions) {
         for(const auto& obj: r->objects) {
             for(const auto& u: obj->units) {
-                if (u->guard == GUARD_SET || u->guard == GUARD_GUARD) {
+                if (u->guard == UnitGuard::GUARD_SET || u->guard == UnitGuard::GUARD_GUARD) {
                     if (!u->Taxers(1)) {
-                        u->guard = GUARD_NONE;
+                        u->guard = UnitGuard::GUARD_NONE;
                         u->Error("Must be combat ready to be on guard.");
                         continue;
                     }
-                    if (u->type != U_GUARD && r->HasCityGuard()) {
-                        u->guard = GUARD_NONE;
+                    if (u->type != UnitType::U_GUARD && r->HasCityGuard()) {
+                        u->guard = UnitGuard::GUARD_NONE;
                         u->Error("Is prevented from guarding by the "
                                 "Guardsmen.");
                         continue;
                     }
-                    u->guard = GUARD_GUARD;
+                    u->guard = UnitGuard::GUARD_GUARD;
                 }
             }
         }
@@ -3097,9 +3097,8 @@ void Game::CheckTransportOrders()
                         }
                         const auto tar_obj = tar->obj.lock();
                         if ((tar_obj->GetOwner().lock() != tar_unit) ||
-                                !(ObjectDefs[tar_obj->type].flags &
-                                    ObjectType::TRANSPORT) ||
-                                (tar_obj->incomplete > 0)) {
+                            !ObjectDefs[tar_obj->type].flags.isSet(ObjectType::ObjectFlags::TRANSPORT) ||
+                            (tar_obj->incomplete > 0)) {
                             u->Error(ordertype + ": Target does not own "
                                     "a transport structure.");
                             o->type = *Orders::end();
@@ -3111,7 +3110,7 @@ void Game::CheckTransportOrders()
                     int dist, maxdist;
                     if ((o->type == Orders::Types::O_TRANSPORT) &&
                         (u == obj->GetOwner().lock()) &&
-                        (ObjectDefs[obj->type].flags & ObjectType::TRANSPORT))
+                        ObjectDefs[obj->type].flags.isSet(ObjectType::ObjectFlags::TRANSPORT))
                     {
                         maxdist = Globals->NONLOCAL_TRANSPORT;
                         if (maxdist > 0 &&
@@ -3160,8 +3159,7 @@ void Game::CheckTransportOrders()
                             continue;
                         }
                         if ((u != obj->GetOwner().lock()) ||
-                            !(ObjectDefs[obj->type].flags &
-                                ObjectType::TRANSPORT) ||
+                            !ObjectDefs[obj->type].flags.isSet(ObjectType::ObjectFlags::TRANSPORT) ||
                             (obj->incomplete > 0)) {
                         u->Error(ordertype +
                                 ": Unit does not own transport structure.");

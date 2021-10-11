@@ -42,7 +42,7 @@ class Object;
 class ObjectType {
     public:
         char const *name;
-        enum {
+        enum class ObjectFlags {
             DISABLED    = 0x001,
             NOMONSTERGROWTH    = 0x002,
             NEVERDECAY    = 0x004,
@@ -51,7 +51,7 @@ class ObjectType {
             TRANSPORT    = 0x040,
             GROUP        = 0x080
         };
-        int flags;
+        FieldEnum<ObjectFlags> flags;
 
         int protect;
         int capacity;

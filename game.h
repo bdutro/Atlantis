@@ -188,7 +188,7 @@ protected:
         if (!sk.isValid()) {
             return;
         }
-        SkillDefs[sk].flags.set(flags...);
+        SkillDefs[sk].flags.assign(flags...);
     }
 
     void ModifySkillCost(const Skills& sk, int cost);
@@ -239,7 +239,17 @@ protected:
 
     void EnableObject(const Objects& ob); // Enables a disabled object
     void DisableObject(const Objects& ob); // Prevents object being built
-    void ModifyObjectFlags(const Objects& ob, int flags);
+
+    template<typename ... E>
+    inline typename std::enable_if<type_utils::are_same<ObjectType::ObjectFlags, E...>::value>::type
+    ModifyObjectFlags(const Objects& ob, const E ... flags) {
+        if (!ob.isValid())
+        {
+            return;
+        }
+        ObjectDefs[ob].flags.assign(flags...);
+    }
+
     void ModifyObjectDecay(const Objects& ob, int maxMaint, int maxMonthDecay, int mFact);
     void ModifyObjectProduction(const Objects& ob, const Items& it);
     void ModifyObjectMonster(const Objects& ob, const Items& monster);

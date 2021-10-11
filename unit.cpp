@@ -52,55 +52,22 @@ Unit::WeakHandle GetUnitList(const WeakPtrList<Unit>& list, const Unit::Handle& 
 
 Unit::Unit()
 {
-    name.clear();
-    describe.clear();
-    num = 0;
-    type = U_NORMAL;
-    alias = 0;
-    guard = GUARD_NONE;
-    reveal = REVEAL_NONE;
-    flags = FLAG_NOCROSS_WATER;
-    movepoints = Globals->PHASED_MOVE_OFFSET % Globals->MAX_SPEED;
-    inTurnBlock = 0;
-    presentTaxing = 0;
-    format = 0;
-    free = 0;
-    practiced = false;
-    moved = 0;
-    phase.invalidate();
-    savedmovement = 0;
     ClearOrders();
-    raised = 0;
 }
 
-Unit::Unit(size_t seq, const Faction::Handle& f, int a)
+Unit::Unit(size_t seq, const Faction::Handle& f, int a) :
+    faction(f),
+    formfaction(f),
+    name(AString("Unit (") + seq + ")"),
+    num(seq),
+    alias(a)
 {
-    num = seq;
-    type = U_NORMAL;
-    describe.clear();
-    name = AString("Unit (") + num + ")";
-    faction = f;
-    formfaction = f;
-    alias = a;
-    guard = 0;
-    reveal = REVEAL_NONE;
-    flags = FLAG_NOCROSS_WATER;
-    movepoints = Globals->PHASED_MOVE_OFFSET % Globals->MAX_SPEED;
-    inTurnBlock = 0;
-    presentTaxing = 0;
-    format = 0;
-    free = 0;
-    practiced = false;
-    moved = 0;
-    phase.invalidate();
-    savedmovement = 0;
     ClearOrders();
-    raised = 0;
 }
 
 void Unit::SetMonFlags()
 {
-    guard = GUARD_AVOID;
+    guard = UnitGuard::GUARD_AVOID;
     SetFlag(FLAG_HOLDING, 1);
 }
 
@@ -109,7 +76,7 @@ void Unit::MakeWMon(char const *monname, const Items& mon, size_t monnum)
     AString temp(monname);
     SetName(temp);
 
-    type = U_WMON;
+    type = UnitType::U_WMON;
     items.SetNum(mon, monnum);
     SetMonFlags();
 }
@@ -189,19 +156,19 @@ void Unit::Readin(Ainfile& s, const PtrList<Faction>& facs, ATL_VER)
         describe.clear();
     }
     num = s.GetInt<size_t>();
-    type = s.GetInt<int>();
+    type = s.GetInt<UnitType>();
     const size_t fac = s.GetInt<size_t>();
     faction = GetFaction(facs, fac);
-    guard = s.GetInt<int>();
-    if (guard == GUARD_ADVANCE)
+    guard = s.GetInt<UnitGuard>();
+    if (guard == UnitGuard::GUARD_ADVANCE)
     {
-        guard = GUARD_NONE;
+        guard = UnitGuard::GUARD_NONE;
     }
-    if (guard == GUARD_SET)
+    if (guard == UnitGuard::GUARD_SET)
     {
-        guard = GUARD_GUARD;
+        guard = UnitGuard::GUARD_GUARD;
     }
-    reveal = s.GetInt<int>();
+    reveal = s.GetInt<UnitReveal>();
 
     /* Handle the new 'ready item', ready weapons/armor, and free */
     free = 0;
@@ -346,7 +313,7 @@ AString Unit::GetName(unsigned int obs)
 {
     AString ret = name;
     unsigned int stealth = GetAttribute("stealth");
-    if (reveal == REVEAL_FACTION || obs > stealth) {
+    if (reveal == UnitReveal::REVEAL_FACTION || obs > stealth) {
         ret += ", ";
         ret += faction.lock()->name;
     }
@@ -483,10 +450,10 @@ void Unit::WriteReport(Areport& f,
     unsigned int stealth = GetAttribute("stealth");
     if (obs < stealth) {
         /* The unit cannot be seen */
-        if (reveal == REVEAL_FACTION) {
+        if (reveal == UnitReveal::REVEAL_FACTION) {
             obs = 1;
         } else {
-            if (guard == GUARD_GUARD || reveal == REVEAL_UNIT || autosee) {
+            if (guard == UnitGuard::GUARD_GUARD || reveal == UnitReveal::REVEAL_UNIT || autosee) {
                 obs = 0;
             } else {
                 return;
@@ -495,7 +462,7 @@ void Unit::WriteReport(Areport& f,
     } else {
         if (obs == stealth) {
             /* Can see unit, but not Faction */
-            if (reveal == REVEAL_FACTION) {
+            if (reveal == UnitReveal::REVEAL_FACTION) {
                 obs = 1;
             } else {
                 obs = 0;
@@ -562,16 +529,16 @@ void Unit::WriteReport_(Areport& f,
         }
     }
 
-    if (guard == GUARD_GUARD) temp += ", on guard";
+    if (guard == UnitGuard::GUARD_GUARD) temp += ", on guard";
     if (obs > 0) {
         temp += AString(", ") + faction.lock()->name;
-        if (guard == GUARD_AVOID) temp += ", avoiding";
+        if (guard == UnitGuard::GUARD_AVOID) temp += ", avoiding";
         if (GetFlag(FLAG_BEHIND)) temp += ", behind";
     }
 
     if (obs == 2) {
-        if (reveal == REVEAL_UNIT) temp += ", revealing unit";
-        if (reveal == REVEAL_FACTION) temp += ", revealing faction";
+        if (reveal == UnitReveal::REVEAL_UNIT) temp += ", revealing unit";
+        if (reveal == UnitReveal::REVEAL_FACTION) temp += ", revealing faction";
         if (GetFlag(FLAG_HOLDING)) temp += ", holding";
         if (GetFlag(FLAG_AUTOTAX)) temp += ", taxing";
         if (GetFlag(FLAG_NOAID)) temp += ", receiving no aid";
@@ -600,7 +567,7 @@ void Unit::WriteReport_(Areport& f,
         temp += skills.Report(GetMen());
     }
 
-    if (obs == 2 && (type == U_MAGE || type == U_GUARDMAGE)) {
+    if (obs == 2 && (type == UnitType::U_MAGE || type == UnitType::U_GUARDMAGE)) {
         temp += MageReport();
     }
 
@@ -639,11 +606,11 @@ AString Unit::TemplateReport()
     /* Write the report */
     AString temp = name;
 
-    if (guard == GUARD_GUARD) temp += ", on guard";
-    if (guard == GUARD_AVOID) temp += ", avoiding";
+    if (guard == UnitGuard::GUARD_GUARD) temp += ", on guard";
+    if (guard == UnitGuard::GUARD_AVOID) temp += ", avoiding";
     if (GetFlag(FLAG_BEHIND)) temp += ", behind";
-    if (reveal == REVEAL_UNIT) temp += ", revealing unit";
-    if (reveal == REVEAL_FACTION) temp += ", revealing faction";
+    if (reveal == UnitReveal::REVEAL_UNIT) temp += ", revealing unit";
+    if (reveal == UnitReveal::REVEAL_FACTION) temp += ", revealing faction";
     if (GetFlag(FLAG_HOLDING)) temp += ", holding";
     if (GetFlag(FLAG_AUTOTAX)) temp += ", taxing";
     if (GetFlag(FLAG_NOAID)) temp += ", receiving no aid";
@@ -667,7 +634,7 @@ AString Unit::TemplateReport()
     temp += ". Skills: ";
     temp += skills.Report(GetMen());
 
-    if (type == U_MAGE || type == U_GUARDMAGE) {
+    if (type == UnitType::U_MAGE || type == UnitType::U_GUARDMAGE) {
         temp += MageReport();
     }
     temp += ReadyItem();
@@ -752,11 +719,11 @@ void Unit::ClearOrders()
     evictorders.reset();
     stealorders.reset();
     promote = 0;
-    taxing = TAX_NONE;
+    taxing = UnitTax::TAX_NONE;
     advancefrom.reset();
     monthorders.reset();
     inTurnBlock = 0;
-    presentTaxing = 0;
+    presentTaxing = UnitTax::TAX_NONE;
     presentMonthOrders.reset();
     ClearCastOrders();
 }
@@ -770,7 +737,7 @@ void Unit::ClearCastOrders()
 void Unit::DefaultOrders(const Object::Handle& obj)
 {
     ClearOrders();
-    if (type == U_WMON)
+    if (type == UnitType::U_WMON)
     {
         if (!ObjectDefs[obj->type].monster.isValid())
         {
@@ -849,14 +816,14 @@ void Unit::DefaultOrders(const Object::Handle& obj)
             }
         }
     }
-    else if (type == U_GUARD)
+    else if (type == UnitType::U_GUARD)
     {
-        if (guard != GUARD_GUARD)
+        if (guard != UnitGuard::GUARD_GUARD)
         {
-            guard = GUARD_SET;
+            guard = UnitGuard::GUARD_SET;
         }
     }
-    else if (type == U_GUARDMAGE)
+    else if (type == UnitType::U_GUARDMAGE)
     {
         combat = Skills::Types::S_FIRE;
     }
@@ -868,7 +835,7 @@ void Unit::DefaultOrders(const Object::Handle& obj)
             if (GetFlag(FLAG_AUTOTAX) &&
                     Globals->TAX_PILLAGE_MONTH_LONG && Taxers(1))
             {
-                taxing = TAX_AUTO;
+                taxing = UnitTax::TAX_AUTO;
             }
             else
             {
@@ -884,7 +851,7 @@ void Unit::DefaultOrders(const Object::Handle& obj)
 
 void Unit::PostTurn(const ARegion&)
 {
-    if (type == U_WMON)
+    if (type == UnitType::U_WMON)
     {
         for(auto it = items.begin(); it != items.end(); ++it)
         {
@@ -927,7 +894,7 @@ void Unit::SetDescribe(const AString& s)
 
 bool Unit::IsAlive()
 {
-    if (type == U_MAGE || type == U_APPRENTICE)
+    if (type == UnitType::U_MAGE || type == UnitType::U_APPRENTICE)
     {
         return(GetMen());
     }
@@ -1075,7 +1042,7 @@ void Unit::ConsumeSharedMoney(size_t n)
 size_t Unit::GetAttackRiding()
 {
     size_t riding = 0;
-    if (type == U_WMON)
+    if (type == UnitType::U_WMON)
     {
         for(const auto& i: items)
         {
@@ -1129,7 +1096,7 @@ size_t Unit::GetAttackRiding()
 
 size_t Unit::GetDefenseRiding()
 {
-    if (guard == GUARD_GUARD)
+    if (guard == UnitGuard::GUARD_GUARD)
     {
         return 0;
     }
@@ -1198,16 +1165,16 @@ size_t Unit::GetAvailSkill(const Skills& sk)
             continue;
         }
         if (ItemDefs[i->type].type & IT_MAGEONLY
-                && type != U_MAGE
-                && type != U_APPRENTICE
-                && type != U_GUARDMAGE)
+                && type != UnitType::U_MAGE
+                && type != UnitType::U_APPRENTICE
+                && type != UnitType::U_GUARDMAGE)
         {
             continue;
         }
         if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)
-                && type != U_MAGE
-                && type != U_APPRENTICE
-                && type != U_GUARDMAGE)
+                && type != UnitType::U_MAGE
+                && type != UnitType::U_APPRENTICE
+                && type != UnitType::U_GUARDMAGE)
         {
             continue;
         }
@@ -1268,23 +1235,23 @@ size_t Unit::GetRealSkill(const Skills& sk)
 void Unit::ForgetSkill(const Skills& sk)
 {
     skills.SetDays(sk, 0);
-    if (type == U_MAGE) {
+    if (type == UnitType::U_MAGE) {
         for(const auto& s: skills) {
             if (SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::MAGIC))
             {
                 return;
             }
         }
-        type = U_NORMAL;
+        type = UnitType::U_NORMAL;
     }
-    if (type == U_APPRENTICE) {
+    if (type == UnitType::U_APPRENTICE) {
         for(const auto& s: skills) {
             if (SkillDefs[s.type].flags.isSet(SkillType::SkillFlags::APPRENTICE))
             {
                 return;
             }
         }
-        type = U_NORMAL;
+        type = UnitType::U_NORMAL;
     }
 }
 
@@ -1461,16 +1428,16 @@ unsigned int Unit::Practice(const Skills& sk)
                 continue;
             }
             if (ItemDefs[it->type].type & IT_MAGEONLY
-                    && type != U_MAGE
-                    && type != U_APPRENTICE
-                    && type != U_GUARDMAGE)
+                    && type != UnitType::U_MAGE
+                    && type != UnitType::U_APPRENTICE
+                    && type != UnitType::U_GUARDMAGE)
             {
                 continue;
             }
             if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC)
-                    && type != U_MAGE
-                    && type != U_APPRENTICE
-                    && type != U_GUARDMAGE)
+                    && type != UnitType::U_MAGE
+                    && type != UnitType::U_APPRENTICE
+                    && type != UnitType::U_GUARDMAGE)
             {
                 continue;
             }
@@ -1663,7 +1630,7 @@ void Unit::AdjustSkills()
 size_t Unit::MaintCost()
 {
     size_t retval = 0;
-    if (type == U_WMON || type == U_GUARD || type == U_GUARDMAGE)
+    if (type == UnitType::U_WMON || type == UnitType::U_GUARD || type == UnitType::U_GUARDMAGE)
     {
         return 0;
     }
@@ -1728,7 +1695,7 @@ void Unit::Short(int needed_amt, int hunger_amt)
         case GameDefs::Starve::STARVE_NONE:
             break;
         case GameDefs::Starve::STARVE_MAGES:
-            if (type == U_MAGE)
+            if (type == UnitType::U_MAGE)
             {
                 SkillStarvation();
             }
@@ -2232,7 +2199,7 @@ Attitudes Unit::GetAttitude(const ARegion& r, const Unit::Handle& u)
 
 int Unit::Hostile()
 {
-    if (type != U_WMON)
+    if (type != UnitType::U_WMON)
     {
         return 0;
     }
@@ -2254,7 +2221,7 @@ int Unit::Hostile()
 
 bool Unit::Forbids(const ARegion& r, const Unit::Handle& u)
 {
-    if (guard != GUARD_GUARD)
+    if (guard != UnitGuard::GUARD_GUARD)
     {
         return false;
     }
@@ -2321,7 +2288,7 @@ size_t Unit::Taxers(unsigned int numtaxers)
                     // Only consider offensive items
                     if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_USABLE_BATTLE_ITEM) &&
                         (!(pBat.flags & BattleItemType::MAGEONLY) ||
-                         type == U_MAGE || type == U_APPRENTICE))
+                         type == UnitType::U_MAGE || type == UnitType::U_APPRENTICE))
                     {
                         numUsableBattle += pItem->num;
                         numBattle += pItem->num;
@@ -2561,7 +2528,7 @@ size_t Unit::Taxers(unsigned int numtaxers)
     }
 
     // Ok, all the items categories done - check for mages taxing
-    if (type == U_MAGE)
+    if (type == UnitType::U_MAGE)
     {
         if (Globals->WHO_CAN_TAX.isSet(GameDefs::Taxation::TAX_ANY_MAGE))
         {
@@ -2686,19 +2653,19 @@ void Unit::SetFlag(int x, int val)
 void Unit::CopyFlags(const Unit::Handle& x)
 {
     flags = x->flags;
-    guard = GUARD_NONE;
+    guard = UnitGuard::GUARD_NONE;
     if (Taxers(1))
     {
-        if (x->guard != GUARD_SET && x->guard != GUARD_ADVANCE)
+        if (x->guard != UnitGuard::GUARD_SET && x->guard != UnitGuard::GUARD_ADVANCE)
         {
             guard = x->guard;
         }
     }
     else
     {
-        if (x->guard == GUARD_AVOID)
+        if (x->guard == UnitGuard::GUARD_AVOID)
         {
-            guard = GUARD_AVOID;
+            guard = UnitGuard::GUARD_AVOID;
         }
         SetFlag(FLAG_AUTOTAX, 0);
     }
@@ -3085,9 +3052,9 @@ unsigned int Unit::GetAttribute(char const *attrib)
                 if (item.isValid())
                 {
                     if (ItemDefs[item].type & IT_MAGEONLY
-                        && type != U_MAGE
-                        && type != U_APPRENTICE
-                        && type != U_GUARDMAGE)
+                        && type != UnitType::U_MAGE
+                        && type != UnitType::U_APPRENTICE
+                        && type != UnitType::U_GUARDMAGE)
                     {
                         // Ignore mage only items for non-mages
                     }
@@ -3117,7 +3084,7 @@ unsigned int Unit::GetAttribute(char const *attrib)
                 }
                 if (temp == "guard")
                 {
-                    val = (guard == GUARD_GUARD ? mod.val : 0);
+                    val = (guard == UnitGuard::GUARD_GUARD ? mod.val : 0);
                 }
 
             }

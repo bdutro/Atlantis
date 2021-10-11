@@ -352,8 +352,8 @@ Location::Handle Game::Do1SailOrder(ARegion::Handle reg, const Object::Handle& f
             }
             for(const auto& unit: fleet->units) {
                 unit->moved += cost;
-                if (unit->guard == GUARD_GUARD)
-                    unit->guard = GUARD_NONE;
+                if (unit->guard == UnitGuard::GUARD_GUARD)
+                    unit->guard = UnitGuard::GUARD_NONE;
                 unit->alias = 0;
                 unit->PracticeAttribute("wind");
                 if (unit->monthorders) {
@@ -582,8 +582,7 @@ void Game::Run1BuildOrder(const ARegion::Handle& r, const Object::Handle& obj, c
     int needed = buildobj->incomplete;
     const auto& type = buildobj->type;
     // AS
-    if (((ObjectDefs[type].flags & ObjectType::NEVERDECAY) || !Globals->DECAY) &&
-            needed < 1) {
+    if ((needed < 1) && (!Globals->DECAY || ObjectDefs[type].flags.isSet(ObjectType::ObjectFlags::NEVERDECAY))) {
         u->Error("BUILD: Object is finished.");
         u->monthorders.reset();
         return;
@@ -1377,10 +1376,10 @@ void Game::RunIdleOrders(const ARegion::Handle& r)
 void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
 {
     const auto o = std::dynamic_pointer_cast<StudyOrder>(u->monthorders);
-    int reset_man, taughtdays, days;
+    ValidValue<UnitType> reset_man;
+    int taughtdays, days;
     AString str;
 
-    reset_man = -1;
     const Skills& sk = o->skill;
     if (!sk.isValid() ||
         SkillDefs[sk].flags.isSet(SkillType::SkillFlags::DISABLED) ||
@@ -1435,8 +1434,8 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
     }
 
     const auto u_fac = u->faction.lock();
-    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC) && (u->type != U_MAGE)) {
-        if (u->type == U_APPRENTICE) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::MAGIC) && (u->type != UnitType::U_MAGE)) {
+        if (u->type == UnitType::U_APPRENTICE) {
             u->Error(AString("STUDY: An ") +
                 Globals->APPRENTICE_NAME +
                 " cannot be made into a mage.");
@@ -1459,11 +1458,11 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
             }
         }
         reset_man = u->type;
-        u->type = U_MAGE;
+        u->type = UnitType::U_MAGE;
     }
 
-    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE) && (u->type != U_APPRENTICE)) {
-        if (u->type == U_MAGE) {
+    if (SkillDefs[sk].flags.isSet(SkillType::SkillFlags::APPRENTICE) && (u->type != UnitType::U_APPRENTICE)) {
+        if (u->type == UnitType::U_MAGE) {
             u->Error(AString("STUDY: A mage cannot be made into an ") +
                 Globals->APPRENTICE_NAME + ".");
             return;
@@ -1488,7 +1487,7 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
             }
         }
         reset_man = u->type;
-        u->type = U_APPRENTICE;
+        u->type = UnitType::U_APPRENTICE;
     }
 
     if (Globals->TRANSPORT.isSet(GameDefs::TransportOptions::ALLOW_TRANSPORT) &&
@@ -1582,8 +1581,9 @@ void Game::Do1StudyOrder(const Unit::Handle& u, const Object::Handle& obj)
     } else {
         // if we just tried to become a mage or apprentice, but
         // were unable to study, reset unit to whatever it was before.
-        if (reset_man != -1)
-            u->type = reset_man;
+        if (reset_man.isValid()) {
+            u->type = reset_man.get();
+        }
     }
 }
 
@@ -1925,13 +1925,13 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
         return nullptr;
     }
 
-    if (unit->type == U_WMON && newreg->town && newreg->IsGuarded()) {
+    if (unit->type == UnitType::U_WMON && newreg->town && newreg->IsGuarded()) {
         unit->Event("Monsters don't move into guarded towns.");
         unit->monthorders.reset();
         return nullptr;
     }
 
-    if (unit->guard == GUARD_ADVANCE) {
+    if (unit->guard == UnitGuard::GUARD_ADVANCE) {
         const auto ally = newreg->ForbiddenByAlly(unit);
         if (!ally.expired() && !startmove) {
             unit->Event(AString("Can't ADVANCE: ") + newreg->name +
@@ -1941,10 +1941,10 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
         }
     }
 
-    if (order->advancing) unit->guard = GUARD_ADVANCE;
+    if (order->advancing) unit->guard = UnitGuard::GUARD_ADVANCE;
 
     const auto forbid_w = newreg->Forbidden(unit);
-    if (!forbid_w.expired() && !startmove && unit->guard != GUARD_ADVANCE) {
+    if (!forbid_w.expired() && !startmove && unit->guard != UnitGuard::GUARD_ADVANCE) {
         const auto forbid = forbid_w.lock();
         unsigned int obs = unit->GetAttribute("observation");
         unit->Event(AString("Is forbidden entry to ") +
@@ -1957,7 +1957,7 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
         return nullptr;
     }
 
-    if (unit->guard == GUARD_GUARD) unit->guard = GUARD_NONE;
+    if (unit->guard == UnitGuard::GUARD_GUARD) unit->guard = UnitGuard::GUARD_NONE;
 
     unit->alias = 0;
     unit->movepoints -= cost * Globals->MAX_SPEED;

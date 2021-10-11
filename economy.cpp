@@ -996,7 +996,7 @@ void ARegion::AddTown(TownTypeEnum size, const AString& town_name)
         if (obj->type != Objects::Types::O_DUMMY)
         {
             if ((ObjectDefs[obj->type].monster.isValid()) &&
-                (!(ObjectDefs[obj->type].flags & ObjectType::CANENTER)))
+                !ObjectDefs[obj->type].flags.isSet(ObjectType::ObjectFlags::CANENTER))
             {
                     obj->units.clear();
                     return true;
@@ -1354,7 +1354,7 @@ int ARegion::TownHabitat()
         if (production_aided == Items::Types::I_HERBS) {
             temple++;
         }
-        if ((ObjectDefs[obj->type].flags & ObjectType::TRANSPORT) && (ItemDefs[production_aided].flags & IT_MOUNT)) {
+        if (ObjectDefs[obj->type].flags.isSet(ObjectType::ObjectFlags::TRANSPORT) && (ItemDefs[production_aided].flags & IT_MOUNT)) {
             caravan++;
         }
     }

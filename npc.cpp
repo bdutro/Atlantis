@@ -131,8 +131,7 @@ void Game::GrowLMons(int rate)
         for(const auto& obj: r->objects) {
             if (!obj->units.empty()) continue;
             const auto& montype = ObjectDefs[obj->type].monster;
-            int grow=!(ObjectDefs[obj->type].flags&ObjectType::NOMONSTERGROWTH);
-            if (montype.isValid() && grow) {
+            if (montype.isValid() && !ObjectDefs[obj->type].flags.isSet(ObjectType::ObjectFlags::NOMONSTERGROWTH)) {
                 if (getrandom(100) < rate) {
                     MakeLMon(obj);
                 }
@@ -168,7 +167,7 @@ bool Game::MakeWMon(const ARegion::Handle& pReg)
 void Game::MakeLMon(const Object::Handle& pObj)
 {
     if (!Globals->LAIR_MONSTERS_EXIST) return;
-    if (ObjectDefs[pObj->type].flags & ObjectType::NOMONSTERGROWTH) return;
+    if (ObjectDefs[pObj->type].flags.isSet(ObjectType::ObjectFlags::NOMONSTERGROWTH)) return;
 
     Items montype = ObjectDefs[pObj->type].monster;
 

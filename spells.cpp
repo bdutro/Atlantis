@@ -1703,7 +1703,7 @@ bool SpellsGame<Game>::RunPortalLore(const ARegion::Handle& r, const Object::Han
         return false;
     }
 
-    if (tar_u->type != U_MAGE) {
+    if (tar_u->type != UnitType::U_MAGE) {
         u->Error("CAST: Target is not a mage.");
         return false;
     }
@@ -2192,7 +2192,7 @@ template<>
 void SpellsGame<Game>::RunACastOrder(const ARegion::Handle& r, const Object::Handle& o, const Unit::Handle& u)
 {
     int val = 0;
-    if (u->type != U_MAGE && u->type != U_APPRENTICE) {
+    if (u->type != UnitType::U_MAGE && u->type != UnitType::U_APPRENTICE) {
         u->Error("CAST: Unit is not a mage.");
         return;
     }

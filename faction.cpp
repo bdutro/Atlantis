@@ -744,17 +744,17 @@ unsigned int Faction::CanSee(const ARegion& r, const Unit::Handle& u, int practi
     {
         return 2;
     }
-    if (u->reveal == REVEAL_FACTION)
+    if (u->reveal == UnitReveal::REVEAL_FACTION)
     {
         return 2;
     }
 
     unsigned int retval = 0;
-    if (u->reveal == REVEAL_UNIT)
+    if (u->reveal == UnitReveal::REVEAL_UNIT)
     {
         retval = 1;
     }
-    if (u->guard == GUARD_GUARD)
+    if (u->guard == UnitGuard::GUARD_GUARD)
     {
         retval = 1;
     }

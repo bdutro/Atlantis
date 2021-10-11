@@ -76,7 +76,7 @@ Objects ParseObject(const AString& token)
     {
         if (token == ObjectDefs[*i].name)
         {
-            if (ObjectDefs[*i].flags & ObjectType::DISABLED)
+            if (ObjectDefs[*i].flags.isSet(ObjectType::ObjectFlags::DISABLED))
             {
                 return Objects();
             }
@@ -237,7 +237,7 @@ int Object::IsBuilding()
 
 int Object::CanModify()
 {
-    return (ObjectDefs[type].flags & ObjectType::CANMODIFY);
+    return (ObjectDefs[type].flags.isSet(ObjectType::ObjectFlags::CANMODIFY));
 }
 
 Unit::WeakHandle Object::GetUnit(size_t unit_num)
@@ -289,9 +289,9 @@ Unit::WeakHandle Object::GetUnitId(const UnitId& id, size_t faction)
 
 bool Object::CanEnter(const ARegion::Handle&, const Unit::Handle& u)
 {
-    if (!(ObjectDefs[type].flags & ObjectType::CANENTER) &&
-            (u->type == U_MAGE || u->type == U_NORMAL ||
-             u->type == U_APPRENTICE)) {
+    if (!ObjectDefs[type].flags.isSet(ObjectType::ObjectFlags::CANENTER) &&
+            (u->type == UnitType::U_MAGE || u->type == UnitType::U_NORMAL ||
+             u->type == UnitType::U_APPRENTICE)) {
         return false;
     }
     return true;
@@ -374,8 +374,7 @@ void Object::Report(Areport& f, const Faction& fac, unsigned int obs, size_t tru
         AString temp = AString("+ ") + name + " : " + ob.name;
         if (incomplete > 0) {
             temp += AString(", needs ") + incomplete;
-        } else if (Globals->DECAY &&
-                !(ob.flags & ObjectType::NEVERDECAY) && incomplete < 1) {
+        } else if (Globals->DECAY && (incomplete < 1) && !ob.flags.isSet(ObjectType::ObjectFlags::NEVERDECAY)) {
             if (incomplete > (0 - ob.maxMonthlyDecay)) {
                 temp += ", about to decay";
             } else if (incomplete > (0 - ob.maxMaintenance/2)) {
@@ -391,7 +390,7 @@ void Object::Report(Areport& f, const Faction& fac, unsigned int obs, size_t tru
         if (describe.Len()) {
             temp += AString("; ") + describe;
         }
-        if (!(ob.flags & ObjectType::CANENTER)) {
+        if (!ob.flags.isSet(ObjectType::ObjectFlags::CANENTER)) {
             temp += ", closed to player units";
         }
         temp += ".";
@@ -412,7 +411,7 @@ void Object::Report(Areport& f, const Faction& fac, unsigned int obs, size_t tru
                      Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_OUTDOOR_UNITS)) ||
                     ((type != Objects::Types::O_DUMMY) &&
                      Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_INDOOR_UNITS)) ||
-                    ((u->guard == GUARD_GUARD) &&
+                    ((u->guard == UnitGuard::GUARD_GUARD) &&
                      Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_GUARDS))) {
                     u->WriteReport(f, passobs, passtrue, passdetfac,
                             type != Objects::Types::O_DUMMY, attitude, fac.showunitattitudes);
@@ -816,7 +815,7 @@ unsigned int Object::GetFleetSpeed(int report)
 
 AString::Handle ObjectDescription(const Objects& obj)
 {
-    if (ObjectDefs[obj].flags & ObjectType::DISABLED)
+    if (ObjectDefs[obj].flags.isSet(ObjectType::ObjectFlags::DISABLED))
     {
         return nullptr;
     }
@@ -824,7 +823,7 @@ AString::Handle ObjectDescription(const Objects& obj)
     ObjectType *o = &ObjectDefs[obj];
     AString::Handle temp = std::make_shared<AString>();
     *temp += AString(o->name) + ": ";
-    if (ObjectDefs[obj].flags & ObjectType::GROUP) {
+    if (ObjectDefs[obj].flags.isSet(ObjectType::ObjectFlags::GROUP)) {
         *temp += "This is a group of ships.";
     } else if (o->capacity) {
         *temp += "This is a ship.";
@@ -834,12 +833,12 @@ AString::Handle ObjectDescription(const Objects& obj)
 
     if (Globals->LAIR_MONSTERS_EXIST && o->monster.isValid()) {
         *temp += " Monsters can potentially lair in this structure.";
-        if (o->flags & ObjectType::NOMONSTERGROWTH) {
+        if (o->flags.isSet(ObjectType::ObjectFlags::NOMONSTERGROWTH)) {
             *temp += " Monsters in this structures will never regenerate.";
         }
     }
 
-    if (o->flags & ObjectType::CANENTER) {
+    if (o->flags.isSet(ObjectType::ObjectFlags::CANENTER)) {
         *temp += " Units may enter this structure.";
     }
 
@@ -931,7 +930,7 @@ AString::Handle ObjectDescription(const Objects& obj)
             (ItemDefs[Items::Types::I_STONE].flags & ItemType::DISABLED)) {
         buildable = false;
     }
-    if (!buildable && !(ObjectDefs[obj].flags & ObjectType::GROUP)) {
+    if (!buildable && !ObjectDefs[obj].flags.isSet(ObjectType::ObjectFlags::GROUP)) {
         *temp += " This structure cannot be built by players.";
     }
 
@@ -947,7 +946,7 @@ AString::Handle ObjectDescription(const Objects& obj)
     }
 
     if (Globals->DECAY) {
-        if (o->flags & ObjectType::NEVERDECAY) {
+        if (o->flags.isSet(ObjectType::ObjectFlags::NEVERDECAY)) {
             *temp += " This structure will never decay.";
         } else {
             *temp += AString(" This structure can take ") + o->maxMaintenance +

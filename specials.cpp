@@ -28,9 +28,9 @@
 void Soldier::SetupHealing()
 {
     const auto unit_s = unit.lock();
-    if (unit_s->type == U_MAGE ||
-            unit_s->type == U_APPRENTICE ||
-            unit_s->type == U_GUARDMAGE) {
+    if (unit_s->type == UnitType::U_MAGE ||
+            unit_s->type == UnitType::U_APPRENTICE ||
+            unit_s->type == UnitType::U_GUARDMAGE) {
         healtype = unit_s->GetSkill(Skills::Types::S_MAGICAL_HEALING);
         if (healtype > 5) healtype = 5;
         if (healtype > 0) {
