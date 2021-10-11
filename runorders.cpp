@@ -508,8 +508,9 @@ void Game::RunForgetOrders()
 void Game::RunQuitOrders()
 {
     for(const auto& f: factions) {
-        if (f->quit)
+        if (f->quit != QuitReason::QUIT_NONE) {
             Do1Quit(f);
+        }
     }
 }
 
@@ -1162,9 +1163,9 @@ void Game::EndGame(const Faction::Handle& pVictor)
     for(const auto& pFac: factions) {
         pFac->exists = 0;
         if (pFac == pVictor)
-            pFac->quit = QUIT_WON_GAME;
+            pFac->quit = QuitReason::QUIT_WON_GAME;
         else
-            pFac->quit = QUIT_GAME_OVER;
+            pFac->quit = QuitReason::QUIT_GAME_OVER;
 
         if (pVictor)
             pFac->Event(pVictor->name + " has won the game!");
@@ -1172,7 +1173,7 @@ void Game::EndGame(const Faction::Handle& pVictor)
             pFac->Event("The game has ended with no winner.");
     }
 
-    gameStatus = GAME_STATUS_FINISHED;
+    gameStatus = GameStatus::GAME_STATUS_FINISHED;
 }
 
 void Game::MidProcessTurn()
@@ -1481,7 +1482,7 @@ void Game::RunSellOrders()
 {
     for(const auto& r: regions) {
         for(const auto& m: r->markets) {
-            if (m->type == M_SELL)
+            if (m->type == MarketTransaction::M_SELL)
             {
                 DoSell(r, m);
             }
@@ -1565,7 +1566,7 @@ void Game::RunBuyOrders()
 {
     for(const auto& r: regions) {
         for(const auto& m: r->markets) {
-            if (m->type == M_BUY)
+            if (m->type == MarketTransaction::M_BUY)
             {
                 DoBuy(r, m);
             }

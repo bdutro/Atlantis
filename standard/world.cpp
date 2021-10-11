@@ -2244,7 +2244,7 @@ void Game::CreateWorld()
         }
     }
 
-    regions.SetACNeighbors( 0, 1, xx, yy );
+    regions.SetACNeighbors(LevelType::LEVEL_NEXUS, LevelType::LEVEL_SURFACE, xx, yy );
 
     regions.InitSetupGates( 1 );
     // Set up gates on all levels of the underworld
@@ -2553,7 +2553,7 @@ void ARegion::MakeStartingCity()
                 {
                     continue;
                 }
-                markets.emplace_back(M_BUY,
+                markets.emplace_back(MarketTransaction::M_BUY,
                                      *i,
                                      static_cast<int>(ItemDefs[*i].baseprice*5/2),
                                      -1,
@@ -2565,11 +2565,11 @@ void ARegion::MakeStartingCity()
         }
         ratio = static_cast<float>(ItemDefs[race].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
         // hack: include wage factor of 10 in float calculation above
-        markets.emplace_back(M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
+        markets.emplace_back(MarketTransaction::M_BUY, race, calculateWagesWithRatio(ratio), -1, 5000, 5000, -1, -1);
         if (Globals->LEADERS_EXIST) {
             ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
-            markets.emplace_back(M_BUY,
+            markets.emplace_back(MarketTransaction::M_BUY,
                                  Items::Types::I_LEADERS,
                                  calculateWagesWithRatio(ratio),
                                  -1,
@@ -2583,7 +2583,7 @@ void ARegion::MakeStartingCity()
         ratio = static_cast<float>(ItemDefs[race].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
         // hack: include wage factor of 10 in float calculation above
         /* Setup Recruiting */
-        markets.emplace_back(M_BUY,
+        markets.emplace_back(MarketTransaction::M_BUY,
                              race,
                              calculateWagesWithRatio(ratio),
                              Population() / 5,
@@ -2594,7 +2594,7 @@ void ARegion::MakeStartingCity()
         if ( Globals->LEADERS_EXIST ) {
             ratio = static_cast<float>(ItemDefs[static_cast<size_t>(Items::Types::I_LEADERS)].baseprice) / (static_cast<float>(Globals->BASE_MAN_COST) * 10);
             // hack: include wage factor of 10 in float calculation above
-            markets.emplace_back(M_BUY,
+            markets.emplace_back(MarketTransaction::M_BUY,
                                  Items::Types::I_LEADERS,
                                  calculateWagesWithRatio(ratio),
                                  Population() / 25,
@@ -2625,7 +2625,7 @@ bool ARegion::IsSafeRegion()
 
 ARegion::WeakHandle ARegionList::GetStartingCity(const ARegion& AC,
                                                  size_t i,
-                                                 unsigned int level,
+                                                 const LevelType level,
                                                  unsigned int maxX,
                                                  unsigned int maxY )
 {

@@ -71,7 +71,7 @@ enum class _Templates : size_t {
 
 using Templates = ValidEnum<_Templates, _Templates::NTEMPLATES>;
 
-enum {
+enum class QuitReason {
     QUIT_NONE,
     QUIT_BY_ORDER,
     QUIT_BY_GM,
@@ -80,11 +80,11 @@ enum {
     QUIT_GAME_OVER,
 };
 
-extern const EnumArray<const char*, Attitudes::size()> AttitudeStrs;
-extern const EnumArray<const char*, Factions::size()> FactionStrs;
+extern const EnumArray<Attitudes, const char*, Attitudes::size()> AttitudeStrs;
+extern const EnumArray<Factions, const char*, Factions::size()> FactionStrs;
 
 // LLS - include strings for the template enum
-extern const EnumArray<const char*, Templates::size()> TemplateStrs;
+extern const EnumArray<Templates, const char*, Templates::size()> TemplateStrs;
 Templates ParseTemplate(const AString&);
 
 Attitudes ParseAttitude(const AString&);
@@ -155,7 +155,7 @@ public:
     // The type is only used if Globals->FACTION_LIMIT_TYPE ==
     // FACLIM_FACTION_TYPES
     //
-    EnumArray<int, Factions::size()> type;
+    EnumArray<Factions, int, Factions::size()> type;
 
     int lastchange;
     size_t lastorders;
@@ -169,7 +169,7 @@ public:
     bool showunitattitudes;
     Templates temformat;
     bool exists;
-    int quit;
+    QuitReason quit;
     int numshows;
     
     int nummages;

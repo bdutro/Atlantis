@@ -48,7 +48,7 @@ void ARegionList::CreateAbyssLevel(unsigned int level, char const *name)
 {
     MakeRegions(level, 4, 4);
     pRegionArrays[level]->SetName(name);
-    pRegionArrays[level]->levelType = ARegionArray::LEVEL_NEXUS;
+    pRegionArrays[level]->levelType = LevelType::LEVEL_NEXUS;
 
     ARegion::WeakHandle reg;
     for (unsigned int x = 0; x < 4; x++) {
@@ -101,7 +101,7 @@ void ARegionList::CreateNexusLevel(unsigned int level, unsigned int xSize, unsig
     MakeRegions(level, xSize, ySize);
 
     pRegionArrays[level]->SetName(name);
-    pRegionArrays[level]->levelType = ARegionArray::LEVEL_NEXUS;
+    pRegionArrays[level]->levelType = LevelType::LEVEL_NEXUS;
 
     AString nex_name = Globals->WORLD_NAME;
     nex_name += " Nexus";
@@ -141,7 +141,7 @@ void ARegionList::CreateSurfaceLevel(unsigned int level, unsigned int xSize, uns
     }
 
     pRegionArrays[level]->SetName(name);
-    pRegionArrays[level]->levelType = ARegionArray::LEVEL_SURFACE;
+    pRegionArrays[level]->levelType = LevelType::LEVEL_SURFACE;
     unsigned int sea = Globals->OCEAN;
     if (Globals->SEA_LIMIT)
     {
@@ -177,7 +177,7 @@ void ARegionList::CreateIslandLevel(unsigned int level, unsigned int nPlayers, c
     MakeRegions(level, xSize, ySize);
 
     pRegionArrays[level]->SetName(name);
-    pRegionArrays[level]->levelType = ARegionArray::LEVEL_SURFACE;
+    pRegionArrays[level]->levelType = LevelType::LEVEL_SURFACE;
 
     MakeCentralLand(pRegionArrays[level]);
     MakeIslands(pRegionArrays[level], nPlayers);
@@ -198,7 +198,7 @@ void ARegionList::CreateUnderworldLevel(unsigned int level, unsigned int xSize, 
     }
 
     pRegionArrays[level]->SetName(name);
-    pRegionArrays[level]->levelType = ARegionArray::LEVEL_UNDERWORLD;
+    pRegionArrays[level]->levelType = LevelType::LEVEL_UNDERWORLD;
 
     SetRegTypes(pRegionArrays[level], Regions::Types::R_NUM);
 
@@ -225,7 +225,7 @@ void ARegionList::CreateUnderdeepLevel(unsigned int level, unsigned int xSize, u
     }
 
     pRegionArrays[level]->SetName(name);
-    pRegionArrays[level]->levelType = ARegionArray::LEVEL_UNDERDEEP;
+    pRegionArrays[level]->levelType = LevelType::LEVEL_UNDERDEEP;
 
     SetRegTypes(pRegionArrays[level], Regions::Types::R_NUM);
 
@@ -1056,7 +1056,7 @@ void ARegionList::RaceAnchors(const ARegionArray::Handle& pArr)
             {
                 continue;
             }
-            if (TerrainDefs[reg->type].flags & TerrainType::BARREN)
+            if (TerrainDefs[reg->type].flags.isSet(TerrainType::TerrainFlags::BARREN))
             {
                 continue;
             }
@@ -1213,11 +1213,11 @@ void ARegionList::FinalSetup(const ARegionArray::Handle& pArr)
 
             if ((TerrainDefs[reg->type].similar_type == Regions::Types::R_OCEAN) && (reg->type != Regions::Types::R_LAKE))
             {
-                if (pArr->levelType == ARegionArray::LEVEL_UNDERWORLD)
+                if (pArr->levelType == LevelType::LEVEL_UNDERWORLD)
                 {
                     reg->SetName("The Undersea");
                 }
-                else if (pArr->levelType == ARegionArray::LEVEL_UNDERDEEP)
+                else if (pArr->levelType == LevelType::LEVEL_UNDERDEEP)
                 {
                     reg->SetName("The Deep Undersea");
                 }
@@ -1315,7 +1315,7 @@ void ARegionList::MakeShaftLinks(unsigned int levelFrom, unsigned int levelTo, u
     }
 }
 
-void ARegionList::SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, unsigned int maxX, unsigned int maxY)
+void ARegionList::SetACNeighbors(const LevelType levelSrc, const LevelType levelTo, unsigned int maxX, unsigned int maxY)
 {
     const auto& ar = GetRegionArray(levelSrc);
 

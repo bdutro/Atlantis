@@ -62,15 +62,6 @@ class ExchangeOrder;
 #include "ordertype.h"
 #include "skilltype.h"
 
-enum {
-    M_NONE,
-    M_WALK,
-    M_RIDE,
-    M_FLY,
-    M_SWIM,
-    M_SAIL
-};
-
 extern const std::vector<std::string> OrderStrs;
 
 Orders Parse1Order(const AString&);

@@ -75,4 +75,13 @@ enum class _OrderType : size_t {
 
 using Orders = ValidEnum<_OrderType, _OrderType::NORDERS>;
 
+enum class OrderMoveType {
+    M_NONE,
+    M_WALK,
+    M_RIDE,
+    M_FLY,
+    M_SWIM,
+    M_SAIL
+};
+
 #endif

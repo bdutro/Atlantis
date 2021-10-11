@@ -45,11 +45,21 @@ class Ainfile {
         AString GetStrNoSkip();
 
         template<typename T>
-        T GetInt()
+        typename std::enable_if<!std::is_enum<T>::value, T>::type
+        GetInt()
         {
             T x;
             *file >> x;
             return x;
+        }
+
+        template<typename T>
+        typename std::enable_if<std::is_enum<T>::value, T>::type
+        GetInt()
+        {
+            std::underlying_type_t<T> x;
+            *file >> x;
+            return static_cast<T>(x);
         }
 
 
@@ -73,6 +83,13 @@ class Aoutfile {
         void PutInt(unsigned int);
         void PutInt(ssize_t);
         void PutInt(size_t);
+
+        template<typename T>
+        typename std::enable_if<std::is_enum<T>::value>::type
+        PutInt(const T val) {
+            PutInt(static_cast<std::underlying_type_t<T>>(val));
+        }
+
         void PutBool(bool);
 
         std::unique_ptr<std::ofstream> file;

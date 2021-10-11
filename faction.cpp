@@ -26,7 +26,7 @@
 #include "gamedata.h"
 #include "game.h"
 
-const EnumArray<const char *, Attitudes::size()> AttitudeStrs = {{
+const EnumArray<Attitudes, const char *, Attitudes::size()> AttitudeStrs = {{
     "Hostile",
     "Unfriendly",
     "Neutral",
@@ -34,14 +34,14 @@ const EnumArray<const char *, Attitudes::size()> AttitudeStrs = {{
     "Ally"
 }};
 
-const EnumArray<const char *, Factions::size()> FactionStrs = {{
+const EnumArray<Factions, const char *, Factions::size()> FactionStrs = {{
     "War",
     "Trade",
     "Magic"
 }};
 
 // LLS - fix up the template strings
-const EnumArray<const char*, Templates::size()> TemplateStrs = {{
+const EnumArray<Templates, const char*, Templates::size()> TemplateStrs = {{
     "off",
     "short",
     "long",
@@ -114,7 +114,7 @@ Faction::Faction()
     times = 0;
     showunitattitudes = 0;
     temformat = Templates::Types::TEMPLATE_OFF;
-    quit = 0;
+    quit = QuitReason::QUIT_NONE;
     defaultattitude = Attitudes::Types::A_NEUTRAL;
     unclaimed = 0;
     noStartLeader = 0;
@@ -134,7 +134,7 @@ Faction::Faction(size_t n)
     showunitattitudes = 0;
     temformat = Templates::Types::TEMPLATE_LONG;
     defaultattitude = Attitudes::Types::A_NEUTRAL;
-    quit = 0;
+    quit = QuitReason::QUIT_NONE;
     unclaimed = 0;
     noStartLeader = 0;
     startturn = 0;
@@ -382,15 +382,15 @@ void Faction::WriteReport(Areport& f, const Game& pGame)
     }
 
     if (!exists) {
-        if (quit == QUIT_AND_RESTART) {
+        if (quit == QuitReason::QUIT_AND_RESTART) {
             f.PutStr("You restarted your faction this turn. This faction "
                     "has been removed, and a new faction has been started "
                     "for you. (Your new faction report will come in a "
                     "separate message.)");
-        } else if (quit == QUIT_GAME_OVER) {
+        } else if (quit == QuitReason::QUIT_GAME_OVER) {
             f.PutStr("I'm sorry, the game has ended. Better luck in "
                     "the next game you play!");
-        } else if (quit == QUIT_WON_GAME) {
+        } else if (quit == QuitReason::QUIT_WON_GAME) {
             f.PutStr("Congratulations, you have won the game!");
         } else {
             f.PutStr("I'm sorry, your faction has been eliminated.");

@@ -297,13 +297,13 @@ protected:
     size_t year;
     ValidValue<size_t> month;
 
-    enum {
+    enum class GameStatus {
         GAME_STATUS_UNINIT,
         GAME_STATUS_NEW,
         GAME_STATUS_RUNNING,
         GAME_STATUS_FINISHED,
     };
-    int gameStatus;
+    GameStatus gameStatus;
 
     size_t guardfaction;
     size_t monfaction;
@@ -619,7 +619,7 @@ protected:
     // Battle function
     //
     size_t KillDead(const Location::Handle&, const Battle::Handle&);
-    int RunBattle(const ARegion::Handle&, const Unit::Handle&, const Unit::Handle&, int = 0, bool = false);
+    Battle::BattleResult RunBattle(const ARegion::Handle&, const Unit::Handle&, const Unit::Handle&, int = 0, bool = false);
     void GetSidesForRegion_(const ARegion::Handle&,
                             const ARegion::Handle&,
                             WeakPtrList<Faction>&,

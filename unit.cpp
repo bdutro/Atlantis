@@ -1963,7 +1963,7 @@ bool Unit::CanWalk(size_t weight)
     return false;
 }
 
-int Unit::MoveType(ARegion::Handle r)
+OrderMoveType Unit::MoveType(ARegion::Handle r)
 {
     if (!r)
     {
@@ -1973,21 +1973,21 @@ int Unit::MoveType(ARegion::Handle r)
     size_t weight = items.Weight();
     if (!weight)
     {
-        return M_NONE;
+        return OrderMoveType::M_NONE;
     }
     if (CanFly(weight))
     {
-        return M_FLY;
+        return OrderMoveType::M_FLY;
     }
     if (TerrainDefs[r->type].similar_type != Regions::Types::R_OCEAN)
     {
         if (CanRide(weight))
         {
-            return M_RIDE;
+            return OrderMoveType::M_RIDE;
         }
         if (CanWalk(weight))
         {
-            return M_WALK;
+            return OrderMoveType::M_WALK;
         }
     }
     else
@@ -1996,39 +1996,42 @@ int Unit::MoveType(ARegion::Handle r)
         /* This should become it's own M_TYPE sometime */
         if (CanSwim())
         {
-            return M_SWIM;
+            return OrderMoveType::M_SWIM;
         }
     }
     if (r->type == Regions::Types::R_NEXUS)
     {
-        return M_WALK;
+        return OrderMoveType::M_WALK;
     }
-    return M_NONE;
+    return OrderMoveType::M_NONE;
 }
 
-static unsigned int ContributesToMovement(int movetype, const Items& item)
+static unsigned int ContributesToMovement(const OrderMoveType movetype, const Items& item)
 {
     switch(movetype)
     {
-        case M_WALK:
+        case OrderMoveType::M_NONE:
+        case OrderMoveType::M_SAIL:
+            break;
+        case OrderMoveType::M_WALK:
             if (ItemDefs[item].walk > 0)
             {
                 return ItemDefs[item].walk;
             }
             break;
-        case M_RIDE:
+        case OrderMoveType::M_RIDE:
             if (ItemDefs[item].ride > 0)
             {
                 return ItemDefs[item].ride;
             }
             break;
-        case M_FLY:
+        case OrderMoveType::M_FLY:
             if (ItemDefs[item].fly > 0)
             {
                 return ItemDefs[item].fly;
             }
             break;
-        case M_SWIM:
+        case OrderMoveType::M_SWIM:
             // incomplete ship items do have a "swimming"
             // capacity given, but don't help us to swim
             if (ItemDefs[item].type & IT_SHIP)
@@ -2047,8 +2050,8 @@ static unsigned int ContributesToMovement(int movetype, const Items& item)
 
 unsigned int Unit::CalcMovePoints(const ARegion::Handle& r)
 {
-    int movetype = MoveType(r);
-    if (movetype == M_NONE)
+    const auto movetype = MoveType(r);
+    if (movetype == OrderMoveType::M_NONE)
     {
         return 0;
     }
@@ -2096,7 +2099,7 @@ unsigned int Unit::CalcMovePoints(const ARegion::Handle& r)
         return 0; // not that this should be possible!
     }
 
-    if (movetype == M_FLY)
+    if (movetype == OrderMoveType::M_FLY)
     {
         if (GetAttribute("wind") > 0)
         {
@@ -2150,7 +2153,7 @@ bool Unit::CanMoveTo(const ARegion& r1, const ARegion& r2)
         return false;
     }
 
-    int mt = MoveType();
+    const auto mt = MoveType();
     if (((TerrainDefs[r1.type].similar_type == Regions::Types::R_OCEAN) ||
                 (TerrainDefs[r2.type].similar_type == Regions::Types::R_OCEAN)) &&
             (!CanSwim() || GetFlag(FLAG_NOCROSS_WATER)))

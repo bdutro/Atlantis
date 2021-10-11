@@ -207,7 +207,7 @@ class Unit : public std::enable_shared_from_this<Unit>
         bool CanFly();
         bool CanSwim();
         bool CanReallySwim();
-        int MoveType(std::shared_ptr<ARegion> r = nullptr);
+        OrderMoveType MoveType(std::shared_ptr<ARegion> r = nullptr);
         unsigned int CalcMovePoints(const std::shared_ptr<ARegion>& r = nullptr);
         bool CanMoveTo(const ARegion&, const ARegion&);
         int GetFlag(int);

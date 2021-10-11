@@ -41,7 +41,7 @@
 
 Game::Game()
 {
-    gameStatus = GAME_STATUS_UNINIT;
+    gameStatus = GameStatus::GAME_STATUS_UNINIT;
     maxppunits = 0;
 }
 
@@ -223,18 +223,18 @@ int Game::ViewMap(const AString & typestr,const AString & mapfile)
         f.PutStr("");
         const ARegionArray::Handle& pArr = regions.pRegionArrays[i];
         switch(pArr->levelType) {
-            case ARegionArray::LEVEL_NEXUS:
+            case LevelType::LEVEL_NEXUS:
                 f.PutStr(AString("Level ") + i + ": Nexus");
                 break;
-            case ARegionArray::LEVEL_SURFACE:
+            case LevelType::LEVEL_SURFACE:
                 f.PutStr(AString("Level ") + i + ": Surface");
                 WriteSurfaceMap(f, pArr, type);
                 break;
-            case ARegionArray::LEVEL_UNDERWORLD:
+            case LevelType::LEVEL_UNDERWORLD:
                 f.PutStr(AString("Level ") + i + ": Underworld");
                 WriteUnderworldMap(f, pArr, type);
                 break;
-            case ARegionArray::LEVEL_UNDERDEEP:
+            case LevelType::LEVEL_UNDERDEEP:
                 f.PutStr(AString("Level ") + i + ": Underdeep");
                 WriteUnderworldMap(f, pArr, type);
                 break;
@@ -256,7 +256,7 @@ int Game::NewGame()
     shipseq = 100;
     year = 1;
     month.invalidate();
-    gameStatus = GAME_STATUS_NEW;
+    gameStatus = GameStatus::GAME_STATUS_NEW;
 
     //
     // Seed the random number generator with a different value each time.
@@ -494,13 +494,13 @@ int Game::WritePlayers()
     f.PutStr(AString("Version: ") + CURRENT_ATL_VER);
     f.PutStr(AString("TurnNumber: ") + TurnNumber());
 
-    if (gameStatus == GAME_STATUS_UNINIT)
+    if (gameStatus == GameStatus::GAME_STATUS_UNINIT)
         return(0);
-    else if (gameStatus == GAME_STATUS_NEW)
+    else if (gameStatus == GameStatus::GAME_STATUS_NEW)
         f.PutStr(AString("GameStatus: New"));
-    else if (gameStatus == GAME_STATUS_RUNNING)
+    else if (gameStatus == GameStatus::GAME_STATUS_RUNNING)
         f.PutStr(AString("GameStatus: Running"));
-    else if (gameStatus == GAME_STATUS_FINISHED)
+    else if (gameStatus == GameStatus::GAME_STATUS_FINISHED)
         f.PutStr(AString("GameStatus: Finished"));
 
     f.PutStr("");
@@ -581,15 +581,15 @@ int Game::ReadPlayers()
 
         if (pToken == "New")
         {
-            gameStatus = GAME_STATUS_NEW;
+            gameStatus = GameStatus::GAME_STATUS_NEW;
         }
         else if (pToken == "Running")
         {
-            gameStatus = GAME_STATUS_RUNNING;
+            gameStatus = GameStatus::GAME_STATUS_RUNNING;
         }
         else if (pToken == "Finished")
         {
-            gameStatus = GAME_STATUS_FINISHED;
+            gameStatus = GameStatus::GAME_STATUS_FINISHED;
         }
         else
         {
@@ -955,7 +955,7 @@ bool Game::ReadPlayersLine(const AString& pToken, AString& pLine, const Faction:
     } else if (pToken == "Order:") {
         AString pTemp = pLine.StripWhite();
         if (pTemp == "quit") {
-            pFac->quit = QUIT_BY_GM;
+            pFac->quit = QuitReason::QUIT_BY_GM;
         } else {
             // handle this as a unit order
             pTemp = pLine.gettoken();
@@ -1042,11 +1042,11 @@ int Game::RunGame()
     Awrite("Reading the Gamemaster File...");
     if (!ReadPlayers()) return(0);
 
-    if (gameStatus == GAME_STATUS_FINISHED) {
+    if (gameStatus == GameStatus::GAME_STATUS_FINISHED) {
         Awrite("This game is finished!");
         return(0);
     }
-    gameStatus = GAME_STATUS_RUNNING;
+    gameStatus = GameStatus::GAME_STATUS_RUNNING;
 
     Awrite("Reading the Orders File...");
     ReadOrders();
@@ -1421,7 +1421,7 @@ void Game::RemoveInactiveFactions()
     {
         if ((cturn - fac->lastorders) >= static_cast<size_t>(Globals->MAX_INACTIVE_TURNS) && !fac->IsNPC())
         {
-            fac->quit = QUIT_BY_GM;
+            fac->quit = QuitReason::QUIT_BY_GM;
         }
     }
 }

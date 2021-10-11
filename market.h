@@ -32,9 +32,9 @@
 #include "fileio.h"
 #include "itemtype.h"
 
-enum {
-    M_BUY,
-    M_SELL
+enum class MarketTransaction {
+    M_BUY = 0,
+    M_SELL = 1
 };
 
 class Market {
@@ -43,9 +43,9 @@ public:
     Market();
 
     /* type, item, price, amount, minpop, maxpop, minamt, maxamt */
-    Market(int, const Items&, int, int, int, int, int, int);
+    Market(MarketTransaction, const Items&, int, int, int, int, int, int);
 
-    int type;
+    MarketTransaction type;
     Items item;
     int price;
     int amount;

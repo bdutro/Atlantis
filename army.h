@@ -46,6 +46,9 @@ class Location;
 class Soldier {
     public:
         using Handle = std::shared_ptr<Soldier>;
+
+        friend class Army;
+
         Soldier(const std::shared_ptr<Unit>& unit, const std::shared_ptr<Object>& object, const Regions& regType, const Items& race, int ass=0);
 
         void SetupSpell();
@@ -63,7 +66,6 @@ class Soldier {
         bool ArmorProtect(int weaponClass );
 
         void RestoreItems();
-        void Alive(int);
         void Dead();
 
         /* Unit info */
@@ -101,6 +103,15 @@ class Soldier {
 
         /* Effects */
         std::map< char const *, int > effects;
+
+    private:
+        enum class BattleResult {
+            WIN_NO_DEAD,
+            WIN_DEAD,
+            LOSS
+        };
+
+        void Alive_(const BattleResult state);
 };
 
 class Army

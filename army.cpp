@@ -26,12 +26,6 @@
 #include "gameio.h"
 #include "gamedata.h"
 
-enum {
-    WIN_NO_DEAD,
-    WIN_DEAD,
-    LOSS
-};
-
 Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& regtype, const Items& r, int ass)
 {
     AString abbr;
@@ -178,9 +172,8 @@ Soldier::Soldier(const Unit::Handle& u, const Object::Handle& o, const Regions& 
     //
     // Check if this unit is mounted
     //
-    int terrainflags = TerrainDefs[regtype].flags;
-    int canFly = (terrainflags & TerrainType::FLYINGMOUNTS);
-    int canRide = (terrainflags & TerrainType::RIDINGMOUNTS);
+    const bool canFly = TerrainDefs[regtype].flags.isSet(TerrainType::TerrainFlags::FLYINGMOUNTS);
+    const bool canRide = TerrainDefs[regtype].flags.isSet(TerrainType::TerrainFlags::RIDINGMOUNTS);
     unsigned int ridingBonus = 0;
     if (canFly || canRide) {
         //
@@ -506,11 +499,11 @@ void Soldier::RestoreItems()
     }
 }
 
-void Soldier::Alive(int state)
+void Soldier::Alive_(const BattleResult state)
 {
     RestoreItems();
     const auto unit_sp = unit.lock();
-    if (state == LOSS) {
+    if (state == BattleResult::LOSS) {
         unit_sp->canattack = 0;
         unit_sp->routed = 1;
         /* Guards with amuletofi will not go off guard */
@@ -522,7 +515,7 @@ void Soldier::Alive(int state)
         unit_sp->advancefrom.reset();
     }
 
-    if (state == WIN_DEAD) {
+    if (state == BattleResult::WIN_DEAD) {
         unit_sp->canattack = 0;
         unit_sp->nomove = 1;
     }
@@ -779,7 +772,7 @@ void Army::Lose(Battle& b, ItemList& spoils)
     for (size_t i=0; i<count; i++) {
         auto& s = soldiers[i];
         if (i < notbehind) {
-            s->Alive(LOSS);
+            s->Alive_(Soldier::BattleResult::LOSS);
         } else {
             const auto& up = s->unit.lock();
             if ((up->type==U_WMON) && (ItemDefs[s->race].type&IT_MONSTER))
@@ -796,7 +789,7 @@ void Army::Tie(Battle& b)
     for (size_t x=0; x < count; x++) {
         auto& s = soldiers[x];
         if (x<NumAlive()) {
-            s->Alive(WIN_DEAD);
+            s->Alive_(Soldier::BattleResult::WIN_DEAD);
         } else {
             s->Dead();
         }
@@ -873,16 +866,13 @@ void Army::DoHealLevel(Battle& b, size_t type, int useItems)
 
 void Army::Win(Battle& b, const ItemList& spoils)
 {
-    int wintype;
-
     DoHeal(b);
 
     WriteLosses(b);
 
     size_t na = NumAlive();
 
-    if (count - na) wintype = WIN_DEAD;
-    else wintype = WIN_NO_DEAD;
+    const auto wintype = (count - na) ? Soldier::BattleResult::WIN_DEAD : Soldier::BattleResult::WIN_NO_DEAD;
 
     WeakPtrList<Unit> units;
 
@@ -890,7 +880,7 @@ void Army::Win(Battle& b, const ItemList& spoils)
         const auto& s = soldiers[x];
         if (x < NumAlive())
         {
-            s->Alive(wintype);
+            s->Alive_(wintype);
         }
         else
         {

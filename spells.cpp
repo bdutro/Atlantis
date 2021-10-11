@@ -569,8 +569,8 @@ bool SpellsGame<Game>::GetRegionInRange(const ARegion::Handle& r, const ARegion:
     {
         const RangeType& range = FindRange(SkillDefs[spell].range);
 
-        int rtype = regions.GetRegionArray(r->zloc)->levelType;
-        if ((rtype == ARegionArray::LEVEL_NEXUS) &&
+        auto rtype = regions.GetRegionArray(r->zloc)->levelType;
+        if ((rtype == LevelType::LEVEL_NEXUS) &&
                 !(range.flags & RangeType::RNG_NEXUS_SOURCE)) {
             u->Error("CAST: Spell does not work from the Nexus.");
             return false;
@@ -582,13 +582,13 @@ bool SpellsGame<Game>::GetRegionInRange(const ARegion::Handle& r, const ARegion:
         }
 
         rtype = regions.GetRegionArray(tar->zloc)->levelType;
-        if ((rtype == ARegionArray::LEVEL_NEXUS) &&
+        if ((rtype == LevelType::LEVEL_NEXUS) &&
                 !(range.flags & RangeType::RNG_NEXUS_TARGET)) {
             u->Error("CAST: Spell does not work to the Nexus.");
             return false;
         }
 
-        if ((rtype != ARegionArray::LEVEL_SURFACE) &&
+        if ((rtype != LevelType::LEVEL_SURFACE) &&
                 (range.flags & RangeType::RNG_SURFACE_ONLY)) {
             u->Error("CAST: Spell can only target regions on the surface.");
             return false;
@@ -1060,9 +1060,9 @@ template<>
 bool SpellsGame<Game>::RunBirdLore(const ARegion::Handle& r, const Unit::Handle& u)
 {
     CastIntOrder::Handle order = std::dynamic_pointer_cast<CastIntOrder>(u->castorders);
-    int type = regions.GetRegionArray(r->zloc)->levelType;
+    auto type = regions.GetRegionArray(r->zloc)->levelType;
 
-    if (type != ARegionArray::LEVEL_SURFACE) {
+    if (type != LevelType::LEVEL_SURFACE) {
         AString error = "CAST: Bird Lore may only be cast on the surface of ";
         error += Globals->WORLD_NAME;
         error += ".";
@@ -1588,7 +1588,7 @@ bool SpellsGame<Game>::RunGateJump(const ARegion::Handle& r, const Object::Handl
             {
                 good = true;
             }
-            if (nexgate && tar->zloc == ARegionArray::LEVEL_SURFACE)
+            if (nexgate && tar->zloc == LevelType::LEVEL_SURFACE)
             {
                 good = true;
             }

@@ -246,16 +246,16 @@ void Battle::GetSpoils(const PtrList<Location>& losers, ItemList& spoils, int as
     }
 }
 
-int Battle::Run(const ARegion::Handle& region,
-                const Unit::Handle& att,
-                const PtrList<Location>& atts,
-                const Unit::Handle& tar,
-                const PtrList<Location>& defs,
-                int ass,
-                const ARegionList& pRegs)
+Battle::BattleResult Battle::Run(const ARegion::Handle& region,
+                                 const Unit::Handle& att,
+                                 const PtrList<Location>& atts,
+                                 const Unit::Handle& tar,
+                                 const PtrList<Location>& defs,
+                                 int ass,
+                                 const ARegionList& pRegs)
 {
     AString temp;
-    assassination = ASS_NONE;
+    assassination = AssassinationResult::ASS_NONE;
     attacker = att->faction;
 
     std::pair<Army::Handle, Army::Handle> armies(
@@ -277,7 +277,7 @@ int Battle::Run(const ARegion::Handle& region,
 
     if ((armies.first->Broken() && !armies.second->Broken()) ||
         (!armies.first->NumAlive() && armies.second->NumAlive())) {
-        if (ass) assassination = ASS_FAIL;
+        if (ass) assassination = AssassinationResult::ASS_FAIL;
 
         if (armies.first->NumAlive()) {
             AddLine(armies.first->leader.lock()->name + " is routed!");
@@ -298,14 +298,14 @@ int Battle::Run(const ARegion::Handle& region,
         AddLine("");
         AddLine(temp);
         AddLine("");
-        return BATTLE_LOST;
+        return BattleResult::BATTLE_LOST;
     }
 
     if ((armies.second->Broken() && !armies.first->Broken()) ||
         (!armies.second->NumAlive() && armies.first->NumAlive())) {
         const auto second_leader = armies.second->leader.lock();
         if (ass) {
-            assassination = ASS_SUCC;
+            assassination = AssassinationResult::ASS_SUCC;
             asstext = second_leader->name +
                         " is assassinated in " +
                         region->ShortPrint( pRegs ) +
@@ -330,7 +330,7 @@ int Battle::Run(const ARegion::Handle& region,
         AddLine("");
         AddLine(temp);
         AddLine("");
-        return BATTLE_WON;
+        return BattleResult::BATTLE_WON;
     }
 
     AddLine("The battle ends indecisively.");
@@ -342,7 +342,7 @@ int Battle::Run(const ARegion::Handle& region,
     AddLine("");
     AddLine(temp);
     AddLine("");
-    return BATTLE_DRAW;
+    return BattleResult::BATTLE_DRAW;
 }
 
 void Battle::WriteSides(const ARegion::Handle& r,
@@ -399,7 +399,7 @@ void Battle::WriteSides(const ARegion::Handle& r,
 }
 
 void Battle::Report(Areport& f, const Faction& fac) {
-    if (assassination == ASS_SUCC && &fac != attacker.lock().get()) {
+    if (assassination == AssassinationResult::ASS_SUCC && &fac != attacker.lock().get()) {
         f.PutStr(asstext);
         f.PutStr("");
         return;
@@ -794,19 +794,23 @@ size_t Game::KillDead(const Location::Handle& l, const Battle::Handle& b)
     return uncontrolled;
 }
 
-int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, const Unit::Handle& target, int ass, bool adv)
+Battle::BattleResult Game::RunBattle(const ARegion::Handle& r,
+                                     const Unit::Handle& attacker,
+                                     const Unit::Handle& target,
+                                     int ass,
+                                     bool adv)
 {
     WeakPtrList<Faction> afacs;
     WeakPtrList<Faction> dfacs;
     PtrList<Location> atts;
     PtrList<Location> defs;
-    int result;
+    Battle::BattleResult result;
 
     const auto attacker_faction = attacker->faction.lock();
     if (ass) {
         if (attacker->GetAttitude(*r, target) == Attitudes::Types::A_ALLY) {
             attacker->Error("ASSASSINATE: Can't assassinate an ally.");
-            return BATTLE_IMPOSSIBLE;
+            return Battle::BattleResult::BATTLE_IMPOSSIBLE;
         }
         /* Assassination attempt */
         afacs.push_back(attacker->faction);
@@ -814,16 +818,16 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
     } else {
         if ( r->IsSafeRegion() ) {
             attacker->Error("ATTACK: No battles allowed in safe regions.");
-            return BATTLE_IMPOSSIBLE;
+            return Battle::BattleResult::BATTLE_IMPOSSIBLE;
         }
         if (attacker->GetAttitude(*r, target) == Attitudes::Types::A_ALLY) {
             attacker->Error("ATTACK: Can't attack an ally.");
-            return BATTLE_IMPOSSIBLE;
+            return Battle::BattleResult::BATTLE_IMPOSSIBLE;
         }
         GetDFacs(r, target, dfacs);
         if (!GetFaction2(dfacs, attacker_faction->num).expired()) {
             attacker->Error("ATTACK: Can't attack an ally.");
-            return BATTLE_IMPOSSIBLE;
+            return Battle::BattleResult::BATTLE_IMPOSSIBLE;
         }
         GetAFacs(r,attacker,target,dfacs,afacs,atts);
     }
@@ -833,12 +837,12 @@ int Game::RunBattle(const ARegion::Handle& r, const Unit::Handle& attacker, cons
     if (atts.empty()) {
         // This shouldn't happen, but just in case
         Awrite(AString("Cannot find any attackers!"));
-        return BATTLE_IMPOSSIBLE;
+        return Battle::BattleResult::BATTLE_IMPOSSIBLE;
     }
     if (defs.empty()) {
         // This shouldn't happen, but just in case
         Awrite(AString("Cannot find any defenders!"));
-        return BATTLE_IMPOSSIBLE;
+        return Battle::BattleResult::BATTLE_IMPOSSIBLE;
     }
 
     auto& b = battles.emplace_back();

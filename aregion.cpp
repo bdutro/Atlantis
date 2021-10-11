@@ -1334,7 +1334,7 @@ void ARegion::WriteMarkets(Areport& f, const Faction& fac, bool present)
             !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_MARKETS)) {
             continue;
         }
-        if (m->type == M_SELL) {
+        if (m->type == MarketTransaction::M_SELL) {
             if (ItemDefs[m->item].type & IT_ADVANCED) {
                 if (!Globals->MARKETS_SHOW_ADVANCED_ITEMS) {
                     if (!HasItem(fac, m->item)) {
@@ -1366,7 +1366,7 @@ void ARegion::WriteMarkets(Areport& f, const Faction& fac, bool present)
                 !Globals->TRANSIT_REPORT.isSet(GameDefs::TransitReportOptions::REPORT_SHOW_MARKETS)) {
                 continue;
             }
-            if (m->type == M_BUY) {
+            if (m->type == MarketTransaction::M_BUY) {
                 if (has) {
                     temp += ", ";
                 } else {
@@ -1889,17 +1889,17 @@ unsigned int ARegion::IsCoastalOrLakeside()
     return seacount;
 }
 
-unsigned int ARegion::MoveCost(int movetype, const ARegion& fromRegion, const Directions& dir) const
+unsigned int ARegion::MoveCost(const OrderMoveType movetype, const ARegion& fromRegion, const Directions& dir) const
 {
     return MoveCost_(movetype, fromRegion, dir, nullptr);
 }
 
-unsigned int ARegion::MoveCost(int movetype, const ARegion& fromRegion, const Directions& dir, AString& road) const
+unsigned int ARegion::MoveCost(const OrderMoveType movetype, const ARegion& fromRegion, const Directions& dir, AString& road) const
 {
     return MoveCost_(movetype, fromRegion, dir, &road);
 }
 
-unsigned int ARegion::MoveCost_(int movetype, const ARegion& fromRegion, const Directions& dir, AString *road) const
+unsigned int ARegion::MoveCost_(const OrderMoveType movetype, const ARegion& fromRegion, const Directions& dir, AString *road) const
 {
     int cost = 1;
     if (Globals->WEATHER_EXISTS)
@@ -1914,12 +1914,12 @@ unsigned int ARegion::MoveCost_(int movetype, const ARegion& fromRegion, const D
             cost = 1;
         }
     }
-    if (movetype == M_SWIM)
+    if (movetype == OrderMoveType::M_SWIM)
     {
         cost = (TerrainDefs[type].movepoints * cost);
         // Roads don't help swimming, even if there are any in the ocean
     }
-    else if (movetype == M_WALK || movetype == M_RIDE)
+    else if (movetype == OrderMoveType::M_WALK || movetype == OrderMoveType::M_RIDE)
     {
         cost = (TerrainDefs[type].movepoints * cost);
         if (fromRegion.HasExitRoad(dir) && fromRegion.HasConnectingRoad(dir))
@@ -2220,7 +2220,7 @@ bool ARegionList::ReadRegions(Ainfile& f, const PtrList<Faction>& factions, ATL_
         {
             pRegs->strName = name;
         }
-        pRegs->levelType = f.GetInt<int>();
+        pRegs->levelType = f.GetInt<LevelType>();
         pRegionArrays[i] = pRegs;
     }
 
@@ -2704,7 +2704,7 @@ ARegion::WeakHandle ARegionList::FindNearestStartingCity(ARegion::WeakHandle sta
 
 unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const ARegion::Handle& two, int penalty, size_t maxdist)
 {
-    if (one->zloc == ARegionArray::LEVEL_NEXUS || two->zloc == ARegionArray::LEVEL_NEXUS)
+    if (one->zloc == LevelType::LEVEL_NEXUS || two->zloc == LevelType::LEVEL_NEXUS)
     {
         return 10000000;
     }
@@ -2720,7 +2720,7 @@ unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const AR
 
     unsigned int one_x, one_y, two_x, two_y;
     unsigned int maxy;
-    const auto& pArr = pRegionArrays[ARegionArray::LEVEL_SURFACE];
+    const auto& pArr = pRegionArrays[LevelType::LEVEL_SURFACE];
 
     one_x = one->xloc * GetLevelXScale(one->zloc);
     one_y = one->yloc * GetLevelYScale(one->zloc);
@@ -2817,7 +2817,7 @@ unsigned int ARegionList::GetPlanarDistance(const ARegion::Handle& one, const AR
     }
 }
 
-const ARegionArray::Handle& ARegionList::GetRegionArray(size_t level)
+const ARegionArray::Handle& ARegionList::GetRegionArray(const LevelType level)
 {
     return pRegionArrays[level];
 }

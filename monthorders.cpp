@@ -1639,8 +1639,7 @@ void Game::DoMoveEnter(const Unit::Handle& unit, const ARegion::Handle& region, 
             while (!forbid.expired())
             {
                 const auto forbid_p = forbid.lock();
-                int result = RunBattle(region, unit, forbid_p, 0, 0);
-                if (result == BATTLE_IMPOSSIBLE) {
+                if (RunBattle(region, unit, forbid_p, 0, 0) == Battle::BattleResult::BATTLE_IMPOSSIBLE) {
                     unit->Error(AString("ENTER: Unable to attack ")+
                             forbid_p->name);
                     done = true;
@@ -1853,7 +1852,7 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
 
     road = "";
     int startmove = 0;
-    int movetype = unit->MoveType(region);
+    const auto movetype = unit->MoveType(region);
     unsigned int cost = newreg->MoveCost(movetype, *region, first_dir, road);
     if (first_dir.isMovePause())
     {
@@ -1880,7 +1879,7 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
         unit->monthorders.reset();
         return nullptr;
     }
-    if (movetype == M_NONE) {
+    if (movetype == OrderMoveType::M_NONE) {
         unit->Error("MOVE: Unit is overloaded and cannot move.");
         unit->monthorders.reset();
         return nullptr;
@@ -1967,20 +1966,20 @@ Location::Handle Game::DoAMoveOrder(Unit::Handle unit,
     unit->DiscardUnfinishedShips();
 
     switch (movetype) {
-        case M_WALK:
+        case OrderMoveType::M_WALK:
         default:
             temp = AString("Walks ") + road;
             break;
-        case M_RIDE:
+        case OrderMoveType::M_RIDE:
             temp = AString("Rides ") + road;
             unit->Practice(Skills::Types::S_RIDING);
             break;
-        case M_FLY:
+        case OrderMoveType::M_FLY:
             temp = "Flies ";
             unit->Practice(Skills::Types::S_SUMMON_WIND);
             unit->Practice(Skills::Types::S_RIDING);
             break;
-        case M_SWIM:
+        case OrderMoveType::M_SWIM:
             temp = AString("Swims ");
             break;
     }

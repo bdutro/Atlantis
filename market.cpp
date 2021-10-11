@@ -33,7 +33,7 @@ Market::Market()
     activity = 0;
 }
 
-Market::Market(int a, const Items& b, int c, int d, int e, int f, int g, int h)
+Market::Market(const MarketTransaction a, const Items& b, int c, int d, int e, int f, int g, int h)
 {
     type = a;
     item = b;
@@ -77,7 +77,7 @@ void Market::PostTurn(int population, int wages)
     int tarprice = price;
     if (amount) {
         int fluctuation = (baseprice * activity)/amount;
-        if (type == M_BUY)
+        if (type == MarketTransaction::M_BUY)
             tarprice = (2 * baseprice + fluctuation) / 2;
         else
             tarprice = (3 * baseprice - fluctuation) / 2;
@@ -119,7 +119,7 @@ void Market::Writeout(Aoutfile& f)
 
 void Market::Readin(Ainfile& f)
 {
-    type = f.GetInt<int>();
+    type = f.GetInt<MarketTransaction>();
 
     AString temp = f.GetStr();
     item = LookupItem(temp);

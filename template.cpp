@@ -413,7 +413,7 @@ void ARegion::WriteTemplateHeader(Areport& f,
         {
             continue;
         }
-        if (m->type == M_SELL)
+        if (m->type == MarketTransaction::M_SELL)
         {
             if (ItemDefs[m->item].type & IT_ADVANCED) {
                 if (!HasItem(fac, m->item)) {
@@ -471,7 +471,7 @@ void ARegion::WriteTemplateHeader(Areport& f,
         {
             continue;
         }
-        if (m->type == M_BUY)
+        if (m->type == MarketTransaction::M_BUY)
         {
             if (!any) {
                 GetMapLine(buffer, line, pRegs);

@@ -34,22 +34,22 @@ class Battle;
 #include "army.h"
 #include "items.h"
 
-enum {
-    ASS_NONE,
-    ASS_SUCC,
-    ASS_FAIL
-};
-
-enum {
-    BATTLE_IMPOSSIBLE,
-    BATTLE_LOST,
-    BATTLE_WON,
-    BATTLE_DRAW
-};
-
 class Battle
 {
     public:
+        enum class AssassinationResult {
+            ASS_NONE,
+            ASS_SUCC,
+            ASS_FAIL
+        };
+        
+        enum class BattleResult {
+            BATTLE_IMPOSSIBLE,
+            BATTLE_LOST,
+            BATTLE_WON,
+            BATTLE_DRAW
+        };
+
         using Handle = std::shared_ptr<Battle>;
         Battle() = default;
         ~Battle() = default;
@@ -57,13 +57,13 @@ class Battle
         void Report(Areport&, const Faction&);
         void AddLine(const AString &);
 
-        int Run(const std::shared_ptr<ARegion>&,
-                const std::shared_ptr<Unit>&,
-                const PtrList<Location>&,
-                const std::shared_ptr<Unit>&,
-                const PtrList<Location>&,
-                int ass,
-                const ARegionList& pRegs);
+        BattleResult Run(const std::shared_ptr<ARegion>&,
+                         const std::shared_ptr<Unit>&,
+                         const PtrList<Location>&,
+                         const std::shared_ptr<Unit>&,
+                         const PtrList<Location>&,
+                         int ass,
+                         const ARegionList& pRegs);
         void FreeRound(const std::shared_ptr<Army>&, const std::shared_ptr<Army>&, int ass = 0);
         void NormalRound(int, const std::shared_ptr<Army>&, const std::shared_ptr<Army>&);
         void DoAttack(int round,
@@ -93,7 +93,7 @@ class Battle
                         int,
                         const ARegionList& pRegs);
 
-        int assassination;
+        AssassinationResult assassination;
         std::weak_ptr<Faction> attacker; /* Only matters in the case of an assassination */
         AString asstext;
         UniquePtrList<AString> text;

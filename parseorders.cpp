@@ -1407,8 +1407,8 @@ void Game::ProcessQuitOrder(const Unit::Handle& u, AString& o, const OrdersCheck
             }
         }
 
-        if (u_fac->quit != QUIT_AND_RESTART) {
-            u_fac->quit = QUIT_BY_ORDER;
+        if (u_fac->quit != QuitReason::QUIT_AND_RESTART) {
+            u_fac->quit = QuitReason::QUIT_BY_ORDER;
         }
     }
 }
@@ -1430,8 +1430,8 @@ void Game::ProcessRestartOrder(const Unit::Handle& u, AString& o, const OrdersCh
             }
         }
 
-        if (u_fac->quit != QUIT_AND_RESTART) {
-            u_fac->quit = QUIT_AND_RESTART;
+        if (u_fac->quit != QuitReason::QUIT_AND_RESTART) {
+            u_fac->quit = QuitReason::QUIT_AND_RESTART;
             Faction::Handle pFac = AddFaction(0, NULL);
             pFac->SetAddress(u_fac->address);
             pFac->password = u_fac->password;

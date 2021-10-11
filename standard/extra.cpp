@@ -79,7 +79,7 @@ int Game::SetupFaction( const Faction::Handle& pFac )
     } else if (!Globals->MULTI_HEX_NEXUS) {
         reg = regions.front();
     } else {
-        auto pArr = regions.GetRegionArray(ARegionArray::LEVEL_NEXUS);
+        auto pArr = regions.GetRegionArray(LevelType::LEVEL_NEXUS);
         while(reg.expired()) {
             reg = pArr->GetRegion(getrandom(pArr->x), getrandom(pArr->y));
         }

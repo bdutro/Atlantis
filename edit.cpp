@@ -725,7 +725,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
 
         Awrite("Wanted: ");
         for(const auto& m: pReg->markets) {
-            if (m->type == M_SELL) {
+            if (m->type == MarketTransaction::M_SELL) {
                 AString temp = ItemString(m->item, m->amount) + " at $" + m->price + "(" + m->baseprice + ").";
                 temp += AString(" Pop: ") + m->minpop + "/" + m->maxpop + ".";
                 temp += AString(" Amount: ") + m->minamt + "/" + m->maxamt + ".";
@@ -734,7 +734,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
         }
         Awrite("For Sale: ");
         for(const auto& m: pReg->markets) {
-            if (m->type == M_BUY) {
+            if (m->type == MarketTransaction::M_BUY) {
                 AString temp = ItemString(m->item, m->amount) + " at $" + m->price + "(" + m->baseprice + ").";
                 temp += AString(" Pop: ") + m->minpop + "/" + m->maxpop + ".";
                 temp += AString(" Amount: ") + m->minamt + "/" + m->maxamt + ".";
@@ -822,7 +822,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     {
                         int price = static_cast<int>((ItemDefs[mitem].baseprice * (100 + getrandom(50UL))) / 100);
     //                    m->PostTurn(pReg->Population(),pReg->Wages()); // updates amounts
-                        pReg->markets.emplace_back(M_SELL, mitem, price, 0, minimum, maximum, 0, 0);
+                        pReg->markets.emplace_back(MarketTransaction::M_SELL, mitem, price, 0, minimum, maximum, 0, 0);
                     }
 
                 }
@@ -877,7 +877,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                     {
                         int price = static_cast<int>((ItemDefs[mitem].baseprice * (100 + getrandom(50UL))) / 100);
                         int mamount = minimum + ( maximum * population / 5000 );
-                        pReg->markets.emplace_back(M_SELL, mitem, price, mamount, 0, 5000, minimum, maximum);
+                        pReg->markets.emplace_back(MarketTransaction::M_SELL, mitem, price, mamount, 0, 5000, minimum, maximum);
                     }
 
                 }
@@ -916,7 +916,7 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
 
                     if (!done)
                     {
-                        auto& m = pReg->markets.emplace_back(M_SELL, mitem, price, 0, 0, 5000, 0, 0);
+                        auto& m = pReg->markets.emplace_back(MarketTransaction::M_SELL, mitem, price, 0, 0, 5000, 0, 0);
                         m->baseprice = baseprice;
                     }
 
@@ -940,8 +940,8 @@ void Game::EditGameRegionMarkets(const ARegion::Handle& pReg)
                         if (m->item == mitem) {
                             if (!done)
                             {
-                                if (m->type == M_SELL) m->type = M_BUY;
-                                else m->type = M_SELL;
+                                if (m->type == MarketTransaction::M_SELL) m->type = MarketTransaction::M_BUY;
+                                else m->type = MarketTransaction::M_SELL;
                                 done = true;
                             }
                             else

@@ -51,8 +51,10 @@ class ARegionArray;
 #include "production.h"
 #include "market.h"
 #include "object.h"
+#include "ordertype.h"
 #include "regiontype.h"
 #include "validvalue.h"
+#include "enumarray.h"
 
 /* Weather Types */
 enum class _Weather : size_t {
@@ -80,12 +82,12 @@ class TerrainType
         char marker;
         Regions similar_type;
 
-        enum {
+        enum class TerrainFlags {
             RIDINGMOUNTS = 0x1,
             FLYINGMOUNTS = 0x2,
             BARREN       = 0x4,
         };
-        int flags;
+        FieldEnum<TerrainFlags> flags;
 
         int pop;
         int wages;
@@ -170,6 +172,23 @@ class TownInfo
         int dev = 0;
 };
 
+enum class LevelType : unsigned int {
+    LEVEL_NEXUS = 0,
+    LEVEL_SURFACE = 1,
+    LEVEL_UNDERWORLD = 2,
+    LEVEL_UNDERDEEP = 3,
+};
+
+using LevelInt = std::underlying_type_t<LevelType>;
+
+inline bool operator==(const LevelInt lhs, const LevelType rhs) {
+    return static_cast<LevelType>(lhs) == rhs;
+}
+
+inline bool operator==(const LevelType lhs, const LevelInt rhs) {
+    return rhs == lhs;
+}
+
 class ARegion : public std::enable_shared_from_this<ARegion>
 {
     friend class Game;
@@ -225,8 +244,8 @@ class ARegion : public std::enable_shared_from_this<ARegion>
         std::weak_ptr<Object> GetDummy();
         void CheckFleets();
 
-        unsigned int MoveCost(int, const ARegion&, const Directions&) const;
-        unsigned int MoveCost(int, const ARegion&, const Directions&, AString& road) const;
+        unsigned int MoveCost(const OrderMoveType, const ARegion&, const Directions&) const;
+        unsigned int MoveCost(const OrderMoveType, const ARegion&, const Directions&, AString& road) const;
         std::weak_ptr<Unit> Forbidden(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         std::weak_ptr<Unit> ForbiddenByAlly(const std::shared_ptr<Unit>&); /* Returns unit that is forbidding */
         bool CanTax(const std::shared_ptr<Unit>&);
@@ -390,7 +409,8 @@ class ARegion : public std::enable_shared_from_this<ARegion>
         PtrList<Farsight> passers;
         ProductionList products;
         MarketList markets;
-        unsigned int xloc, yloc, zloc;
+        unsigned int xloc, yloc;
+        LevelInt zloc;
         int visited;
 
         // Used for calculating distances using an A* search
@@ -416,7 +436,7 @@ class ARegion : public std::enable_shared_from_this<ARegion>
         std::shared_ptr<Object>& AddObject();
         void MakeLair(const Objects&);
         void LairCheck();
-        unsigned int MoveCost_(int, const ARegion&, const Directions&, AString* road) const;
+        unsigned int MoveCost_(const OrderMoveType, const ARegion&, const Directions&, AString* road) const;
 
 };
 
@@ -441,13 +461,7 @@ class ARegionArray
         std::vector<ARegion::WeakHandle> regions;
         AString strName;
 
-        enum {
-            LEVEL_NEXUS,
-            LEVEL_SURFACE,
-            LEVEL_UNDERWORLD,
-            LEVEL_UNDERDEEP,
-        };
-        int levelType;
+        LevelType levelType;
 };
 
 class ARegionFlatArray
@@ -503,17 +517,20 @@ class ARegionList : public PtrList<ARegion>
         Location::Handle GetUnitId(const UnitId& id, size_t faction, const ARegion& cur);
 
         void ChangeStartingCity(const ARegion&, int);
-        ARegion::WeakHandle GetStartingCity(const ARegion& AC, size_t num, unsigned int level, unsigned int maxX, unsigned int maxY);
+        ARegion::WeakHandle GetStartingCity(const ARegion& AC, size_t num, LevelType level, unsigned int maxX, unsigned int maxY);
 
         ARegion::WeakHandle FindGate(int);
         unsigned int GetPlanarDistance(const ARegion::Handle&, const ARegion::Handle&, int penalty, size_t maxdist = std::numeric_limits<size_t>::max());
         Weather GetWeather(const ARegion& pReg, size_t month) const;
 
-        const ARegionArray::Handle& GetRegionArray(size_t level);
+        const ARegionArray::Handle& GetRegionArray(const LevelType level);
+        inline const ARegionArray::Handle& GetRegionArray(const LevelInt level) {
+            return GetRegionArray(static_cast<LevelType>(level));
+        }
 
         unsigned int numberofgates;
         unsigned int numLevels;
-        std::vector<ARegionArray::Handle> pRegionArrays;
+        EnumVector<LevelType, ARegionArray::Handle> pRegionArrays;
 
     public:
         //
@@ -528,7 +545,7 @@ class ARegionList : public PtrList<ARegion>
         void CreateUnderdeepLevel(unsigned int level, unsigned int xSize, unsigned int ySize, char const *name);
 
         void MakeShaftLinks(unsigned int levelFrom, unsigned int levelTo, unsigned int odds);
-        void SetACNeighbors(unsigned int levelSrc, unsigned int levelTo, unsigned int maxX, unsigned int maxY);
+        void SetACNeighbors(LevelType levelSrc, LevelType levelTo, unsigned int maxX, unsigned int maxY);
         ARegion::WeakHandle FindConnectedRegions(const ARegion::Handle& r, ARegion::Handle tail, bool shaft);
         ARegion::WeakHandle FindNearestStartingCity(ARegion::WeakHandle r, Directions& dir);
         void FixUnconnectedRegions();
